@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/black"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <TextView
+            android:text="Setting General"
+            android:textColor="@color/white"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="20dp"/>
+
+        <TextView
+            android:text="Language / Ngôn ngữ"
+            android:textColor="#00FF00"
+            android:textStyle="bold"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"/>
+
+        <RadioGroup
+            android:id="@+id/rgLanguage"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="10dp">
+
+            <RadioButton
+                android:id="@+id/rbLangVi"
+                android:text="Tiếng Việt"
+                android:textColor="@color/white"
+                android:buttonTint="#00FF00"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="20dp"/>
+
+            <RadioButton
+                android:id="@+id/rbLangEn"
+                android:text="English"
+                android:textColor="@color/white"
+                android:buttonTint="#00FF00"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+        </RadioGroup>
+
+        <View android:background="#333" android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginVertical="15dp"/>
+
+        <TextView
+            android:text="Theme Color / Màu chủ đạo"
+            android:textColor="#00FF00"
+            android:textStyle="bold"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+
+        <RadioGroup
+            android:id="@+id/rgTheme"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp">
+
+            <RadioButton
+                android:id="@+id/rbThemeSystem"
+                android:text="Theo hệ thống (System)"
+                android:textColor="@color/white"
+                android:buttonTint="#00FF00"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+
+            <RadioButton
+                android:id="@+id/rbThemeGreen"
+                android:text="Xanh Neon (Mặc định)"
+                android:textColor="@color/white"
+                android:buttonTint="#00FF00"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+
+            <RadioButton
+                android:id="@+id/rbThemePurple"
+                android:text="Tím mộng mơ (Purple)"
+                android:textColor="@color/white"
+                android:buttonTint="#00FF00"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+        </RadioGroup>
+
+        <View android:background="#333" android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginVertical="15dp"/>
+
+        <TextView
+            android:text="Home Header GIF"
+            android:textColor="#00FF00"
+            android:textStyle="bold"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="150dp"
+            android:layout_marginTop="10dp"
+            app:cardCornerRadius="12dp">
+            <ImageView
+                android:id="@+id/imgGifPreview"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:src="@drawable/home_gif"
+                android:scaleType="centerCrop"/>
+        </androidx.cardview.widget.CardView>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="10dp"
+            android:gravity="center">
+
+            <Button
+                android:id="@+id/btnSystemGif"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Mặc định"
+                android:backgroundTint="#333"
+                android:layout_marginEnd="10dp"/>
+
+            <Button
+                android:id="@+id/btnUploadGif"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Tải ảnh lên"
+                android:backgroundTint="#00FF00"
+                android:textColor="@color/black"/>
+        </LinearLayout>
+
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Căn chỉnh ảnh (Scale Type)"
+            android:textColor="#B0B0B0"
+            android:textSize="12sp"
+            android:layout_marginTop="10dp"/>
+
+        <RadioGroup
+            android:id="@+id/rgScaleType"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+            <RadioButton
+                android:id="@+id/rbScaleCrop"
+                android:text="Full (Crop)"
+                android:textColor="@color/white"
+                android:buttonTint="#00FF00"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"/>
+            <RadioButton
+                android:id="@+id/rbScaleFit"
+                android:text="Vừa khít (Fit)"
+                android:textColor="@color/white"
+                android:buttonTint="#00FF00"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"/>
+        </RadioGroup>
+
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>

@@ -43,6 +43,20 @@
             android:exported="false" />
 
         <activity
+            android:name=".MaintenanceActivity"
+            android:exported="false"
+            android:theme="@style/Theme.AppCompat.NoActionBar" />
+
+        <activity
+            android:name=".ProfileActivity"
+            android:exported="false"
+            android:theme="@style/Theme.AppCompat.NoActionBar" />
+
+        <activity
+            android:name=".SettingGeneral"
+            android:exported="false" />
+
+        <activity
             android:name=".WelcomeActivity"
             android:exported="false"
             android:theme="@style/Theme.AppCompat.Light.NoActionBar"/>

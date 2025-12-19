@@ -58,7 +58,7 @@ class SplashScreenActivity : AppCompatActivity() {
                 withContext(Dispatchers.Main) {
                     codeRainTextView.text = stringBuilder.toString()
                 }
-                delay(50) // Cập nhật mỗi 50ms để tạo hiệu ứng động
+                delay(50)
             }
         }
     }

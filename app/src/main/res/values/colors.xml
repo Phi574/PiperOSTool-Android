@@ -9,6 +9,6 @@
     <color name="white">#FFFFFFFF</color>
     <color name="bg_dark">#121212</color> <color name="card_dark">#1E1E1E</color> <color name="neon_green">#00FF00</color> <color name="text_primary">#FFFFFF</color>
     <color name="text_secondary">#B0B0B0</color>
-
+    <color name="nav_selected">#000000</color> <color name="nav_unselected">#BDBDBD</color> <color name="nav_bg">#FFFFFF</color> <color name="badge_red">#FF3D00</color>
     <color name="chip_todo">#FFC107</color> <color name="chip_progress">#00FF00</color> <color name="chip_pending">#FF5722</color>
 </resources>

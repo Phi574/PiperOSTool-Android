@@ -275,8 +275,6 @@ class SignupActivity : AppCompatActivity() {
                             "dob" to dob,
                             "phone" to fullPhoneNumber,
                             "email" to email,
-                            // Lưu ý: Không nên lưu password text thuần vào Firestore vì lý do bảo mật.
-                            // Nhưng nếu đây là bài tập thì tạm chấp nhận.
                             "password" to password,
                             "role" to "user",
                             "created_at" to System.currentTimeMillis()
