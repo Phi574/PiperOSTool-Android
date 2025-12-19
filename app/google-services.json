@@ -1,0 +1,49 @@
+{
+  "project_info": {
+    "project_number": "38717438993",
+    "firebase_url": "https://piper-os-tool-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "piper-os-tool",
+    "storage_bucket": "piper-os-tool.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:38717438993:android:8835ec410fe067e063c5b0",
+        "android_client_info": {
+          "package_name": "com.admin.piperostool"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBfFrng_nF3vRjpO2_oShZaWwmv60SeQkg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:38717438993:android:87129742b08f654263c5b0",
+        "android_client_info": {
+          "package_name": "com.piper.os.tool"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBfFrng_nF3vRjpO2_oShZaWwmv60SeQkg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
