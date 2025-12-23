@@ -5,10 +5,9 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"
         tools:ignore="QueryAllPackagesPermission" />
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
     <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
-
-
 
     <application
         android:allowBackup="true"
@@ -63,6 +62,7 @@
         <activity android:name=".SecurityScanActivity"
             android:exported="false"
             android:theme="@style/Theme.AppCompat.NoActionBar"/>
+
         <receiver android:name=".AppInstallReceiver"
             android:exported="true">
             <intent-filter>
@@ -80,6 +80,20 @@
             android:name=".WelcomeActivity"
             android:exported="false"
             android:theme="@style/Theme.AppCompat.Light.NoActionBar"/>
+
+        <!-- KHAI BÁO DEVICE ADMIN RECEIVER MOVED INSIDE APPLICATION -->
+        <receiver
+            android:name=".MyDeviceAdminReceiver"
+            android:description="@string/app_name"
+            android:exported="true"
+            android:permission="android.permission.BIND_DEVICE_ADMIN">
+            <meta-data
+                android:name="android.app.device_admin"
+                android:resource="@xml/device_admin_policies" />
+            <intent-filter>
+                <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
+            </intent-filter>
+        </receiver>
 
     </application>
 

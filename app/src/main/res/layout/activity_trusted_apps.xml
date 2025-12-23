@@ -31,6 +31,24 @@
             android:layout_centerInParent="true"/>
     </RelativeLayout>
 
+    <!-- THÊM MỚI: Thanh tìm kiếm -->
+    <EditText
+        android:id="@+id/etSearch"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:hint="Tìm kiếm theo tên hoặc gói..."
+        android:textColorHint="#888"
+        android:textColor="@color/white"
+        android:background="@drawable/bg_button_signup"
+        android:backgroundTint="#1E1E1E"
+        android:paddingHorizontal="15dp"
+        android:drawableStart="@android:drawable/ic_menu_search"
+        android:drawableTint="#888"
+        android:drawablePadding="10dp"
+        android:layout_marginBottom="15dp"
+        android:maxLines="1"
+        android:inputType="text"/>
+
     <TextView
         android:id="@+id/tvEmpty"
         android:layout_width="match_parent"

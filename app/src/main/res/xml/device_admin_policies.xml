@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<device-admin xmlns:tools="http://schemas.android.com/tools"
+    tools:ignore="MissingClass">
+    <!--
+        Khu vực này dùng để khai báo các "chính sách" (quyền) mà bạn muốn yêu cầu.
+        Ví dụ, nếu sau này bạn muốn thêm tính năng khóa màn hình, bạn sẽ thêm dòng:
+        <uses-policies>
+            <force-lock />
+        </uses-policies>
+        Hiện tại, chúng ta để trống vì chỉ cần đăng ký quyền cơ bản.
+    -->
+</device-admin>

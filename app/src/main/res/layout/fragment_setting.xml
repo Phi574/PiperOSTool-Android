@@ -13,13 +13,60 @@
         android:padding="20dp">
 
         <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="20dp"
             android:text="Settings"
             android:textColor="@color/white"
             android:textSize="24sp"
+            android:textStyle="bold" />
+
+        <!-- TÙY CHỌN KÍCH HOẠT QUẢN TRỊ VIÊN -->
+        <com.google.android.material.switchmaterial.SwitchMaterial
+            android:id="@+id/switchDeviceAdmin"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Kích hoạt Quản trị viên"
+            android:textColor="@color/white"
+            android:textSize="16sp"
             android:textStyle="bold"
+            app:thumbTint="#00FF00"
+            app:trackTint="#333333" />
+
+        <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="20dp"/>
+            android:layout_marginBottom="15dp"
+            android:text="Cấp quyền cao nhất cho ứng dụng để thực hiện các tác vụ đặc biệt (khóa màn hình, xóa dữ liệu...)."
+            android:textColor="#B0B0B0"
+            android:textSize="12sp" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginVertical="15dp"
+            android:background="#333" />
+
+        <!-- THÊM MỚI: TÙY CHỌN KHÓA VÂN TAY -->
+        <com.google.android.material.switchmaterial.SwitchMaterial
+            android:id="@+id/switchFingerprint"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Khóa bằng vân tay"
+            android:textColor="@color/white"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            app:thumbTint="#00FF00"
+            app:trackTint="#333333" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="15dp"
+            android:text="Yêu cầu xác thực vân tay mỗi khi mở ứng dụng để tăng cường bảo mật."
+            android:textColor="#B0B0B0"
+            android:textSize="12sp" />
+
 
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>

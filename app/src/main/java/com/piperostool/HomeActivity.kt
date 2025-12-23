@@ -114,26 +114,24 @@ class HomeActivity : AppCompatActivity() {
             updateTabUI(0)
         }
         btnModul.setOnClickListener {
-            startActivity(Intent(this, MaintenanceActivity::class.java))
+            replaceFragment(ModuleFragment())
             currentTab = 1
             updateTabUI(1)
         }
         btnApps.setOnClickListener {
-            startActivity(Intent(this, MaintenanceActivity::class.java))
+            replaceFragment(AppsFragment())
             currentTab = 2
             updateTabUI(2)
         }
 
         btnSettings.setOnClickListener {
-            // Chuyển sang SettingFragment (nếu bạn vẫn dùng Fragment)
-            // Hoặc nếu bạn muốn mở SettingGeneral Activity từ tab này thì dùng startActivity
             replaceFragment(SettingFragment())
             currentTab = 3
             updateTabUI(3)
         }
 
         btnDevices.setOnClickListener {
-            startActivity(Intent(this, MaintenanceActivity::class.java))
+            replaceFragment(DevicesFragment())
             currentTab = 4
             updateTabUI(4)
         }

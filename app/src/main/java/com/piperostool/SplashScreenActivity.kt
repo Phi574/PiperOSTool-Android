@@ -13,8 +13,11 @@ import android.view.animation.DecelerateInterpolator
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.biometric.BiometricPrompt // Import đúng
+import androidx.core.content.ContextCompat
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.*
+import java.util.concurrent.Executor
 import kotlin.random.Random
 
 class SplashScreenActivity : AppCompatActivity() {
@@ -25,6 +28,12 @@ class SplashScreenActivity : AppCompatActivity() {
     private val handler = Handler(Looper.getMainLooper())
     private var codeRainJob: Job? = null
 
+    // --- Biometric Components ---
+    private lateinit var executor: Executor
+    private lateinit var biometricPrompt: BiometricPrompt
+    private lateinit var promptInfo: BiometricPrompt.PromptInfo
+    // ----------------------------
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_start_screen)
@@ -33,12 +42,51 @@ class SplashScreenActivity : AppCompatActivity() {
         appNameTextView = findViewById(R.id.appNameTextView)
         developerTextView = findViewById(R.id.developerTextView)
 
-        startCodeRainEffect()
+        // Setup Biometric
+        setupBiometric()
 
+        // Start UI effects
+        startCodeRainEffect()
         handler.postDelayed({
             stopCodeRainEffect()
             showAppNameAndDeveloper()
         }, 3500)
+    }
+
+    private fun setupBiometric() {
+        executor = ContextCompat.getMainExecutor(this)
+
+        biometricPrompt = BiometricPrompt(this, executor,
+            object : BiometricPrompt.AuthenticationCallback() {
+                override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+                    super.onAuthenticationError(errorCode, errString)
+                    // Nếu lỗi không phải do người dùng tự hủy -> Đăng xuất
+                    if (errorCode != BiometricPrompt.ERROR_USER_CANCELED && errorCode != BiometricPrompt.ERROR_NEGATIVE_BUTTON) {
+                        Toast.makeText(applicationContext, "Xác thực thất bại, vui lòng đăng nhập lại.", Toast.LENGTH_LONG).show()
+                        forceLogout()
+                    } else {
+                        // Người dùng tự hủy -> đóng app
+                        finish()
+                    }
+                }
+
+                override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                    super.onAuthenticationSucceeded(result)
+                    // Xác thực thành công -> Tiếp tục vào app
+                    proceedToApp()
+                }
+
+                override fun onAuthenticationFailed() {
+                    super.onAuthenticationFailed()
+                    // Vân tay không khớp, người dùng có thể thử lại
+                }
+            })
+
+        promptInfo = BiometricPrompt.PromptInfo.Builder()
+            .setTitle("Yêu cầu xác thực")
+            .setSubtitle("Sử dụng vân tay để mở Piper OS Tool")
+            .setNegativeButtonText("Thoát")
+            .build()
     }
 
     private fun startCodeRainEffect() {
@@ -86,9 +134,8 @@ class SplashScreenActivity : AppCompatActivity() {
         animatorSet.addListener(object : android.animation.Animator.AnimatorListener {
             override fun onAnimationStart(animation: android.animation.Animator) {}
             override fun onAnimationEnd(animation: android.animation.Animator) {
-
                 handler.postDelayed({
-                    checkLoginAndNavigate()
+                    checkBiometric()
                 }, 1000)
             }
             override fun onAnimationCancel(animation: android.animation.Animator) {}
@@ -97,43 +144,37 @@ class SplashScreenActivity : AppCompatActivity() {
         animatorSet.start()
     }
 
-    private fun checkLoginAndNavigate() {
+    private fun checkBiometric() {
+        val prefs = getSharedPreferences("PiperPrefs", Context.MODE_PRIVATE)
+        val isFingerprintEnabled = prefs.getBoolean("fingerprint_enabled", false)
+        val currentUser = FirebaseAuth.getInstance().currentUser
+
+        if (isFingerprintEnabled && currentUser != null) {
+            biometricPrompt.authenticate(promptInfo)
+        } else {
+            proceedToApp()
+        }
+    }
+
+    private fun proceedToApp() {
         val currentUser = FirebaseAuth.getInstance().currentUser
 
         if (currentUser != null) {
-            // Trường hợp 1: Đã đăng nhập trước đó
-            if (isNetworkAvailable()) {
-
-                val intent = Intent(this@SplashScreenActivity, HomeActivity::class.java)
-                startActivity(intent)
-            } else {
-
-                Toast.makeText(this@SplashScreenActivity, "Không có kết nối mạng. Chế độ Offline.", Toast.LENGTH_LONG).show()
-
-                val intent = Intent(this@SplashScreenActivity, HomeActivity::class.java)
-                intent.putExtra("IS_OFFLINE_MODE", true) // Gửi cờ Offline nếu cần xử lý bên trong
-                startActivity(intent)
-            }
+            val intent = Intent(this@SplashScreenActivity, HomeActivity::class.java)
+            startActivity(intent)
         } else {
-            // Trường hợp 2: Chưa đăng nhập -> Vào màn hình Welcome/Login
             val intent = Intent(this@SplashScreenActivity, WelcomeActivity::class.java)
             startActivity(intent)
         }
         finish()
     }
 
-    // Hàm kiểm tra kết nối mạng
-    private fun isNetworkAvailable(): Boolean {
-        val connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-        val network = connectivityManager.activeNetwork ?: return false
-        val activeNetwork = connectivityManager.getNetworkCapabilities(network) ?: return false
-
-        return when {
-            activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> true
-            activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> true
-            activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> true
-            else -> false
-        }
+    private fun forceLogout() {
+        FirebaseAuth.getInstance().signOut()
+        val intent = Intent(this, WelcomeActivity::class.java)
+        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        startActivity(intent)
+        finish()
     }
 
     override fun onDestroy() {
