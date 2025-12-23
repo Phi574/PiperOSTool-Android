@@ -11,6 +11,10 @@
         <item name="colorOnSecondary">@color/black</item>
         <!-- Status bar color. -->
         <item name="android:statusBarColor">#000000</item>
-        <!-- Customize your theme here. -->
+    </style>
+    <style name="Theme.App.Dialog" parent="Theme.AppCompat.Light.Dialog.Alert">
+            <item name="android:windowBackground">@android:color/transparent</item>
+            <item name="android:windowIsFloating">true</item>
+            <item name="android:windowNoTitle">true</item>
     </style>
 </resources>

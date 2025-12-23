@@ -8,6 +8,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.biometric.BiometricPrompt
@@ -21,6 +22,7 @@ class SettingFragment : Fragment() {
     // --- Device Admin Components ---
     private lateinit var switchAdmin: SwitchMaterial
     private lateinit var devicePolicyManager: DevicePolicyManager
+    private lateinit var btnPermissions: LinearLayout
     private lateinit var componentName: ComponentName
     private val adminResultLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         // Sau khi người dùng tương tác với màn hình quyền, kiểm tra lại trạng thái
@@ -42,6 +44,7 @@ class SettingFragment : Fragment() {
         return inflater.inflate(R.layout.fragment_setting, container, false)
     }
 
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
@@ -52,6 +55,11 @@ class SettingFragment : Fragment() {
         switchAdmin.setOnCheckedChangeListener { _, isChecked ->
             if (switchAdmin.isPressed) {
                 if (isChecked) activateDeviceAdmin() else deactivateDeviceAdmin()
+            }
+            btnPermissions = view.findViewById(R.id.btnPermissions)
+            btnPermissions.setOnClickListener {
+                val intent = Intent(requireContext(), PermissionManagerActivity::class.java)
+                startActivity(intent)
             }
         }
         // -----------------------------

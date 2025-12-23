@@ -4,9 +4,11 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
+import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Environment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -24,6 +26,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
 
 class SecurityScanActivity : AppCompatActivity() {
 
@@ -41,8 +44,6 @@ class SecurityScanActivity : AppCompatActivity() {
     // Data
     private var isManualCheck = true
     private var targetPackageName: String? = null
-
-    // Danh sách kết quả quét (chứa các app có vấn đề)
     private val scanResults = mutableListOf<ScanResult>()
     private lateinit var resultAdapter: ScanResultAdapter
 
@@ -68,75 +69,190 @@ class SecurityScanActivity : AppCompatActivity() {
         statusTitle = findViewById(R.id.sec_status_title)
         statusDesc = findViewById(R.id.sec_status_desc)
         progressBar = findViewById(R.id.sec_progress)
-
         resultHeader = findViewById(R.id.tv_result_header)
         recyclerView = findViewById(R.id.recycler_scan_results)
-
         actionLayout = findViewById(R.id.sec_action_layout)
         btnTrustAll = findViewById(R.id.sec_btn_trust_all)
         btnBackHome = findViewById(R.id.sec_btn_back_home)
 
         findViewById<ImageView>(R.id.sec_btn_back).setOnClickListener { finish() }
-
-        // Sự kiện nút Tin tưởng tất cả
-        btnTrustAll.setOnClickListener {
-            trustAllApps()
-        }
-
+        btnTrustAll.setOnClickListener { trustAllItems() }
         btnBackHome.setOnClickListener { finish() }
     }
 
     private fun setupRecyclerView() {
         resultAdapter = ScanResultAdapter(scanResults,
             onTrustClick = { result ->
-                addToWhitelist(result.packageName)
+                addToWhitelist(result.identifier)
                 removeResultFromList(result)
             },
-            onUninstallClick = { result ->
-                uninstallApp(result.packageName)
+            onActionClick = { result ->
+                if (result.isApp) {
+                    uninstallApp(result.identifier)
+                } else {
+                    // Sửa lại tên hàm gọi cho đúng
+                    deleteSuspiciousFile(result.identifier)
+                }
             }
         )
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.adapter = resultAdapter
     }
 
-    // --- LOGIC QUÉT ---
 
+    // --- LOGIC QUÉT TUẦN TỰ ---
     private fun startFullScan() {
-        updateUIState(ScanState.SCANNING, "Đang quét toàn bộ hệ thống...")
         scanResults.clear()
+        updateUIState(ScanState.SCANNING, "Bắt đầu quét...")
 
         CoroutineScope(Dispatchers.IO).launch {
+            // --- GIAI ĐOẠN 1: QUÉT ỨNG DỤNG ---
+            withContext(Dispatchers.Main) {
+                statusDesc.text = "Đang quét các ứng dụng đã cài đặt..."
+            }
             val pm = packageManager
             val packages = pm.getInstalledApplications(PackageManager.GET_META_DATA)
-
             for (appInfo in packages) {
-                // Bỏ qua app hiện tại (Piper OS Tool) để tránh tự báo mình
-                if (appInfo.packageName == packageName) {
-                    continue
-                }
-
-                // Chạy phân tích
-                val result = analyzeAppReal(appInfo.packageName)
+                if (appInfo.packageName == packageName) continue // Bỏ qua chính nó
+                val result = analyzeApp(appInfo.packageName)
                 if (result.level != ThreatLevel.SAFE) {
                     scanResults.add(result)
                 }
             }
+            // Cập nhật giao diện sau khi quét app xong
+            withContext(Dispatchers.Main) {
+                resultAdapter.notifyDataSetChanged()
+                if(scanResults.isNotEmpty()) {
+                    resultHeader.visibility = View.VISIBLE
+                    recyclerView.visibility = View.VISIBLE
+                }
+            }
 
+            // --- GIAI ĐOẠN 2: QUÉT TỆP TIN ---
+            withContext(Dispatchers.Main) {
+                statusDesc.text = "Tiếp tục quét các tệp tin trong bộ nhớ..."
+            }
+            val suspiciousExtensions = listOf("apk", "apks", "apkm", "xapk", "obb", "zip", "rar")
+            val rootDir = Environment.getExternalStorageDirectory()
+            var filesScanned = 0
+
+            try {
+                rootDir.walk().maxDepth(8).forEach { file -> // Giới hạn độ sâu để tránh quá lâu
+                    if (file.isFile) {
+                        filesScanned++
+                        if (filesScanned % 100 == 0) { // Cập nhật UI mỗi 100 files
+                            withContext(Dispatchers.Main) {
+                                statusDesc.text = "Đã quét $filesScanned tệp...\nĐang kiểm tra: ${file.name}"
+                            }
+                        }
+
+                        val extension = file.extension.lowercase()
+                        if (suspiciousExtensions.contains(extension)) {
+                            val result = analyzeFile(file)
+                            if (result.level != ThreatLevel.SAFE) {
+                                // Thêm vào danh sách và cập nhật UI ngay
+                                withContext(Dispatchers.Main) {
+                                    scanResults.add(result)
+                                    resultAdapter.notifyItemInserted(scanResults.size - 1)
+                                    if(recyclerView.visibility == View.GONE) {
+                                        resultHeader.visibility = View.VISIBLE
+                                        recyclerView.visibility = View.VISIBLE
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                // Có thể gặp lỗi nếu không có quyền đọc một thư mục nào đó
+                e.printStackTrace()
+            }
+
+            // --- KẾT THÚC ---
             withContext(Dispatchers.Main) {
                 showScanResults()
             }
         }
     }
 
-    private fun startTargetScan(pkgName: String) {
+    // --- PHÂN TÍCH ---
+    // Data class chung cho cả app và file
+    data class ScanResult(
+        val identifier: String, // Tên gói cho app, đường dẫn cho file
+        val displayName: String,
+        val isApp: Boolean,
+        val level: ThreatLevel,
+        val reasons: List<String>
+    )
+
+    private fun analyzeApp(pkgName: String): ScanResult {
+        // ... (Code phân tích app giữ nguyên, chỉ thay đổi kiểu trả về)
+        val prefs = getSharedPreferences("PiperSecurityPrefs", Context.MODE_PRIVATE)
+        val whitelist = prefs.getStringSet("whitelist", emptySet())
+        if (whitelist?.contains(pkgName) == true) {
+            return ScanResult(pkgName, getAppName(pkgName), true, ThreatLevel.SAFE, emptyList())
+        }
+
+        val reasons = mutableListOf<String>()
+        val pm = packageManager
+        val appName = getAppName(pkgName)
+        try {
+            val appInfo = pm.getApplicationInfo(pkgName, 0)
+            if ((appInfo.flags and ApplicationInfo.FLAG_SYSTEM) != 0 || (appInfo.flags and ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) != 0) {
+                return ScanResult(pkgName, appName, true, ThreatLevel.SAFE, emptyList())
+            }
+            val installer = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) pm.getInstallSourceInfo(pkgName).installingPackageName else @Suppress("DEPRECATION") pm.getInstallerPackageName(pkgName)
+            val isFromStore = installer == "com.android.vending" || installer == "com.google.android.packageinstaller"
+            if (!isFromStore) reasons.add("⚠ Cài từ nguồn ngoài (APK)")
+
+            val packageInfoWithPerms = pm.getPackageInfo(pkgName, PackageManager.GET_PERMISSIONS)
+            val requestedPermissions = packageInfoWithPerms.requestedPermissions
+            var dangerousScore = 0
+            if (requestedPermissions != null) {
+                val permMap = mapOf( "android.permission.RECEIVE_SMS" to "Đọc tin nhắn", "android.permission.SEND_SMS" to "Gửi tin nhắn", "android.permission.READ_CONTACTS" to "Đọc danh bạ", "android.permission.ACCESS_FINE_LOCATION" to "Theo dõi vị trí", "android.permission.CAMERA" to "Dùng Camera", "android.permission.RECORD_AUDIO" to "Ghi âm", "android.permission.SYSTEM_ALERT_WINDOW" to "Vẽ đè ứng dụng", "android.permission.BIND_ACCESSIBILITY_SERVICE" to "Quyền Trợ năng (Cao nhất)")
+                for (perm in requestedPermissions) { if (permMap.containsKey(perm)) { dangerousScore++; reasons.add("⚠ ${permMap[perm]}") } }
+            }
+            if (!isFromStore && dangerousScore >= 2) return ScanResult(pkgName, appName, true, ThreatLevel.DANGEROUS, reasons)
+            if (!isFromStore) return ScanResult(pkgName, appName, true, ThreatLevel.SUSPICIOUS, reasons)
+            if (isFromStore && dangerousScore >= 4) return ScanResult(pkgName, appName, true, ThreatLevel.SUSPICIOUS, reasons)
+            return ScanResult(pkgName, appName, true, ThreatLevel.SAFE, emptyList())
+        } catch (e: Exception) { return ScanResult(pkgName, appName, true, ThreatLevel.SAFE, emptyList()) }
+    }
+
+    private fun analyzeFile(file: File): ScanResult {
+        val filePath = file.path
+        val prefs = getSharedPreferences("PiperSecurityPrefs", Context.MODE_PRIVATE)
+        val whitelist = prefs.getStringSet("whitelist", emptySet())
+        if (whitelist?.contains(filePath) == true) {
+            return ScanResult(filePath, file.name, false, ThreatLevel.SAFE, emptyList())
+        }
+        val reasons = mutableListOf<String>()
+        var level = ThreatLevel.SAFE
+        if (file.name.contains("crack", ignoreCase = true) || file.name.contains("mod", ignoreCase = true)) {
+            reasons.add("⚠ Tên tệp chứa từ khóa đáng ngờ (crack, mod).")
+            level = ThreatLevel.SUSPICIOUS
+        }
+        val fileSizeInMB = file.length() / (1024 * 1024)
+        if (file.extension.equals("apk", ignoreCase = true) && fileSizeInMB < 1) {
+            reasons.add("⚠ Kích thước tệp APK quá nhỏ, có thể không hợp lệ.")
+            level = ThreatLevel.SUSPICIOUS
+        }
+        if (reasons.isNotEmpty()) { return ScanResult(filePath, file.name, false, level, reasons) }
+        return ScanResult(filePath, file.name, false, ThreatLevel.SAFE, emptyList())
+    }
+
+    private fun getAppName(pkgName: String): String {
+        return try { packageManager.getApplicationLabel(packageManager.getApplicationInfo(pkgName, 0)).toString() } catch (e: Exception) { pkgName }
+    }
+
+    // --- Các hàm còn lại (UI, Actions...) ---
+     private fun startTargetScan(pkgName: String) {
         updateUIState(ScanState.SCANNING, "Đang phân tích ứng dụng: $pkgName...")
         scanResults.clear()
 
         CoroutineScope(Dispatchers.IO).launch {
-            val result = analyzeAppReal(pkgName)
-            // Giả lập delay một chút cho người dùng kịp đọc
-            Thread.sleep(1500)
+            val result = analyzeApp(pkgName)
+            Thread.sleep(1500) // Giả lập delay
 
             if (result.level != ThreatLevel.SAFE) {
                 scanResults.add(result)
@@ -147,7 +263,6 @@ class SecurityScanActivity : AppCompatActivity() {
             }
         }
     }
-
     private fun showScanResults() {
         progressBar.visibility = View.GONE
 
@@ -157,15 +272,13 @@ class SecurityScanActivity : AppCompatActivity() {
             recyclerView.visibility = View.GONE
             resultHeader.visibility = View.GONE
             actionLayout.visibility = View.VISIBLE
-            btnTrustAll.visibility = View.GONE // Ẩn nút tin tưởng tất cả vì không có gì để tin
+            btnTrustAll.visibility = View.GONE // Ẩn nút tin tưởng tất cả
         } else {
             // CÓ VẤN ĐỀ
             val count = scanResults.size
             val dangerCount = scanResults.count { it.level == ThreatLevel.DANGEROUS }
-
             val state = if (dangerCount > 0) ScanState.DANGEROUS else ScanState.SUSPICIOUS
-            val msg = "Phát hiện $count ứng dụng cần chú ý ($dangerCount nguy hiểm)."
-
+            val msg = "Phát hiện $count mục cần chú ý ($dangerCount nguy hiểm)."
             updateUIState(state, msg)
 
             // Hiển thị danh sách
@@ -179,150 +292,69 @@ class SecurityScanActivity : AppCompatActivity() {
         }
     }
 
-    // --- PHÂN TÍCH APP ---
-    data class ScanResult(
-        val packageName: String,
-        val appName: String,
-        val level: ThreatLevel,
-        val reasons: List<String>
-    )
-
-    private fun analyzeAppReal(pkgName: String): ScanResult {
-        // 0. Kiểm tra Whitelist (Danh sách tin tưởng)
-        val prefs = getSharedPreferences("PiperSecurityPrefs", Context.MODE_PRIVATE)
-        val whitelist = prefs.getStringSet("whitelist", emptySet())
-        if (whitelist?.contains(pkgName) == true) {
-            return ScanResult(pkgName, getAppName(pkgName), ThreatLevel.SAFE, emptyList())
-        }
-
-        val reasons = mutableListOf<String>()
-        val pm = packageManager
-        val appName = getAppName(pkgName)
-
-        try {
-            // --- SỬA LOGIC KIỂM TRA APP HỆ THỐNG TẠI ĐÂY ---
-            val appInfo = pm.getApplicationInfo(pkgName, 0)
-
-            // 1. KIỂM TRA NẾU LÀ APP HỆ THỐNG -> AN TOÀN TUYỆT ĐỐI
-            // Các cờ FLAG_SYSTEM và FLAG_UPDATED_SYSTEM_APP cho biết đây là app cài sẵn của ROM
-            if ((appInfo.flags and ApplicationInfo.FLAG_SYSTEM) != 0 ||
-                (appInfo.flags and ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) != 0) {
-                // App hệ thống luôn an toàn, không cần check nguồn hay quyền
-                return ScanResult(pkgName, appName, ThreatLevel.SAFE, emptyList())
-            }
-
-            // 2. NGUỒN CÀI ĐẶT
-            val installer = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                pm.getInstallSourceInfo(pkgName).installingPackageName
-            } else {
-                @Suppress("DEPRECATION")
-                pm.getInstallerPackageName(pkgName)
-            }
-
-            // Các nguồn tin cậy: Google Play hoặc Package Installer gốc
-            val isFromStore = installer == "com.android.vending" || installer == "com.google.android.packageinstaller"
-
-            if (!isFromStore) {
-                reasons.add("⚠ Cài từ nguồn ngoài (APK)")
-            }
-
-            // 3. QUYỀN HẠN (Chỉ kiểm tra nếu không phải system app - đã check ở trên)
-            val packageInfoWithPerms = pm.getPackageInfo(pkgName, PackageManager.GET_PERMISSIONS)
-            val requestedPermissions = packageInfoWithPerms.requestedPermissions
-            var dangerousScore = 0
-
-            if (requestedPermissions != null) {
-                val permMap = mapOf(
-                    "android.permission.RECEIVE_SMS" to "Đọc tin nhắn",
-                    "android.permission.SEND_SMS" to "Gửi tin nhắn",
-                    "android.permission.READ_CONTACTS" to "Đọc danh bạ",
-                    "android.permission.ACCESS_FINE_LOCATION" to "Theo dõi vị trí",
-                    "android.permission.CAMERA" to "Dùng Camera",
-                    "android.permission.RECORD_AUDIO" to "Ghi âm",
-                    "android.permission.SYSTEM_ALERT_WINDOW" to "Vẽ đè ứng dụng",
-                    "android.permission.BIND_ACCESSIBILITY_SERVICE" to "Quyền Trợ năng (Cao nhất)"
-                )
-
-                for (perm in requestedPermissions) {
-                    if (permMap.containsKey(perm)) {
-                        dangerousScore++
-                        reasons.add("⚠ ${permMap[perm]}")
-                    }
-                }
-            }
-
-            // 4. KẾT LUẬN
-            // App nguồn ngoài + 2 quyền nguy hiểm -> NGUY HIỂM
-            if (!isFromStore && dangerousScore >= 2) return ScanResult(pkgName, appName, ThreatLevel.DANGEROUS, reasons)
-            // App nguồn ngoài -> NGHI NGỜ
-            if (!isFromStore) return ScanResult(pkgName, appName, ThreatLevel.SUSPICIOUS, reasons)
-            // App CH Play nhưng spam quyền -> NGHI NGỜ
-            if (isFromStore && dangerousScore >= 4) return ScanResult(pkgName, appName, ThreatLevel.SUSPICIOUS, reasons)
-
-            return ScanResult(pkgName, appName, ThreatLevel.SAFE, emptyList())
-
-        } catch (e: Exception) {
-            // Nếu lỗi khi lấy thông tin (ví dụ app vừa bị gỡ), coi như an toàn để không crash
-            return ScanResult(pkgName, appName, ThreatLevel.SAFE, emptyList())
-        }
-    }
-
-    private fun getAppName(pkgName: String): String {
-        return try {
-            packageManager.getApplicationLabel(packageManager.getApplicationInfo(pkgName, 0)).toString()
-        } catch (e: Exception) { pkgName }
-    }
-
-    // --- CÁC HÀM HÀNH ĐỘNG ---
-
     private fun uninstallApp(pkgName: String?) {
         pkgName?.let {
             val intent = Intent(Intent.ACTION_DELETE)
             intent.data = Uri.parse("package:$it")
             startActivity(intent)
-            // Lưu ý: Không finish() ở đây để người dùng quay lại danh sách
         }
     }
 
-    private fun addToWhitelist(pkgName: String) {
-        val prefs = getSharedPreferences("PiperSecurityPrefs", Context.MODE_PRIVATE)
-        val whitelist = prefs.getStringSet("whitelist", HashSet())?.toMutableSet()
-        whitelist?.add(pkgName)
-        prefs.edit().putStringSet("whitelist", whitelist).apply()
-        Toast.makeText(this, "Đã thêm '$pkgName' vào tin tưởng", Toast.LENGTH_SHORT).show()
+    private fun deleteSuspiciousFile(filePath: String) {
+        try {
+            val file = File(filePath)
+            if (file.exists()) {
+                if (file.delete()) {
+                    Toast.makeText(this, "Đã xóa tệp thành công.", Toast.LENGTH_SHORT).show()
+                    removeResultFromListByIdentifier(filePath)
+                } else {
+                    Toast.makeText(this, "Không thể xóa tệp.", Toast.LENGTH_SHORT).show()
+                }
+            }
+        } catch (e: SecurityException) {
+            Toast.makeText(this, "Không có quyền xóa tệp này.", Toast.LENGTH_SHORT).show()
+        }
     }
-
-    private fun trustAllApps() {
+    private fun addToWhitelist(identifier: String) {
         val prefs = getSharedPreferences("PiperSecurityPrefs", Context.MODE_PRIVATE)
         val whitelist = prefs.getStringSet("whitelist", HashSet())?.toMutableSet()
-
-        // Thêm tất cả package trong danh sách hiện tại vào whitelist
+        whitelist?.add(identifier)
+        prefs.edit().putStringSet("whitelist", whitelist).apply()
+        Toast.makeText(this, "Đã thêm vào danh sách tin tưởng", Toast.LENGTH_SHORT).show()
+    }
+    private fun trustAllItems() {
+        val prefs = getSharedPreferences("PiperSecurityPrefs", Context.MODE_PRIVATE)
+        val whitelist = prefs.getStringSet("whitelist", HashSet())?.toMutableSet()
         for (result in scanResults) {
-            whitelist?.add(result.packageName)
+            whitelist?.add(result.identifier)
         }
-
         prefs.edit().putStringSet("whitelist", whitelist).apply()
-        Toast.makeText(this, "Đã tin tưởng toàn bộ ${scanResults.size} ứng dụng.", Toast.LENGTH_SHORT).show()
-
-        // Làm mới giao diện (coi như đã xử lý xong)
+        Toast.makeText(this, "Đã tin tưởng toàn bộ ${scanResults.size} mục.", Toast.LENGTH_SHORT).show()
         scanResults.clear()
         showScanResults()
     }
 
     private fun removeResultFromList(result: ScanResult) {
         val position = scanResults.indexOf(result)
-        if (position >= 0) {
+        if (position != -1) {
             scanResults.removeAt(position)
             resultAdapter.notifyItemRemoved(position)
-
-            // Nếu danh sách trống thì cập nhật lại giao diện thành An toàn
             if (scanResults.isEmpty()) {
                 showScanResults()
             }
         }
     }
 
-    // --- UI HELPERS ---
+    private fun removeResultFromListByIdentifier(identifier: String) {
+        val position = scanResults.indexOfFirst { it.identifier == identifier }
+        if (position != -1) {
+            scanResults.removeAt(position)
+            resultAdapter.notifyItemRemoved(position)
+            if (scanResults.isEmpty()) {
+                showScanResults()
+            }
+        }
+    }
 
     private fun updateUIState(state: ScanState, message: String) {
         statusDesc.text = message
@@ -334,6 +366,9 @@ class SecurityScanActivity : AppCompatActivity() {
                 statusIcon.setColorFilter(ContextCompat.getColor(this, R.color.white))
                 statusTitle.text = "ĐANG QUÉT..."
                 statusTitle.setTextColor(ContextCompat.getColor(this, R.color.white))
+                actionLayout.visibility = View.GONE
+                recyclerView.visibility = View.GONE
+                resultHeader.visibility = View.GONE
             }
             ScanState.SAFE -> {
                 progressBar.visibility = View.GONE
@@ -342,13 +377,11 @@ class SecurityScanActivity : AppCompatActivity() {
                 statusTitle.text = "AN TOÀN"
                 statusTitle.setTextColor(0xFF00FF00.toInt())
             }
-
             ScanState.SUSPICIOUS -> {
                 statusIcon.setImageResource(R.drawable.warning)
                 statusIcon.setColorFilter(0xFFFFA500.toInt())
                 statusTitle.text = "NGHI NGỜ"
                 statusTitle.setTextColor(0xFFFFA500.toInt())
-
             }
             ScanState.DANGEROUS -> {
                 statusIcon.setImageResource(R.drawable.dangerous)
@@ -363,55 +396,47 @@ class SecurityScanActivity : AppCompatActivity() {
     enum class ThreatLevel { SAFE, SUSPICIOUS, DANGEROUS }
 
     // --- ADAPTER ---
-
     class ScanResultAdapter(
         private val list: List<ScanResult>,
         private val onTrustClick: (ScanResult) -> Unit,
-        private val onUninstallClick: (ScanResult) -> Unit
+        private val onActionClick: (ScanResult) -> Unit
     ) : RecyclerView.Adapter<ScanResultAdapter.ViewHolder>() {
-
         class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
             val icon: ImageView = view.findViewById(R.id.item_app_icon)
             val name: TextView = view.findViewById(R.id.item_app_name)
-            val pkg: TextView = view.findViewById(R.id.item_pkg_name)
+            val identifierText: TextView = view.findViewById(R.id.item_pkg_name)
             val level: TextView = view.findViewById(R.id.item_threat_level)
             val reasons: TextView = view.findViewById(R.id.item_reasons)
             val btnTrust: Button = view.findViewById(R.id.btn_trust_item)
-            val btnUninstall: Button = view.findViewById(R.id.btn_uninstall_item)
+            val btnAction: Button = view.findViewById(R.id.btn_uninstall_item)
         }
-
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
             val view = LayoutInflater.from(parent.context).inflate(R.layout.item_scan_check, parent, false)
             return ViewHolder(view)
         }
-
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val item = list[position]
-
-            holder.name.text = item.appName
-            holder.pkg.text = item.packageName
+            holder.name.text = item.displayName
+            holder.identifierText.text = item.identifier
             holder.reasons.text = item.reasons.joinToString("\n")
 
-            // Lấy icon app
-            try {
-                val icon = holder.itemView.context.packageManager.getApplicationIcon(item.packageName)
-                holder.icon.setImageDrawable(icon)
-            } catch (e: Exception) {
-                holder.icon.setImageResource(R.mipmap.ic_launcher)
-            }
-
-            if (item.level == ThreatLevel.DANGEROUS) {
-                holder.level.text = "NGUY HIỂM"
-                holder.level.backgroundTintList = ContextCompat.getColorStateList(holder.itemView.context, android.R.color.holo_red_dark)
+            if (item.isApp) {
+                try {
+                    holder.icon.setImageDrawable(holder.itemView.context.packageManager.getApplicationIcon(item.identifier))
+                } catch (e: Exception) { holder.icon.setImageResource(R.mipmap.ic_launcher) }
+                holder.btnAction.text = "Gỡ cài đặt"
             } else {
-                holder.level.text = "NGHI NGỜ"
-                holder.level.backgroundTintList = ContextCompat.getColorStateList(holder.itemView.context, android.R.color.holo_orange_dark)
+                holder.icon.setImageResource(android.R.drawable.ic_menu_save) // Icon cho file
+                holder.btnAction.text = "Xóa tệp"
             }
-
+            if (item.level == ThreatLevel.DANGEROUS) {
+                holder.level.text = "NGUY HIỂM"; holder.level.backgroundTintList = ContextCompat.getColorStateList(holder.itemView.context, android.R.color.holo_red_dark)
+            } else {
+                holder.level.text = "NGHI NGỜ"; holder.level.backgroundTintList = ContextCompat.getColorStateList(holder.itemView.context, android.R.color.holo_orange_dark)
+            }
             holder.btnTrust.setOnClickListener { onTrustClick(item) }
-            holder.btnUninstall.setOnClickListener { onUninstallClick(item) }
+            holder.btnAction.setOnClickListener { onActionClick(item) }
         }
-
         override fun getItemCount() = list.size
     }
 }

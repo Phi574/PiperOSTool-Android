@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
+import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -19,6 +20,11 @@ import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.*
 import java.util.concurrent.Executor
 import kotlin.random.Random
+import android.os.Build
+import android.os.Environment
+import android.provider.Settings
+import androidx.activity.result.contract.ActivityResultContracts
+
 
 class SplashScreenActivity : AppCompatActivity() {
 
@@ -53,6 +59,39 @@ class SplashScreenActivity : AppCompatActivity() {
         }, 3500)
     }
 
+    private val storagePermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) {
+        // Sau khi người dùng tương tác, kiểm tra lại
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            if (!Environment.isExternalStorageManager()) {
+                Toast.makeText(this, "Quyền truy cập tệp tin là bắt buộc để quét mã độc.", Toast.LENGTH_LONG).show()
+                // Bạn có thể đóng app nếu không có quyền
+                finish()
+            } else {
+                // Đã có quyền, tiếp tục vào app
+                checkBiometric()
+            }
+        }
+    }
+
+    private fun checkAndRequestStoragePermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) { // Android 11+
+            if (!Environment.isExternalStorageManager()) {
+                val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
+                val uri = Uri.fromParts("package", packageName, null)
+                intent.data = uri
+                storagePermissionLauncher.launch(intent)
+            } else {
+                // Đã có quyền, tiếp tục vào app
+                checkBiometric()
+            }
+        } else { // Android 10 trở xuống
+            // Logic xin quyền READ/WRITE_EXTERNAL_STORAGE (nếu cần)
+            // Với các phiên bản cũ, quyền đã khai báo trong Manifest thường là đủ
+            checkBiometric()
+        }
+    }
     private fun setupBiometric() {
         executor = ContextCompat.getMainExecutor(this)
 
@@ -135,7 +174,7 @@ class SplashScreenActivity : AppCompatActivity() {
             override fun onAnimationStart(animation: android.animation.Animator) {}
             override fun onAnimationEnd(animation: android.animation.Animator) {
                 handler.postDelayed({
-                    checkBiometric()
+                    checkAndRequestStoragePermission()
                 }, 1000)
             }
             override fun onAnimationCancel(animation: android.animation.Animator) {}
