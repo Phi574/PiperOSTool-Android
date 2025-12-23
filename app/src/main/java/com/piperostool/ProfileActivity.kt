@@ -62,10 +62,6 @@ class ProfileActivity : AppCompatActivity() {
             Toast.makeText(this, "Tính năng đang phát triển", Toast.LENGTH_SHORT).show()
         }
 
-        // Nút Settings
-        findViewById<TextView>(R.id.btnSettings).setOnClickListener {
-            startActivity(Intent(this, SettingGeneral::class.java))
-        }
 
         // Nút Đăng xuất
         findViewById<TextView>(R.id.btnLogout).setOnClickListener {

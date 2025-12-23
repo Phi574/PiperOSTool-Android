@@ -6,8 +6,6 @@
     android:layout_height="match_parent"
     android:background="@color/black">
 
-    <!-- SỬA Ở ĐÂY: Đổi layout_height thành match_parent -->
-    <!-- DrawerLayout bắt buộc container phải là match_parent hoặc kích thước cố định -->
     <FrameLayout
         android:id="@+id/fragment_container"
         android:layout_width="match_parent"

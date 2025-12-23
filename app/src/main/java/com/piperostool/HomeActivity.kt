@@ -26,8 +26,17 @@ class HomeActivity : AppCompatActivity() {
     private lateinit var listIcons: List<ImageView>
     private lateinit var listTexts: List<TextView>
 
+    // Biến theo dõi tab hiện tại để tô màu lại khi onResume
+    private var currentTab = 0
+    // Biến lưu ngôn ngữ hiện tại để kiểm tra thay đổi
+    private var currentLangCode = "vi"
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Lưu lại ngôn ngữ lúc khởi tạo
+        val prefs = getSharedPreferences("PiperPrefs", Context.MODE_PRIVATE)
+        currentLangCode = prefs.getString("app_language", "vi") ?: "vi"
 
         // 1. Áp dụng ngôn ngữ trước khi setContentView
         applyAppLanguage()
@@ -39,8 +48,28 @@ class HomeActivity : AppCompatActivity() {
 
         // Load Fragment mặc định
         replaceFragment(homeFragment())
-        updateTabUI(0)
+        // Không gọi updateTabUI(0) ở đây nữa, để onResume lo
+        currentTab = 0
     }
+
+    // --- BỔ SUNG QUAN TRỌNG: Cập nhật giao diện khi quay lại từ Settings ---
+    override fun onResume() {
+        super.onResume()
+
+        // 1. Kiểm tra xem ngôn ngữ có bị đổi trong Settings không
+        val prefs = getSharedPreferences("PiperPrefs", Context.MODE_PRIVATE)
+        val savedLang = prefs.getString("app_language", "vi") ?: "vi"
+
+        if (savedLang != currentLangCode) {
+            // Nếu ngôn ngữ đã đổi, reload lại toàn bộ HomeActivity
+            recreate()
+            return
+        }
+
+        // 2. Cập nhật lại màu sắc Theme (vì onCreate không chạy lại)
+        updateTabUI(currentTab)
+    }
+    // ----------------------------------------------------------------------
 
     // Hàm áp dụng ngôn ngữ
     private fun applyAppLanguage() {
@@ -81,24 +110,31 @@ class HomeActivity : AppCompatActivity() {
     private fun setupListeners() {
         btnHome.setOnClickListener {
             replaceFragment(homeFragment())
+            currentTab = 0
             updateTabUI(0)
         }
         btnModul.setOnClickListener {
             startActivity(Intent(this, MaintenanceActivity::class.java))
+            currentTab = 1
             updateTabUI(1)
         }
         btnApps.setOnClickListener {
             startActivity(Intent(this, MaintenanceActivity::class.java))
+            currentTab = 2
             updateTabUI(2)
         }
 
         btnSettings.setOnClickListener {
+            // Chuyển sang SettingFragment (nếu bạn vẫn dùng Fragment)
+            // Hoặc nếu bạn muốn mở SettingGeneral Activity từ tab này thì dùng startActivity
             replaceFragment(SettingFragment())
+            currentTab = 3
             updateTabUI(3)
         }
 
         btnDevices.setOnClickListener {
             startActivity(Intent(this, MaintenanceActivity::class.java))
+            currentTab = 4
             updateTabUI(4)
         }
     }
@@ -112,17 +148,15 @@ class HomeActivity : AppCompatActivity() {
     private fun updateTabUI(selectedIndex: Int) {
         val prefs = getSharedPreferences("PiperPrefs", Context.MODE_PRIVATE)
 
-
         val theme = prefs.getString("app_theme", "system")
 
         val activeColorCode = when (theme) {
             "purple" -> Color.parseColor("#E040FB") // Màu Tím
             "green" -> Color.parseColor("#00FF00")  // Màu Xanh Neon
-
             else -> Color.parseColor("#FF000000")
         }
 
-        // Màu khi không được chọn (thường là xám)
+
         val unselectedColor = ContextCompat.getColor(this, R.color.nav_unselected)
 
         for (i in listIcons.indices) {
@@ -137,5 +171,4 @@ class HomeActivity : AppCompatActivity() {
             }
         }
     }
-
 }

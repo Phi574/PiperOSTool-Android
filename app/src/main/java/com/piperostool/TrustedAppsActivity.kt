@@ -1,0 +1,150 @@
+package com.piperostool
+
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.os.Bundle
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.widget.Button
+import android.widget.ImageView
+import android.widget.TextView
+import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+
+class TrustedAppsActivity : AppCompatActivity() {
+
+    private lateinit var recyclerView: RecyclerView
+    private lateinit var tvEmpty: TextView
+    private lateinit var adapter: TrustedAppAdapter
+    private val trustedList = mutableListOf<TrustedAppInfo>()
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_trusted_apps)
+
+        // Nút Back
+        findViewById<ImageView>(R.id.btnBack).setOnClickListener { finish() }
+
+        recyclerView = findViewById(R.id.recyclerTrustedApps)
+        tvEmpty = findViewById(R.id.tvEmpty)
+
+        setupRecyclerView()
+        loadTrustedApps()
+    }
+
+    private fun setupRecyclerView() {
+        adapter = TrustedAppAdapter(trustedList,
+            onRemoveClick = { appInfo ->
+                removeFromWhitelist(appInfo.packageName)
+            },
+            onUninstallClick = { appInfo ->
+                uninstallApp(appInfo.packageName)
+            }
+        )
+        recyclerView.layoutManager = LinearLayoutManager(this)
+        recyclerView.adapter = adapter
+    }
+
+    private fun loadTrustedApps() {
+        trustedList.clear()
+        val prefs = getSharedPreferences("PiperSecurityPrefs", Context.MODE_PRIVATE)
+        val whitelist = prefs.getStringSet("whitelist", emptySet()) ?: emptySet()
+
+        if (whitelist.isEmpty()) {
+            tvEmpty.visibility = View.VISIBLE
+            recyclerView.visibility = View.GONE
+        } else {
+            tvEmpty.visibility = View.GONE
+            recyclerView.visibility = View.VISIBLE
+
+            val pm = packageManager
+            for (pkgName in whitelist) {
+                try {
+                    val appInfo = pm.getApplicationInfo(pkgName, 0)
+                    val label = pm.getApplicationLabel(appInfo).toString()
+                    val icon = pm.getApplicationIcon(appInfo)
+                    trustedList.add(TrustedAppInfo(pkgName, label, icon))
+                } catch (e: Exception) {
+                    // App có thể đã bị gỡ nhưng vẫn còn trong whitelist -> Tự động xóa
+                    removeFromWhitelist(pkgName, showToast = false)
+                }
+            }
+            adapter.notifyDataSetChanged()
+        }
+    }
+
+    private fun removeFromWhitelist(pkgName: String, showToast: Boolean = true) {
+        val prefs = getSharedPreferences("PiperSecurityPrefs", Context.MODE_PRIVATE)
+        val whitelist = prefs.getStringSet("whitelist", HashSet())?.toMutableSet()
+
+        if (whitelist?.remove(pkgName) == true) {
+            prefs.edit().putStringSet("whitelist", whitelist).apply()
+
+            // Cập nhật lại list hiển thị
+            val itemToRemove = trustedList.find { it.packageName == pkgName }
+            if (itemToRemove != null) {
+                val position = trustedList.indexOf(itemToRemove)
+                trustedList.removeAt(position)
+                adapter.notifyItemRemoved(position)
+            }
+
+            if (showToast) Toast.makeText(this, "Đã xóa khỏi danh sách tin tưởng", Toast.LENGTH_SHORT).show()
+
+            if (trustedList.isEmpty()) {
+                tvEmpty.visibility = View.VISIBLE
+            }
+        }
+    }
+
+    private fun uninstallApp(pkgName: String) {
+        val intent = Intent(Intent.ACTION_DELETE)
+        intent.data = Uri.parse("package:$pkgName")
+        startActivity(intent)
+        // Lưu ý: Sau khi gỡ xong, onResume sẽ cần load lại list để xóa app đó đi
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Reload lại để kiểm tra xem có app nào vừa bị gỡ không
+        loadTrustedApps()
+    }
+
+    // --- Data Class & Adapter ---
+    data class TrustedAppInfo(val packageName: String, val label: String, val icon: android.graphics.drawable.Drawable)
+
+    class TrustedAppAdapter(
+        private val list: List<TrustedAppInfo>,
+        private val onRemoveClick: (TrustedAppInfo) -> Unit,
+        private val onUninstallClick: (TrustedAppInfo) -> Unit
+    ) : RecyclerView.Adapter<TrustedAppAdapter.ViewHolder>() {
+
+        class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+            val imgIcon: ImageView = view.findViewById(R.id.imgAppIcon)
+            val tvName: TextView = view.findViewById(R.id.tvAppName)
+            val tvPkg: TextView = view.findViewById(R.id.tvPkgName)
+            val btnRemove: Button = view.findViewById(R.id.btnRemoveTrust)
+            val btnUninstall: Button = view.findViewById(R.id.btnUninstall)
+        }
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+            val view = LayoutInflater.from(parent.context).inflate(R.layout.item_trusted_app, parent, false)
+            return ViewHolder(view)
+        }
+
+        override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+            val item = list[position]
+            holder.tvName.text = item.label
+            holder.tvPkg.text = item.packageName
+            holder.imgIcon.setImageDrawable(item.icon)
+
+            holder.btnRemove.setOnClickListener { onRemoveClick(item) }
+            holder.btnUninstall.setOnClickListener { onUninstallClick(item) }
+        }
+
+        override fun getItemCount() = list.size
+    }
+}

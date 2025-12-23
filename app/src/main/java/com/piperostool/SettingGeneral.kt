@@ -1,6 +1,7 @@
 package com.piperostool
 
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.widget.Button
@@ -12,20 +13,32 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import com.bumptech.glide.Glide
 
-// Kế thừa từ AppCompatActivity thay vì Fragment
 class SettingGeneral : AppCompatActivity() {
     private lateinit var imgGifPreview: ImageView
     private val PREF_NAME = "PiperPrefs"
 
-    // Trình chọn ảnh
-    private val pickMedia = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+    // SỬA: Dùng OpenDocument để có quyền truy cập lâu dài
+    private val pickMedia = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
         if (uri != null) {
-            saveStringPref("custom_gif_uri", uri.toString())
-            saveBooleanPref("is_using_custom_gif", true)
-            loadPreview(uri.toString())
-            Toast.makeText(this, "Đã cập nhật ảnh bìa! Vui lòng quay lại Home.", Toast.LENGTH_SHORT).show()
+            try {
+                val takeFlags: Int = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                contentResolver.takePersistableUriPermission(uri, takeFlags)
+
+                // Lưu URI vào bộ nhớ
+                saveStringPref("custom_gif_uri", uri.toString())
+                saveBooleanPref("is_using_custom_gif", true)
+
+                // Hiển thị preview
+                loadPreview(uri.toString())
+
+                Toast.makeText(this, "Đã cập nhật ảnh bìa! Vui lòng quay lại Home.", Toast.LENGTH_SHORT).show()
+            } catch (e: Exception) {
+                e.printStackTrace()
+                Toast.makeText(this, "Không thể cấp quyền truy cập ảnh này: ${e.message}", Toast.LENGTH_LONG).show()
+            }
         }
     }
+
 
     // Dùng onCreate thay vì onCreateView và onViewCreated
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -44,8 +57,9 @@ class SettingGeneral : AppCompatActivity() {
         // 2. Load cài đặt cũ
         loadSavedSettings()
 
-        // 3. Xử lý ảnh GIF
-        btnUpload.setOnClickListener { pickMedia.launch("image/*") }
+        btnUpload.setOnClickListener {
+            pickMedia.launch(arrayOf("image/*"))
+        }
 
         btnSystem.setOnClickListener {
             saveBooleanPref("is_using_custom_gif", false)

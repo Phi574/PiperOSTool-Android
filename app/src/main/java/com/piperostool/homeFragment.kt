@@ -12,6 +12,7 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.cardview.widget.CardView
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
@@ -19,16 +20,20 @@ import com.bumptech.glide.Glide
 
 class homeFragment : Fragment() {
 
+    // ... (Giữ nguyên các biến cũ)
     private lateinit var backgroundImageView: ImageView
     private lateinit var appVersionTextView: TextView
     private lateinit var deviceInfoTextView: TextView
-
-    // Các biến cho Menu
     private lateinit var drawerLayout: DrawerLayout
     private lateinit var menuIcon: ImageView
     private lateinit var menuVersionText: TextView
     private lateinit var btnCheckUpdate: LinearLayout
     private lateinit var viewProfile: LinearLayout
+    private lateinit var btnTrustedApps: LinearLayout
+    private lateinit var btnSettingGeneral: LinearLayout
+
+    // THÊM MỚI
+    private lateinit var cardSecurityCheck: CardView
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -40,66 +45,53 @@ class homeFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
-        updateHeaderGif() // Cập nhật lại ảnh mỗi khi vào màn hình
+        updateHeaderGif()
     }
 
+    // ... (Giữ nguyên hàm updateHeaderGif) ...
     private fun updateHeaderGif() {
-        // Đọc cài đặt từ SharedPreferences
-        // Kiểm tra xem context có null không để tránh crash
+        /* Code cũ của bạn */
         if (context == null) return
-
         val prefs = requireContext().getSharedPreferences("PiperPrefs", Context.MODE_PRIVATE)
-
         val isCustom = prefs.getBoolean("is_using_custom_gif", false)
         val scaleTypeString = prefs.getString("gif_scale_type", "CENTER_CROP")
-
-        // 1. Chỉnh Scale Type (Căn chỉnh)
-        backgroundImageView.scaleType = if (scaleTypeString == "FIT_CENTER")
-            ImageView.ScaleType.FIT_CENTER else ImageView.ScaleType.CENTER_CROP
-
-        // 2. Load Ảnh
+        backgroundImageView.scaleType =
+            if (scaleTypeString == "FIT_CENTER") ImageView.ScaleType.FIT_CENTER else ImageView.ScaleType.CENTER_CROP
         if (isCustom) {
             val uriString = prefs.getString("custom_gif_uri", "")
             if (!uriString.isNullOrEmpty()) {
-                // Load ảnh người dùng chọn
                 try {
-                    Glide.with(this)
-                        .load(Uri.parse(uriString))
-                        .placeholder(R.drawable.home_gif) // Ảnh chờ
+                    Glide.with(this).load(Uri.parse(uriString)).placeholder(R.drawable.home_gif)
                         .into(backgroundImageView)
                 } catch (e: Exception) {
-                    // Nếu lỗi (ví dụ file bị xóa), load mặc định
                     Glide.with(this).asGif().load(R.drawable.home_gif).into(backgroundImageView)
                 }
             }
         } else {
-            // Load ảnh mặc định hệ thống
-            Glide.with(this)
-                .asGif()
-                .load(R.drawable.home_gif)
-                .into(backgroundImageView)
+            Glide.with(this).asGif().load(R.drawable.home_gif).into(backgroundImageView)
         }
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
-        // Ánh xạ các view cũ
+        // Ánh xạ View cũ
+        btnTrustedApps = view.findViewById(R.id.btn_trusted_apps)
         backgroundImageView = view.findViewById(R.id.background_image_view)
         appVersionTextView = view.findViewById(R.id.app_version_info)
         deviceInfoTextView = view.findViewById(R.id.device_info)
-
-        // Ánh xạ các view mới (Menu Drawer)
         drawerLayout = view.findViewById(R.id.drawer_layout)
         menuIcon = view.findViewById(R.id.menu_icon)
-        menuVersionText = view.findViewById(R.id.menu_version_text)
-        btnCheckUpdate = view.findViewById(R.id.btn_check_update)
+        btnSettingGeneral = view.findViewById(R.id.btn_setting_general)
         viewProfile = view.findViewById(R.id.view_Profile)
+        // menuVersionText = view.findViewById(R.id.menu_version_text) // Hãy chắc chắn ID này đúng trong Drawer của bạn
+        // btnCheckUpdate = view.findViewById(R.id.btn_check_update)
 
-        // Load ảnh lần đầu
+        // THÊM MỚI: Ánh xạ Card Security
+        cardSecurityCheck = view.findViewById(R.id.cardSecurityCheck)
+
         updateHeaderGif()
 
-        // Lấy thông tin version
+        // ... (Code lấy version và setup text giữ nguyên) ...
         val appVersion = try {
             val context = requireContext()
             val pInfo = context.packageManager.getPackageInfo(context.packageName, 0)
@@ -109,20 +101,31 @@ class homeFragment : Fragment() {
         }
 
         appVersionTextView.text = "Phiên bản: $appVersion"
-        val deviceInfo = "Thiết bị: " + Build.MODEL
-        deviceInfoTextView.text = deviceInfo
+        deviceInfoTextView.text = "Thiết bị: " + Build.MODEL
 
-        menuVersionText.text = "v$appVersion"
-
+        // Menu Click Listeners (Giữ nguyên)
         menuIcon.setOnClickListener {
-            if (!drawerLayout.isDrawerOpen(GravityCompat.END)) {
-                drawerLayout.openDrawer(GravityCompat.END)
-            }
+            if (!drawerLayout.isDrawerOpen(GravityCompat.END)) drawerLayout.openDrawer(GravityCompat.END)
         }
 
-        btnCheckUpdate.setOnClickListener {
+
+        // THÊM MỚI: Sự kiện bấm nút Security Check
+        cardSecurityCheck.setOnClickListener {
+            val intent = Intent(requireContext(), SecurityScanActivity::class.java)
+            // Gửi cờ để biết là người dùng tự bấm (Manual Check)
+            intent.putExtra("IS_MANUAL_CHECK", true)
+            startActivity(intent)
+        }
+
+        btnTrustedApps.setOnClickListener {
             drawerLayout.closeDrawer(GravityCompat.END)
-            val intent = Intent(requireContext(), MaintenanceActivity::class.java)
+            val intent = Intent(requireContext(), TrustedAppsActivity::class.java)
+            startActivity(intent)
+        }
+
+        btnSettingGeneral.setOnClickListener {
+            drawerLayout.closeDrawer(GravityCompat.END)
+            val intent = Intent(requireContext(), SettingGeneral::class.java)
             startActivity(intent)
         }
 
