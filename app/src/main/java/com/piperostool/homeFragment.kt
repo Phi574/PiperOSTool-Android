@@ -29,6 +29,7 @@ class homeFragment : Fragment() {
     private lateinit var menuVersionText: TextView
     private lateinit var btnCheckUpdate: LinearLayout
     private lateinit var viewProfile: LinearLayout
+    private lateinit var viewAbout: LinearLayout
     private lateinit var btnTrustedApps: LinearLayout
     private lateinit var btnSettingGeneral: LinearLayout
 
@@ -83,6 +84,7 @@ class homeFragment : Fragment() {
         menuIcon = view.findViewById(R.id.menu_icon)
         btnSettingGeneral = view.findViewById(R.id.btn_setting_general)
         viewProfile = view.findViewById(R.id.view_Profile)
+        viewAbout = view.findViewById(R.id.view_About)
         // menuVersionText = view.findViewById(R.id.menu_version_text) // Hãy chắc chắn ID này đúng trong Drawer của bạn
         // btnCheckUpdate = view.findViewById(R.id.btn_check_update)
 
@@ -132,6 +134,11 @@ class homeFragment : Fragment() {
         viewProfile.setOnClickListener {
             drawerLayout.closeDrawer(GravityCompat.END)
             val intent = Intent(requireContext(), ProfileActivity::class.java)
+            startActivity(intent)
+        }
+        viewAbout.setOnClickListener {
+            drawerLayout.closeDrawer(GravityCompat.END)
+            val intent = Intent(requireContext(), AboutActivity::class.java)
             startActivity(intent)
         }
     }

@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/black"
+    android:gravity="center_horizontal"
+    android:orientation="vertical"
+    android:padding="32dp">
+
+    <!-- HEADER: Nút đăng xuất ở góc phải -->
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <!-- Nút Đăng Xuất -->
+        <LinearLayout
+            android:id="@+id/btnLogout"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:gravity="center"
+            android:background="?attr/selectableItemBackground"
+            android:padding="8dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Đăng xuất"
+                android:textColor="#FF5252"
+                android:textStyle="bold"
+                android:textSize="14sp"
+                android:layout_marginEnd="5dp"/>
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/exit"
+                app:tint="#FF5252"/>
+            <!-- Lưu ý: Đảm bảo bạn có icon logout hoặc đổi src thành icon có sẵn -->
+        </LinearLayout>
+    </RelativeLayout>
+
+    <!-- Khoảng trống -->
+    <Space
+        android:layout_width="match_parent"
+        android:layout_height="30dp" />
+
+    <ImageView
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_marginBottom="24dp"
+        android:src="@drawable/lock"
+        app:tint="@color/white" />
+
+    <TextView
+        android:id="@+id/tvTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        android:text="Bảo mật"
+        android:textColor="@color/white"
+        android:textSize="22sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/tvSubTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="40dp"
+        android:gravity="center"
+        android:text="Đang tải dữ liệu..."
+        android:textColor="#B0B0B0"
+        android:textSize="14sp" />
+
+    <!-- LAYOUT CHO PIN (DOTS) -->
+    <RelativeLayout
+        android:id="@+id/layoutPinInput"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="24dp"
+        android:visibility="gone">
+
+        <!-- Các chấm tròn hiển thị -->
+        <LinearLayout
+            android:id="@+id/llDotsContainer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:orientation="horizontal"
+            android:padding="10dp">
+        </LinearLayout>
+
+        <!-- EditText ẨN -->
+        <EditText
+            android:id="@+id/etPinHidden"
+            android:layout_width="1dp"
+            android:layout_height="1dp"
+            android:background="@null"
+            android:cursorVisible="false"
+            android:inputType="numberPassword"
+            android:textColor="@android:color/transparent"
+            android:layout_alignParentTop="true"/>
+    </RelativeLayout>
+
+    <!-- LAYOUT CHO CUSTOM PASSWORD -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/tilPassword"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="24dp"
+        android:visibility="visible"
+        app:boxStrokeColor="#00FF00"
+        app:cursorColor="#00FF00"
+        app:hintTextColor="#00FF00"
+        app:passwordToggleEnabled="true"
+        app:passwordToggleTint="@color/bg_dark">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etPassword"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:backgroundTint="@color/nav_unselected"
+            android:inputType="textPassword"
+            android:textColor="@color/chip_pending"
+            android:textSize="18sp" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <Button
+        android:id="@+id/btnConfirm"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:backgroundTint="#00FF00"
+        android:paddingVertical="12dp"
+        android:text="Xác nhận"
+        android:textColor="@color/black"
+        android:textSize="16sp"
+        android:textStyle="bold" />
+
+    <LinearLayout
+        android:id="@+id/layoutFingerprint"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="30dp"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:visibility="visible">
+
+        <ImageView
+            android:id="@+id/ivFingerprintIcon"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@drawable/fingerprint"
+            app:tint="#00FF00" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Chạm vào cảm biến vân tay"
+            android:textColor="#00FF00"
+            android:textSize="12sp" />
+    </LinearLayout>
+
+</LinearLayout>

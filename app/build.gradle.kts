@@ -12,7 +12,7 @@ android {
 
     defaultConfig {
         applicationId = "com.piper.os.tool"
-        minSdk = 23
+        minSdk = 24
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
@@ -51,6 +51,7 @@ dependencies {
     implementation("com.google.android.material:material:1.12.0")
     implementation("com.hbb20:ccp:2.7.3")
     implementation("androidx.biometric:biometric:1.1.0")
+    implementation("com.google.firebase:firebase-database")
     implementation(libs.glide)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

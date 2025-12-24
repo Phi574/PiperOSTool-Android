@@ -4,27 +4,29 @@ import android.animation.AnimatorSet
 import android.animation.ObjectAnimator
 import android.content.Context
 import android.content.Intent
-import android.net.ConnectivityManager
-import android.net.NetworkCapabilities
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.os.Environment
 import android.os.Handler
 import android.os.Looper
+import android.provider.Settings
 import android.view.animation.DecelerateInterpolator
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import androidx.biometric.BiometricPrompt // Import đúng
+import androidx.biometric.BiometricManager
+import androidx.biometric.BiometricPrompt
 import androidx.core.content.ContextCompat
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
 import kotlinx.coroutines.*
 import java.util.concurrent.Executor
 import kotlin.random.Random
-import android.os.Build
-import android.os.Environment
-import android.provider.Settings
-import androidx.activity.result.contract.ActivityResultContracts
-
 
 class SplashScreenActivity : AppCompatActivity() {
 
@@ -34,11 +36,10 @@ class SplashScreenActivity : AppCompatActivity() {
     private val handler = Handler(Looper.getMainLooper())
     private var codeRainJob: Job? = null
 
-    // --- Biometric Components ---
+    // --- Thêm logic Biometric vào đây ---
     private lateinit var executor: Executor
     private lateinit var biometricPrompt: BiometricPrompt
     private lateinit var promptInfo: BiometricPrompt.PromptInfo
-    // ----------------------------
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -48,10 +49,9 @@ class SplashScreenActivity : AppCompatActivity() {
         appNameTextView = findViewById(R.id.appNameTextView)
         developerTextView = findViewById(R.id.developerTextView)
 
-        // Setup Biometric
+        // Khởi tạo Biometric
         setupBiometric()
 
-        // Start UI effects
         startCodeRainEffect()
         handler.postDelayed({
             stopCodeRainEffect()
@@ -62,90 +62,149 @@ class SplashScreenActivity : AppCompatActivity() {
     private val storagePermissionLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) {
-        // Sau khi người dùng tương tác, kiểm tra lại
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            if (!Environment.isExternalStorageManager()) {
-                Toast.makeText(this, "Quyền truy cập tệp tin là bắt buộc để quét mã độc.", Toast.LENGTH_LONG).show()
-                // Bạn có thể đóng app nếu không có quyền
-                finish()
-            } else {
-                // Đã có quyền, tiếp tục vào app
-                checkBiometric()
-            }
-        }
+        checkNavigation()
     }
 
     private fun checkAndRequestStoragePermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) { // Android 11+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             if (!Environment.isExternalStorageManager()) {
                 val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
                 val uri = Uri.fromParts("package", packageName, null)
                 intent.data = uri
                 storagePermissionLauncher.launch(intent)
             } else {
-                // Đã có quyền, tiếp tục vào app
-                checkBiometric()
+                checkNavigation()
             }
-        } else { // Android 10 trở xuống
-            // Logic xin quyền READ/WRITE_EXTERNAL_STORAGE (nếu cần)
-            // Với các phiên bản cũ, quyền đã khai báo trong Manifest thường là đủ
-            checkBiometric()
+        } else {
+            checkNavigation()
         }
     }
-    private fun setupBiometric() {
-        executor = ContextCompat.getMainExecutor(this)
 
-        biometricPrompt = BiometricPrompt(this, executor,
-            object : BiometricPrompt.AuthenticationCallback() {
-                override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
-                    super.onAuthenticationError(errorCode, errString)
-                    // Nếu lỗi không phải do người dùng tự hủy -> Đăng xuất
-                    if (errorCode != BiometricPrompt.ERROR_USER_CANCELED && errorCode != BiometricPrompt.ERROR_NEGATIVE_BUTTON) {
-                        Toast.makeText(applicationContext, "Xác thực thất bại, vui lòng đăng nhập lại.", Toast.LENGTH_LONG).show()
-                        forceLogout()
-                    } else {
-                        // Người dùng tự hủy -> đóng app
-                        finish()
+    // --- LOGIC ĐIỀU HƯỚNG MỚI ---
+    private fun checkNavigation() {
+        val currentUser = FirebaseAuth.getInstance().currentUser
+        if (currentUser == null) {
+            // 1. Chưa đăng nhập -> Vào Welcome
+            navigateTo(WelcomeActivity::class.java)
+            return
+        }
+
+        // 2. Đã đăng nhập -> Kiểm tra các lớp bảo mật
+        val prefs = getSharedPreferences("PiperPrefs", Context.MODE_PRIVATE)
+        val isFingerprintEnabled = prefs.getBoolean("fingerprint_enabled", false)
+
+        val database = FirebaseDatabase.getInstance()
+        val userId = currentUser.uid
+        val myRef = database.getReference("users/$userId/security/password")
+
+        myRef.addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val hasPassword = snapshot.exists() && snapshot.value.toString().isNotEmpty()
+
+                when {
+                    // Ưu tiên 1: CÓ mật khẩu (có thể có hoặc không có vân tay)
+                    // -> Chuyển sang LockScreenActivity để xử lý toàn bộ logic (pass, vân tay, cấm...)
+                    hasPassword -> {
+                        val intent = Intent(this@SplashScreenActivity, LockScreenActivity::class.java)
+                        intent.putExtra("IS_UNLOCK_MODE", true)
+                        navigateTo(intent)
+                    }
+
+                    // Ưu tiên 2: KHÔNG có mật khẩu, nhưng CÓ vân tay
+                    isFingerprintEnabled -> {
+                        // -> Hiện popup quét vân tay ngay tại đây
+                        biometricPrompt.authenticate(promptInfo)
+                    }
+
+                    // Trường hợp còn lại: KHÔNG có cả hai
+                    else -> {
+                        navigateTo(HomeActivity::class.java)
                     }
                 }
+            }
 
+            override fun onCancelled(error: DatabaseError) {
+                // Lỗi mạng, tạm cho vào Home
+                navigateTo(HomeActivity::class.java)
+            }
+        })
+    }
+
+    // --- LOGIC BIOMETRIC (VÂN TAY) ---
+    private fun setupBiometric() {
+        executor = ContextCompat.getMainExecutor(this)
+        biometricPrompt = BiometricPrompt(this, executor,
+            object : BiometricPrompt.AuthenticationCallback() {
                 override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
                     super.onAuthenticationSucceeded(result)
-                    // Xác thực thành công -> Tiếp tục vào app
-                    proceedToApp()
+                    // Quét thành công -> Vào Home
+                    Toast.makeText(applicationContext, "Xác thực thành công!", Toast.LENGTH_SHORT).show()
+                    navigateTo(HomeActivity::class.java)
+                }
+
+                override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+                    super.onAuthenticationError(errorCode, errString)
+                    // Người dùng bấm Hủy hoặc lỗi -> Thoát ứng dụng
+                    // Điều này ngăn người dùng bypass khi chỉ có vân tay
+                    Toast.makeText(applicationContext, "Xác thực bị hủy.", Toast.LENGTH_SHORT).show()
+                    finish()
                 }
 
                 override fun onAuthenticationFailed() {
                     super.onAuthenticationFailed()
-                    // Vân tay không khớp, người dùng có thể thử lại
+                    // Vân tay không đúng, không làm gì cả, popup vẫn hiện để thử lại
+                    Toast.makeText(applicationContext, "Vân tay không đúng.", Toast.LENGTH_SHORT).show()
                 }
             })
 
         promptInfo = BiometricPrompt.PromptInfo.Builder()
-            .setTitle("Yêu cầu xác thực")
-            .setSubtitle("Sử dụng vân tay để mở Piper OS Tool")
-            .setNegativeButtonText("Thoát")
+            .setTitle("Xác thực vân tay")
+            .setSubtitle("Mở khóa Piper OS Tool")
+            .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG)
+            .setNegativeButtonText("Thoát") // Đổi nút "Sử dụng mật khẩu" thành "Thoát"
             .build()
     }
 
+
+    // Hàm điều hướng tiện ích
+    private fun navigateTo(activityClass: Class<*>) {
+        val intent = Intent(this, activityClass)
+        startActivity(intent)
+        finish()
+    }
+    private fun navigateTo(intent: Intent) {
+        startActivity(intent)
+        finish()
+    }
+
+
+    // --- Các hàm cũ giữ nguyên ---
     private fun startCodeRainEffect() {
+        // ... (Giữ nguyên)
         val random = Random(System.currentTimeMillis())
-        val screenWidth = resources.displayMetrics.widthPixels / codeRainTextView.textSize.toInt()
-        val screenHeight = resources.displayMetrics.heightPixels / codeRainTextView.textSize.toInt()
+        codeRainTextView.post {
+            val width = codeRainTextView.width
+            val height = codeRainTextView.height
+            if (width > 0 && height > 0) {
+                val textSize = if (codeRainTextView.textSize > 0) codeRainTextView.textSize.toInt() else 12
+                val screenWidth = width / textSize
+                val screenHeight = height / textSize
 
-        codeRainJob = CoroutineScope(Dispatchers.Default).launch {
-            val stringBuilder = StringBuilder()
-            val charPool: List<Char> = ('a'..'z') + ('A'..'Z') + ('0'..'9') + listOf('!', '@', '#', '$', '%', '^', '&', '*', '(', ')')
+                codeRainJob = CoroutineScope(Dispatchers.Default).launch {
+                    val stringBuilder = StringBuilder()
+                    val charPool: List<Char> = ('a'..'z') + ('A'..'Z') + ('0'..'9') + listOf('!', '@', '#', '$', '%', '^', '&', '*', '(', ')')
 
-            while (isActive) { // Tiếp tục chạy cho đến khi job bị hủy
-                stringBuilder.clear()
-                for (i in 0 until screenHeight * screenWidth) {
-                    stringBuilder.append(charPool[random.nextInt(charPool.size)])
+                    while (isActive) {
+                        stringBuilder.clear()
+                        for (i in 0 until screenHeight * screenWidth) {
+                            stringBuilder.append(charPool[random.nextInt(charPool.size)])
+                        }
+                        withContext(Dispatchers.Main) {
+                            codeRainTextView.text = stringBuilder.toString()
+                        }
+                        delay(50)
+                    }
                 }
-                withContext(Dispatchers.Main) {
-                    codeRainTextView.text = stringBuilder.toString()
-                }
-                delay(50)
             }
         }
     }
@@ -181,39 +240,6 @@ class SplashScreenActivity : AppCompatActivity() {
             override fun onAnimationRepeat(animation: android.animation.Animator) {}
         })
         animatorSet.start()
-    }
-
-    private fun checkBiometric() {
-        val prefs = getSharedPreferences("PiperPrefs", Context.MODE_PRIVATE)
-        val isFingerprintEnabled = prefs.getBoolean("fingerprint_enabled", false)
-        val currentUser = FirebaseAuth.getInstance().currentUser
-
-        if (isFingerprintEnabled && currentUser != null) {
-            biometricPrompt.authenticate(promptInfo)
-        } else {
-            proceedToApp()
-        }
-    }
-
-    private fun proceedToApp() {
-        val currentUser = FirebaseAuth.getInstance().currentUser
-
-        if (currentUser != null) {
-            val intent = Intent(this@SplashScreenActivity, HomeActivity::class.java)
-            startActivity(intent)
-        } else {
-            val intent = Intent(this@SplashScreenActivity, WelcomeActivity::class.java)
-            startActivity(intent)
-        }
-        finish()
-    }
-
-    private fun forceLogout() {
-        FirebaseAuth.getInstance().signOut()
-        val intent = Intent(this, WelcomeActivity::class.java)
-        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-        startActivity(intent)
-        finish()
     }
 
     override fun onDestroy() {

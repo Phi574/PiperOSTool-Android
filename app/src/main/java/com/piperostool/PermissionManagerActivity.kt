@@ -33,6 +33,67 @@ class PermissionManagerActivity : AppCompatActivity() {
         setupOptimizationButtons()
     }
 
+    fun openSettingsForPermission(context: Context, permissionName: String) {
+        val intent = Intent()
+
+        // Cờ này giúp mở activity mới mượt mà hơn từ adapter
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+
+        try {
+            when (permissionName) {
+                // 1. Quyền quản lý bộ nhớ (All Files Access) - Android 11+
+                "android.permission.MANAGE_EXTERNAL_STORAGE" -> {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                        intent.action = Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION
+                        intent.data = Uri.parse("package:${context.packageName}")
+                    } else {
+                        // Fallback cho Android thấp hơn (thường không cần quyền này)
+                        intent.action = Settings.ACTION_APPLICATION_DETAILS_SETTINGS
+                        intent.data = Uri.parse("package:${context.packageName}")
+                    }
+                }
+
+                // 2. Quyền truy cập dữ liệu sử dụng (Usage Stats)
+                "android.permission.PACKAGE_USAGE_STATS" -> {
+                    intent.action = Settings.ACTION_USAGE_ACCESS_SETTINGS
+                    // Lưu ý: Màn hình này thường liệt kê tất cả app, user phải tự tìm app để bật
+                }
+
+                // 3. Quyền truy cập thông báo (Notification Listener)
+                "android.permission.BIND_NOTIFICATION_LISTENER_SERVICE" -> {
+                    intent.action = Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS
+                }
+
+                // 4. Quyền tối ưu hóa Pin (Battery Optimization)
+                "android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" -> {
+                    intent.action = Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
+                    intent.data = Uri.parse("package:${context.packageName}")
+                }
+
+                // 5. Quyền vẽ lên trên ứng dụng khác (Overlay/System Alert Window)
+                "android.permission.SYSTEM_ALERT_WINDOW" -> {
+                    intent.action = Settings.ACTION_MANAGE_OVERLAY_PERMISSION
+                    intent.data = Uri.parse("package:${context.packageName}")
+                }
+
+                // 6. Các quyền thường (Camera, Mic, Storage cơ bản...) & Trường hợp mặc định
+                else -> {
+                    intent.action = Settings.ACTION_APPLICATION_DETAILS_SETTINGS
+                    intent.data = Uri.parse("package:${context.packageName}")
+                }
+            }
+
+            context.startActivity(intent)
+
+        } catch (e: Exception) {
+            // Phòng trường hợp máy không hỗ trợ Intent đó, mở cài đặt chung của App
+            val fallbackIntent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+            fallbackIntent.data = Uri.parse("package:${context.packageName}")
+            fallbackIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.startActivity(fallbackIntent)
+            e.printStackTrace()
+        }
+    }
     private fun loadAndDisplayPermissions() {
         permissionContainer.removeAllViews()
         try {
@@ -40,23 +101,26 @@ class PermissionManagerActivity : AppCompatActivity() {
             val requestedPermissions = packageInfo.requestedPermissions
 
             if (requestedPermissions.isNullOrEmpty()) {
-                addPermissionView("Không yêu cầu quyền đặc biệt nào.", true)
+                // Sửa: Truyền null hoặc string rỗng vì không có quyền để click
+                addPermissionView("Không yêu cầu quyền đặc biệt nào.", true, "")
                 return
             }
 
             for (permission in requestedPermissions) {
                 val isGranted = ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
                 val simpleName = permission.substringAfterLast('.')
-                addPermissionView("$simpleName: ${if (isGranted) "Đã cấp" else "Chưa cấp"}", isGranted)
+
+                // Sửa: Truyền thêm biến 'permission' vào hàm này
+                addPermissionView("$simpleName: ${if (isGranted) "Đã cấp" else "Chưa cấp"}", isGranted, permission)
             }
         } catch (e: Exception) {
             e.printStackTrace()
         }
     }
 
-    private fun addPermissionView(permissionText: String, isGranted: Boolean) {
+    private fun addPermissionView(permissionText: String, isGranted: Boolean, permissionName: String) {
         val inflater = LayoutInflater.from(this)
-        val permissionView = inflater.inflate(R.layout.item_permission_view, permissionContainer, false)
+        val permissionView =            inflater.inflate(R.layout.item_permission_view, permissionContainer, false)
 
         val icon = permissionView.findViewById<ImageView>(R.id.permission_icon)
         val text = permissionView.findViewById<TextView>(R.id.permission_text)
@@ -65,11 +129,34 @@ class PermissionManagerActivity : AppCompatActivity() {
         if (isGranted) {
             icon.setImageResource(R.drawable.check_circle)
             icon.setColorFilter(ContextCompat.getColor(this, android.R.color.holo_green_light))
+
+            // Quyền đã cấp thì không cần click, hoặc click để thông báo
+            permissionView.setOnClickListener {
+                Toast.makeText(this, "Quyền này đã được cấp!", Toast.LENGTH_SHORT).show()
+            }
         } else {
             icon.setImageResource(R.drawable.cancel_circle)
             icon.setColorFilter(ContextCompat.getColor(this, android.R.color.holo_red_light))
-        }
 
+            // === PHẦN THÊM MỚI: BẤM ĐỂ CẤP QUYỀN ===
+            // Nếu chưa cấp quyền, làm cho dòng này có thể bấm được
+            permissionView.isClickable = true
+            permissionView.isFocusable = true
+
+            // (Tuỳ chọn) Thêm hiệu ứng gợn sóng (ripple) hoặc đổi màu nền nhẹ để user biết bấm được
+            // permissionView.setBackgroundResource(android.R.drawable.list_selector_background)
+
+            permissionView.setOnClickListener {
+                if (permissionName.isNotEmpty()) {
+                    Toast.makeText(
+                        this,
+                        "Đang mở cài đặt cho quyền: ${permissionName.substringAfterLast('.')}",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    openSettingsForPermission(this, permissionName)
+                }
+            }
+        }
         permissionContainer.addView(permissionView)
     }
 

@@ -1,7 +1,6 @@
 package com.piperostool
 
 import android.content.Context
-import android.content.Intent
 import android.content.res.ColorStateList
 import android.content.res.Configuration
 import android.graphics.Color
@@ -9,6 +8,8 @@ import android.os.Bundle
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
@@ -31,6 +32,10 @@ class HomeActivity : AppCompatActivity() {
     // Biến lưu ngôn ngữ hiện tại để kiểm tra thay đổi
     private var currentLangCode = "vi"
 
+    // Biến cho logic thoát app
+    private var backPressedTime: Long = 0
+    private lateinit var backToast: Toast
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -45,10 +50,10 @@ class HomeActivity : AppCompatActivity() {
 
         initViews()
         setupListeners()
+        setupBackPressHandler() // Cài đặt xử lý nút Back
 
         // Load Fragment mặc định
         replaceFragment(homeFragment())
-        // Không gọi updateTabUI(0) ở đây nữa, để onResume lo
         currentTab = 0
     }
 
@@ -70,6 +75,32 @@ class HomeActivity : AppCompatActivity() {
         updateTabUI(currentTab)
     }
     // ----------------------------------------------------------------------
+
+    // --- LOGIC XỬ LÝ NÚT BACK (2 lần để thoát) ---
+    private fun setupBackPressHandler() {
+        val callback = object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                // Nếu đang không ở Tab Home (0), quay về Home trước
+                if (currentTab != 0) {
+                    replaceFragment(homeFragment())
+                    currentTab = 0
+                    updateTabUI(0)
+                    return
+                }
+
+                // Nếu đang ở Tab Home, kiểm tra thời gian bấm
+                if (backPressedTime + 2000 > System.currentTimeMillis()) {
+                    backToast.cancel()
+                    finish() // Thoát app
+                } else {
+                    backToast = Toast.makeText(baseContext, "Bấm lần nữa để thoát", Toast.LENGTH_SHORT)
+                    backToast.show()
+                }
+                backPressedTime = System.currentTimeMillis()
+            }
+        }
+        onBackPressedDispatcher.addCallback(this, callback)
+    }
 
     // Hàm áp dụng ngôn ngữ
     private fun applyAppLanguage() {
@@ -151,9 +182,11 @@ class HomeActivity : AppCompatActivity() {
         val activeColorCode = when (theme) {
             "purple" -> Color.parseColor("#E040FB") // Màu Tím
             "green" -> Color.parseColor("#00FF00")  // Màu Xanh Neon
-            else -> Color.parseColor("#FF000000")
+            else -> Color.parseColor("#FF000000") // Màu đen mặc định nếu lỗi (thực tế nên handle tốt hơn)
         }
 
+        // Fix lỗi Color.parseColor nếu theme hệ thống trả về null hoặc chuỗi sai
+        // Trong thực tế bạn nên có logic check theme hệ thống ở SettingFragment
 
         val unselectedColor = ContextCompat.getColor(this, R.color.nav_unselected)
 

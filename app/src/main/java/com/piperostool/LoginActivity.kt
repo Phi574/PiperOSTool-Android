@@ -89,13 +89,15 @@ class LoginActivity : AppCompatActivity() {
         val password = etPassword.text.toString().trim()
 
         if (email.isEmpty()) {
-            tilEmail.error = "Vui lòng nhập email"
+            tilEmail.error = "Vui lòng nhập Email"
             return false
         }
+
         if (password.isEmpty()) {
-            tilPassword.error = "Vui lòng nhập mật khẩu"
+            tilPassword.error = "Vui lòng nhập Mật khẩu"
             return false
         }
+
         return true
     }
 
@@ -112,11 +114,13 @@ class LoginActivity : AppCompatActivity() {
                 if (task.isSuccessful) {
                     val userId = auth.currentUser?.uid
                     if (userId != null) {
-                        fetchUserInfo(userId)
+                        // Đăng nhập thành công -> Kiểm tra bảo mật trước khi vào Home
+                        checkSecurityAndProceed(userId)
                     } else {
                         finishLoginProcess()
                     }
                 } else {
+                    // Đăng nhập thất bại
                     btnLogin.isEnabled = true
                     btnLogin.text = "Log In"
                     btnLogin.alpha = 1.0f
@@ -124,7 +128,29 @@ class LoginActivity : AppCompatActivity() {
                 }
             }
     }
+    private fun checkSecurityAndProceed(userId: String) {
+        val dbRef = com.google.firebase.database.FirebaseDatabase.getInstance().getReference("users/$userId/security/password")
 
+        dbRef.addListenerForSingleValueEvent(object : com.google.firebase.database.ValueEventListener {
+            override fun onDataChange(snapshot: com.google.firebase.database.DataSnapshot) {
+                if (snapshot.exists() && (snapshot.value as String).isNotEmpty()) {
+                    // Có password -> Sang LockScreen
+                    val intent = Intent(this@LoginActivity, LockScreenActivity::class.java)
+                    intent.putExtra("IS_UNLOCK_MODE", true)
+                    startActivity(intent)
+                    finish()
+                } else {
+                    // Không có password -> Sang Home
+                    finishLoginProcess()
+                }
+            }
+
+            override fun onCancelled(error: com.google.firebase.database.DatabaseError) {
+                // Lỗi mạng -> Vào Home luôn (hoặc xử lý khác tùy bạn)
+                finishLoginProcess()
+            }
+        })
+    }
     private fun fetchUserInfo(userId: String) {
         db.collection("users").document(userId)
             .get()

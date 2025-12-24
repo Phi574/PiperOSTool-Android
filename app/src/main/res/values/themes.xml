@@ -2,9 +2,9 @@
     <!-- Base application theme. -->
     <style name="Theme.PiperOSTool" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <!-- Primary brand color. -->
-        <item name="colorPrimary">#FFFFFF</item>
-        <item name="colorPrimaryVariant">#FFFFFF</item>
-        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorPrimary">#FB8D8D</item>
+        <item name="colorPrimaryVariant">#FB4C4C</item>
+        <item name="colorOnPrimary">#FFA5A5</item>
         <!-- Secondary brand color. -->
         <item name="colorSecondary">@color/teal_200</item>
         <item name="colorSecondaryVariant">@color/teal_700</item>
@@ -13,8 +13,8 @@
         <item name="android:statusBarColor">#000000</item>
     </style>
     <style name="Theme.App.Dialog" parent="Theme.AppCompat.Light.Dialog.Alert">
-            <item name="android:windowBackground">@android:color/transparent</item>
-            <item name="android:windowIsFloating">true</item>
-            <item name="android:windowNoTitle">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowIsFloating">true</item>
+        <item name="android:windowNoTitle">true</item>
     </style>
 </resources>
