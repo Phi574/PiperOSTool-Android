@@ -2,21 +2,17 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@android:color/black"> <TextView
-    android:id="@+id/codeRainTextView"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:fontFamily="monospace"
-    android:gravity="center"
-    android:textColor="#00FF00" android:textSize="12sp"
-    android:textStyle="bold" />
+    android:background="@android:color/black">
+
+    <!-- Đã xóa codeRainTextView -->
 
     <TextView
         android:id="@+id/appNameTextView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_centerInParent="true"
-        android:alpha="0.0" android:text="PIPER OS TOOL"
+        android:alpha="0.0"
+        android:text="PIPER OS TOOL"
         android:textColor="#FFFFFF"
         android:textSize="45sp"
         android:textStyle="bold" />
@@ -27,7 +23,9 @@
         android:layout_height="wrap_content"
         android:layout_below="@id/appNameTextView"
         android:layout_centerHorizontal="true"
-        android:layout_marginTop="25dp" android:alpha="0.0" android:text="Developed by Hoàng Văn Phi"
+        android:layout_marginTop="25dp"
+        android:alpha="0.0"
+        android:text="Developed by Hoàng Văn Phi"
         android:textColor="#FFFFFF"
         android:textSize="14sp"
         android:textStyle="bold" />

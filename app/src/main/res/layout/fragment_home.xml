@@ -158,211 +158,378 @@
     </androidx.constraintlayout.widget.ConstraintLayout>
 
 
-    <!-- PHẦN 2: MENU TRƯỢT TỪ PHẢI RA (Navigation Drawer) -->
-    <!-- layout_gravity="end" là mấu chốt để nó nằm bên phải -->
+    <!-- PHẦN2: MENU TRƯỢT TỪ PHẢI RA (Navigation Drawer) -->
+    <!-- Đổi background sang trắng, tăng width lên 300dp cho rộng rãi -->
     <LinearLayout
         android:id="@+id/nav_view"
-        android:layout_width="280dp"
+        android:layout_width="320dp"
         android:layout_height="match_parent"
         android:layout_gravity="end"
-        android:background="#1A1A1A"
+        android:background="#FFFFFF"
         android:orientation="vertical"
-        android:padding="20dp"
         android:clickable="true"
         android:focusable="true">
 
-        <!-- Header: Logo + Version Pill -->
-        <LinearLayout
+        <!-- 1. Nút Đóng Menu (Góc trên phải) -->
+        <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:layout_marginTop="30dp">
+            android:padding="16dp">
 
-            <!-- Logo App -->
-            <!-- Thay @mipmap/ic_launcher bằng logo của bạn -->
             <ImageView
-                android:layout_width="50dp"
-                android:layout_height="50dp"
-                android:src="@mipmap/ic_launcher" />
+                android:id="@+id/btn_close_menu"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_gravity="end"
+                android:src="@drawable/ic_close"
+                android:contentDescription="Close"
+                app:tint="#333333" />
+            <!-- Lưu ý: Bạn cần có icon ic_close hoặc dùng @android:drawable/ic_menu_close_clear_cancel -->
+        </FrameLayout>
 
-            <!-- Viên thuốc Version -->
-            <androidx.cardview.widget.CardView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="15dp"
-                app:cardBackgroundColor="#333333"
-                app:cardCornerRadius="15dp"
-                app:cardElevation="0dp">
-
-                <TextView
-                    android:id="@+id/menu_version_text"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:paddingHorizontal="12dp"
-                    android:paddingVertical="6dp"
-                    android:text="v1.0"
-                    android:textColor="#00FF00"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
-            </androidx.cardview.widget.CardView>
-        </LinearLayout>
-
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:layout_marginTop="20dp"
-            android:layout_marginBottom="20dp"
-            android:background="#333333"/>
-        <!-- Mục Check Profile -->
+        <!-- 2. Header: User Profile (Avatar + Tên) -->
+        <!-- Map với ID view_Profile cũ để giữ logic click -->
         <LinearLayout
             android:id="@+id/view_Profile"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="?attr/selectableItemBackground"
-            android:clickable="true"
-            android:focusable="true"
-            android:gravity="center_vertical"
             android:orientation="horizontal"
-            android:paddingVertical="12dp">
-
-            <ImageView
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:src="@drawable/user"
-                app:tint="@color/white" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="15dp"
-                android:text="Profile"
-                android:textColor="@color/white"
-                android:textSize="16sp"
-                android:textStyle="bold" />
-
-        </LinearLayout>
-        <!-- Mục Check Update -->
-        <LinearLayout
-            android:id="@+id/btn_check_update"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="?attr/selectableItemBackground"
-            android:clickable="true"
-            android:focusable="true"
             android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:paddingVertical="12dp">
+            android:paddingHorizontal="24dp"
+            android:paddingBottom="24dp"
+            android:background="?attr/selectableItemBackground">
 
-            <ImageView
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:src="@drawable/update"
-                app:tint="@color/white" />
+            <!-- Avatar -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="50dp"
+                android:layout_height="50dp"
+                app:cardCornerRadius="25dp"
+                app:cardElevation="0dp"
+                app:cardBackgroundColor="#F0F0F0">
+                <ImageView
+                    android:id="@+id/img_avatar"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:src="@drawable/user"
+                    android:padding="10dp"
+                    app:tint="#555555"
+                    android:scaleType="centerCrop"/>
+            </androidx.cardview.widget.CardView>
 
-            <TextView
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="15dp"
-                android:text="Check Update"
-                android:textColor="@color/white"
-                android:textSize="16sp"
-                android:textStyle="bold" />
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:layout_marginStart="16dp">
 
-        </LinearLayout>
+                <TextView
+                    android:id="@+id/tv_user_name"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="PIPER USER"
+                    android:textColor="#333333"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
 
-        <LinearLayout
-            android:id="@+id/btn_setting_general"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="?attr/selectableItemBackground"
-            android:clickable="true"
-            android:focusable="true"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:paddingVertical="12dp">
-
-            <ImageView
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:src="@drawable/settings"
-                app:tint="@color/white" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="15dp"
-                android:text="Setting General"
-                android:textColor="@color/white"
-                android:textSize="16sp"
-                android:textStyle="bold" />
-
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Hồ sơ người dùng"
+                        android:textColor="#3D5AFE"
+                        android:textSize="14sp"
+                        android:textStyle="bold"/>
+                    <ImageView
+                        android:layout_width="12dp"
+                        android:layout_height="12dp"
+                        android:src="@android:drawable/arrow_down_float"
+                        android:rotation="-90"
+                        app:tint="#3D5AFE"
+                        android:layout_marginStart="4dp"/>
+                </LinearLayout>
+            </LinearLayout>
         </LinearLayout>
 
-        <LinearLayout
-            android:id="@+id/btn_trusted_apps"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="?attr/selectableItemBackground"
-            android:clickable="true"
-            android:focusable="true"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:paddingVertical="12dp">
-
-            <ImageView
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:src="@drawable/check_circle"
-                app:tint="@color/white" />
-            <!-- Dùng icon check_circle đã có -->
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="15dp"
-                android:text="Trusted Apps"
-                android:textColor="@color/white"
-                android:textSize="16sp"
-                android:textStyle="bold" />
-
-
-        </LinearLayout>
-
+        <!-- Divider mờ -->
         <View
             android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:layout_marginTop="20dp"
-            android:layout_marginBottom="20dp"
-            android:background="#333333"/>
-        <!-- Mục Check Profile -->
+            android:layout_height="8dp"
+            android:background="#F5F7FA"/>
+
+        <!-- 3. Danh sách Menu -->
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingTop="16dp">
+
+                <!-- Mục: Trusted Apps (Map giao diện Cấu hình) -->
+                <LinearLayout
+                    android:id="@+id/btn_trusted_apps"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingVertical="16dp"
+                    android:paddingHorizontal="24dp">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/check_circle"
+                        app:tint="#3D5AFE" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="16dp"
+                        android:text="Cấu hình &amp; Tin cậy"
+                        android:textColor="#333333"
+                        android:textSize="16sp" />
+
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:src="@android:drawable/arrow_down_float"
+                        android:rotation="-90"
+                        app:tint="#CCCCCC"/>
+                </LinearLayout>
+
+                <!-- Mục: Setting General (Map giao diện Cài đặt) -->
+                <LinearLayout
+                    android:id="@+id/btn_setting_general"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingVertical="16dp"
+                    android:paddingHorizontal="24dp">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/settings"
+                        app:tint="#3D5AFE" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="16dp"
+                        android:text="Cài đặt chung"
+                        android:textColor="#333333"
+                        android:textSize="16sp" />
+
+                    <!-- Badge NEW -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="NEW"
+                        android:textSize="10sp"
+                        android:textColor="#FFFFFF"
+                        android:background="#FF3D00"
+                        android:paddingHorizontal="6dp"
+                        android:paddingVertical="2dp"
+                        android:layout_marginEnd="8dp"
+                        android:textStyle="bold"/>
+
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:src="@android:drawable/arrow_down_float"
+                        android:rotation="-90"
+                        app:tint="#CCCCCC"/>
+                </LinearLayout>
+
+                <!-- Mục: Check Update -->
+                <LinearLayout
+                    android:id="@+id/btn_check_update"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingVertical="16dp"
+                    android:paddingHorizontal="24dp">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/update"
+                        app:tint="#3D5AFE" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="16dp"
+                        android:text="Kiểm tra cập nhật"
+                        android:textColor="#333333"
+                        android:textSize="16sp" />
+
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:src="@android:drawable/arrow_down_float"
+                        android:rotation="-90"
+                        app:tint="#CCCCCC"/>
+                </LinearLayout>
+
+                <!-- Mục: About (Giả lập mục Hội viên) -->
+                <LinearLayout
+                    android:id="@+id/view_About"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingVertical="16dp"
+                    android:paddingHorizontal="24dp">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@android:drawable/ic_menu_info_details"
+                        app:tint="#3D5AFE" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="16dp"
+                        android:text="Thông tin &amp; Giới thiệu"
+                        android:textColor="#333333"
+                        android:textSize="16sp" />
+
+                    <androidx.cardview.widget.CardView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        app:cardBackgroundColor="#E0E0E0"
+                        app:cardCornerRadius="10dp"
+                        app:cardElevation="0dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Basic"
+                            android:paddingHorizontal="8dp"
+                            android:paddingVertical="2dp"
+                            android:textColor="#555"
+                            android:textSize="12sp"
+                            android:textStyle="bold"/>
+                    </androidx.cardview.widget.CardView>
+                </LinearLayout>
+
+            </LinearLayout>
+        </ScrollView>
+
+        <!-- 4. Footer: Language, Logout, Version -->
         <LinearLayout
-            android:id="@+id/view_About"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="?attr/selectableItemBackground"
-            android:clickable="true"
-            android:focusable="true"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:paddingVertical="12dp">
+            android:orientation="vertical"
+            android:padding="24dp">
 
-            <ImageView
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:src="@drawable/about"
-                app:tint="@color/white" />
-
-            <TextView
-                android:layout_width="wrap_content"
+            <!-- Language -->
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="15dp"
-                android:text="About"
-                android:textColor="@color/white"
-                android:textSize="16sp"
-                android:textStyle="bold" />
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingVertical="12dp">
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/ic_menu_globe"/>
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Ngôn ngữ"
+                    android:textColor="#333"
+                    android:textSize="16sp"
+                    android:layout_marginStart="16dp"/>
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Tiếng Việt"
+                    android:textColor="#3D5AFE"
+                    android:textStyle="bold"/>
+            </LinearLayout>
+
+            <!-- Logout -->
+            <LinearLayout
+                android:id="@+id/btn_logout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingVertical="12dp"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true">
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@android:drawable/ic_lock_power_off"
+                    app:tint="#3D5AFE"/>
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Đăng xuất"
+                    android:textColor="#333"
+                    android:textSize="16sp"
+                    android:layout_marginStart="16dp"/>
+            </LinearLayout>
+
+            <!-- Version -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="20dp"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:id="@+id/menu_version_text"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="v1.0 (Build 1)"
+                    android:textColor="#555"
+                    android:textSize="14sp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Phiên bản mới nhất"
+                    android:textColor="#3D5AFE"
+                    android:textSize="12sp"
+                    android:textStyle="bold"/>
+            </LinearLayout>
 
         </LinearLayout>
+
     </LinearLayout>
+
 
 </androidx.drawerlayout.widget.DrawerLayout>
