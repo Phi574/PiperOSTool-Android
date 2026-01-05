@@ -112,7 +112,7 @@
                     android:id="@+id/tvFullName"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="HOANG VAN PHI"
+                    android:text="Người dùng Piper OS Tool"
                     android:textSize="20sp"
                     android:textStyle="bold"
                     android:textColor="#333333"
@@ -139,7 +139,7 @@
                         android:id="@+id/tvUserId"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="0393367261"
+                        android:text="..."
                         android:textColor="#3D5AFE"
                         android:textStyle="bold"/>
                 </LinearLayout>
@@ -157,27 +157,29 @@
                 <!-- Box 1: Bảo vệ -->
                 <LinearLayout
                     android:layout_width="0dp"
-                    android:layout_height="wrap_content"
+                    android:layout_height="match_parent"
+                    android:layout_marginEnd="9dp"
                     android:layout_weight="1"
                     android:background="@drawable/bg_white_rounded"
-                    android:orientation="horizontal"
+                    android:elevation="2dp"
                     android:gravity="center_vertical"
-                    android:padding="12dp"
-                    android:layout_marginEnd="8dp"
-                    android:elevation="2dp">
+                    android:orientation="horizontal"
+                    android:padding="12dp">
+
                     <ImageView
                         android:layout_width="24dp"
                         android:layout_height="24dp"
                         android:src="@drawable/security"
-                        app:tint="#757575"/>
+                        app:tint="#757575" />
+
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
                         android:text="Kích hoạt để\nđược bảo vệ"
-                        android:textSize="12sp"
                         android:textColor="#333"
-                        android:textStyle="bold"
-                        android:layout_marginStart="8dp"/>
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
                 </LinearLayout>
 
                 <!-- Box 2: Hội viên -->
@@ -217,81 +219,6 @@
                     </LinearLayout>
                 </LinearLayout>
             </LinearLayout>
-
-            <!-- CARD LOYALTY -->
-            <androidx.cardview.widget.CardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                app:cardBackgroundColor="#FFFFFF"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="2dp">
-
-                <androidx.constraintlayout.widget.ConstraintLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:padding="16dp">
-
-                    <TextView
-                        android:id="@+id/lblLoyalty"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="ĐIỂM LOYALTY"
-                        android:textSize="10sp"
-                        android:textColor="#757575"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toTopOf="parent"/>
-
-                    <LinearLayout
-                        android:id="@+id/layoutPoints"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical"
-                        app:layout_constraintTop_toBottomOf="@id/lblLoyalty"
-                        app:layout_constraintStart_toStartOf="parent">
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="0"
-                            android:textSize="24sp"
-                            android:textStyle="bold"
-                            android:textColor="#333"/>
-                        <ImageView
-                            android:layout_width="20dp"
-                            android:layout_height="20dp"
-                            android:src="@drawable/modul"
-                            app:tint="#FFD700"
-                            android:layout_marginStart="8dp"/>
-                    </LinearLayout>
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Tích điểm  >"
-                        android:textColor="#3D5AFE"
-                        android:textStyle="bold"
-                        android:textSize="12sp"
-                        android:layout_marginTop="8dp"
-                        app:layout_constraintTop_toBottomOf="@id/layoutPoints"
-                        app:layout_constraintStart_toStartOf="parent"/>
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Đổi quà"
-                        android:textColor="#FFFFFF"
-                        android:textStyle="bold"
-                        android:paddingHorizontal="20dp"
-                        android:paddingVertical="8dp"
-                        android:background="@drawable/bg_button_rounded_blue"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintBottom_toBottomOf="parent"
-                        app:layout_constraintTop_toTopOf="parent"/>
-
-                </androidx.constraintlayout.widget.ConstraintLayout>
-            </androidx.cardview.widget.CardView>
-
             <!-- CARD DANH SÁCH MENU -->
             <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
