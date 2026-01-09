@@ -57,7 +57,6 @@ class HomeActivity : AppCompatActivity() {
         currentTab = 0
     }
 
-    // --- BỔ SUNG QUAN TRỌNG: Cập nhật giao diện khi quay lại từ Settings ---
     override fun onResume() {
         super.onResume()
 
@@ -74,9 +73,7 @@ class HomeActivity : AppCompatActivity() {
         // 2. Cập nhật lại màu sắc Theme (vì onCreate không chạy lại)
         updateTabUI(currentTab)
     }
-    // ----------------------------------------------------------------------
 
-    // --- LOGIC XỬ LÝ NÚT BACK (2 lần để thoát) ---
     private fun setupBackPressHandler() {
         val callback = object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
@@ -102,7 +99,6 @@ class HomeActivity : AppCompatActivity() {
         onBackPressedDispatcher.addCallback(this, callback)
     }
 
-    // Hàm áp dụng ngôn ngữ
     private fun applyAppLanguage() {
         val prefs = getSharedPreferences("PiperPrefs", Context.MODE_PRIVATE)
         val lang = prefs.getString("app_language", "vi") ?: "vi"
@@ -140,63 +136,81 @@ class HomeActivity : AppCompatActivity() {
 
     private fun setupListeners() {
         btnHome.setOnClickListener {
-            replaceFragment(homeFragment())
-            currentTab = 0
-            updateTabUI(0)
+            if (currentTab != 0) {
+                replaceFragment(homeFragment())
+                currentTab = 0
+                updateTabUI(0)
+            }
         }
         btnModul.setOnClickListener {
-            replaceFragment(ModuleFragment())
-            currentTab = 1
-            updateTabUI(1)
+            if (currentTab != 1) {
+                replaceFragment(ModuleFragment())
+                currentTab = 1
+                updateTabUI(1)
+            }
         }
         btnApps.setOnClickListener {
-            replaceFragment(AppsFragment())
-            currentTab = 2
-            updateTabUI(2)
+            if (currentTab != 2) {
+                replaceFragment(AppsFragment())
+                currentTab = 2
+                updateTabUI(2)
+            }
         }
-
         btnSettings.setOnClickListener {
-            replaceFragment(SettingFragment())
-            currentTab = 3
-            updateTabUI(3)
+            if (currentTab != 3) {
+                replaceFragment(SettingFragment())
+                currentTab = 3
+                updateTabUI(3)
+            }
         }
-
         btnDevices.setOnClickListener {
-            replaceFragment(DevicesFragment())
-            currentTab = 4
-            updateTabUI(4)
+            if (currentTab != 4) {
+                replaceFragment(DevicesFragment())
+                currentTab = 4
+                updateTabUI(4)
+            }
         }
     }
 
+    // ==========================================================
+    // THAY ĐỔI CHÍNH TẠI ĐÂY: Thêm hiệu ứng chuyển động
+    // ==========================================================
     private fun replaceFragment(fragment: Fragment) {
         val transaction = supportFragmentManager.beginTransaction()
+
+        // Thêm animation cho fragment mới vào (fade_in) và fragment cũ ra (fade_out)
+        transaction.setCustomAnimations(
+            R.anim.fade_in,
+            R.anim.fade_out
+        )
+
         transaction.replace(R.id.fragment_container, fragment)
         transaction.commit()
     }
+    // ==========================================================
 
     private fun updateTabUI(selectedIndex: Int) {
         val prefs = getSharedPreferences("PiperPrefs", Context.MODE_PRIVATE)
-
         val theme = prefs.getString("app_theme", "system")
 
+        // Logic lấy màu chủ đạo
         val activeColorCode = when (theme) {
-            "purple" -> Color.parseColor("#E040FB") // Màu Tím
-            "green" -> Color.parseColor("#00FF00")  // Màu Xanh Neon
-            else -> Color.parseColor("#FF000000") // Màu đen mặc định nếu lỗi (thực tế nên handle tốt hơn)
+            "purple" -> Color.parseColor("#E040FB")
+            "green" -> Color.parseColor("#00FF00")
+            else -> {
+                // Xử lý theme hệ thống (ví dụ, lấy màu primary của app)
+                // Nếu không muốn phức tạp, có thể mặc định về một màu nào đó
+                ContextCompat.getColor(this, R.color.nav_selected) // Giả sử bạn có màu này trong colors.xml
+            }
         }
-
-        // Fix lỗi Color.parseColor nếu theme hệ thống trả về null hoặc chuỗi sai
-        // Trong thực tế bạn nên có logic check theme hệ thống ở SettingFragment
 
         val unselectedColor = ContextCompat.getColor(this, R.color.nav_unselected)
 
         for (i in listIcons.indices) {
             if (i == selectedIndex) {
-                // Áp dụng màu động (Active)
                 listIcons[i].imageTintList = ColorStateList.valueOf(activeColorCode)
                 listTexts[i].setTextColor(activeColorCode)
             } else {
-                // Áp dụng màu tĩnh (Unselected)
                 listIcons[i].imageTintList = ColorStateList.valueOf(unselectedColor)
                 listTexts[i].setTextColor(unselectedColor)
             }
