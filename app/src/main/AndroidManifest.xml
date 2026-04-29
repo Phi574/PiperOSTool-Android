@@ -41,45 +41,23 @@
             </intent-filter>
         </service>
 
-        <service
-            android:name=".DeviceService"
-            android:enabled="true"
-            android:exported="false"
-            android:foregroundServiceType="dataSync" />
-
         <activity
-            android:name=".SplashScreenActivity"
-            android:exported="true"
-            android:theme="@style/Theme.AppCompat.NoActionBar">
+            android:name=".SplashScreenActivity" android:exported="true" android:theme="@style/Theme.AppCompat.NoActionBar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 
-        <activity android:name=".LoginActivity" android:exported="false" />
-        <activity android:name=".SignupActivity" android:exported="false" />
-        <activity android:name=".ForgotPassword" android:exported="false" />
+        <activity android:name=".LoginActivity" android:exported="false" android:theme="@style/Theme.AppCompat.Light.NoActionBar"/>/>
+        <activity android:name=".SignupActivity" android:exported="false" android:theme="@style/Theme.AppCompat.Light.NoActionBar"/>/>
+        <activity android:name=".ForgotPassword" android:exported="false" android:theme="@style/Theme.AppCompat.Light.NoActionBar"/>/>
         <activity
             android:name=".HomeActivity"
             android:exported="false"
             android:launchMode="singleTask" />
-
-        <activity android:name=".ProfileActivity" android:exported="false" android:theme="@style/Theme.AppCompat.NoActionBar" />
-        <activity android:name=".SettingGeneral" android:exported="false" />
-        <activity android:name=".SecurityScanActivity" android:exported="false" android:theme="@style/Theme.AppCompat.NoActionBar"/>
-
-        <receiver android:name=".AppInstallReceiver" android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.PACKAGE_ADDED" />
-                <data android:scheme="package" />
-            </intent-filter>
-        </receiver>
-
-        <activity android:name=".TrustedAppsActivity" android:exported="false" android:theme="@style/Theme.AppCompat.NoActionBar" />
         <activity android:name=".PermissionManagerActivity" android:exported="false" android:theme="@style/Theme.App.Dialog" />
         <activity android:name=".WelcomeActivity" android:exported="false" android:theme="@style/Theme.AppCompat.Light.NoActionBar"/>
-        <activity android:name=".AboutActivity" android:exported="false" android:theme="@style/Theme.AppCompat.NoActionBar" />
         <activity android:name=".LockScreenActivity" android:exported="false" android:screenOrientation="portrait" />
 
         <receiver

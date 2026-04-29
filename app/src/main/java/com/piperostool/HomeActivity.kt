@@ -200,7 +200,7 @@ class HomeActivity : AppCompatActivity() {
             else -> {
                 // Xử lý theme hệ thống (ví dụ, lấy màu primary của app)
                 // Nếu không muốn phức tạp, có thể mặc định về một màu nào đó
-                ContextCompat.getColor(this, R.color.nav_selected) // Giả sử bạn có màu này trong colors.xml
+                ContextCompat.getColor(this, R.color.green_neon) // Giả sử bạn có màu này trong colors.xml
             }
         }
 

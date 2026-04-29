@@ -1,12 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/black"
+    android:padding="20dp">
+
+<LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
     android:gravity="center_horizontal"
     android:orientation="vertical"
-    android:padding="32dp">
+    android:padding="39dp">
 
     <!-- HEADER: Nút đăng xuất ở góc phải -->
     <RelativeLayout
@@ -119,8 +124,15 @@
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/etPassword"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:backgroundTint="@color/nav_unselected"
+            android:layout_height="70dp"
+            android:layout_marginHorizontal="20dp"
+            android:layout_marginBottom="20dp"
+            android:background="@drawable/bg_glass_input"
+            app:cardCornerRadius="35dp"
+            app:cardElevation="10dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
             android:inputType="textPassword"
             android:textColor="@color/chip_pending"
             android:textSize="18sp" />
@@ -129,11 +141,17 @@
     <Button
         android:id="@+id/btnConfirm"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:backgroundTint="#00FF00"
-        android:paddingVertical="12dp"
+        android:layout_height="70dp"
+        android:layout_marginHorizontal="20dp"
+        android:layout_marginBottom="20dp"
+        android:background="@drawable/bg_glass_input"
+        app:cardCornerRadius="35dp"
+        app:cardElevation="10dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
         android:text="Xác nhận"
-        android:textColor="@color/black"
+        android:textColor="@color/white"
         android:textSize="16sp"
         android:textStyle="bold" />
 
@@ -151,15 +169,16 @@
             android:layout_width="40dp"
             android:layout_height="40dp"
             android:src="@drawable/fingerprint"
-            app:tint="#00FF00" />
+            app:tint="@color/white" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:text="Chạm vào cảm biến vân tay"
-            android:textColor="#00FF00"
+            android:textColor="@color/white"
             android:textSize="12sp" />
     </LinearLayout>
 
 </LinearLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>
