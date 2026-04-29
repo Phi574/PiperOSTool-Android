@@ -1,29 +1,28 @@
 package com.piperostool
 
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
+import android.view.WindowInsets
+import android.view.WindowManager
 import android.widget.Button
+import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import com.google.android.material.textfield.TextInputEditText
-import com.google.android.material.textfield.TextInputLayout
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
+
 class LoginActivity : AppCompatActivity() {
 
-    // Khai báo View
-    private lateinit var tilEmail: TextInputLayout
-    private lateinit var etEmail: TextInputEditText
-    private lateinit var tilPassword: TextInputLayout
-    private lateinit var etPassword: TextInputEditText
+    // SỬA: Đổi sang EditText thuần để khớp với giao diện LiquidGlass (Không dùng TextInputLayout nữa)
+    private lateinit var etEmail: EditText
+    private lateinit var etPassword: EditText
     private lateinit var btnLogin: Button
     private lateinit var tvGoToSignUp: TextView
-
-    // ĐÃ SỬA: Đưa biến này ra ngoài để dùng chung
     private lateinit var tvForgotPassword: TextView
 
     // Khai báo Firebase
@@ -32,7 +31,18 @@ class LoginActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         setContentView(R.layout.login_screen)
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            window.insetsController?.hide(WindowInsets.Type.statusBars())
+        } else {
+            @Suppress("DEPRECATION")
+            window.setFlags(
+                WindowManager.LayoutParams.FLAG_FULLSCREEN,
+                WindowManager.LayoutParams.FLAG_FULLSCREEN
+            )
+        }
 
         auth = Firebase.auth
         db = Firebase.firestore
@@ -50,16 +60,11 @@ class LoginActivity : AppCompatActivity() {
     }
 
     private fun initViews() {
-        tilEmail = findViewById(R.id.tilEmailLogin)
-        etEmail = tilEmail.editText as TextInputEditText
-
-        tilPassword = findViewById(R.id.tilPasswordLogin)
-        etPassword = tilPassword.editText as TextInputEditText
-
+        // SỬA: Map ID chuẩn theo file login_screen.xml mới
+        etEmail = findViewById(R.id.edtUsername)
+        etPassword = findViewById(R.id.edtPassword)
         btnLogin = findViewById(R.id.btnLogin)
-        tvGoToSignUp = findViewById(R.id.tvGoToSignUp)
-
-        // ĐÃ SỬA: Gán ID cho biến toàn cục
+        tvGoToSignUp = findViewById(R.id.tvSignUp) // Cập nhật đúng ID nút Đăng ký
         tvForgotPassword = findViewById(R.id.tvForgotPassword)
     }
 
@@ -75,13 +80,13 @@ class LoginActivity : AppCompatActivity() {
             startActivity(intent)
         }
 
-        // ĐÃ SỬA: Gọi đúng tên Activity mới sẽ tạo ở Bước 2
         tvForgotPassword.setOnClickListener {
             startActivity(Intent(this, ForgotPassword::class.java))
         }
 
-        etEmail.setOnFocusChangeListener { _, _ -> tilEmail.error = null }
-        etPassword.setOnFocusChangeListener { _, _ -> tilPassword.error = null }
+        // Xóa lỗi khi người dùng bấm vào ô nhập
+        etEmail.setOnFocusChangeListener { _, hasFocus -> if (hasFocus) etEmail.error = null }
+        etPassword.setOnFocusChangeListener { _, hasFocus -> if (hasFocus) etPassword.error = null }
     }
 
     private fun validateInput(): Boolean {
@@ -89,12 +94,12 @@ class LoginActivity : AppCompatActivity() {
         val password = etPassword.text.toString().trim()
 
         if (email.isEmpty()) {
-            tilEmail.error = "Vui lòng nhập Email"
+            etEmail.error = "Vui lòng nhập Username/Email"
             return false
         }
 
         if (password.isEmpty()) {
-            tilPassword.error = "Vui lòng nhập Mật khẩu"
+            etPassword.error = "Vui lòng nhập Password"
             return false
         }
 
@@ -105,29 +110,30 @@ class LoginActivity : AppCompatActivity() {
         val email = etEmail.text.toString().trim()
         val password = etPassword.text.toString().trim()
 
+        // Hiệu ứng nút bấm khi loading
         btnLogin.isEnabled = false
-        btnLogin.text = "Signing in..."
-        btnLogin.alpha = 0.7f
+        btnLogin.text = "LOADING..."
+        btnLogin.alpha = 0.5f
 
         auth.signInWithEmailAndPassword(email, password)
             .addOnCompleteListener(this) { task ->
                 if (task.isSuccessful) {
                     val userId = auth.currentUser?.uid
                     if (userId != null) {
-                        // Đăng nhập thành công -> Kiểm tra bảo mật trước khi vào Home
+
                         checkSecurityAndProceed(userId)
                     } else {
                         finishLoginProcess()
                     }
                 } else {
-                    // Đăng nhập thất bại
                     btnLogin.isEnabled = true
-                    btnLogin.text = "Log In"
+                    btnLogin.text = "LOGIN"
                     btnLogin.alpha = 1.0f
-                    Toast.makeText(this, "Đăng nhập lỗi: ${task.exception?.message}", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this, "Kiểm tra lại thông tin: ${task.exception?.message}", Toast.LENGTH_LONG).show()
                 }
             }
     }
+
     private fun checkSecurityAndProceed(userId: String) {
         val dbRef = com.google.firebase.database.FirebaseDatabase.getInstance().getReference("users/$userId/security/password")
 
@@ -141,37 +147,38 @@ class LoginActivity : AppCompatActivity() {
                     finish()
                 } else {
                     // Không có password -> Sang Home
-                    finishLoginProcess()
+                    fetchUserInfo(userId) // Gọi hàm lấy tên User thay vì gọi finish luôn
                 }
             }
 
             override fun onCancelled(error: com.google.firebase.database.DatabaseError) {
-                // Lỗi mạng -> Vào Home luôn (hoặc xử lý khác tùy bạn)
+                // Lỗi mạng -> Vào Home luôn
                 finishLoginProcess()
             }
         })
     }
+
     private fun fetchUserInfo(userId: String) {
         db.collection("users").document(userId)
             .get()
             .addOnSuccessListener { document ->
                 if (document != null && document.exists()) {
                     val name = document.getString("name") ?: "User"
-                    Toast.makeText(this, "Chào mừng quay lại, $name!", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this, "System Access Granted, $name!", Toast.LENGTH_LONG).show()
                 } else {
-                    Toast.makeText(this, "Đăng nhập thành công!", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "System Access Granted!", Toast.LENGTH_SHORT).show()
                 }
                 finishLoginProcess()
             }
             .addOnFailureListener {
-                Toast.makeText(this, "Đăng nhập thành công (Offline mode)", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Offline Access Granted", Toast.LENGTH_SHORT).show()
                 finishLoginProcess()
             }
     }
 
     private fun finishLoginProcess() {
         btnLogin.isEnabled = true
-        btnLogin.text = "Log In"
+        btnLogin.text = "INITIALIZE"
         btnLogin.alpha = 1.0f
         startActivity(Intent(this, HomeActivity::class.java))
         finish()
