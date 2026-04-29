@@ -166,19 +166,27 @@ class SettingFragment : Fragment() {
 
     // --- DIALOG CHỌN LOẠI KHÓA ---
     private fun showLockTypeSelectionDialog() {
-        val options = arrayOf("Tắt mã khóa", "Mã PIN 4 số", "Mã PIN 6 số", "Mật khẩu tùy chỉnh (Chữ & Số)")
-        val keys = arrayOf("none", "pin_4", "pin_6", "custom")
+        val dialog = com.google.android.material.bottomsheet.BottomSheetDialog(requireContext(), R.style.BottomSheetDialogTheme)
+        val view = layoutInflater.inflate(R.layout.dialog_lock_type_selection, null)
 
-        AlertDialog.Builder(requireContext())
-            .setTitle("Chọn loại khóa bảo mật")
-            .setItems(options) { dialog, which ->
-                val selectedKey = keys[which]
+        // Hàm phụ để xử lý click cho gọn
+        fun setupClick(viewId: Int, selectedKey: String) {
+            view.findViewById<android.view.View>(viewId).setOnClickListener {
                 val intent = Intent(requireContext(), LockScreenActivity::class.java)
                 intent.putExtra("LOCK_TYPE_TO_CREATE", selectedKey)
                 lockScreenLauncher.launch(intent)
+                dialog.dismiss()
             }
-            .setNegativeButton("Hủy", null)
-            .show()
+        }
+
+        // Gán sự kiện cho từng nút Kính
+        setupClick(R.id.btnNone, "none")
+        setupClick(R.id.btnPin4, "pin_4")
+        setupClick(R.id.btnPin6, "pin_6")
+        setupClick(R.id.btnCustom, "custom")
+
+        dialog.setContentView(view)
+        dialog.show()
     }
 
     // --- DEVICE ADMIN ---
