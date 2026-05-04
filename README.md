@@ -1,1 +1,2 @@
-bản này Ver 1 đã đóng. update v2
+Ver 1.0 đã đóng
+Update Ver 2.0 beta
