@@ -16,6 +16,9 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.biometric.BiometricPrompt
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
 import com.google.android.material.switchmaterial.SwitchMaterial
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DataSnapshot
@@ -23,6 +26,7 @@ import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import java.util.concurrent.Executor
+import java.util.concurrent.TimeUnit
 
 class SettingFragment : Fragment() {
 
@@ -34,6 +38,10 @@ class SettingFragment : Fragment() {
     // UI Password
     private lateinit var layoutPasswordToggle: LinearLayout
     private lateinit var switchPassword: SwitchMaterial
+
+    // UI Background Monitor (MỚI)
+    private lateinit var layoutBackgroundCheck: LinearLayout
+    private lateinit var switchBackgroundCheck: SwitchMaterial
 
     private lateinit var btnChangeLock: LinearLayout
     private lateinit var btnPermissions: LinearLayout
@@ -56,9 +64,8 @@ class SettingFragment : Fragment() {
         updateAdminSwitchState()
     }
 
-    // Launcher cho LockScreenActivity (nhận kết quả trả về khi thiết lập xong)
+    // Launcher cho LockScreenActivity
     private val lockScreenLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        // Khi quay lại từ màn hình cài password, cập nhật lại trạng thái switch password
         checkPasswordStatusFromFirebase()
     }
 
@@ -76,19 +83,33 @@ class SettingFragment : Fragment() {
         setupBiometric()
         setupDeviceAdmin()
 
-        // --- XỬ LÝ SWITCH VÂN TAY (Chỉ bắt sự kiện Layout) ---
+        // --- XỬ LÝ BACKGROUND MONITOR (MỚI) ---
+        layoutBackgroundCheck.setOnClickListener {
+            val sharedPrefs = requireContext().getSharedPreferences("PiperOS_Prefs", Context.MODE_PRIVATE)
+            val currentState = switchBackgroundCheck.isChecked
+            val newState = !currentState
+
+            // Cập nhật UI & Lưu biến
+            switchBackgroundCheck.isChecked = newState
+            sharedPrefs.edit().putBoolean("bg_monitor_enabled", newState).apply()
+
+            // Thực thi lệnh chạy ngầm
+            if (newState) {
+                enableBackgroundMonitor()
+            } else {
+                disableBackgroundMonitor()
+            }
+        }
+
+        // --- XỬ LÝ SWITCH VÂN TAY ---
         layoutFingerprint.setOnClickListener {
-            // Kiểm tra trạng thái hiện tại của Switch để quyết định hành động
             val isFingerprintOn = switchFingerprint.isChecked
             if (isFingerprintOn) {
-                // Đang ON -> Muốn Tắt -> Check ràng buộc
                 checkSecurityConstraintForFingerprint()
             } else {
-                // Đang OFF -> Muốn Bật -> Cần xác thực vân tay trước
                 biometricPrompt.authenticate(promptInfo)
             }
         }
-        // XÓA: switchFingerprint.setOnClickListener (Vì đã tắt cảm ứng trong XML)
 
         // --- XỬ LÝ CLICK VÀO HÀNG PASSWORD ---
         layoutPasswordToggle.setOnClickListener {
@@ -111,6 +132,10 @@ class SettingFragment : Fragment() {
         layoutPasswordToggle = view.findViewById(R.id.layoutPasswordToggle)
         switchPassword = view.findViewById(R.id.switchPassword)
 
+        // Ánh xạ Background Monitor (MỚI)
+        layoutBackgroundCheck = view.findViewById(R.id.layoutBackgroundCheck)
+        switchBackgroundCheck = view.findViewById(R.id.switchBackgroundCheck)
+
         btnChangeLock = view.findViewById(R.id.btnChangeLock)
         btnPermissions = view.findViewById(R.id.btnPermissions)
         tvChangeLockStatus = view.findViewById(R.id.tvChangeLockStatus)
@@ -126,9 +151,37 @@ class SettingFragment : Fragment() {
         updateAdminSwitchState()
         updateFingerprintSwitchState()
         checkPasswordStatusFromFirebase()
+
+        // Khôi phục trạng thái Background Monitor từ SharedPreferences (MỚI)
+        val sharedPrefs = requireContext().getSharedPreferences("PiperOS_Prefs", Context.MODE_PRIVATE)
+        switchBackgroundCheck.isChecked = sharedPrefs.getBoolean("bg_monitor_enabled", false)
     }
 
-    // --- LOGIC KIỂM TRA FIREBASE & TRẠNG THÁI ---
+    // ========================================================
+    // --- LOGIC CHẠY NGẦM BACKGROUND MONITOR (MỚI) ---
+    // ========================================================
+    private fun enableBackgroundMonitor() {
+        // Cứ 12 tiếng âm thầm chạy check Play Integrity 1 lần
+        val workRequest = PeriodicWorkRequestBuilder<IntegrityBackgroundWorker>(
+            12, TimeUnit.HOURS
+        ).build()
+
+        WorkManager.getInstance(requireContext()).enqueueUniquePeriodicWork(
+            "PlayIntegrityCheck",
+            ExistingPeriodicWorkPolicy.UPDATE, // Ghi đè nếu có lịch cũ
+            workRequest
+        )
+        Toast.makeText(context, "Đã bật giám sát hệ thống ngầm!", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun disableBackgroundMonitor() {
+        WorkManager.getInstance(requireContext()).cancelUniqueWork("PlayIntegrityCheck")
+        Toast.makeText(context, "Đã tắt giám sát ngầm.", Toast.LENGTH_SHORT).show()
+    }
+
+    // ========================================================
+    // CÁC HÀM CŨ GIỮ NGUYÊN (Firebase, Security, Admin, Biometric)
+    // ========================================================
     private fun checkPasswordStatusFromFirebase() {
         val myRef = database.getReference("users/$userId/security/password")
         myRef.addListenerForSingleValueEvent(object : ValueEventListener {
@@ -141,37 +194,27 @@ class SettingFragment : Fragment() {
         })
     }
 
-    // --- LOGIC RÀNG BUỘC BẢO MẬT (Constraint) ---
     private fun checkSecurityConstraintForFingerprint() {
-        // Người dùng muốn TẮT vân tay. Kiểm tra xem có Password không.
         val myRef = database.getReference("users/$userId/security/password")
         myRef.addListenerForSingleValueEvent(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 val hasPassword = snapshot.exists() && (snapshot.value as String).isNotEmpty()
-
                 if (hasPassword) {
-                    // OK, có password dự phòng, cho phép tắt vân tay nhưng cần xác thực vân tay lần cuối
                     biometricPrompt.authenticate(promptInfo)
                 } else {
-                    // Không được tắt vì sẽ không còn bảo mật nào
                     Toast.makeText(requireContext(), "Không thể tắt! Phải bật ít nhất 1 phương thức bảo mật.", Toast.LENGTH_LONG).show()
-                    // switchFingerprint.isChecked = true // Không cần dòng này nữa vì switch không tự nhảy
                 }
             }
-            override fun onCancelled(error: DatabaseError) {
-                // switchFingerprint.isChecked = true
-            }
+            override fun onCancelled(error: DatabaseError) { }
         })
     }
 
-    // --- DIALOG CHỌN LOẠI KHÓA ---
     private fun showLockTypeSelectionDialog() {
         val dialog = com.google.android.material.bottomsheet.BottomSheetDialog(requireContext(), R.style.BottomSheetDialogTheme)
         val view = layoutInflater.inflate(R.layout.dialog_lock_type_selection, null)
 
-        // Hàm phụ để xử lý click cho gọn
         fun setupClick(viewId: Int, selectedKey: String) {
-            view.findViewById<android.view.View>(viewId).setOnClickListener {
+            view.findViewById<View>(viewId).setOnClickListener {
                 val intent = Intent(requireContext(), LockScreenActivity::class.java)
                 intent.putExtra("LOCK_TYPE_TO_CREATE", selectedKey)
                 lockScreenLauncher.launch(intent)
@@ -179,7 +222,6 @@ class SettingFragment : Fragment() {
             }
         }
 
-        // Gán sự kiện cho từng nút Kính
         setupClick(R.id.btnNone, "none")
         setupClick(R.id.btnPin4, "pin_4")
         setupClick(R.id.btnPin6, "pin_6")
@@ -189,21 +231,12 @@ class SettingFragment : Fragment() {
         dialog.show()
     }
 
-    // --- DEVICE ADMIN ---
     private fun setupDeviceAdmin() {
         devicePolicyManager = requireActivity().getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
         componentName = ComponentName(requireActivity(), MyDeviceAdminReceiver::class.java)
 
-        // XÓA: switchAdmin.setOnClickListener (Vì đã tắt cảm ứng trong XML)
-
-        // Chỉ bắt sự kiện ở Layout
         layoutAdmin.setOnClickListener {
-            // Kiểm tra trạng thái hiện tại của switch để toggle
-            if (switchAdmin.isChecked) {
-                deactivateDeviceAdmin()
-            } else {
-                activateDeviceAdmin()
-            }
+            if (switchAdmin.isChecked) deactivateDeviceAdmin() else activateDeviceAdmin()
         }
     }
 
@@ -223,7 +256,6 @@ class SettingFragment : Fragment() {
         updateAdminSwitchState()
     }
 
-    // --- BIOMETRIC (VÂN TAY) ---
     private fun setupBiometric() {
         executor = ContextCompat.getMainExecutor(requireContext())
         biometricPrompt = BiometricPrompt(this, executor, object : BiometricPrompt.AuthenticationCallback() {
@@ -236,7 +268,7 @@ class SettingFragment : Fragment() {
                 if (errorCode != BiometricPrompt.ERROR_USER_CANCELED && errorCode != BiometricPrompt.ERROR_NEGATIVE_BUTTON) {
                     Toast.makeText(context, "Lỗi: $errString", Toast.LENGTH_SHORT).show()
                 }
-                updateFingerprintSwitchState() // Revert UI nếu lỗi
+                updateFingerprintSwitchState()
             }
             override fun onAuthenticationFailed() {
                 super.onAuthenticationFailed()
@@ -260,11 +292,8 @@ class SettingFragment : Fragment() {
         val prefs = requireActivity().getSharedPreferences("PiperPrefs", Context.MODE_PRIVATE)
         val isCurrentlyEnabled = prefs.getBoolean("fingerprint_enabled", false)
         val newSetting = !isCurrentlyEnabled
-
-        // Không cần check constraint ở đây nữa vì đã check ở đầu vào (layoutFingerprint.setOnClickListener)
-
         prefs.edit().putBoolean("fingerprint_enabled", newSetting).apply()
-        updateFingerprintSwitchState() // Cập nhật lại UI Switch sau khi lưu xong
+        updateFingerprintSwitchState()
         Toast.makeText(context, if (newSetting) "Đã bật vân tay" else "Đã tắt vân tay", Toast.LENGTH_SHORT).show()
     }
 }
