@@ -79,7 +79,7 @@
                     android:id="@+id/iconNews"
                     android:layout_width="24dp"
                     android:layout_height="24dp"
-                    android:src="@drawable/modul"
+                    android:src="@drawable/module"
                     app:tint="@color/nav_unselected"/>
 
                 <TextView
@@ -171,7 +171,7 @@
                     android:id="@+id/txtDevices"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Devices"
+                    android:text="Info Device"
                     android:textSize="10sp"
                     android:textStyle="bold"
                     android:textColor="@color/nav_unselected"
