@@ -16,6 +16,12 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintVertical_bias="0.2">
 
+        <ImageView
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:src="@drawable/a2tn"
+            android:layout_marginBottom="16dp" />
+
         <!-- DEVICE ADMIN (Sửa lại: Khóa cảm ứng switch) -->
         <LinearLayout
             android:id="@+id/layoutDeviceAdmin"
