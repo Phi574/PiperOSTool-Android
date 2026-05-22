@@ -16,6 +16,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import java.util.Locale
+import android.view.View
 
 class HomeActivity : AppCompatActivity() {
 
@@ -32,6 +33,8 @@ class HomeActivity : AppCompatActivity() {
     private var currentTab = 0
     private var currentLangCode = "vi"
     private var backPressedTime: Long = 0
+    private var isNavHidden = false
+
     private lateinit var backToast: Toast
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -98,6 +101,7 @@ class HomeActivity : AppCompatActivity() {
         }
     }
 
+
     private fun setupBackPressHandler() {
         val callback = object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
@@ -162,6 +166,7 @@ class HomeActivity : AppCompatActivity() {
                 replaceFragment(homeFragment())
                 currentTab = 0
                 updateTabUI(0)
+                showBottomNav()
             }
         }
         btnModul.setOnClickListener {
@@ -169,6 +174,7 @@ class HomeActivity : AppCompatActivity() {
                 replaceFragment(ModuleFragment())
                 currentTab = 1
                 updateTabUI(1)
+                showBottomNav()
             }
         }
         btnApps.setOnClickListener {
@@ -176,6 +182,7 @@ class HomeActivity : AppCompatActivity() {
                 replaceFragment(AppsFragment())
                 currentTab = 2
                 updateTabUI(2)
+                showBottomNav()
             }
         }
         btnSettings.setOnClickListener {
@@ -183,6 +190,7 @@ class HomeActivity : AppCompatActivity() {
                 replaceFragment(SettingFragment())
                 currentTab = 3
                 updateTabUI(3)
+                showBottomNav()
             }
         }
         btnDevices.setOnClickListener {
@@ -190,6 +198,7 @@ class HomeActivity : AppCompatActivity() {
                 replaceFragment(DevicesFragment())
                 currentTab = 4
                 updateTabUI(4)
+                showBottomNav()
             }
         }
     }
@@ -221,6 +230,36 @@ class HomeActivity : AppCompatActivity() {
                 listIcons[i].imageTintList = ColorStateList.valueOf(unselectedColor)
                 listTexts[i].setTextColor(unselectedColor)
             }
+        }
+    }
+    fun hideBottomNav() {
+        if (isNavHidden) return
+
+        // Trỏ vào thẻ bao ngoài cùng chứa cả nền và bo góc
+        val bottomBar = findViewById<LinearLayout>(R.id.bottomNavCard)
+
+        bottomBar?.let {
+            it.animate()
+                .translationY(it.height.toFloat() + 50f) // 50f là để dự phòng margin
+                .setInterpolator(android.view.animation.AccelerateInterpolator())
+                .setDuration(250)
+                .start()
+            isNavHidden = true
+        }
+    }
+
+    fun showBottomNav() {
+        if (!isNavHidden) return
+
+        val bottomBar = findViewById<LinearLayout>(R.id.bottomNavCard)
+
+        bottomBar?.let {
+            it.animate()
+                .translationY(0f)
+                .setInterpolator(android.view.animation.DecelerateInterpolator())
+                .setDuration(250)
+                .start()
+            isNavHidden = false
         }
     }
 }
