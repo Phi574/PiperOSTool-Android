@@ -11,6 +11,7 @@ import android.os.Environment
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
+import android.view.ViewGroup
 import android.view.animation.DecelerateInterpolator
 import android.widget.TextView
 import android.widget.Toast
@@ -41,6 +42,9 @@ class SplashScreenActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_start_screen)
 
+        // 1. ÁP DỤNG HÌNH NỀN TÙY CHỈNH NGAY LẬP TỨC
+        applyCustomBackground()
+
         appNameTextView = findViewById(R.id.appNameTextView)
         developerTextView = findViewById(R.id.developerTextView)
 
@@ -49,6 +53,34 @@ class SplashScreenActivity : AppCompatActivity() {
 
         // Bắt đầu hiệu ứng hiện tên App ngay lập tức
         showAppNameAndDeveloper()
+    }
+
+    // ==========================================================
+    // HÀM ÁP DỤNG HÌNH NỀN TÙY CHỈNH
+    // ==========================================================
+    private fun applyCustomBackground() {
+        val prefs = getSharedPreferences("PiperPrefs", Context.MODE_PRIVATE)
+        val hasCustomBg = prefs.getBoolean("has_custom_bg", false)
+
+        // Lấy trực tiếp lớp gốc ngoài cùng của màn hình
+        val bgView = findViewById<ViewGroup>(android.R.id.content).getChildAt(0)
+
+        if (hasCustomBg) {
+            try {
+                // Đọc file ảnh custom_bg.jpg từ bộ nhớ kín của app
+                val file = java.io.File(filesDir, "custom_bg.jpg")
+                if (file.exists()) {
+                    val drawable = android.graphics.drawable.Drawable.createFromPath(file.absolutePath)
+                    bgView.background = drawable
+                } else {
+                    bgView.setBackgroundResource(R.drawable.backgroud)
+                }
+            } catch (e: Exception) {
+                bgView.setBackgroundResource(R.drawable.backgroud)
+            }
+        } else {
+            bgView.setBackgroundResource(R.drawable.backgroud)
+        }
     }
 
     private val storagePermissionLauncher = registerForActivityResult(

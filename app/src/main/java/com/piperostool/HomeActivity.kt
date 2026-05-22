@@ -1,10 +1,12 @@
 package com.piperostool
 
 import android.content.Context
+import android.content.Intent
 import android.content.res.ColorStateList
 import android.content.res.Configuration
 import android.graphics.Color
 import android.os.Bundle
+import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -27,30 +29,27 @@ class HomeActivity : AppCompatActivity() {
     private lateinit var listIcons: List<ImageView>
     private lateinit var listTexts: List<TextView>
 
-    // Biến theo dõi tab hiện tại để tô màu lại khi onResume
     private var currentTab = 0
-    // Biến lưu ngôn ngữ hiện tại để kiểm tra thay đổi
     private var currentLangCode = "vi"
-
-    // Biến cho logic thoát app
     private var backPressedTime: Long = 0
     private lateinit var backToast: Toast
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Lưu lại ngôn ngữ lúc khởi tạo
+        // 1. Áp dụng ngôn ngữ trước khi setContentView
         val prefs = getSharedPreferences("PiperPrefs", Context.MODE_PRIVATE)
         currentLangCode = prefs.getString("app_language", "vi") ?: "vi"
-
-        // 1. Áp dụng ngôn ngữ trước khi setContentView
         applyAppLanguage()
 
         setContentView(R.layout.activity_home)
 
+        // 2. Gọi hàm áp dụng hình nền tùy chỉnh
+        applyCustomBackground()
+
         initViews()
         setupListeners()
-        setupBackPressHandler() // Cài đặt xử lý nút Back
+        setupBackPressHandler()
 
         // Load Fragment mặc định
         replaceFragment(homeFragment())
@@ -60,24 +59,48 @@ class HomeActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
 
-        // 1. Kiểm tra xem ngôn ngữ có bị đổi trong Settings không
+        // Kiểm tra xem ngôn ngữ có bị đổi trong Settings không
         val prefs = getSharedPreferences("PiperPrefs", Context.MODE_PRIVATE)
         val savedLang = prefs.getString("app_language", "vi") ?: "vi"
 
         if (savedLang != currentLangCode) {
-            // Nếu ngôn ngữ đã đổi, reload lại toàn bộ HomeActivity
             recreate()
             return
         }
 
-        // 2. Cập nhật lại màu sắc Theme (vì onCreate không chạy lại)
         updateTabUI(currentTab)
+    }
+
+    // ==========================================================
+    // HÀM ÁP DỤNG HÌNH NỀN TÙY CHỈNH (MỚI)
+    // ==========================================================
+    private fun applyCustomBackground() {
+        val prefs = getSharedPreferences("PiperPrefs", Context.MODE_PRIVATE)
+        val hasCustomBg = prefs.getBoolean("has_custom_bg", false)
+
+        // TRỎ ĐÚNG VÀO VIEW ĐANG HIỂN THỊ HÌNH NỀN (thay vì rootLayout)
+        val bgView = findViewById<android.widget.FrameLayout>(R.id.fragment_container)
+
+        if (hasCustomBg) {
+            try {
+                val file = java.io.File(filesDir, "custom_bg.jpg")
+                if (file.exists()) {
+                    val drawable = android.graphics.drawable.Drawable.createFromPath(file.absolutePath)
+                    bgView.background = drawable
+                } else {
+                    bgView.setBackgroundResource(R.drawable.backgroud) // File nền mặc định
+                }
+            } catch (e: Exception) {
+                bgView.setBackgroundResource(R.drawable.backgroud)
+            }
+        } else {
+            bgView.setBackgroundResource(R.drawable.backgroud)
+        }
     }
 
     private fun setupBackPressHandler() {
         val callback = object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                // Nếu đang không ở Tab Home (0), quay về Home trước
                 if (currentTab != 0) {
                     replaceFragment(homeFragment())
                     currentTab = 0
@@ -85,10 +108,9 @@ class HomeActivity : AppCompatActivity() {
                     return
                 }
 
-                // Nếu đang ở Tab Home, kiểm tra thời gian bấm
                 if (backPressedTime + 2000 > System.currentTimeMillis()) {
                     backToast.cancel()
-                    finish() // Thoát app
+                    finish()
                 } else {
                     backToast = Toast.makeText(baseContext, "Bấm lần nữa để thoát", Toast.LENGTH_SHORT)
                     backToast.show()
@@ -172,36 +194,21 @@ class HomeActivity : AppCompatActivity() {
         }
     }
 
-    // ==========================================================
-    // THAY ĐỔI CHÍNH TẠI ĐÂY: Thêm hiệu ứng chuyển động
-    // ==========================================================
     private fun replaceFragment(fragment: Fragment) {
         val transaction = supportFragmentManager.beginTransaction()
-
-        // Thêm animation cho fragment mới vào (fade_in) và fragment cũ ra (fade_out)
-        transaction.setCustomAnimations(
-            R.anim.fade_in,
-            R.anim.fade_out
-        )
-
+        transaction.setCustomAnimations(R.anim.fade_in, R.anim.fade_out)
         transaction.replace(R.id.fragment_container, fragment)
         transaction.commit()
     }
-    // ==========================================================
 
     private fun updateTabUI(selectedIndex: Int) {
         val prefs = getSharedPreferences("PiperPrefs", Context.MODE_PRIVATE)
         val theme = prefs.getString("app_theme", "system")
 
-        // Logic lấy màu chủ đạo
         val activeColorCode = when (theme) {
             "purple" -> Color.parseColor("#E040FB")
             "green" -> Color.parseColor("#00FF00")
-            else -> {
-                // Xử lý theme hệ thống (ví dụ, lấy màu primary của app)
-                // Nếu không muốn phức tạp, có thể mặc định về một màu nào đó
-                ContextCompat.getColor(this, R.color.green_neon) // Giả sử bạn có màu này trong colors.xml
-            }
+            else -> ContextCompat.getColor(this, R.color.green_neon)
         }
 
         val unselectedColor = ContextCompat.getColor(this, R.color.nav_unselected)

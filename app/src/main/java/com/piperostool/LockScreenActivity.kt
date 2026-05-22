@@ -9,6 +9,7 @@ import android.text.InputFilter
 import android.text.InputType
 import android.text.TextWatcher
 import android.view.View
+import android.view.ViewGroup
 import android.view.inputmethod.InputMethodManager
 import android.widget.Button
 import android.widget.EditText
@@ -42,10 +43,9 @@ class LockScreenActivity : AppCompatActivity() {
     private lateinit var llDotsContainer: LinearLayout
     private lateinit var etPinHidden: EditText
     private lateinit var layoutFingerprint: LinearLayout
-    // private lateinit var tvErrorMsg: TextView // Tạm thời dùng tvSubTitle
 
     // Mode
-    private var isUnlockAppMode = false // True: Mở khóa app, False: Vào setup trong Setting
+    private var isUnlockAppMode = false
     private var currentMode = MODE_LOADING
     private var targetType: String? = null
     private var firstPassInput: String = ""
@@ -83,6 +83,9 @@ class LockScreenActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_lock_screen)
+
+        // 1. ÁP DỤNG HÌNH NỀN TÙY CHỈNH
+        applyCustomBackground()
 
         isUnlockAppMode = intent.getBooleanExtra("IS_UNLOCK_MODE", false)
         targetType = intent.getStringExtra("LOCK_TYPE_TO_CREATE")
@@ -148,21 +151,47 @@ class LockScreenActivity : AppCompatActivity() {
         })
     }
 
+    // ==========================================================
+    // HÀM ÁP DỤNG HÌNH NỀN TÙY CHỈNH
+    // ==========================================================
+    private fun applyCustomBackground() {
+        val prefs = getSharedPreferences("PiperPrefs", Context.MODE_PRIVATE)
+        val hasCustomBg = prefs.getBoolean("has_custom_bg", false)
+
+        // Lấy trực tiếp lớp gốc ngoài cùng của màn hình (chính là thẻ ConstraintLayout)
+        val bgView = findViewById<ViewGroup>(android.R.id.content).getChildAt(0)
+
+        if (hasCustomBg) {
+            try {
+                // Đọc file ảnh custom_bg.jpg từ bộ nhớ kín của app
+                val file = java.io.File(filesDir, "custom_bg.jpg")
+                if (file.exists()) {
+                    val drawable = android.graphics.drawable.Drawable.createFromPath(file.absolutePath)
+                    bgView.background = drawable
+                } else {
+                    bgView.setBackgroundResource(R.drawable.backgroud)
+                }
+            } catch (e: Exception) {
+                bgView.setBackgroundResource(R.drawable.backgroud)
+            }
+        } else {
+            bgView.setBackgroundResource(R.drawable.backgroud)
+        }
+    }
+
     private fun initViews() {
         tvTitle = findViewById(R.id.tvTitle)
         tvSubTitle = findViewById(R.id.tvSubTitle)
         etPassword = findViewById(R.id.etPassword)
         tilPassword = findViewById(R.id.tilPassword)
         btnConfirm = findViewById(R.id.btnConfirm)
-        btnLogout = findViewById(R.id.btnLogout) // Ánh xạ nút logout
+        btnLogout = findViewById(R.id.btnLogout)
 
         layoutPinInput = findViewById(R.id.layoutPinInput)
         llDotsContainer = findViewById(R.id.llDotsContainer)
         etPinHidden = findViewById(R.id.etPinHidden)
         layoutFingerprint = findViewById(R.id.layoutFingerprint)
 
-        // Chỉ hiện nút Đăng xuất khi ở chế độ Mở khóa App
-        // Nếu đang ở trong Settings (đổi pass) thì ẩn đi
         if (!isUnlockAppMode) {
             btnLogout.visibility = View.GONE
         }
@@ -173,10 +202,6 @@ class LockScreenActivity : AppCompatActivity() {
         auth.signOut()
         Toast.makeText(this, "Đã đăng xuất", Toast.LENGTH_SHORT).show()
 
-        // QUAN TRỌNG: Không xóa SharedPreferences liên quan đến ban (KEY_BAN_TIME)
-        // để đảm bảo nếu người dùng bị ban, thoát ra vào lại vẫn bị ban.
-
-        // Chuyển về màn hình Login
         val intent = Intent(this, LoginActivity::class.java)
         intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         startActivity(intent)
@@ -191,13 +216,10 @@ class LockScreenActivity : AppCompatActivity() {
 
         val currentTime = System.currentTimeMillis()
         if (banEndTime > currentTime) {
-            // Vẫn đang trong thời gian cấm
             startBanCountdown(banEndTime - currentTime)
             return true
         } else {
-            // Hết giờ cấm hoặc chưa cấm
             if (banEndTime != 0L) {
-                // Reset nếu vừa hết hạn
                 resetFailedAttempts()
             }
             return false
@@ -219,7 +241,7 @@ class LockScreenActivity : AppCompatActivity() {
             override fun onFinish() {
                 resetFailedAttempts()
                 tvSubTitle.text = "Mời bạn nhập lại mã khóa"
-                tvSubTitle.setTextColor(ContextCompat.getColor(this@LockScreenActivity, R.color.white)) // Màu gốc
+                tvSubTitle.setTextColor(ContextCompat.getColor(this@LockScreenActivity, R.color.white))
                 setInputsEnabled(true)
 
                 val prefsApp = getSharedPreferences("PiperPrefs", Context.MODE_PRIVATE)
@@ -243,10 +265,9 @@ class LockScreenActivity : AppCompatActivity() {
         prefs.edit().putInt(KEY_FAILED_COUNT, failedAttempts).apply()
 
         if (failedAttempts >= 5) {
-            // Ban 60s
             val banTime = System.currentTimeMillis() + 60000
             prefs.edit().putLong(KEY_BAN_TIME, banTime).apply()
-            checkBanStatus() // Kích hoạt UI cấm
+            checkBanStatus()
         } else {
             val remaining = 5 - failedAttempts
             Toast.makeText(this, "Sai mã khóa! Còn $remaining lần thử.", Toast.LENGTH_SHORT).show()
@@ -284,7 +305,6 @@ class LockScreenActivity : AppCompatActivity() {
                 decideFlow()
             }
             override fun onCancelled(error: DatabaseError) {
-                // Handle error
             }
         })
     }
@@ -293,9 +313,7 @@ class LockScreenActivity : AppCompatActivity() {
         if (checkBanStatus()) return
 
         if (isUnlockAppMode) {
-            // Chế độ mở khóa App
             if (currentSavedPass.isNullOrEmpty()) {
-                // Không có pass thì vào thẳng home
                 startHomeActivity()
             } else {
                 startVerifyOldFlow()
@@ -304,7 +322,6 @@ class LockScreenActivity : AppCompatActivity() {
                 btnConfirm.text = "Mở khóa"
             }
         } else {
-            // Chế độ Setting (Tạo/Đổi/Tắt)
             if (currentSavedPass.isNullOrEmpty()) {
                 if (targetType == "none") {
                     Toast.makeText(this, "Chưa thiết lập mã khóa nào!", Toast.LENGTH_SHORT).show()
@@ -507,10 +524,7 @@ class LockScreenActivity : AppCompatActivity() {
         database.getReference("users/$userId/security").removeValue()
             .addOnSuccessListener {
                 Toast.makeText(this, "Đã tắt mã khóa bảo mật!", Toast.LENGTH_SHORT).show()
-
-                // Tắt luôn cờ vân tay khi xóa pass
                 prefs.edit().putBoolean("fingerprint_enabled", false).apply()
-
                 setResult(RESULT_OK)
                 finish()
             }

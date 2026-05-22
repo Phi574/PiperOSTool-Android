@@ -1,115 +1,73 @@
 package com.piperostool
 
-
-
 import android.app.AlertDialog
-
 import android.app.admin.DevicePolicyManager
-
 import android.content.ComponentName
-
 import android.content.Context
-
 import android.content.Intent
-
+import android.net.Uri
 import android.os.Bundle
-
 import android.view.LayoutInflater
-
 import android.view.View
-
 import android.view.ViewGroup
-
 import android.widget.LinearLayout
-
 import android.widget.TextView
-
 import android.widget.Toast
-
 import androidx.activity.result.contract.ActivityResultContracts
-
 import androidx.biometric.BiometricPrompt
-
 import androidx.core.content.ContextCompat
-
 import androidx.fragment.app.Fragment
-
 import com.google.android.material.switchmaterial.SwitchMaterial
-
 import com.google.firebase.auth.FirebaseAuth
-
 import com.google.firebase.database.DataSnapshot
-
 import com.google.firebase.database.DatabaseError
-
 import com.google.firebase.database.FirebaseDatabase
-
 import com.google.firebase.database.ValueEventListener
-
 import java.util.concurrent.Executor
+import kotlin.system.exitProcess
 
 
 
 class SettingFragment : Fragment() {
-
-
-
     private lateinit var layoutAdmin: LinearLayout
-
     private lateinit var switchAdmin: SwitchMaterial
-
     private lateinit var layoutFingerprint: LinearLayout
-
     private lateinit var switchFingerprint: SwitchMaterial
-
-
-
 // UI Password
-
     private lateinit var layoutPasswordToggle: LinearLayout
-
     private lateinit var switchPassword: SwitchMaterial
-
-
-
     private lateinit var btnChangeLock: LinearLayout
-
     private lateinit var btnPermissions: LinearLayout
-
     private lateinit var tvChangeLockStatus: TextView
-
-
-
     private lateinit var devicePolicyManager: DevicePolicyManager
-
     private lateinit var componentName: ComponentName
-
     private lateinit var executor: Executor
-
     private lateinit var biometricPrompt: BiometricPrompt
-
     private lateinit var promptInfo: BiometricPrompt.PromptInfo
 
+    private lateinit var layoutChangeBackground: LinearLayout
 
+    private lateinit var layoutResetBackground: LinearLayout
 
+    private lateinit var tvCurrentBackground: TextView
 // Firebase reference
-
     private val database = FirebaseDatabase.getInstance()
-
     private val auth = FirebaseAuth.getInstance()
-
     private val userId: String
-
         get() = auth.currentUser?.uid ?: "unknown_user"
-
-
-
 // Launcher cho Device Admin
 
+    private val pickImageLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+        uri?.let {
+            if (saveImageToInternalStorage(it)) {
+                showRestartDialog()
+            } else {
+                Toast.makeText(context, "Lỗi khi lưu ảnh! Hãy thử ảnh khác.", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
     private val adminResultLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-
         updateAdminSwitchState()
-
     }
 
 
@@ -152,26 +110,25 @@ class SettingFragment : Fragment() {
 
         setupDeviceAdmin()
 
+        updateBackgroundStatusText()
 
+
+        // --- XỬ LÝ HÌNH NỀN (MỚI) ---
+        layoutChangeBackground.setOnClickListener {
+            pickImageLauncher.launch("image/*") // Mở thư viện chọn ảnh
+        }
+
+        layoutResetBackground.setOnClickListener {
+            resetBackgroundAndRestart()
+        }
 
 // --- XỬ LÝ SWITCH VÂN TAY (Chỉ bắt sự kiện Layout) ---
 
         layoutFingerprint.setOnClickListener {
-
-// Kiểm tra trạng thái hiện tại của Switch để quyết định hành động
-
             val isFingerprintOn = switchFingerprint.isChecked
-
             if (isFingerprintOn) {
-
-// Đang ON -> Muốn Tắt -> Check ràng buộc
-
                 checkSecurityConstraintForFingerprint()
-
             } else {
-
-// Đang OFF -> Muốn Bật -> Cần xác thực vân tay trước
-
                 biometricPrompt.authenticate(promptInfo)
 
             }
@@ -226,6 +183,12 @@ class SettingFragment : Fragment() {
         tvChangeLockStatus = view.findViewById(R.id.tvChangeLockStatus)
 
 
+        layoutChangeBackground = view.findViewById(R.id.layoutChangeBackground)
+
+        layoutResetBackground = view.findViewById(R.id.layoutResetBackground)
+
+        tvCurrentBackground = view.findViewById(R.id.tvCurrentBackground)
+
 
         btnPermissions.setOnClickListener {
 
@@ -234,6 +197,7 @@ class SettingFragment : Fragment() {
             startActivity(intent)
 
         }
+
 
     }
 
@@ -252,6 +216,72 @@ class SettingFragment : Fragment() {
     }
 
 
+
+    // ==========================================
+    // CÁC HÀM XỬ LÝ HÌNH NỀN (MỚI)
+    // ==========================================
+    private fun updateBackgroundStatusText() {
+        val prefs = requireActivity().getSharedPreferences("PiperPrefs", Context.MODE_PRIVATE)
+        val hasCustomBg = prefs.getBoolean("has_custom_bg", false)
+        tvCurrentBackground.text = if (hasCustomBg) "Tùy chỉnh" else "Mặc định"
+    }
+
+    private fun saveImageToInternalStorage(uri: Uri): Boolean {
+        return try {
+            val inputStream = requireContext().contentResolver.openInputStream(uri)
+            // Tạo một file tên là custom_bg.jpg nằm sâu trong app
+            val file = java.io.File(requireContext().filesDir, "custom_bg.jpg")
+            val outputStream = java.io.FileOutputStream(file)
+
+            // Copy dữ liệu ảnh sang file
+            inputStream?.copyTo(outputStream)
+            inputStream?.close()
+            outputStream.close()
+
+            // Dùng commit() thay vì apply() để bắt máy tính phải lưu xong ngay lập tức
+            val prefs = requireActivity().getSharedPreferences("PiperPrefs", Context.MODE_PRIVATE)
+            prefs.edit().putBoolean("has_custom_bg", true).commit()
+
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
+    // Cập nhật hàm Reset
+    private fun resetBackgroundAndRestart() {
+        val prefs = requireActivity().getSharedPreferences("PiperPrefs", Context.MODE_PRIVATE)
+        if (prefs.getBoolean("has_custom_bg", false)) {
+            // Xóa file ảnh tùy chỉnh đi
+            val file = java.io.File(requireContext().filesDir, "custom_bg.jpg")
+            if (file.exists()) file.delete()
+
+            prefs.edit().putBoolean("has_custom_bg", false).commit()
+            showRestartDialog()
+        } else {
+            Toast.makeText(context, "Đã là hình nền mặc định", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun showRestartDialog() {
+        AlertDialog.Builder(requireContext())
+            .setTitle("Yêu cầu Khởi động lại")
+            .setMessage("Cần khởi động lại ứng dụng để áp dụng hình nền mới.")
+            .setCancelable(false)
+            .setPositiveButton("Khởi động lại ngay") { _, _ ->
+                restartApp()
+            }
+            .show()
+    }
+
+    private fun restartApp() {
+        // Tắt app hiện tại và mở lại
+        val intent = Intent(requireContext(), WelcomeActivity::class.java) // Hoặc SplashScreenActivity
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+        startActivity(intent)
+        Runtime.getRuntime().exit(0)
+    }
 
 // --- LOGIC KIỂM TRA FIREBASE & TRẠNG THÁI ---
 
@@ -322,10 +352,6 @@ class SettingFragment : Fragment() {
         })
 
     }
-
-
-
-// --- DIALOG CHỌN LOẠI KHÓA ---
 
     private fun showLockTypeSelectionDialog() {
 

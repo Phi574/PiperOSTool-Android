@@ -19,8 +19,7 @@
         <ImageView
             android:layout_width="60dp"
             android:layout_height="60dp"
-            android:src="@drawable/security_shield"
-            app:tint="#00FF00"
+            android:src="@drawable/a3tn"
             android:layout_marginBottom="16dp" />
 
         <TextView
