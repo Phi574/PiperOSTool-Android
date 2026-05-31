@@ -11,6 +11,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Apps"
+        android:layout_gravity="start"
+        android:layout_marginStart="8dp"
         android:textColor="#FFFFFF"
         android:textSize="22sp"
         android:textStyle="bold"
@@ -18,14 +20,15 @@
 
     <EditText
         android:id="@+id/etSearchApp"
-        android:layout_width="match_parent"
+        android:layout_width="366dp"
         android:layout_height="50dp"
+        android:layout_gravity="center"
+        android:layout_marginBottom="16dp"
         android:background="@drawable/bg_glass_input"
         android:hint="Tìm kiếm ứng dụng hoặc Package..."
-        android:textColorHint="#A0A0A0"
-        android:textColor="#FFFFFF"
         android:paddingHorizontal="16dp"
-        android:layout_marginBottom="16dp"/>
+        android:textColor="#FFFFFF"
+        android:textColorHint="#A0A0A0" />
 
     <ProgressBar
         android:id="@+id/progressBar"
