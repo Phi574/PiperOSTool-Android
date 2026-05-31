@@ -1,127 +1,308 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="@drawable/bg_glass_panel"
-    android:padding="22dp">
+    android:layout_height="wrap_content"
+    android:background="@android:color/transparent"
+    android:scrollbars="none">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical">
+        android:background="@drawable/bg_bottom_sheet_solid"
+        android:orientation="vertical"
+        android:paddingHorizontal="24dp"
+        android:paddingTop="12dp"
+        android:paddingBottom="40dp"> <View
+        android:layout_width="32dp"
+        android:layout_height="4dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginBottom="24dp"
+        android:background="#55FFFFFF" />
 
-        <androidx.cardview.widget.CardView
-            android:layout_width="66dp"
-            android:layout_height="66dp"
-            app:cardCornerRadius="33dp"
-            app:cardElevation="0dp"
-            app:cardBackgroundColor="@android:color/transparent">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
             <ImageView
                 android:id="@+id/ivDialogIcon"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:scaleType="centerCrop"/>
+                android:layout_width="60dp"
+                android:layout_height="60dp" />
 
-        </androidx.cardview.widget.CardView>
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/tvDialogName"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="#FFFFFF"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tvDialogVersionTop"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:textColor="#A0A0A0"
+                    android:textSize="13sp" />
+            </LinearLayout>
+        </LinearLayout>
 
         <LinearLayout
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:layout_marginStart="16dp">
+            android:layout_marginTop="24dp"
+            android:orientation="horizontal"
+            android:weightSum="4">
 
-            <TextView
-                android:id="@+id/tvDialogName"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textColor="#FFFFFF"
-                android:textSize="18sp"
-                android:textStyle="bold"
-                android:ellipsize="end"
-                android:maxLines="1"/>
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="32dp"
+                android:layout_marginEnd="4dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_pill_glass"
+                android:gravity="center"
+                android:orientation="horizontal">
+                <ImageView
+                    android:id="@+id/ivStatusIcon"
+                    android:layout_width="14dp"
+                    android:layout_height="14dp"
+                    android:src="@drawable/check_circle"
+                    app:tint="#00E5FF" />
+                <TextView
+                    android:id="@+id/tvQuickStatus"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:singleLine="true"
+                    android:textColor="#00E5FF"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
 
-            <TextView
-                android:id="@+id/tvDialogPackage"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textColor="#BDBDBD"
-                android:textSize="13sp"
-                android:layout_marginTop="2dp"
-                android:ellipsize="marquee"
-                android:singleLine="true"/>
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="32dp"
+                android:layout_marginHorizontal="4dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_pill_glass"
+                android:gravity="center"
+                android:orientation="horizontal">
+                <ImageView
+                    android:id="@+id/ivTypeIcon"
+                    android:layout_width="14dp"
+                    android:layout_height="14dp"
+                    android:src="@drawable/system"
+                    app:tint="#FF9800" />
+                <TextView
+                    android:id="@+id/tvQuickType"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:singleLine="true"
+                    android:textColor="#FFFFFF"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
 
-            <TextView
-                android:id="@+id/tvDialogVersion"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textColor="#00E5FF"
-                android:textSize="12sp"
-                android:layout_marginTop="4dp"/>
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="32dp"
+                android:layout_marginHorizontal="4dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_pill_glass"
+                android:gravity="center"
+                android:orientation="horizontal">
+                <ImageView
+                    android:layout_width="14dp"
+                    android:layout_height="14dp"
+                    android:src="@drawable/application_size"
+                    app:tint="#4CAF50" />
+                <TextView
+                    android:id="@+id/tvQuickSize"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:singleLine="true"
+                    android:textColor="#FFFFFF"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/btnToggleInfo"
+                android:layout_width="0dp"
+                android:layout_height="32dp"
+                android:layout_marginStart="4dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_pill_glass"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:orientation="horizontal">
+                <ImageView
+                    android:layout_width="14dp"
+                    android:layout_height="14dp"
+                    android:src="@drawable/different"
+                    app:tint="#BDBDBD" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:singleLine="true"
+                    android:text="Khác"
+                    android:textColor="#BDBDBD"
+                    android:textSize="11sp" />
+            </LinearLayout>
         </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/layoutAppInfo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:background="@drawable/bg_info_card"
+            android:orientation="vertical"
+            android:paddingHorizontal="16dp"
+            android:paddingTop="20dp"
+            android:paddingBottom="12dp"
+            android:visibility="gone">
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:layout_marginBottom="14dp">
+                <ImageView android:layout_width="16dp" android:layout_height="16dp" android:src="@drawable/packaget" app:tint="#888888"/>
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Gói:" android:textColor="#888888" android:textSize="12sp" android:layout_marginStart="12dp"/>
+                <TextView android:id="@+id/tvInfoPackage" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:gravity="end" android:textColor="#FFFFFF" android:textSize="12sp" android:singleLine="true" android:ellipsize="marquee"/>
+            </LinearLayout>
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:layout_marginBottom="14dp">
+                <ImageView android:layout_width="16dp" android:layout_height="16dp" android:src="@drawable/version" app:tint="#888888"/>
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Phiên bản:" android:textColor="#888888" android:textSize="12sp" android:layout_marginStart="12dp"/>
+                <TextView android:id="@+id/tvInfoVersion" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:gravity="end" android:textColor="#FFFFFF" android:textSize="12sp"/>
+            </LinearLayout>
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:layout_marginBottom="14dp">
+                <ImageView android:layout_width="16dp" android:layout_height="16dp" android:src="@drawable/status" app:tint="#888888"/>
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Trạng thái:" android:textColor="#888888" android:textSize="12sp" android:layout_marginStart="12dp"/>
+                <TextView android:id="@+id/tvInfoStatus" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:gravity="end" android:textColor="#00E5FF" android:textSize="12sp" android:textStyle="bold"/>
+            </LinearLayout>
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:layout_marginBottom="14dp">
+                <ImageView android:layout_width="16dp" android:layout_height="16dp" android:src="@drawable/installation_time" app:tint="#888888"/>
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Đã cài đặt:" android:textColor="#888888" android:textSize="12sp" android:layout_marginStart="12dp"/>
+                <TextView android:id="@+id/tvInfoInstall" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:gravity="end" android:textColor="#FFFFFF" android:textSize="12sp"/>
+            </LinearLayout>
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:layout_marginBottom="14dp">
+                <ImageView android:layout_width="16dp" android:layout_height="16dp" android:src="@drawable/installation_time" app:tint="#888888"/>
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Đã cập nhật:" android:textColor="#888888" android:textSize="12sp" android:layout_marginStart="12dp"/>
+                <TextView android:id="@+id/tvInfoUpdate" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:gravity="end" android:textColor="#FFFFFF" android:textSize="12sp"/>
+            </LinearLayout>
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:layout_marginBottom="14dp">
+                <ImageView android:layout_width="16dp" android:layout_height="16dp" android:src="@drawable/sdk" app:tint="#888888"/>
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="SDK:" android:textColor="#888888" android:textSize="12sp" android:layout_marginStart="12dp"/>
+                <TextView android:id="@+id/tvInfoSdk" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:gravity="end" android:textColor="#FFFFFF" android:textSize="12sp"/>
+            </LinearLayout>
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:layout_marginBottom="16dp">
+                <ImageView android:layout_width="16dp" android:layout_height="16dp" android:src="@drawable/right" app:tint="#888888"/>
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Quyền:" android:textColor="#888888" android:textSize="12sp" android:layout_marginStart="12dp"/>
+                <TextView android:id="@+id/tvInfoPerms" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:gravity="end" android:textColor="#FF9800" android:textStyle="bold" android:textSize="12sp"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/btnDialogBackup"
+                android:layout_width="140dp"
+                android:layout_height="32dp"
+                android:layout_gravity="center"
+                android:background="@drawable/bg_pill_glass"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:orientation="horizontal">
+                <ImageView
+                    android:layout_width="14dp"
+                    android:layout_height="14dp"
+                    android:src="@drawable/backup"
+                    app:tint="#E040FB" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:text="Trích xuất File"
+                    android:textColor="#E040FB"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:orientation="horizontal"
+            android:weightSum="2">
+
+            <LinearLayout
+                android:id="@+id/btnLaunch"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_marginEnd="6dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_pill_blue"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:orientation="horizontal">
+                <ImageView
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:src="@drawable/play"
+                    app:tint="#FFFFFF" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text="Khởi chạy"
+                    android:textColor="#FFFFFF"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/btnDetails"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_marginStart="6dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_pill_glass"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:orientation="horizontal">
+                <ImageView
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:src="@drawable/details"
+                    app:tint="#FFFFFF" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text="Chi tiết"
+                    android:textColor="#FFFFFF"
+                    android:textSize="14sp"
+                    android:textStyle="bold"/>
+            </LinearLayout>
+        </LinearLayout>
+
     </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginTop="16dp">
-
-        <Button
-            android:id="@+id/btnDialogLaunch"
-            android:layout_width="0dp"
-            android:layout_height="48dp"
-            android:layout_weight="1"
-            android:text="Mở Ứng Dụng"
-            android:backgroundTint="#4CAF50"
-            android:textColor="#FFFFFF"
-            android:textStyle="bold"
-            android:textAllCaps="false"/>
-
-        <View android:layout_width="12dp" android:layout_height="match_parent"/>
-
-        <Button
-            android:id="@+id/btnDialogBackup"
-            android:layout_width="0dp"
-            android:layout_height="48dp"
-            android:layout_weight="1"
-            android:text="Sao Lưu APK"
-            android:backgroundTint="#2196F3"
-            android:textColor="#FFFFFF"
-            android:textStyle="bold"
-            android:textAllCaps="false"/>
-    </LinearLayout>
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Danh sách Activity Ngầm:"
-        android:textColor="#FFFFFF"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        android:layout_marginTop="22dp"
-        android:layout_marginBottom="12dp"/>
-
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rvDialogActivities"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:scrollbars="vertical"/>
-
-    <Button
-        android:id="@+id/btnDialogClose"
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:text="Đóng bảng điều khiển"
-        android:backgroundTint="#444444"
-        android:textColor="#FFFFFF"
-        android:textStyle="bold"
-        android:textAllCaps="false"
-        android:layout_marginTop="12dp"/>
-
-</LinearLayout>
+</ScrollView>
