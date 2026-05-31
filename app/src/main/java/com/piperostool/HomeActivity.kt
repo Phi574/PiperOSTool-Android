@@ -74,14 +74,10 @@ class HomeActivity : AppCompatActivity() {
         updateTabUI(currentTab)
     }
 
-    // ==========================================================
-    // HÀM ÁP DỤNG HÌNH NỀN TÙY CHỈNH (MỚI)
-    // ==========================================================
     private fun applyCustomBackground() {
         val prefs = getSharedPreferences("PiperPrefs", Context.MODE_PRIVATE)
         val hasCustomBg = prefs.getBoolean("has_custom_bg", false)
 
-        // TRỎ ĐÚNG VÀO VIEW ĐANG HIỂN THỊ HÌNH NỀN (thay vì rootLayout)
         val bgView = findViewById<android.widget.FrameLayout>(R.id.fragment_container)
 
         if (hasCustomBg) {
@@ -91,7 +87,7 @@ class HomeActivity : AppCompatActivity() {
                     val drawable = android.graphics.drawable.Drawable.createFromPath(file.absolutePath)
                     bgView.background = drawable
                 } else {
-                    bgView.setBackgroundResource(R.drawable.backgroud) // File nền mặc định
+                    bgView.setBackgroundResource(R.drawable.backgroud)
                 }
             } catch (e: Exception) {
                 bgView.setBackgroundResource(R.drawable.backgroud)
@@ -101,7 +97,6 @@ class HomeActivity : AppCompatActivity() {
         }
     }
 
-
     private fun setupBackPressHandler() {
         val callback = object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
@@ -109,6 +104,7 @@ class HomeActivity : AppCompatActivity() {
                     replaceFragment(homeFragment())
                     currentTab = 0
                     updateTabUI(0)
+                    showBottomNav() // <--- FIX: ÉP HIỆN MENU KHI BẤM NÚT BACK VỀ TRANG CHỦ
                     return
                 }
 
@@ -232,15 +228,17 @@ class HomeActivity : AppCompatActivity() {
             }
         }
     }
+
     fun hideBottomNav() {
+        if (currentTab != 2) return // FIX: Khóa tính năng ẩn nếu không nằm ở Tab Apps
         if (isNavHidden) return
 
-        // Trỏ vào thẻ bao ngoài cùng chứa cả nền và bo góc
         val bottomBar = findViewById<LinearLayout>(R.id.bottomNavCard)
 
         bottomBar?.let {
+            it.animate().cancel() // FIX: Hủy hiệu ứng cũ nếu có, chống "choảng" animation
             it.animate()
-                .translationY(it.height.toFloat() + 50f) // 50f là để dự phòng margin
+                .translationY(it.height.toFloat() + 50f)
                 .setInterpolator(android.view.animation.AccelerateInterpolator())
                 .setDuration(250)
                 .start()
@@ -254,6 +252,7 @@ class HomeActivity : AppCompatActivity() {
         val bottomBar = findViewById<LinearLayout>(R.id.bottomNavCard)
 
         bottomBar?.let {
+            it.animate().cancel() // FIX: Hủy hiệu ứng cũ để lập tức kéo thanh menu lên
             it.animate()
                 .translationY(0f)
                 .setInterpolator(android.view.animation.DecelerateInterpolator())
