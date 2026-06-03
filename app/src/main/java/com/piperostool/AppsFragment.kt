@@ -22,6 +22,7 @@ import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowManager
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageView
@@ -33,6 +34,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.bottomsheet.BottomSheetDialog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -41,15 +43,14 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import com.google.android.material.bottomsheet.BottomSheetDialog
-import android.view.WindowManager
+
 class AppsFragment : Fragment() {
 
     private lateinit var rvApps: RecyclerView
     private lateinit var progressBar: ProgressBar
     private lateinit var etSearchApp: EditText
+    private lateinit var btnRefreshApps: ImageView
 
-    // 3 Tab Phân loại
     private lateinit var tabUser: TextView
     private lateinit var tabSystem: TextView
     private lateinit var tabDisabled: TextView
@@ -57,9 +58,13 @@ class AppsFragment : Fragment() {
     private lateinit var universalAdapter: UniversalAppAdapter
     private var allApps = listOf<AppInfoModel>()
 
-    // 0 = User, 1 = System, 2 = Disabled
     private var currentTabFilter = 0
     private var currentSearchQuery = ""
+
+    // BỘ NHỚ ĐỆM TĨNH (CACHE)
+    companion object {
+        private var cachedAllApps: List<AppInfoModel>? = null
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -74,11 +79,11 @@ class AppsFragment : Fragment() {
         rvApps = view.findViewById(R.id.rvApps)
         progressBar = view.findViewById(R.id.progressBar)
         etSearchApp = view.findViewById(R.id.etSearchApp)
+        btnRefreshApps = view.findViewById(R.id.btnRefreshApps)
         tabUser = view.findViewById(R.id.tabUser)
         tabSystem = view.findViewById(R.id.tabSystem)
         tabDisabled = view.findViewById(R.id.tabDisabled)
 
-        // Lưới Grid 2 cột
         rvApps.layoutManager = GridLayoutManager(requireContext(), 2)
 
         universalAdapter = UniversalAppAdapter(
@@ -88,7 +93,6 @@ class AppsFragment : Fragment() {
         )
         rvApps.adapter = universalAdapter
 
-        // Bắt sự kiện tìm kiếm
         etSearchApp.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable?) {
                 currentSearchQuery = s.toString()
@@ -98,12 +102,16 @@ class AppsFragment : Fragment() {
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
         })
 
-        // Bắt sự kiện bấm Tab
         tabUser.setOnClickListener { switchTab(0) }
         tabSystem.setOnClickListener { switchTab(1) }
         tabDisabled.setOnClickListener { switchTab(2) }
 
-        // Cuộn ẩn Menu Bottom
+        btnRefreshApps.setOnClickListener {
+            cachedAllApps = null
+            loadApps()
+            Toast.makeText(requireContext(), "Đang làm mới danh sách App...", Toast.LENGTH_SHORT).show()
+        }
+
         rvApps.addOnScrollListener(object : RecyclerView.OnScrollListener() {
             override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
                 super.onScrolled(recyclerView, dx, dy)
@@ -115,7 +123,16 @@ class AppsFragment : Fragment() {
             }
         })
 
-        loadApps()
+        // Nạp Cache
+        if (cachedAllApps != null) {
+            allApps = cachedAllApps!!
+            updateTabCounts()
+            applyFilters()
+            progressBar.visibility = View.GONE
+            rvApps.visibility = View.VISIBLE
+        } else {
+            loadApps()
+        }
     }
 
     private fun switchTab(tabIndex: Int) {
@@ -157,97 +174,106 @@ class AppsFragment : Fragment() {
         universalAdapter.updateData(searchResults)
     }
 
+    private fun updateTabCounts() {
+        tabUser.text = "Người dùng (${allApps.count { !it.isSystem && it.isEnabled }})"
+        tabSystem.text = "Hệ thống (${allApps.count { it.isSystem && it.isEnabled }})"
+        tabDisabled.text = "Đã tắt (${allApps.count { !it.isEnabled }})"
+    }
+
     private fun loadApps() {
         progressBar.visibility = View.VISIBLE
         rvApps.visibility = View.GONE
 
+        val safeContext = context ?: return
+
         CoroutineScope(Dispatchers.IO).launch {
-            val pm = requireContext().packageManager
-            val am = requireContext().getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+            try {
+                val pm = safeContext.packageManager
+                val am = safeContext.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
 
-            // Lấy danh sách tiến trình đang chạy ngầm
-            val runningProcesses = am.runningAppProcesses?.map { it.processName } ?: emptyList()
+                val runningProcesses = am.runningAppProcesses?.map { it.processName } ?: emptyList()
+                val flags = PackageManager.GET_ACTIVITIES or PackageManager.GET_PERMISSIONS or PackageManager.GET_SERVICES or PackageManager.GET_RECEIVERS or PackageManager.GET_PROVIDERS
+                val packages = pm.getInstalledPackages(flags)
 
-            // Cờ QUYỀN (GET_PERMISSIONS) và Cờ COMPONENT (GET_ACTIVITIES, v.v...)
-            val flags = PackageManager.GET_ACTIVITIES or PackageManager.GET_PERMISSIONS or PackageManager.GET_SERVICES or PackageManager.GET_RECEIVERS or PackageManager.GET_PROVIDERS
-            val packages = pm.getInstalledPackages(flags)
+                val appList = mutableListOf<AppInfoModel>()
 
-            val appList = mutableListOf<AppInfoModel>()
+                for (pack in packages) {
+                    if (!isAdded) return@launch // Chống văng app khi chuyển tab nhanh
 
-            for (pack in packages) {
-                val appInfo = pack.applicationInfo
-                if (appInfo != null) {
-                    val name = appInfo.loadLabel(pm).toString()
-                    val icon = appInfo.loadIcon(pm)
-                    val activities = pack.activities?.toList() ?: emptyList()
+                    val appInfo = pack.applicationInfo
+                    if (appInfo != null) {
+                        val name = appInfo.loadLabel(pm).toString()
+                        val icon = appInfo.loadIcon(pm)
+                        val activities = pack.activities?.toList() ?: emptyList()
 
-                    val permsCount = pack.requestedPermissions?.size ?: 0
-                    val version = pack.versionName ?: "Unknown"
-                    val isSys = (appInfo.flags and ApplicationInfo.FLAG_SYSTEM) != 0
+                        val permsCount = pack.requestedPermissions?.size ?: 0
+                        val version = pack.versionName ?: "Unknown"
+                        val isSys = (appInfo.flags and ApplicationInfo.FLAG_SYSTEM) != 0
 
-                    // Tính dung lượng file APK
-                    val apkFile = File(appInfo.sourceDir)
-                    val sizeBytes = if (apkFile.exists()) apkFile.length() else 0L
-                    val formattedSize = Formatter.formatShortFileSize(requireContext(), sizeBytes)
+                        val apkFile = File(appInfo.sourceDir)
+                        val sizeBytes = if (apkFile.exists()) apkFile.length() else 0L
+                        val formattedSize = Formatter.formatShortFileSize(safeContext, sizeBytes)
 
-                    // Check Trạng thái
-                    val isRunning = runningProcesses.contains(pack.packageName)
+                        val isRunning = runningProcesses.contains(pack.packageName)
 
-                    appList.add(
-                        AppInfoModel(
-                            name = name,
-                            packageName = pack.packageName,
-                            icon = icon,
-                            activities = activities,
-                            versionName = version,
-                            targetSdk = appInfo.targetSdkVersion,
-                            installTime = pack.firstInstallTime,
-                            updateTime = pack.lastUpdateTime,
-                            apkPath = appInfo.sourceDir,
-                            dataDir = appInfo.dataDir ?: "No Data",
-                            uid = appInfo.uid,
-                            isSystem = isSys,
-                            isEnabled = appInfo.enabled,
-                            apkSize = formattedSize,
-                            isRunning = isRunning,
-                            permissionsCount = permsCount
+                        appList.add(
+                            AppInfoModel(
+                                name = name,
+                                packageName = pack.packageName,
+                                icon = icon,
+                                activities = activities,
+                                versionName = version,
+                                targetSdk = appInfo.targetSdkVersion,
+                                installTime = pack.firstInstallTime,
+                                updateTime = pack.lastUpdateTime,
+                                apkPath = appInfo.sourceDir,
+                                dataDir = appInfo.dataDir ?: "No Data",
+                                uid = appInfo.uid,
+                                isSystem = isSys,
+                                isEnabled = appInfo.enabled,
+                                apkSize = formattedSize,
+                                isRunning = isRunning,
+                                permissionsCount = permsCount
+                            )
                         )
-                    )
+                    }
                 }
-            }
-            appList.sortBy { it.name.lowercase(Locale.getDefault()) }
-            allApps = appList
+                appList.sortBy { it.name.lowercase(Locale.getDefault()) }
 
-            withContext(Dispatchers.Main) {
-                tabUser.text = "Người dùng (${allApps.count { !it.isSystem && it.isEnabled }})"
-                tabSystem.text = "Hệ thống (${allApps.count { it.isSystem && it.isEnabled }})"
-                tabDisabled.text = "Đã tắt (${allApps.count { !it.isEnabled }})"
+                cachedAllApps = appList
+                allApps = appList
 
-                applyFilters()
-                progressBar.visibility = View.GONE
-                rvApps.visibility = View.VISIBLE
+                withContext(Dispatchers.Main) {
+                    if (!isAdded) return@withContext
+
+                    updateTabCounts()
+                    applyFilters()
+                    progressBar.visibility = View.GONE
+                    rvApps.visibility = View.VISIBLE
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
     }
 
-    // =======================================================
-    // HIỂN THỊ CỬA SỔ BOTTOM SHEET CHI TIẾT APP (MỚI SIÊU ĐỈNH)
-    // =======================================================
+    // =========================================================
+    // HIỂN THỊ CỬA SỔ BOTTOM SHEET BẢNG ĐIỀU KHIỂN CHI TIẾT
+    // =========================================================
     private fun showAppDetailsDialog(app: AppInfoModel) {
-        // Dùng BottomSheetDialog của Google Material Design
         val bottomSheetDialog = BottomSheetDialog(requireContext(), R.style.TransparentBottomSheetDialogTheme)
         val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_app_details, null)
         bottomSheetDialog.setContentView(dialogView)
 
-        // Làm nền trong suốt để lộ 2 góc bo tròn
-        (dialogView.parent as? View)?.setBackgroundColor(android.graphics.Color.TRANSPARENT)
+        // Ép trong suốt nền mặc định của BottomSheet
+        val parentView = dialogView.parent as? View
+        parentView?.setBackgroundColor(Color.TRANSPARENT)
+        parentView?.backgroundTintList = android.content.res.ColorStateList.valueOf(Color.TRANSPARENT)
 
-        // 1. Ánh xạ Dòng trên cùng
         val ivIcon = dialogView.findViewById<ImageView>(R.id.ivDialogIcon)
         val tvName = dialogView.findViewById<TextView>(R.id.tvDialogName)
         val tvVersionTop = dialogView.findViewById<TextView>(R.id.tvDialogVersionTop)
 
-        // 2. Ánh xạ 4 viên thuốc ngang
         val ivStatusIcon = dialogView.findViewById<ImageView>(R.id.ivStatusIcon)
         val tvQuickStatus = dialogView.findViewById<TextView>(R.id.tvQuickStatus)
         val ivTypeIcon = dialogView.findViewById<ImageView>(R.id.ivTypeIcon)
@@ -255,7 +281,6 @@ class AppsFragment : Fragment() {
         val tvQuickSize = dialogView.findViewById<TextView>(R.id.tvQuickSize)
         val btnToggleInfo = dialogView.findViewById<LinearLayout>(R.id.btnToggleInfo)
 
-        // 3. Ánh xạ Khối thông tin chi tiết
         val layoutAppInfo = dialogView.findViewById<LinearLayout>(R.id.layoutAppInfo)
         val tvInfoPackage = dialogView.findViewById<TextView>(R.id.tvInfoPackage)
         val tvInfoVersion = dialogView.findViewById<TextView>(R.id.tvInfoVersion)
@@ -266,18 +291,15 @@ class AppsFragment : Fragment() {
         val tvInfoPerms = dialogView.findViewById<TextView>(R.id.tvInfoPerms)
         val btnDialogBackup = dialogView.findViewById<LinearLayout>(R.id.btnDialogBackup)
 
-        // 4. Ánh xạ 2 viên thuốc bự dưới đáy
         val btnLaunch = dialogView.findViewById<LinearLayout>(R.id.btnLaunch)
         val btnDetails = dialogView.findViewById<LinearLayout>(R.id.btnDetails)
 
-        // ================= GẮN DỮ LIỆU =================
         ivIcon.setImageDrawable(app.icon)
         tvName.text = app.name
         tvVersionTop.text = "Phiên bản ${app.versionName}"
 
-        // Trạng thái Ngủ/Chạy
         if (app.isRunning) {
-            ivStatusIcon.setImageResource(R.drawable.check_circle)
+            ivStatusIcon.setImageResource(R.drawable.status)
             ivStatusIcon.setColorFilter(Color.parseColor("#00E5FF"))
             tvQuickStatus.text = "Đang chạy"
             tvQuickStatus.setTextColor(Color.parseColor("#00E5FF"))
@@ -292,20 +314,18 @@ class AppsFragment : Fragment() {
             tvInfoStatus.setTextColor(Color.parseColor("#BDBDBD"))
         }
 
-        // Hệ thống hay APK ngoài
         if (app.isSystem) {
             ivTypeIcon.setImageResource(R.drawable.system)
-            ivTypeIcon.setColorFilter(Color.parseColor("#E53935")) // Đỏ
+            ivTypeIcon.setColorFilter(Color.parseColor("#E53935"))
             tvQuickType.text = "Hệ thống"
         } else {
             ivTypeIcon.setImageResource(R.drawable.apk)
-            ivTypeIcon.setColorFilter(Color.parseColor("#4CAF50")) // Xanh lá
-            tvQuickType.text = "APK ngoài"
+            ivTypeIcon.setColorFilter(Color.parseColor("#4CAF50"))
+            tvQuickType.text = "Ứng dụng"
         }
 
         tvQuickSize.text = app.apkSize
 
-        // Khối chi tiết
         tvInfoPackage.text = app.packageName
         tvInfoVersion.text = app.versionName
         val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
@@ -314,7 +334,6 @@ class AppsFragment : Fragment() {
         tvInfoSdk.text = app.targetSdk.toString()
         tvInfoPerms.text = "${app.permissionsCount} quyền"
 
-        // ================= XỬ LÝ SỰ KIỆN =================
         var isInfoExpanded = false
         btnToggleInfo.setOnClickListener {
             isInfoExpanded = !isInfoExpanded
@@ -336,35 +355,113 @@ class AppsFragment : Fragment() {
             backupApk(app)
         }
 
-        // 2. BẬT HIỆU ỨNG LÀM MỜ NỀN PHÍA SAU KHI CỬA SỔ HIỆN LÊN
         bottomSheetDialog.window?.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
-        bottomSheetDialog.window?.setDimAmount(0.6f) // Độ mờ 60% (càng lớn càng tối)
+        bottomSheetDialog.window?.setDimAmount(0.6f)
 
         bottomSheetDialog.show()
     }
 
+    // =========================================================
+    // HIỂN THỊ BẢNG DANH SÁCH ACTIVITIES NGẦM SIÊU ĐẸP
+    // =========================================================
     private fun showActivitiesList(app: AppInfoModel) {
         if (app.activities.isEmpty()) {
             Toast.makeText(requireContext(), "App này không có Activity ngầm hợp lệ!", Toast.LENGTH_SHORT).show()
             return
         }
-        val actNames = app.activities.map { it.name.substringAfterLast('.') }.toTypedArray()
-        AlertDialog.Builder(requireContext())
-            .setTitle("Bảng Activities (${app.activities.size})")
-            .setItems(actNames) { _, which -> showActivityActionDialog(app, app.activities[which]) }
-            .show()
+
+        val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_activities_list, null)
+        val dialog = AlertDialog.Builder(requireContext(), android.R.style.Theme_Material_Dialog_NoActionBar)
+            .setView(dialogView).create()
+
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        dialog.window?.setDimAmount(0.7f) // Làm mờ nền sau 70%
+
+        val tvActCount = dialogView.findViewById<TextView>(R.id.tvActCount)
+        val rvActivities = dialogView.findViewById<RecyclerView>(R.id.rvActivities)
+        val btnActClose = dialogView.findViewById<LinearLayout>(R.id.btnActClose)
+
+        tvActCount.text = app.activities.size.toString()
+
+        rvActivities.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(requireContext())
+        rvActivities.adapter = ActivityAdapter(app.activities) { selectedAct ->
+            dialog.dismiss()
+            showActivityActionDialog(app, selectedAct)
+        }
+
+        btnActClose.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        dialog.show()
+
+        // =======================================================
+        // FIX LỖI TRÀN MÀN HÌNH BẰNG THUẬT TOÁN BÓP CHIỀU CAO
+        // =======================================================
+
+        // 1. Ép cửa sổ dàn Full chiều ngang (để ăn lề margin 20dp), chiều cao co giãn
+        dialog.window?.setLayout(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT
+        )
+
+        // 2. Chặn chiều cao của Danh sách: Không được vượt quá 55% chiều cao màn hình
+        rvActivities.post {
+            val displayMetrics = resources.displayMetrics
+            val maxHeight = (displayMetrics.heightPixels * 0.55).toInt()
+
+            // Nếu danh sách có quá nhiều app (ví dụ 65 app), chiều cao bị lố -> Cắt nó lại!
+            if (rvActivities.height > maxHeight) {
+                val params = rvActivities.layoutParams
+                params.height = maxHeight
+                rvActivities.layoutParams = params
+            }
+        }
     }
 
+    // =========================================================
+    // HIỂN THỊ HỘP THOẠI HÀNH ĐỘNG CHO TỪNG ACTIVITY
+    // =========================================================
     private fun showActivityActionDialog(app: AppInfoModel, activityInfo: ActivityInfo) {
         val shortName = activityInfo.name.substringAfterLast('.')
-        val options = arrayOf("Ép khởi chạy (Launch ngầm)", "Ghim Shortcut ra màn hình chính")
-        AlertDialog.Builder(requireContext())
-            .setTitle(shortName)
-            .setItems(options) { _, which ->
-                if (which == 0) launchActivity(app.packageName, activityInfo.name)
-                else createShortcut(app, shortName, activityInfo.name)
-            }
-            .show()
+
+        // Khởi tạo Custom Dialog
+        val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_action_activity, null)
+        val dialog = AlertDialog.Builder(requireContext(), android.R.style.Theme_Material_Dialog_NoActionBar)
+            .setView(dialogView).create()
+
+        // Làm trong suốt viền dư và mờ màn hình phía sau
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        dialog.window?.setDimAmount(0.6f)
+
+        // Ánh xạ
+        val tvActionTitle = dialogView.findViewById<TextView>(R.id.tvActionTitle)
+        val btnActionLaunch = dialogView.findViewById<LinearLayout>(R.id.btnActionLaunch)
+        val btnActionShortcut = dialogView.findViewById<LinearLayout>(R.id.btnActionShortcut)
+
+        // Set Tên Rút Gọn lên thanh tiêu đề
+        tvActionTitle.text = shortName
+
+        // Sự kiện: Bấm Nút Trái (Ép Khởi Chạy)
+        btnActionLaunch.setOnClickListener {
+            dialog.dismiss()
+            launchActivity(app.packageName, activityInfo.name)
+        }
+
+        // Sự kiện: Bấm Nút Phải (Ghim Lối Tắt)
+        btnActionShortcut.setOnClickListener {
+            dialog.dismiss()
+            createShortcut(app, shortName, activityInfo.name)
+        }
+
+        // Hiển thị ra màn hình
+        dialog.show()
+
+        // Ép hộp thoại không bị tràn, bóp vừa phải ở giữa màn hình (Margin 40dp 2 bên)
+        dialog.window?.setLayout(
+            resources.displayMetrics.widthPixels - 80, // Chiều rộng bằng màn hình trừ đi 80 pixel
+            ViewGroup.LayoutParams.WRAP_CONTENT        // Chiều cao tự ôm sát nội dung
+        )
     }
 
     private fun launchApp(packageName: String) {
@@ -406,7 +503,9 @@ class AppsFragment : Fragment() {
     }
 
     private fun backupApk(app: AppInfoModel) {
-        Toast.makeText(requireContext(), "Đang đóng gói APK...", Toast.LENGTH_SHORT).show()
+        val safeContext = context ?: return
+        Toast.makeText(safeContext, "Đang đóng gói APK...", Toast.LENGTH_SHORT).show()
+
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 val srcFile = File(app.apkPath)
@@ -414,15 +513,22 @@ class AppsFragment : Fragment() {
                 if (!backupDir.exists()) backupDir.mkdirs()
                 val destFile = File(backupDir, "${app.name.replace(" ", "_")}_${app.versionName}.apk")
                 srcFile.copyTo(destFile, overwrite = true)
-                withContext(Dispatchers.Main) { Toast.makeText(requireContext(), "Thành công! Đã lưu tại Download/PiperOS_Backups", Toast.LENGTH_LONG).show() }
+
+                withContext(Dispatchers.Main) {
+                    if (isAdded) Toast.makeText(safeContext, "Thành công! Đã lưu tại Download/PiperOS_Backups", Toast.LENGTH_LONG).show()
+                }
             } catch (e: Exception) {
-                withContext(Dispatchers.Main) { Toast.makeText(requireContext(), "Lỗi đóng gói: ${e.message}", Toast.LENGTH_SHORT).show() }
+                withContext(Dispatchers.Main) {
+                    if (isAdded) Toast.makeText(safeContext, "Lỗi đóng gói: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
             }
         }
     }
 }
 
-// --- DATA MODEL ---
+// =========================================================
+// DATA MODELS
+// =========================================================
 data class AppInfoModel(
     val name: String,
     val packageName: String,
@@ -447,7 +553,9 @@ sealed class AppListItem {
     data class Activity(val app: AppInfoModel, val activityInfo: ActivityInfo) : AppListItem()
 }
 
-// --- ADAPTER CHO LƯỚI GRID MÀN HÌNH CHÍNH ---
+// =========================================================
+// ADAPTER CHO LƯỚI GRID MÀN HÌNH CHÍNH
+// =========================================================
 class UniversalAppAdapter(
     private var items: List<AppListItem>,
     private val onAppClick: (AppInfoModel) -> Unit,
@@ -493,4 +601,34 @@ class UniversalAppAdapter(
         items = newItems
         notifyDataSetChanged()
     }
+}
+
+// =========================================================
+// ADAPTER CHO BẢNG DANH SÁCH ACTIVITIES NGẦM (NẰM BÊN NGOÀI CÙNG)
+// =========================================================
+class ActivityAdapter(
+    private val activities: List<ActivityInfo>,
+    private val onActClick: (ActivityInfo) -> Unit
+) : RecyclerView.Adapter<ActivityAdapter.ActViewHolder>() {
+
+    class ActViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+        val tvShortName: TextView = view.findViewById(R.id.tvActShortName)
+        val tvFullName: TextView = view.findViewById(R.id.tvActFullName)
+    }
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ActViewHolder {
+        val view = LayoutInflater.from(parent.context).inflate(R.layout.item_activity_row, parent, false)
+        return ActViewHolder(view)
+    }
+
+    override fun onBindViewHolder(holder: ActViewHolder, position: Int) {
+        val actInfo = activities[position]
+
+        holder.tvShortName.text = actInfo.name.substringAfterLast('.')
+        holder.tvFullName.text = actInfo.name
+
+        holder.itemView.setOnClickListener { onActClick(actInfo) }
+    }
+
+    override fun getItemCount() = activities.size
 }

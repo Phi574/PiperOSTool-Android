@@ -6,17 +6,36 @@
     android:orientation="vertical"
     android:paddingTop="20dp">
 
-    <EditText
-        android:id="@+id/etSearchApp"
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="50dp"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
         android:layout_marginHorizontal="20dp"
-        android:layout_marginBottom="12dp"
-        android:background="@drawable/bg_glass_input"
-        android:hint="Tìm kiếm (App hoặc Activity ngầm)..."
-        android:paddingHorizontal="16dp"
-        android:textColor="#FFFFFF"
-        android:textColorHint="#A0A0A0" />
+        android:layout_marginBottom="12dp">
+
+        <EditText
+            android:id="@+id/etSearchApp"
+            android:layout_width="0dp"
+            android:layout_height="50dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_glass_input"
+            android:hint="Tìm kiếm (App hoặc Activity ngầm)..."
+            android:paddingHorizontal="16dp"
+            android:textColor="#FFFFFF"
+            android:textColorHint="#A0A0A0" />
+
+        <ImageView
+            android:id="@+id/btnRefreshApps"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/bg_glass_panel"
+            android:padding="12dp"
+            android:src="@drawable/reload"
+            android:clickable="true"
+            android:focusable="true"/>
+    </LinearLayout>
+
 
     <LinearLayout
         android:layout_width="match_parent"
