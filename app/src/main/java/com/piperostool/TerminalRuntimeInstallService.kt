@@ -317,10 +317,15 @@ class TerminalRuntimeInstallService : Service() {
                     "Invalid ZIP entry"
                 }
                 val normalizedName = normalizeRelativePath(cleanName)
-                require(seen.add(normalizedName)) { "Duplicate ZIP entry: $cleanName" }
                 require(++fileCount <= MAX_ZIP_ENTRIES) { "Runtime contains too many files" }
-
                 val output = File(prefix, normalizedName)
+                if (!seen.add(normalizedName)) {
+                    require(entry.isDirectory && output.isDirectory) {
+                        "Duplicate ZIP file entry: $cleanName"
+                    }
+                    zip.closeEntry()
+                    continue
+                }
                 if (entry.isDirectory) {
                     output.mkdirsOrThrow()
                     Os.chmod(output.absolutePath, DIRECTORY_MODE)
@@ -418,7 +423,11 @@ class TerminalRuntimeInstallService : Service() {
         val script = listOf(
             File(prefix, "bin/termux-bootstrap-second-stage.sh"),
             File(prefix, "libexec/termux/termux-bootstrap-second-stage.sh"),
-            File(prefix, "etc/termux-bootstrap/termux-bootstrap-second-stage.sh")
+            File(prefix, "etc/termux-bootstrap/termux-bootstrap-second-stage.sh"),
+            File(
+                prefix,
+                "etc/termux/termux-bootstrap/second-stage/termux-bootstrap-second-stage.sh"
+            )
         ).firstOrNull(File::isFile) ?: return
         val bash = File(prefix, "bin/bash")
         val process = ProcessBuilder(bash.absolutePath, script.absolutePath)
