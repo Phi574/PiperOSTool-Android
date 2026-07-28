@@ -10,6 +10,7 @@ import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
 import android.os.StatFs
+import android.os.SystemClock
 import android.system.Os
 import android.util.Base64
 import androidx.core.app.NotificationCompat
@@ -29,7 +30,6 @@ import java.io.FileOutputStream
 import java.net.HttpURLConnection
 import java.net.URL
 import java.security.MessageDigest
-import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.zip.ZipInputStream
 
@@ -303,7 +303,6 @@ class TerminalRuntimeInstallService : Service() {
     }
 
     private fun extractArchive(archive: File, prefix: File): List<String> {
-        val prefixPath = prefix.canonicalFile.toPath()
         val seen = HashSet<String>()
         val symlinkLines = mutableListOf<String>()
         var expandedBytes = 0L
@@ -317,17 +316,15 @@ class TerminalRuntimeInstallService : Service() {
                 require(cleanName.isNotBlank() && !cleanName.startsWith("/")) {
                     "Invalid ZIP entry"
                 }
-                require(seen.add(cleanName)) { "Duplicate ZIP entry: $cleanName" }
+                val normalizedName = normalizeRelativePath(cleanName)
+                require(seen.add(normalizedName)) { "Duplicate ZIP entry: $cleanName" }
                 require(++fileCount <= MAX_ZIP_ENTRIES) { "Runtime contains too many files" }
 
-                val output = prefix.resolve(cleanName).canonicalFile
-                require(output.toPath().startsWith(prefixPath)) {
-                    "Unsafe ZIP path: $cleanName"
-                }
+                val output = File(prefix, normalizedName)
                 if (entry.isDirectory) {
                     output.mkdirsOrThrow()
                     Os.chmod(output.absolutePath, DIRECTORY_MODE)
-                } else if (cleanName == SYMLINKS_FILE) {
+                } else if (normalizedName == SYMLINKS_FILE) {
                     val text = zip.readBytesLimited(MAX_SYMLINK_FILE_BYTES)
                         .toString(Charsets.UTF_8)
                     symlinkLines += text.lineSequence().filter(String::isNotBlank)
@@ -356,7 +353,6 @@ class TerminalRuntimeInstallService : Service() {
     }
 
     private fun restoreSymlinks(prefix: File, lines: List<String>) {
-        val prefixPath = prefix.canonicalFile.toPath()
         val seenLinks = HashSet<String>()
         lines.forEach { line ->
             ensureNotCancelled()
@@ -368,21 +364,20 @@ class TerminalRuntimeInstallService : Service() {
             val linkName = line.substring(separator + SYMLINK_SEPARATOR.length)
                 .removePrefix("./")
             require(!File(linkName).isAbsolute) { "Absolute symlink path is not allowed" }
-            val linkPath = prefixPath.resolve(linkName).normalize()
-            require(linkPath.startsWith(prefixPath)) { "Unsafe symlink path" }
-            require(seenLinks.add(linkPath.toString())) { "Duplicate runtime symlink" }
+            val normalizedLink = normalizeRelativePath(linkName)
+            require(seenLinks.add(normalizedLink)) { "Duplicate runtime symlink" }
             if (File(target).isAbsolute) {
                 val installedPrefix = "/data/data/$packageName/files/usr"
                 require(target == installedPrefix || target.startsWith("$installedPrefix/")) {
                     "Runtime symlink points outside PREFIX"
                 }
             } else {
-                val resolvedTarget = linkPath.parent.resolve(target).normalize()
-                require(resolvedTarget.startsWith(prefixPath)) {
-                    "Runtime symlink points outside PREFIX"
-                }
+                val linkParent = normalizedLink.substringBeforeLast('/', "")
+                normalizeRelativePath(
+                    if (linkParent.isEmpty()) target else "$linkParent/$target"
+                )
             }
-            val link = linkPath.toFile()
+            val link = File(prefix, normalizedLink)
             link.parentFile?.mkdirsOrThrow()
             if (link.exists()) require(link.delete()) { "Cannot replace symlink path" }
             Os.symlink(target, link.absolutePath)
@@ -440,21 +435,43 @@ class TerminalRuntimeInstallService : Service() {
                 }
             }
             .start()
-        val output = process.inputStream.bufferedReader().use { reader ->
-            val text = StringBuilder()
-            while (process.isAlive) {
-                while (reader.ready() && text.length < MAX_SECOND_STAGE_OUTPUT) {
-                    text.append(reader.readLine()).append('\n')
+        val output = StringBuilder()
+        val outputThread = Thread({
+            process.inputStream.bufferedReader().useLines { lines ->
+                lines.forEach { line ->
+                    synchronized(output) {
+                        if (output.length < MAX_SECOND_STAGE_OUTPUT) {
+                            output.append(line).append('\n')
+                        }
+                    }
                 }
-                if (!process.waitFor(200, TimeUnit.MILLISECONDS)) ensureNotCancelled()
             }
-            while (reader.ready() && text.length < MAX_SECOND_STAGE_OUTPUT) {
-                text.append(reader.readLine()).append('\n')
-            }
-            text.toString()
+        }, "PiperRuntimeSecondStageOutput").apply {
+            isDaemon = true
+            start()
         }
-        require(process.exitValue() == 0) {
-            "Runtime setup failed: ${output.takeLast(500).trim()}"
+        val deadline = SystemClock.elapsedRealtime() + SECOND_STAGE_TIMEOUT_MS
+        var completedExitCode: Int? = null
+        try {
+            while (completedExitCode == null) {
+                ensureNotCancelled()
+                try {
+                    completedExitCode = process.exitValue()
+                } catch (_: IllegalThreadStateException) {
+                    require(SystemClock.elapsedRealtime() < deadline) {
+                        "Runtime setup timed out"
+                    }
+                    Thread.sleep(200)
+                }
+            }
+        } finally {
+            runCatching { process.destroy() }
+            runCatching { outputThread.join(2_000) }
+        }
+        val exitCode = requireNotNull(completedExitCode)
+        require(exitCode == 0) {
+            val tail = synchronized(output) { output.toString().takeLast(500).trim() }
+            "Runtime setup failed: $tail"
         }
     }
 
@@ -553,6 +570,30 @@ class TerminalRuntimeInstallService : Service() {
         require(isDirectory || mkdirs()) { "Cannot create directory: $absolutePath" }
     }
 
+    private fun normalizeRelativePath(path: String): String {
+        val normalizedInput = path.replace('\\', '/')
+        require(
+            normalizedInput.isNotBlank() &&
+                !normalizedInput.startsWith('/') &&
+                !normalizedInput.contains('\u0000')
+        ) {
+            "Unsafe relative path"
+        }
+        val parts = ArrayDeque<String>()
+        normalizedInput.split('/').forEach { part ->
+            when (part) {
+                "", "." -> Unit
+                ".." -> {
+                    require(parts.isNotEmpty()) { "Path escapes PREFIX" }
+                    parts.removeLast()
+                }
+                else -> parts.addLast(part)
+            }
+        }
+        require(parts.isNotEmpty()) { "Empty relative path" }
+        return parts.joinToString("/")
+    }
+
     private fun ZipInputStream.readBytesLimited(limit: Long): ByteArray {
         val output = java.io.ByteArrayOutputStream()
         val buffer = ByteArray(BUFFER_SIZE)
@@ -620,6 +661,7 @@ class TerminalRuntimeInstallService : Service() {
         private const val MAX_ZIP_ENTRIES = 200_000
         private const val MAX_SYMLINK_FILE_BYTES = 8L * 1024 * 1024
         private const val MAX_SECOND_STAGE_OUTPUT = 128 * 1024
+        private const val SECOND_STAGE_TIMEOUT_MS = 5L * 60 * 1000
         private const val SYMLINKS_FILE = "SYMLINKS.txt"
         private const val SYMLINK_SEPARATOR = "\u2190"
         private const val DIRECTORY_MODE = 448 // 0700
