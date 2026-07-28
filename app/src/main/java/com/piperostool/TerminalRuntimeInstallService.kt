@@ -134,7 +134,6 @@ class TerminalRuntimeInstallService : Service() {
             publish(State(Phase.EXTRACTING, 72, getString(R.string.terminal_runtime_extracting)))
             val symlinkLines = extractArchive(archive, stagingPrefix)
             restoreSymlinks(stagingPrefix, symlinkLines)
-            provisionPackageRepository(stagingPrefix)
             TerminalRuntime.writeInstalledVersion(stagingPrefix, selection.version)
             require(File(stagingPrefix, "bin/bash").isFile) {
                 getString(R.string.terminal_runtime_missing_shell)
@@ -145,6 +144,7 @@ class TerminalRuntimeInstallService : Service() {
             activationStarted = true
             activateRuntime(stagingPrefix, activePrefix, backupPrefix)
             runSecondStage(activePrefix)
+            provisionPackageRepository(activePrefix)
             backupPrefix.deleteRecursively()
         } catch (error: Throwable) {
             if (activationStarted) {
