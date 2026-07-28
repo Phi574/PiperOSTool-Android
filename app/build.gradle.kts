@@ -14,11 +14,12 @@ android {
         applicationId = "com.piper.os.tool"
         minSdk = 24
         targetSdk = 36
-        versionCode = 2
-        versionName = "2.0.1.beta"
+        versionCode = 11
+        versionName = "2.5.0.beta"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
+
 
     buildTypes {
         release {
@@ -51,8 +52,12 @@ dependencies {
     implementation("com.google.android.material:material:1.12.0")
     implementation("com.hbb20:ccp:2.7.3")
     implementation("androidx.biometric:biometric:1.1.0")
+    implementation("androidx.webkit:webkit:1.14.0")
     implementation("com.google.firebase:firebase-database")
     implementation(libs.glide)
+    implementation(libs.media3.exoplayer)
+    implementation(libs.media3.ui)
+    implementation(libs.media3.session)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

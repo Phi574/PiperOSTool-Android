@@ -43,6 +43,8 @@ class LockScreenActivity : AppCompatActivity() {
     private lateinit var llDotsContainer: LinearLayout
     private lateinit var etPinHidden: EditText
     private lateinit var layoutFingerprint: LinearLayout
+    private lateinit var root: View
+    private lateinit var offlineState: View
 
     // Mode
     private var isUnlockAppMode = false
@@ -78,6 +80,9 @@ class LockScreenActivity : AppCompatActivity() {
         const val PREFS_NAME = "LockScreenPrefs"
         const val KEY_BAN_TIME = "ban_end_time"
         const val KEY_FAILED_COUNT = "failed_count"
+        const val KEY_CACHED_PASS = "cached_lock_password"
+        const val KEY_CACHED_TYPE = "cached_lock_type"
+        const val KEY_CACHE_READY = "cached_lock_ready"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -97,7 +102,15 @@ class LockScreenActivity : AppCompatActivity() {
         if (checkBanStatus()) {
             // Nếu bị ban, vẫn chạy đếm ngược, nhưng không load dữ liệu pass để nhập
         } else {
-            checkFirebaseForExistingPass()
+            setLoadingState()
+        }
+
+        NetworkAccess.observe(this, this) { online ->
+            offlineState.visibility = if (online) View.GONE else View.VISIBLE
+            if (!online) NetworkAccess.showOffline(root)
+            if (!checkBanStatus() && currentMode == MODE_LOADING) {
+                if (online) checkFirebaseForExistingPass() else loadCachedSecurity()
+            }
         }
 
         btnConfirm.setOnClickListener { handleConfirmClick() }
@@ -191,6 +204,10 @@ class LockScreenActivity : AppCompatActivity() {
         llDotsContainer = findViewById(R.id.llDotsContainer)
         etPinHidden = findViewById(R.id.etPinHidden)
         layoutFingerprint = findViewById(R.id.layoutFingerprint)
+        root = findViewById(R.id.lockRoot)
+        offlineState = findViewById(R.id.lockOfflineState)
+        findViewById<TextView>(R.id.lockVersion).text =
+            getString(R.string.auth_version, AppVersion.name(this))
 
         if (!isUnlockAppMode) {
             btnLogout.visibility = View.GONE
@@ -302,11 +319,44 @@ class LockScreenActivity : AppCompatActivity() {
                     currentSavedPass = null
                     currentSavedType = null
                 }
+                cacheSecurity(currentSavedPass, currentSavedType)
                 decideFlow()
             }
             override fun onCancelled(error: DatabaseError) {
+                loadCachedSecurity()
             }
         })
+    }
+
+    private fun cacheSecurity(password: String?, type: String?) {
+        getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .putBoolean(KEY_CACHE_READY, true)
+            .apply {
+                if (password.isNullOrEmpty()) {
+                    remove(KEY_CACHED_PASS)
+                    remove(KEY_CACHED_TYPE)
+                } else {
+                    putString(KEY_CACHED_PASS, password)
+                    putString(KEY_CACHED_TYPE, type ?: "custom")
+                }
+            }
+            .apply()
+    }
+
+    private fun loadCachedSecurity() {
+        val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        if (!prefs.getBoolean(KEY_CACHE_READY, false)) {
+            tvTitle.text = getString(R.string.lock_connection_required)
+            tvSubTitle.text = getString(R.string.lock_no_offline_data)
+            setInputsEnabled(false)
+            tilPassword.visibility = View.GONE
+            layoutPinInput.visibility = View.GONE
+            return
+        }
+        currentSavedPass = prefs.getString(KEY_CACHED_PASS, null)
+        currentSavedType = prefs.getString(KEY_CACHED_TYPE, null)
+        decideFlow()
     }
 
     private fun decideFlow() {
@@ -497,12 +547,17 @@ class LockScreenActivity : AppCompatActivity() {
     }
 
     private fun savePasswordToFirebase(password: String) {
+        if (!NetworkAccess.isOnline(this)) {
+            NetworkAccess.showOffline(root)
+            return
+        }
         val userMap = mapOf(
             "password" to password,
             "type" to targetType
         )
         database.getReference("users/$userId/security").updateChildren(userMap)
             .addOnSuccessListener {
+                cacheSecurity(password, targetType)
                 Toast.makeText(this, "Thành công!", Toast.LENGTH_SHORT).show()
                 setResult(RESULT_OK)
                 finish()
@@ -513,6 +568,10 @@ class LockScreenActivity : AppCompatActivity() {
     }
 
     private fun deletePasswordOnFirebase() {
+        if (!NetworkAccess.isOnline(this)) {
+            NetworkAccess.showOffline(root)
+            return
+        }
         val prefs = getSharedPreferences("PiperPrefs", Context.MODE_PRIVATE)
         val isFingerprintEnabled = prefs.getBoolean("fingerprint_enabled", false)
 
@@ -523,6 +582,7 @@ class LockScreenActivity : AppCompatActivity() {
 
         database.getReference("users/$userId/security").removeValue()
             .addOnSuccessListener {
+                cacheSecurity(null, null)
                 Toast.makeText(this, "Đã tắt mã khóa bảo mật!", Toast.LENGTH_SHORT).show()
                 prefs.edit().putBoolean("fingerprint_enabled", false).apply()
                 setResult(RESULT_OK)

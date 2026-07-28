@@ -1,0 +1,352 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/browserRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FF0A0D10">
+
+    <LinearLayout
+        android:id="@+id/browserTopBar"
+        android:layout_width="0dp"
+        android:layout_height="56dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="6dp"
+        android:paddingEnd="12dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <ImageButton
+            android:id="@+id/btnCloseBrowser"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/close_browser"
+            android:padding="13dp"
+            android:src="@drawable/ic_browser_close"
+            app:tint="@color/white" />
+
+        <ImageView
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:contentDescription="@null"
+            android:src="@drawable/a3tn" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/piperos_browser"
+                android:textColor="@color/white"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/browserPageTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="@string/new_tab"
+                android:textColor="#9FFFFFFF"
+                android:textSize="11sp" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/browserPrivateBadge"
+            android:layout_width="wrap_content"
+            android:layout_height="28dp"
+            android:background="@drawable/bg_offline_notice"
+            android:gravity="center"
+            android:paddingStart="10dp"
+            android:paddingEnd="10dp"
+            android:text="@string/incognito"
+            android:textColor="@color/white"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
+    </LinearLayout>
+
+    <ProgressBar
+        android:id="@+id/browserProgress"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="0dp"
+        android:layout_height="2dp"
+        android:max="100"
+        android:progressTint="@color/green_neon"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/browserTopBar" />
+
+    <FrameLayout
+        android:id="@+id/browserContent"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:background="#FF0A0D10"
+        app:layout_constraintBottom_toTopOf="@id/browserBottomPanel"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/browserProgress">
+
+        <LinearLayout
+            android:id="@+id/browserStartPage"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:paddingStart="24dp"
+            android:paddingEnd="24dp"
+            android:paddingBottom="24dp">
+
+            <ImageView
+                android:id="@+id/browserStartLogo"
+                android:layout_width="92dp"
+                android:layout_height="92dp"
+                android:contentDescription="@string/piperos_browser"
+                android:src="@drawable/a3tn" />
+
+            <TextView
+                android:id="@+id/browserStartTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:text="@string/piperos_search"
+                android:textColor="@color/white"
+                android:textSize="30sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/browserStartSubtitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="@string/search_with_google"
+                android:textColor="#AFFFFFFF"
+                android:textSize="13sp" />
+
+            <LinearLayout
+                android:id="@+id/browserSearchBox"
+                android:layout_width="match_parent"
+                android:layout_height="58dp"
+                android:layout_marginTop="26dp"
+                android:background="@drawable/bg_browser_input"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="18dp"
+                android:paddingEnd="6dp">
+
+                <EditText
+                    android:id="@+id/homeSearchInput"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:background="@android:color/transparent"
+                    android:hint="@string/search_or_enter_address"
+                    android:imeOptions="actionSearch"
+                    android:inputType="textUri"
+                    android:maxLines="1"
+                    android:padding="0dp"
+                    android:textColor="@color/white"
+                    android:textColorHint="#73FFFFFF"
+                    android:textSize="16sp" />
+
+                <ImageButton
+                    android:id="@+id/btnHomeSearch"
+                    android:layout_width="46dp"
+                    android:layout_height="46dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/search"
+                    android:padding="11dp"
+                    android:src="@drawable/ic_browser_search"
+                    app:tint="@color/green_neon" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/browserStorageNote"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:gravity="center"
+                android:text="@string/browser_private_storage_note"
+                android:textColor="#72FFFFFF"
+                android:textSize="11sp" />
+        </LinearLayout>
+    </FrameLayout>
+
+    <LinearLayout
+        android:id="@+id/browserBottomPanel"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:background="#FF101419"
+        android:orientation="vertical"
+        android:paddingStart="10dp"
+        android:paddingTop="8dp"
+        android:paddingEnd="10dp"
+        android:paddingBottom="6dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <LinearLayout
+            android:id="@+id/browserAddressRow"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:background="@drawable/bg_browser_input"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="12dp"
+            android:paddingEnd="6dp">
+
+            <ImageView
+                android:id="@+id/browserSecurityIcon"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_browser_lock"
+                app:tint="@color/green_neon" />
+
+            <EditText
+                android:id="@+id/browserAddressInput"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:background="@android:color/transparent"
+                android:ellipsize="end"
+                android:hint="@string/search_or_enter_address"
+                android:imeOptions="actionGo"
+                android:inputType="textUri"
+                android:maxLines="1"
+                android:padding="0dp"
+                android:selectAllOnFocus="true"
+                android:textColor="@color/white"
+                android:textColorHint="#73FFFFFF"
+                android:textSize="13sp" />
+
+            <ImageButton
+                android:id="@+id/btnAddressGo"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/go"
+                android:padding="9dp"
+                android:src="@drawable/ic_browser_search"
+                app:tint="@color/white" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/browserToolbar"
+            android:layout_width="match_parent"
+            android:layout_height="54dp"
+            android:gravity="center"
+            android:orientation="horizontal">
+
+            <ImageButton
+                android:id="@+id/btnBrowserBack"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/go_back"
+                android:padding="12dp"
+                android:src="@drawable/ic_browser_back"
+                app:tint="@color/white" />
+
+            <ImageButton
+                android:id="@+id/btnBrowserForward"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/go_forward"
+                android:padding="12dp"
+                android:src="@drawable/ic_browser_forward"
+                app:tint="@color/white" />
+
+            <ImageButton
+                android:id="@+id/btnBrowserHome"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/home"
+                android:padding="12dp"
+                android:src="@drawable/ic_browser_home"
+                app:tint="@color/green_neon" />
+
+            <ImageButton
+                android:id="@+id/btnBrowserReload"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/reload"
+                android:padding="12dp"
+                android:src="@drawable/ic_browser_reload"
+                app:tint="@color/white" />
+
+            <ImageButton
+                android:id="@+id/browserMediaDownload"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/browser_download_media"
+                android:padding="12dp"
+                android:src="@drawable/ic_browser_download"
+                android:visibility="gone"
+                app:tint="@color/green_neon" />
+
+            <FrameLayout
+                android:id="@+id/btnBrowserTabs"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:focusable="true">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_gravity="center"
+                    android:contentDescription="@string/tabs"
+                    android:src="@drawable/ic_browser_tabs"
+                    app:tint="@color/white" />
+
+                <TextView
+                    android:id="@+id/browserTabCount"
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:layout_gravity="center"
+                    android:gravity="center"
+                    android:text="1"
+                    android:textColor="#FF0A0D10"
+                    android:textSize="9sp"
+                    android:textStyle="bold" />
+            </FrameLayout>
+
+            <ImageButton
+                android:id="@+id/btnBrowserMenu"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/more_options"
+                android:padding="12dp"
+                android:src="@drawable/ic_browser_more"
+                app:tint="@color/white" />
+        </LinearLayout>
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

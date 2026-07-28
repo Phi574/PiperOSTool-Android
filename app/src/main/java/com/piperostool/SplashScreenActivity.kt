@@ -117,6 +117,23 @@ class SplashScreenActivity : AppCompatActivity() {
         val prefs = getSharedPreferences("PiperPrefs", Context.MODE_PRIVATE)
         val isFingerprintEnabled = prefs.getBoolean("fingerprint_enabled", false)
 
+        if (!NetworkAccess.isOnline(this)) {
+            val lockPrefs = getSharedPreferences(
+                LockScreenActivity.PREFS_NAME,
+                Context.MODE_PRIVATE
+            )
+            when {
+                lockPrefs.getString(LockScreenActivity.KEY_CACHED_PASS, null) != null -> {
+                    val intent = Intent(this, LockScreenActivity::class.java)
+                    intent.putExtra("IS_UNLOCK_MODE", true)
+                    navigateTo(intent)
+                }
+                isFingerprintEnabled -> biometricPrompt.authenticate(promptInfo)
+                else -> navigateTo(HomeActivity::class.java)
+            }
+            return
+        }
+
         val database = FirebaseDatabase.getInstance()
         val userId = currentUser.uid
         val myRef = database.getReference("users/$userId/security/password")
@@ -196,7 +213,7 @@ class SplashScreenActivity : AppCompatActivity() {
 
     private fun showAppNameAndDeveloper() {
         // Hiệu ứng hiện tên App (Fade In)
-        val fadeInAppName = ObjectAnimator.ofFloat(appNameTextView, "alpha", 0.0f, 1.0f)
+        val fadeInAppName = ObjectAnimator.ofFloat(appNameTextView, "alpha", 0.0f, 0.5f)
         fadeInAppName.duration = 1000
 
         // Hiệu ứng hiện tên Dev (Trượt lên + Fade In)
@@ -204,7 +221,7 @@ class SplashScreenActivity : AppCompatActivity() {
         slideInDeveloper.duration = 800
         slideInDeveloper.interpolator = DecelerateInterpolator()
 
-        val fadeInDeveloper = ObjectAnimator.ofFloat(developerTextView, "alpha", 0.0f, 1.0f)
+        val fadeInDeveloper = ObjectAnimator.ofFloat(developerTextView, "alpha", 0.0f, 0.5f)
         fadeInDeveloper.duration = 800
 
         val animatorSet = AnimatorSet()

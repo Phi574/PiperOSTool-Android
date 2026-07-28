@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/mediaItemRoot"
+    android:layout_width="match_parent"
+    android:layout_height="90dp"
+    android:background="@drawable/bg_media_surface"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingStart="10dp"
+    android:paddingEnd="12dp">
+
+    <ImageView
+        android:id="@+id/mediaItemArtwork"
+        android:layout_width="52dp"
+        android:layout_height="52dp"
+        android:background="@drawable/bg_media_icon"
+        android:clipToOutline="true"
+        android:contentDescription="@null"
+        android:padding="3dp"
+        android:scaleType="centerCrop"
+        android:src="@drawable/a3tn" />
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/mediaItemTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="@color/white"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/mediaItemSubtitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="#9FFFFFFF"
+            android:textSize="11sp" />
+
+        <TextView
+            android:id="@+id/mediaItemDetails"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="3dp"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="#73FFFFFF"
+            android:textSize="11sp" />
+    </LinearLayout>
+
+    <ImageView
+        android:id="@+id/mediaItemQueued"
+        android:layout_width="28dp"
+        android:layout_height="28dp"
+        android:contentDescription="@string/media_in_queue"
+        android:padding="4dp"
+        android:src="@drawable/ic_media_queue"
+        android:visibility="gone"
+        app:tint="#39E58C" />
+
+    <ImageView
+        android:layout_width="28dp"
+        android:layout_height="28dp"
+        android:contentDescription="@null"
+        android:padding="5dp"
+        android:src="@drawable/ic_media_play"
+        app:tint="#B9FFFFFF" />
+</LinearLayout>

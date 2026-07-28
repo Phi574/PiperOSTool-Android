@@ -2,25 +2,39 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- CÁC QUYỀN ĐÃ CÓ -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" tools:ignore="QueryAllPackagesPermission" />
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
     <uses-permission android:name="android.permission.USE_FINGERPRINT" />
     <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
-    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED" />
     <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" tools:ignore="ScopedStorage" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" tools:ignore="ScopedStorage" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" tools:ignore="ProtectedPermissions" />
-    <uses-permission android:name="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE" />
+    <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS" tools:ignore="ProtectedPermissions" />
+    <uses-permission android:name="android.permission.GRANT_RUNTIME_PERMISSIONS" tools:ignore="ProtectedPermissions" />
+    <uses-permission android:name="android.permission.DUMP" tools:ignore="ProtectedPermissions" />
+
+    <queries>
+        <package android:name="com.google.android.gms" />
+        <intent>
+            <action android:name="android.net.VpnService" />
+        </intent>
+    </queries>
 
     <application
+        android:name=".PiperOsApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -30,8 +44,6 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.PiperOSTool">
 
-
-        <!-- CÁC KHAI BÁO CŨ GIỮ NGUYÊN -->
         <service
             android:name=".NotificationListener"
             android:label="@string/app_name"
@@ -42,25 +54,66 @@
             </intent-filter>
         </service>
 
+        <service
+            android:name=".BrowserDownloadService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
+        <service
+            android:name=".PiperPlaybackService"
+            android:exported="true"
+            android:foregroundServiceType="mediaPlayback">
+            <intent-filter>
+                <action android:name="androidx.media3.session.MediaSessionService" />
+            </intent-filter>
+        </service>
+
+        <service
+            android:name=".PiperTerminalService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Keeps user-started local shell sessions running while the terminal activity is not visible." />
+        </service>
+
         <activity
-            android:name=".SplashScreenActivity" android:exported="true" android:theme="@style/Theme.AppCompat.NoActionBar">
+            android:name=".SplashScreenActivity"
+            android:exported="true"
+            android:theme="@style/Theme.PiperOSTool.AppCompat.NoActionBar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 
-        <activity android:name=".LoginActivity" android:exported="false" android:theme="@style/Theme.AppCompat.Light.NoActionBar"/>/>
-        <activity android:name=".SignupActivity" android:exported="false" android:theme="@style/Theme.AppCompat.Light.NoActionBar"/>/>
-        <activity android:name=".ForgotPassword" android:exported="false" android:theme="@style/Theme.AppCompat.Light.NoActionBar"/>/>
-        <activity
-            android:name=".HomeActivity"
-            android:exported="false"
-            android:launchMode="singleTask" />
-        <activity android:name=".PermissionManagerActivity" android:exported="false" android:theme="@style/Theme.App.Dialog" />
-        <activity android:name=".WelcomeActivity" android:exported="false" android:theme="@style/Theme.AppCompat.Light.NoActionBar"/>
-        <activity android:name=".LockScreenActivity" android:exported="false" android:screenOrientation="portrait" />
+        <activity android:name=".LoginActivity" android:exported="false" android:theme="@style/Theme.PiperOSTool.AppCompat.Light.NoActionBar" />
+        <activity android:name=".SignupActivity" android:exported="false" android:theme="@style/Theme.PiperOSTool.AppCompat.Light.NoActionBar" />
+        <activity android:name=".ForgotPassword" android:exported="false" android:theme="@style/Theme.PiperOSTool.AppCompat.Light.NoActionBar" />
 
+        <activity android:name=".HomeActivity" android:exported="false" android:launchMode="singleTask" android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".PiperBrowserActivity"
+            android:configChanges="keyboard|keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
+            android:exported="false"
+            android:theme="@style/Theme.PiperOSTool"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".PiperMediaActivity"
+            android:configChanges="keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
+            android:exported="false"
+            android:resizeableActivity="true"
+            android:supportsPictureInPicture="true"
+            android:theme="@style/Theme.PiperOSTool" />
+        <activity
+            android:name=".PiperTerminalActivity"
+            android:configChanges="keyboard|keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
+            android:exported="false"
+            android:theme="@style/Theme.PiperOSTool"
+            android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".PermissionManagerActivity" android:exported="false" android:theme="@style/Theme.App.Dialog" />
+        <activity android:name=".WelcomeActivity" android:exported="false" android:theme="@style/Theme.PiperOSTool.AppCompat.Light.NoActionBar"/>
+        <activity android:name=".LockScreenActivity" android:exported="false" android:screenOrientation="portrait" />
         <receiver
             android:name=".MyDeviceAdminReceiver"
             android:description="@string/app_name"

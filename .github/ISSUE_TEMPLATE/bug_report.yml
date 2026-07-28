@@ -1,0 +1,46 @@
+name: Bug report
+description: Báo lỗi có thể tái hiện trong PiperOS Tool
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: Phiên bản PiperOS
+      placeholder: 2.5.0.beta
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Thiết bị và Android
+      placeholder: OnePlus Ace 2V, Android 16
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Khu vực
+      options:
+        - Browser
+        - Media
+        - Terminal
+        - Apps
+        - Device Info
+        - Settings
+        - Login / account
+        - Khác
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Các bước tái hiện
+      placeholder: Mô tả lần lượt những gì đã bấm và kết quả nhận được.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Log hoặc ảnh
+      description: Xóa token, email, thông báo riêng tư và dữ liệu cá nhân trước khi gửi.

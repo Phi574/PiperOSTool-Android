@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: PiperOS Termux Runtime
+    url: https://github.com/Phi574/Piperos_termux/issues
+    about: Lỗi bootstrap, package repository hoặc runtime Linux.

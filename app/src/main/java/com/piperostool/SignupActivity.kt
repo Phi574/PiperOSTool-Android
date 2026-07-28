@@ -9,6 +9,7 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
+import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.auth
@@ -24,6 +25,8 @@ class SignupActivity : AppCompatActivity() {
     private lateinit var edtConfirm: EditText
     private lateinit var btnRegister: Button
     private lateinit var tvBackToLogin: TextView
+    private lateinit var root: View
+    private lateinit var offlineState: View
 
     private lateinit var auth: FirebaseAuth
     private lateinit var db: FirebaseFirestore
@@ -51,6 +54,7 @@ class SignupActivity : AppCompatActivity() {
 
         initViews()
         setupListeners()
+        NetworkAccess.observe(this, this) { updateNetworkUi(it) }
     }
 
     private fun initViews() {
@@ -60,12 +64,18 @@ class SignupActivity : AppCompatActivity() {
         edtConfirm = findViewById(R.id.edtSignupConfirm)
         btnRegister = findViewById(R.id.btnRegister)
         tvBackToLogin = findViewById(R.id.tvBackToLogin)
+        root = findViewById(R.id.signupRoot)
+        offlineState = findViewById(R.id.signupOfflineState)
+        findViewById<TextView>(R.id.signupVersion).text =
+            getString(R.string.auth_version, AppVersion.name(this))
     }
 
     private fun setupListeners() {
         btnRegister.setOnClickListener {
-            if (validateInput()) {
-                performSignUp()
+            NetworkAccess.requireOnline(root) {
+                if (validateInput()) {
+                    performSignUp()
+                }
             }
         }
 
@@ -112,7 +122,7 @@ class SignupActivity : AppCompatActivity() {
         val name = edtName.text.toString().trim()
 
         btnRegister.isEnabled = false
-        btnRegister.text = "LOADING..."
+        btnRegister.text = getString(R.string.auth_creating_account)
         btnRegister.alpha = 0.5f
 
         auth.createUserWithEmailAndPassword(email, password)
@@ -159,7 +169,13 @@ class SignupActivity : AppCompatActivity() {
 
     private fun resetButton() {
         btnRegister.isEnabled = true
-        btnRegister.text = "SIGNUP"
+        btnRegister.text = getString(R.string.auth_signup_action)
         btnRegister.alpha = 1.0f
+    }
+
+    private fun updateNetworkUi(online: Boolean) {
+        offlineState.visibility = if (online) View.GONE else View.VISIBLE
+        btnRegister.visibility = if (online) View.VISIBLE else View.GONE
+        if (!online) NetworkAccess.showOffline(root)
     }
 }

@@ -263,6 +263,7 @@ class AppsFragment : Fragment() {
     private fun showAppDetailsDialog(app: AppInfoModel) {
         val bottomSheetDialog = BottomSheetDialog(requireContext(), R.style.TransparentBottomSheetDialogTheme)
         val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_app_details, null)
+        PiperAutoFont.watch(dialogView)
         bottomSheetDialog.setContentView(dialogView)
 
         // Ép trong suốt nền mặc định của BottomSheet
@@ -371,6 +372,7 @@ class AppsFragment : Fragment() {
         }
 
         val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_activities_list, null)
+        PiperAutoFont.watch(dialogView)
         val dialog = AlertDialog.Builder(requireContext(), android.R.style.Theme_Material_Dialog_NoActionBar)
             .setView(dialogView).create()
 
@@ -427,6 +429,7 @@ class AppsFragment : Fragment() {
 
         // Khởi tạo Custom Dialog
         val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_action_activity, null)
+        PiperAutoFont.watch(dialogView)
         val dialog = AlertDialog.Builder(requireContext(), android.R.style.Theme_Material_Dialog_NoActionBar)
             .setView(dialogView).create()
 

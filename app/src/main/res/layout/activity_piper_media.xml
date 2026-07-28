@@ -1,0 +1,405 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/mediaRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FF080C0F"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:id="@+id/mediaTopBar"
+        android:layout_width="match_parent"
+        android:layout_height="64dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="12dp"
+        android:paddingEnd="16dp">
+
+        <ImageButton
+            android:id="@+id/mediaClose"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/close_media_player"
+            android:padding="12dp"
+            android:src="@drawable/ic_browser_close"
+            app:tint="@color/white" />
+
+        <ImageView
+            android:layout_width="38dp"
+            android:layout_height="38dp"
+            android:background="@drawable/bg_media_icon"
+            android:contentDescription="@null"
+            android:padding="8dp"
+            android:src="@drawable/nhacvideo" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/piperos_media"
+                android:textColor="@color/white"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/mediaLibraryCount"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/media_scanning"
+                android:textColor="#AFFFFFFF"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <ImageButton
+            android:id="@+id/mediaSearch"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/media_search_library"
+            android:padding="11dp"
+            android:src="@drawable/ic_browser_search"
+            app:tint="@color/white" />
+
+        <ImageButton
+            android:id="@+id/mediaRefresh"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/media_refresh_library"
+            android:padding="11dp"
+            android:src="@drawable/ic_browser_reload"
+            app:tint="@color/white" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/mediaSearchBar"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="8dp"
+        android:background="@drawable/bg_browser_input"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="14dp"
+        android:paddingEnd="4dp"
+        android:visibility="gone">
+
+        <ImageView
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:contentDescription="@null"
+            android:src="@drawable/ic_browser_search"
+            app:tint="#AFFFFFFF" />
+
+        <EditText
+            android:id="@+id/mediaSearchInput"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_marginStart="10dp"
+            android:layout_weight="1"
+            android:background="@android:color/transparent"
+            android:hint="@string/media_search_hint"
+            android:imeOptions="actionSearch"
+            android:inputType="text"
+            android:maxLines="1"
+            android:padding="0dp"
+            android:textColor="@color/white"
+            android:textColorHint="#73FFFFFF"
+            android:textSize="14sp" />
+
+        <ImageButton
+            android:id="@+id/mediaSearchClose"
+            android:layout_width="42dp"
+            android:layout_height="42dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/close_search"
+            android:padding="12dp"
+            android:src="@drawable/ic_browser_close"
+            app:tint="@color/white" />
+    </LinearLayout>
+
+    <FrameLayout
+        android:id="@+id/mediaStage"
+        android:layout_width="match_parent"
+        android:layout_height="220dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:background="@drawable/bg_media_surface">
+
+        <androidx.media3.ui.PlayerView
+            android:id="@+id/mediaPlayerView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone"
+            app:resize_mode="fit"
+            app:show_buffering="when_playing"
+            app:surface_type="surface_view"
+            app:use_controller="false" />
+
+        <FrameLayout
+            android:id="@+id/mediaDiscContainer"
+            android:layout_width="156dp"
+            android:layout_height="156dp"
+            android:layout_gravity="center"
+            android:background="@drawable/bg_media_disc">
+
+            <ImageView
+                android:id="@+id/mediaArtwork"
+                android:layout_width="82dp"
+                android:layout_height="82dp"
+                android:layout_gravity="center"
+                android:background="@drawable/bg_media_disc"
+                android:clipToOutline="true"
+                android:contentDescription="@string/media_artwork"
+                android:scaleType="centerCrop"
+                android:src="@drawable/a3tn" />
+        </FrameLayout>
+
+        <TextView
+            android:id="@+id/mediaEmptyStage"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginTop="184dp"
+            android:text="@string/media_choose_to_play"
+            android:textColor="#AFFFFFFF"
+            android:textSize="12sp" />
+
+        <ImageButton
+            android:id="@+id/mediaFullscreen"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:layout_gravity="top|end"
+            android:layout_margin="8dp"
+            android:background="@drawable/bg_browser_surface"
+            android:contentDescription="@string/media_enter_fullscreen"
+            android:elevation="6dp"
+            android:padding="10dp"
+            android:src="@drawable/ic_media_fullscreen"
+            android:visibility="gone"
+            app:tint="@color/white" />
+    </FrameLayout>
+
+    <LinearLayout
+        android:id="@+id/mediaNowPlayingPanel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingStart="20dp"
+        android:paddingTop="12dp"
+        android:paddingEnd="20dp"
+        android:paddingBottom="8dp">
+
+        <TextView
+            android:id="@+id/mediaNowTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:text="@string/media_nothing_playing"
+            android:textColor="@color/white"
+            android:textSize="17sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/mediaNowArtist"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:text="@string/media_local_library"
+            android:textColor="#AFFFFFFF"
+            android:textSize="12sp" />
+
+        <SeekBar
+            android:id="@+id/mediaSeek"
+            android:layout_width="match_parent"
+            android:layout_height="30dp"
+            android:max="1000"
+            android:progressTint="#39E58C"
+            android:thumbTint="#B9FF58" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:gravity="center"
+            android:orientation="horizontal">
+
+            <ImageButton
+                android:id="@+id/mediaShuffle"
+                style="@style/MediaControlButton"
+                android:contentDescription="@string/media_shuffle"
+                android:src="@drawable/ic_media_shuffle" />
+
+            <ImageButton
+                android:id="@+id/mediaPrevious"
+                style="@style/MediaControlButton"
+                android:layout_marginStart="14dp"
+                android:contentDescription="@string/media_previous"
+                android:src="@drawable/ic_media_previous" />
+
+            <ImageButton
+                android:id="@+id/mediaPlayPause"
+                style="@style/MediaPrimaryControlButton"
+                android:layout_marginStart="14dp"
+                android:contentDescription="@string/media_play_pause"
+                android:src="@drawable/ic_media_play" />
+
+            <ImageButton
+                android:id="@+id/mediaNext"
+                style="@style/MediaControlButton"
+                android:layout_marginStart="14dp"
+                android:contentDescription="@string/media_next"
+                android:src="@drawable/ic_media_next" />
+
+            <FrameLayout
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:layout_marginStart="14dp">
+
+                <ImageButton
+                    android:id="@+id/mediaRepeat"
+                    style="@style/MediaControlButton"
+                    android:contentDescription="@string/media_repeat"
+                    android:src="@drawable/ic_media_repeat" />
+
+                <TextView
+                    android:id="@+id/mediaRepeatOneBadge"
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:layout_gravity="end|bottom"
+                    android:background="@drawable/bg_circle_badge"
+                    android:gravity="center"
+                    android:text="1"
+                    android:textColor="#07120B"
+                    android:textSize="9sp"
+                    android:textStyle="bold"
+                    android:visibility="gone" />
+            </FrameLayout>
+        </LinearLayout>
+    </LinearLayout>
+
+    <HorizontalScrollView
+        android:id="@+id/mediaFilterBar"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:clipToPadding="false"
+        android:fillViewport="true"
+        android:overScrollMode="never"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/mediaFilterAll"
+                style="@style/MediaFilterButton"
+                android:text="@string/media_all" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/mediaFilterAudio"
+                style="@style/MediaFilterButton"
+                android:text="@string/media_audio" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/mediaFilterVideo"
+                style="@style/MediaFilterButton"
+                android:text="@string/media_video" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/mediaFilterQueue"
+                style="@style/MediaFilterButton"
+                android:text="@string/media_my_queue" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/mediaSort"
+                style="@style/MediaFilterButton"
+                android:drawableStart="@drawable/ic_browser_reload"
+                android:text="@string/media_sort_newest" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/mediaPlayQueue"
+                style="@style/MediaFilterButton"
+                android:drawableStart="@drawable/ic_media_play"
+                android:text="@string/media_play_queue" />
+        </LinearLayout>
+    </HorizontalScrollView>
+
+    <LinearLayout
+        android:id="@+id/mediaSourceBar"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="16dp"
+        android:paddingEnd="10dp">
+
+        <HorizontalScrollView
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:clipToPadding="false"
+            android:fillViewport="false"
+            android:overScrollMode="never"
+            android:scrollbars="none">
+
+            <LinearLayout
+                android:id="@+id/mediaSourceChips"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:gravity="center_vertical"
+                android:orientation="horizontal" />
+        </HorizontalScrollView>
+
+        <ImageButton
+            android:id="@+id/mediaSourceMenu"
+            android:layout_width="42dp"
+            android:layout_height="42dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/media_choose_sources"
+            android:padding="10dp"
+            android:src="@drawable/ic_browser_more"
+            app:tint="@color/white" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/mediaHint"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingStart="20dp"
+        android:paddingTop="4dp"
+        android:paddingEnd="20dp"
+        android:paddingBottom="8dp"
+        android:text="@string/media_queue_hint"
+        android:textColor="#86FFFFFF"
+        android:textSize="11sp" />
+
+    <ListView
+        android:id="@+id/mediaList"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:divider="@android:color/transparent"
+        android:dividerHeight="8dp"
+        android:listSelector="@android:color/transparent"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="16dp" />
+
+</LinearLayout>

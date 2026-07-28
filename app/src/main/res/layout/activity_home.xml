@@ -2,15 +2,28 @@
 <androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/homeRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/black">
+
+    <ImageView
+        android:id="@+id/homeBackground"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:contentDescription="@null"
+        android:scaleType="centerCrop"
+        android:src="@drawable/backgroud"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <FrameLayout
         android:id="@+id/fragment_container"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@drawable/backgroud"
+        android:background="@android:color/transparent"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -56,17 +69,26 @@
 
                 <TextView
                     android:id="@+id/txtHome"
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:gravity="center"
+                    android:maxLines="1"
+                    android:paddingStart="2dp"
+                    android:paddingEnd="2dp"
                     android:text="Home"
                     android:textSize="10sp"
                     android:textStyle="bold"
                     android:textColor="@color/green_neon"
-                    android:layout_marginTop="4dp"/>
+                    android:layout_marginTop="4dp"
+                    app:autoSizeMaxTextSize="10sp"
+                    app:autoSizeMinTextSize="7sp"
+                    app:autoSizeStepGranularity="1sp"
+                    app:autoSizeTextType="uniform"/>
             </LinearLayout>
 
             <LinearLayout
-                android:id="@+id/navModul"
+                android:id="@+id/navBeta"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_weight="1"
@@ -85,13 +107,22 @@
 
                 <TextView
                     android:id="@+id/txtNews"
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Module"
+                    android:ellipsize="end"
+                    android:gravity="center"
+                    android:maxLines="1"
+                    android:paddingStart="2dp"
+                    android:paddingEnd="2dp"
+                    android:text="Beta"
                     android:textSize="10sp"
                     android:textStyle="bold"
                     android:textColor="@color/nav_unselected"
-                    android:layout_marginTop="4dp"/>
+                    android:layout_marginTop="4dp"
+                    app:autoSizeMaxTextSize="10sp"
+                    app:autoSizeMinTextSize="7sp"
+                    app:autoSizeStepGranularity="1sp"
+                    app:autoSizeTextType="uniform"/>
             </LinearLayout>
 
             <LinearLayout
@@ -112,13 +143,22 @@
                     app:tint="@color/nav_unselected"/>
                 <TextView
                     android:id="@+id/txtApps"
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:gravity="center"
+                    android:maxLines="1"
+                    android:paddingStart="2dp"
+                    android:paddingEnd="2dp"
                     android:text="Apps"
                     android:textSize="10sp"
                     android:textStyle="bold"
                     android:textColor="@color/nav_unselected"
-                    android:layout_marginTop="4dp"/>
+                    android:layout_marginTop="4dp"
+                    app:autoSizeMaxTextSize="10sp"
+                    app:autoSizeMinTextSize="7sp"
+                    app:autoSizeStepGranularity="1sp"
+                    app:autoSizeTextType="uniform"/>
             </LinearLayout>
 
             <LinearLayout
@@ -141,13 +181,22 @@
 
                 <TextView
                     android:id="@+id/txtSettings"
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:gravity="center"
+                    android:maxLines="1"
+                    android:paddingStart="2dp"
+                    android:paddingEnd="2dp"
                     android:text="Setting"
                     android:textSize="10sp"
                     android:textStyle="bold"
                     android:textColor="@color/nav_unselected"
-                    android:layout_marginTop="4dp"/>
+                    android:layout_marginTop="4dp"
+                    app:autoSizeMaxTextSize="10sp"
+                    app:autoSizeMinTextSize="7sp"
+                    app:autoSizeStepGranularity="1sp"
+                    app:autoSizeTextType="uniform"/>
             </LinearLayout>
 
             <LinearLayout
@@ -170,13 +219,22 @@
 
                 <TextView
                     android:id="@+id/txtDevices"
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:gravity="center"
+                    android:maxLines="1"
+                    android:paddingStart="1dp"
+                    android:paddingEnd="1dp"
                     android:text="Info Device"
                     android:textSize="10sp"
                     android:textStyle="bold"
                     android:textColor="@color/nav_unselected"
-                    android:layout_marginTop="4dp"/>
+                    android:layout_marginTop="4dp"
+                    app:autoSizeMaxTextSize="10sp"
+                    app:autoSizeMinTextSize="7sp"
+                    app:autoSizeStepGranularity="1sp"
+                    app:autoSizeTextType="uniform"/>
             </LinearLayout>
 
         </LinearLayout>

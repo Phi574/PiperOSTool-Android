@@ -1,0 +1,292 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:clipToPadding="false"
+    android:fillViewport="true"
+    android:overScrollMode="never"
+    android:paddingStart="20dp"
+    android:paddingTop="52dp"
+    android:paddingEnd="20dp"
+    android:paddingBottom="118dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/beta_lab_title"
+            android:textColor="@color/white"
+            android:textSize="28sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="@string/beta_lab_subtitle"
+            android:textColor="#B8FFFFFF"
+            android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/betaOfflineState"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="22dp"
+            android:background="@drawable/bg_offline_notice"
+            android:drawableStart="@drawable/ic_browser_globe"
+            android:drawablePadding="12dp"
+            android:padding="14dp"
+            android:text="@string/offline_beta_note"
+            android:textColor="#E8FFFFFF"
+            android:textSize="13sp"
+            android:visibility="gone"
+            app:drawableTint="#FFB74D" />
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/featurePiperBrowser"
+            android:layout_width="match_parent"
+            android:layout_height="112dp"
+            android:layout_marginTop="28dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackground"
+            app:cardBackgroundColor="#E612171C"
+            app:cardCornerRadius="8dp"
+            app:cardElevation="0dp"
+            app:strokeColor="#5AFFFFFF"
+            app:strokeWidth="1dp">
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:padding="18dp">
+
+                <FrameLayout
+                    android:id="@+id/browserFeatureIcon"
+                    android:layout_width="68dp"
+                    android:layout_height="68dp"
+                    android:background="@drawable/bg_browser_icon"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent">
+
+                    <ImageView
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:layout_gravity="center"
+                        android:contentDescription="@null"
+                        android:src="@drawable/browser" />
+                </FrameLayout>
+
+                <TextView
+                    android:id="@+id/browserFeatureTitle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:text="@string/piperos_browser"
+                    android:textColor="@color/white"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    app:layout_constraintEnd_toStartOf="@id/browserFeatureArrow"
+                    app:layout_constraintStart_toEndOf="@id/browserFeatureIcon"
+                    app:layout_constraintTop_toTopOf="@id/browserFeatureIcon" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginTop="6dp"
+                    android:ellipsize="end"
+                    android:maxLines="2"
+                    android:text="@string/piperos_browser_summary"
+                    android:textColor="#AFFFFFFF"
+                    android:textSize="13sp"
+                    app:layout_constraintEnd_toStartOf="@id/browserFeatureArrow"
+                    app:layout_constraintStart_toEndOf="@id/browserFeatureIcon"
+                    app:layout_constraintTop_toBottomOf="@id/browserFeatureTitle" />
+
+                <ImageView
+                    android:id="@+id/browserFeatureArrow"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:contentDescription="@null"
+                    android:rotation="180"
+                    android:src="@drawable/ic_browser_back"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:tint="#B8FFFFFF" />
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/featurePiperMedia"
+            android:layout_width="match_parent"
+            android:layout_height="112dp"
+            android:layout_marginTop="14dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackground"
+            app:cardBackgroundColor="#E612171C"
+            app:cardCornerRadius="8dp"
+            app:cardElevation="0dp"
+            app:strokeColor="#5AFFFFFF"
+            app:strokeWidth="1dp">
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:padding="18dp">
+
+                <FrameLayout
+                    android:id="@+id/mediaFeatureIcon"
+                    android:layout_width="68dp"
+                    android:layout_height="68dp"
+                    android:background="@drawable/bg_media_icon"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent">
+
+                    <ImageView
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:layout_gravity="center"
+                        android:contentDescription="@null"
+                        android:src="@drawable/nhacvideo" />
+                </FrameLayout>
+
+                <TextView
+                    android:id="@+id/mediaFeatureTitle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:text="@string/piperos_media"
+                    android:textColor="@color/white"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    app:layout_constraintEnd_toStartOf="@id/mediaFeatureArrow"
+                    app:layout_constraintStart_toEndOf="@id/mediaFeatureIcon"
+                    app:layout_constraintTop_toTopOf="@id/mediaFeatureIcon" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginTop="6dp"
+                    android:ellipsize="end"
+                    android:maxLines="2"
+                    android:text="@string/piperos_media_summary"
+                    android:textColor="#AFFFFFFF"
+                    android:textSize="13sp"
+                    app:layout_constraintEnd_toStartOf="@id/mediaFeatureArrow"
+                    app:layout_constraintStart_toEndOf="@id/mediaFeatureIcon"
+                    app:layout_constraintTop_toBottomOf="@id/mediaFeatureTitle" />
+
+                <ImageView
+                    android:id="@+id/mediaFeatureArrow"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:contentDescription="@null"
+                    android:rotation="180"
+                    android:src="@drawable/ic_browser_back"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:tint="#B8FFFFFF" />
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/featurePiperTerminal"
+            android:layout_width="match_parent"
+            android:layout_height="112dp"
+            android:layout_marginTop="14dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackground"
+            app:cardBackgroundColor="#E612171C"
+            app:cardCornerRadius="8dp"
+            app:cardElevation="0dp"
+            app:strokeColor="#5AFFFFFF"
+            app:strokeWidth="1dp">
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:padding="18dp">
+
+                <FrameLayout
+                    android:id="@+id/terminalFeatureIcon"
+                    android:layout_width="68dp"
+                    android:layout_height="68dp"
+                    android:background="@drawable/bg_terminal_send"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent">
+
+                    <ImageView
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:layout_gravity="center"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_terminal"
+                        app:tint="#08110B" />
+                </FrameLayout>
+
+                <TextView
+                    android:id="@+id/terminalFeatureTitle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:text="@string/piperos_terminal"
+                    android:textColor="@color/white"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    app:autoSizeMaxTextSize="18sp"
+                    app:autoSizeMinTextSize="13sp"
+                    app:autoSizeStepGranularity="1sp"
+                    app:autoSizeTextType="uniform"
+                    app:layout_constraintEnd_toStartOf="@id/terminalFeatureArrow"
+                    app:layout_constraintStart_toEndOf="@id/terminalFeatureIcon"
+                    app:layout_constraintTop_toTopOf="@id/terminalFeatureIcon" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginTop="6dp"
+                    android:ellipsize="end"
+                    android:maxLines="2"
+                    android:text="@string/piperos_terminal_summary"
+                    android:textColor="#AFFFFFFF"
+                    android:textSize="13sp"
+                    app:layout_constraintEnd_toStartOf="@id/terminalFeatureArrow"
+                    app:layout_constraintStart_toEndOf="@id/terminalFeatureIcon"
+                    app:layout_constraintTop_toBottomOf="@id/terminalFeatureTitle" />
+
+                <ImageView
+                    android:id="@+id/terminalFeatureArrow"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:contentDescription="@null"
+                    android:rotation="180"
+                    android:src="@drawable/ic_browser_back"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:tint="#B8FFFFFF" />
+            </androidx.constraintlayout.widget.ConstraintLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>

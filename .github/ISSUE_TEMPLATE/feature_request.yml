@@ -1,0 +1,28 @@
+name: Feature request
+description: Đề xuất tính năng hoặc cải tiến
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Vấn đề cần giải quyết
+      description: Mô tả nhu cầu thực tế thay vì chỉ tên tính năng.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Cách hoạt động mong muốn
+    validations:
+      required: true
+  - type: dropdown
+    id: repository
+    attributes:
+      label: Thành phần
+      options:
+        - PiperOS Android app
+        - PiperOS Termux runtime
+        - Cả hai
+    validations:
+      required: true

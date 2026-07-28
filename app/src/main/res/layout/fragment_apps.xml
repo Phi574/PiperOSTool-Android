@@ -79,7 +79,7 @@
             android:layout_weight="1"
             android:background="@drawable/bg_glass_panel"
             android:gravity="center"
-            android:text="Vô hiệu hóa"
+            android:text="Đã tắt"
             android:textColor="#FFFFFF"
             android:textSize="12sp"
             android:textStyle="bold" />

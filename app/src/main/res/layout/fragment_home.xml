@@ -12,32 +12,32 @@
         android:background="@drawable/bg_glass_panel"
         android:orientation="vertical"
         android:padding="24dp"
-        app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintVertical_bias="0.2">
 
         <ImageView
             android:layout_width="60dp"
             android:layout_height="60dp"
-            android:src="@drawable/a3tn"
-            android:layout_marginBottom="16dp" />
+            android:layout_marginBottom="16dp"
+            android:src="@drawable/a3tn" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="SYSTEM DASHBOARD"
+            android:letterSpacing="0.1"
+            android:text="HOME"
             android:textColor="#FFFFFF"
             android:textSize="22sp"
-            android:textStyle="bold"
-            android:letterSpacing="0.1"/>
+            android:textStyle="bold" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
             android:text="All systems operational. Security scans have been bypassed."
             android:textColor="#B3FFFFFF"
-            android:textSize="14sp"
-            android:layout_marginTop="8dp"/>
+            android:textSize="14sp" />
 
     </LinearLayout>
 

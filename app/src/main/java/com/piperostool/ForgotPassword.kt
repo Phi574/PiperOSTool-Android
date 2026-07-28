@@ -8,6 +8,7 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
+import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.auth
@@ -18,6 +19,8 @@ class ForgotPassword : AppCompatActivity() {
     private lateinit var edtEmail: EditText
     private lateinit var btnReset: Button
     private lateinit var tvBackToLogin: TextView
+    private lateinit var root: View
+    private lateinit var offlineState: View
 
     private lateinit var auth: FirebaseAuth
 
@@ -43,16 +46,23 @@ class ForgotPassword : AppCompatActivity() {
 
         initViews()
         setupListeners()
+        NetworkAccess.observe(this, this) { updateNetworkUi(it) }
     }
 
     private fun initViews() {
         edtEmail = findViewById(R.id.edtForgotEmail)
         btnReset = findViewById(R.id.btnResetPassword)
         tvBackToLogin = findViewById(R.id.tvBackToLoginFromForgot)
+        root = findViewById(R.id.forgotRoot)
+        offlineState = findViewById(R.id.forgotOfflineState)
     }
 
     private fun setupListeners() {
         btnReset.setOnClickListener {
+            if (!NetworkAccess.isOnline(this)) {
+                NetworkAccess.showOffline(root)
+                return@setOnClickListener
+            }
             val email = edtEmail.text.toString().trim()
 
             if (email.isEmpty() || !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
@@ -89,5 +99,11 @@ class ForgotPassword : AppCompatActivity() {
         edtEmail.setOnFocusChangeListener { _, hasFocus ->
             if (hasFocus) edtEmail.error = null
         }
+    }
+
+    private fun updateNetworkUi(online: Boolean) {
+        offlineState.visibility = if (online) View.GONE else View.VISIBLE
+        btnReset.visibility = if (online) View.VISIBLE else View.GONE
+        if (!online) NetworkAccess.showOffline(root)
     }
 }

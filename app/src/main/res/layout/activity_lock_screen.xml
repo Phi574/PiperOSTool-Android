@@ -2,184 +2,230 @@
 <androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/lockRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/backgroud"
-    android:padding="20dp">
+    android:fitsSystemWindows="true">
 
-<LinearLayout
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:gravity="center_horizontal"
-    android:orientation="vertical"
-    android:padding="39dp">
-
-    <!-- HEADER: Nút đăng xuất ở góc phải -->
-    <RelativeLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content">
-
-        <!-- Nút Đăng Xuất -->
-        <LinearLayout
-            android:id="@+id/btnLogout"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentEnd="true"
-            android:gravity="center"
-            android:background="?attr/selectableItemBackground"
-            android:padding="8dp">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Đăng xuất"
-                android:textColor="#FF5252"
-                android:textStyle="bold"
-                android:textSize="14sp"
-                android:layout_marginEnd="5dp"/>
-
-            <ImageView
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:src="@drawable/exit"
-                app:tint="#FF5252"/>
-            <!-- Lưu ý: Đảm bảo bạn có icon logout hoặc đổi src thành icon có sẵn -->
-        </LinearLayout>
-    </RelativeLayout>
-
-    <!-- Khoảng trống -->
-    <Space
-        android:layout_width="match_parent"
-        android:layout_height="30dp" />
-
-    <ImageView
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:layout_marginBottom="24dp"
-        android:src="@drawable/lock"
-        app:tint="@color/white" />
-
-    <TextView
-        android:id="@+id/tvTitle"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
-        android:text="Bảo mật"
-        android:textColor="@color/white"
-        android:textSize="22sp"
-        android:textStyle="bold" />
-
-    <TextView
-        android:id="@+id/tvSubTitle"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="40dp"
-        android:gravity="center"
-        android:text="Đang tải dữ liệu..."
-        android:textColor="#B0B0B0"
-        android:textSize="14sp" />
-
-    <!-- LAYOUT CHO PIN (DOTS) -->
-    <RelativeLayout
-        android:id="@+id/layoutPinInput"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="24dp"
-        android:visibility="gone">
-
-        <!-- Các chấm tròn hiển thị -->
-        <LinearLayout
-            android:id="@+id/llDotsContainer"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_centerInParent="true"
-            android:orientation="horizontal"
-            android:padding="10dp">
-        </LinearLayout>
-
-        <!-- EditText ẨN -->
-        <EditText
-            android:id="@+id/etPinHidden"
-            android:layout_width="1dp"
-            android:layout_height="1dp"
-            android:background="@null"
-            android:cursorVisible="false"
-            android:inputType="numberPassword"
-            android:textColor="@android:color/transparent"
-            android:layout_alignParentTop="true"/>
-    </RelativeLayout>
-
-    <!-- LAYOUT CHO CUSTOM PASSWORD -->
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/tilPassword"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="24dp"
-        android:visibility="visible"
-        app:boxStrokeColor="#00FF00"
-        app:cursorColor="#00FF00"
-        app:hintTextColor="#00FF00"
-        app:passwordToggleEnabled="true"
-        app:passwordToggleTint="@color/bg_dark">
-
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/etPassword"
-            android:layout_width="match_parent"
-            android:layout_height="70dp"
-            android:layout_marginHorizontal="20dp"
-            android:layout_marginBottom="20dp"
-            android:background="@drawable/bg_glass_input"
-            app:cardCornerRadius="35dp"
-            app:cardElevation="10dp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            android:inputType="textPassword"
-            android:textColor="@color/chip_pending"
-            android:textSize="18sp" />
-    </com.google.android.material.textfield.TextInputLayout>
-
-    <Button
-        android:id="@+id/btnConfirm"
-        android:layout_width="match_parent"
-        android:layout_height="70dp"
-        android:layout_marginHorizontal="20dp"
-        android:layout_marginBottom="20dp"
-        android:background="@drawable/bg_glass_input"
-        app:cardCornerRadius="35dp"
-        app:cardElevation="10dp"
+    <View
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:background="@drawable/bg_auth_overlay"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:text="Xác nhận"
-        android:textColor="@color/white"
-        android:textSize="16sp"
-        android:textStyle="bold" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <LinearLayout
-        android:id="@+id/layoutFingerprint"
+        android:id="@+id/btnLogout"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="30dp"
+        android:layout_height="48dp"
+        android:layout_marginTop="10dp"
+        android:layout_marginEnd="18dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
         android:gravity="center"
-        android:orientation="vertical"
-        android:visibility="visible">
-
-        <ImageView
-            android:id="@+id/ivFingerprintIcon"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:src="@drawable/fingerprint"
-            app:tint="@color/white" />
+        android:orientation="horizontal"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="Chạm vào cảm biến vân tay"
-            android:textColor="@color/white"
-            android:textSize="12sp" />
+            android:text="@string/auth_logout"
+            android:textColor="#FF8A80"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+
+        <ImageView
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_marginStart="8dp"
+            android:contentDescription="@null"
+            android:src="@drawable/exit"
+            app:tint="#FF8A80" />
     </LinearLayout>
 
-</LinearLayout>
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:clipToPadding="false"
+        android:fillViewport="true"
+        android:paddingStart="22dp"
+        android:paddingTop="12dp"
+        android:paddingEnd="22dp"
+        android:paddingBottom="24dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/btnLogout">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_horizontal"
+            android:orientation="vertical">
+
+            <FrameLayout
+                android:layout_width="74dp"
+                android:layout_height="74dp"
+                android:background="@drawable/bg_media_icon">
+
+                <ImageView
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:layout_gravity="center"
+                    android:contentDescription="@null"
+                    android:src="@drawable/lock"
+                    app:tint="#07120B" />
+            </FrameLayout>
+
+            <TextView
+                android:id="@+id/tvTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:gravity="center"
+                android:text="@string/auth_security"
+                android:textColor="@color/white"
+                android:textSize="26sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvSubTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:gravity="center"
+                android:text="@string/auth_checking_security"
+                android:textColor="#B8FFFFFF"
+                android:textSize="14sp" />
+
+            <TextView
+                android:id="@+id/lockVersion"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="5dp"
+                android:text="@string/auth_version_placeholder"
+                android:textColor="#80FFFFFF"
+                android:textSize="11sp" />
+
+            <TextView
+                android:id="@+id/lockOfflineState"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:background="@drawable/bg_offline_notice"
+                android:padding="12dp"
+                android:text="@string/lock_offline_note"
+                android:textColor="#FFFFD180"
+                android:textSize="12sp"
+                android:visibility="gone" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:background="@drawable/bg_auth_panel"
+                android:orientation="vertical"
+                android:padding="20dp">
+
+                <RelativeLayout
+                    android:id="@+id/layoutPinInput"
+                    android:layout_width="match_parent"
+                    android:layout_height="76dp"
+                    android:background="@drawable/bg_auth_input"
+                    android:visibility="gone">
+
+                    <LinearLayout
+                        android:id="@+id/llDotsContainer"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_centerInParent="true"
+                        android:gravity="center"
+                        android:orientation="horizontal"
+                        android:padding="10dp" />
+
+                    <EditText
+                        android:id="@+id/etPinHidden"
+                        android:layout_width="1dp"
+                        android:layout_height="1dp"
+                        android:background="@null"
+                        android:cursorVisible="false"
+                        android:importantForAutofill="no"
+                        android:inputType="numberPassword"
+                        android:textColor="@android:color/transparent" />
+                </RelativeLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilPassword"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/auth_lock_password_hint"
+                    android:visibility="visible"
+                    app:boxBackgroundColor="#E612191D"
+                    app:boxCornerRadiusBottomEnd="8dp"
+                    app:boxCornerRadiusBottomStart="8dp"
+                    app:boxCornerRadiusTopEnd="8dp"
+                    app:boxCornerRadiusTopStart="8dp"
+                    app:boxStrokeColor="#39E58C"
+                    app:endIconMode="password_toggle"
+                    app:endIconTint="#B9FF58"
+                    app:hintTextColor="#9FFFFFFF">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etPassword"
+                        android:layout_width="match_parent"
+                        android:layout_height="62dp"
+                        android:inputType="textPassword"
+                        android:maxLines="1"
+                        android:textColor="@color/white"
+                        android:textSize="17sp" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <Button
+                    android:id="@+id/btnConfirm"
+                    android:layout_width="match_parent"
+                    android:layout_height="54dp"
+                    android:layout_marginTop="16dp"
+                    android:background="@drawable/bg_auth_primary"
+                    android:text="@string/auth_confirm"
+                    android:textColor="#07120B"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    app:backgroundTint="@null" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/layoutFingerprint"
+                android:layout_width="match_parent"
+                android:layout_height="74dp"
+                android:layout_marginTop="14dp"
+                android:background="?attr/selectableItemBackground"
+                android:gravity="center"
+                android:orientation="horizontal"
+                android:visibility="visible">
+
+                <ImageView
+                    android:id="@+id/ivFingerprintIcon"
+                    android:layout_width="34dp"
+                    android:layout_height="34dp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/fingerprint"
+                    app:tint="#7DFFB0" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:text="@string/auth_use_fingerprint"
+                    android:textColor="@color/white"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
 </androidx.constraintlayout.widget.ConstraintLayout>

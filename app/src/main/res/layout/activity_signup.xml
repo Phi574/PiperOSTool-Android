@@ -2,131 +2,179 @@
 <androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/signupRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/bg_liquid_main">
+    android:background="@color/black"
+    android:fitsSystemWindows="true">
 
-    <LinearLayout
-        android:id="@+id/glassPanelSignup"
+    <ImageView
         android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginHorizontal="30dp"
-        android:background="@drawable/bg_glass_panel"
-        android:orientation="vertical"
-        android:padding="32dp"
+        android:layout_height="0dp"
+        android:contentDescription="@null"
+        android:scaleType="centerCrop"
+        android:src="@drawable/backgroud"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.45">
+        app:layout_constraintTop_toTopOf="parent" />
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:text="NEW ACCOUNT"
-            android:textColor="#FFFFFF"
-            android:textSize="24sp"
-            android:textStyle="bold"
-            android:letterSpacing="0.1"/>
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:text="Create Piper OS Identity"
-            android:textColor="#B3FFFFFF"
-            android:textSize="14sp"
-            android:layout_marginBottom="24dp"/>
-
-        <EditText
-            android:id="@+id/edtSignupName"
-            android:layout_width="match_parent"
-            android:layout_height="50dp"
-            android:background="@drawable/bg_glass_input"
-            android:hint="Name"
-            android:textColorHint="#80FFFFFF"
-            android:textColor="#FFFFFF"
-            android:paddingHorizontal="20dp"
-            android:maxLines="1"
-            android:inputType="textPersonName"/>
-
-        <EditText
-            android:id="@+id/edtSignupEmail"
-            android:layout_width="match_parent"
-            android:layout_height="50dp"
-            android:layout_marginTop="12dp"
-            android:background="@drawable/bg_glass_input"
-            android:hint="Email Address"
-            android:textColorHint="#80FFFFFF"
-            android:textColor="#FFFFFF"
-            android:paddingHorizontal="20dp"
-            android:maxLines="1"
-            android:inputType="textEmailAddress"/>
-
-        <EditText
-            android:id="@+id/edtSignupPassword"
-            android:layout_width="match_parent"
-            android:layout_height="50dp"
-            android:layout_marginTop="12dp"
-            android:background="@drawable/bg_glass_input"
-            android:hint="Password (Min 6 chars)"
-            android:textColorHint="#80FFFFFF"
-            android:textColor="#FFFFFF"
-            android:paddingHorizontal="20dp"
-            android:maxLines="1"
-            android:inputType="textPassword"/>
-
-        <EditText
-            android:id="@+id/edtSignupConfirm"
-            android:layout_width="match_parent"
-            android:layout_height="50dp"
-            android:layout_marginTop="12dp"
-            android:background="@drawable/bg_glass_input"
-            android:hint="Confirm Password"
-            android:textColorHint="#80FFFFFF"
-            android:textColor="#FFFFFF"
-            android:paddingHorizontal="20dp"
-            android:maxLines="1"
-            android:inputType="textPassword"/>
-
-        <Button
-            android:id="@+id/btnRegister"
-            android:layout_width="match_parent"
-            android:layout_height="60dp"
-            android:layout_marginTop="24dp"
-            android:background="@drawable/bg_glass_panel"
-            android:text="SIGNUP"
-            android:textColor="#FFFFFF"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:letterSpacing="0.2"
-            app:backgroundTint="#4D00E5FF"/>
-
-    </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="30dp"
-        android:orientation="horizontal"
-        app:layout_constraintTop_toBottomOf="@id/glassPanelSignup"
+    <View
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:background="@drawable/bg_auth_overlay"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        app:layout_constraintTop_toTopOf="parent" />
 
-        <TextView
-            android:layout_width="wrap_content"
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:clipToPadding="false"
+        android:fillViewport="true"
+        android:paddingStart="22dp"
+        android:paddingTop="22dp"
+        android:paddingEnd="22dp"
+        android:paddingBottom="24dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Already have an ID? "
-            android:textColor="#B3FFFFFF"/>
+            android:gravity="center_horizontal"
+            android:orientation="vertical">
 
-        <TextView
-            android:id="@+id/tvBackToLogin"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Login here"
-            android:textColor="#00E5FF"
-            android:textStyle="bold"/>
-    </LinearLayout>
+            <ImageView
+                android:layout_width="64dp"
+                android:layout_height="64dp"
+                android:contentDescription="@string/app_name"
+                android:src="@drawable/a3tn" />
 
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="@string/auth_create_title"
+                android:textColor="@color/white"
+                android:textSize="26sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/signupVersion"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="@string/auth_version_placeholder"
+                android:textColor="#AFFFFFFF"
+                android:textSize="12sp" />
+
+            <TextView
+                android:id="@+id/signupOfflineState"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:background="@drawable/bg_offline_notice"
+                android:padding="14dp"
+                android:text="@string/auth_offline_note"
+                android:textColor="#FFFFD180"
+                android:textSize="13sp"
+                android:visibility="gone" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:background="@drawable/bg_auth_panel"
+                android:orientation="vertical"
+                android:padding="20dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/auth_identity_details"
+                    android:textColor="@color/white"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
+                <EditText
+                    android:id="@+id/edtSignupName"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:layout_marginTop="18dp"
+                    android:autofillHints="name"
+                    android:background="@drawable/bg_auth_input"
+                    android:hint="@string/auth_name_hint"
+                    android:inputType="textPersonName"
+                    android:maxLines="1"
+                    android:textColor="@color/white"
+                    android:textColorHint="#7FFFFFFF" />
+
+                <EditText
+                    android:id="@+id/edtSignupEmail"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:layout_marginTop="10dp"
+                    android:autofillHints="emailAddress"
+                    android:background="@drawable/bg_auth_input"
+                    android:hint="@string/auth_email_hint"
+                    android:inputType="textEmailAddress"
+                    android:maxLines="1"
+                    android:textColor="@color/white"
+                    android:textColorHint="#7FFFFFFF" />
+
+                <EditText
+                    android:id="@+id/edtSignupPassword"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:layout_marginTop="10dp"
+                    android:autofillHints="newPassword"
+                    android:background="@drawable/bg_auth_input"
+                    android:hint="@string/auth_new_password_hint"
+                    android:inputType="textPassword"
+                    android:maxLines="1"
+                    android:textColor="@color/white"
+                    android:textColorHint="#7FFFFFFF" />
+
+                <EditText
+                    android:id="@+id/edtSignupConfirm"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:layout_marginTop="10dp"
+                    android:autofillHints="newPassword"
+                    android:background="@drawable/bg_auth_input"
+                    android:hint="@string/auth_confirm_password_hint"
+                    android:inputType="textPassword"
+                    android:maxLines="1"
+                    android:textColor="@color/white"
+                    android:textColorHint="#7FFFFFFF" />
+
+                <Button
+                    android:id="@+id/btnRegister"
+                    android:layout_width="match_parent"
+                    android:layout_height="54dp"
+                    android:layout_marginTop="18dp"
+                    android:background="@drawable/bg_auth_primary"
+                    android:text="@string/auth_signup_action"
+                    android:textColor="#07120B"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    app:backgroundTint="@null" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tvBackToLogin"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:layout_marginTop="12dp"
+                android:background="?attr/selectableItemBackground"
+                android:gravity="center"
+                android:text="@string/auth_back_login"
+                android:textColor="#DFFFFFFF"
+                android:textStyle="bold" />
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
 </androidx.constraintlayout.widget.ConstraintLayout>

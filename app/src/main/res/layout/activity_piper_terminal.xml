@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/terminalRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FF090D10"
+    android:fitsSystemWindows="true">
+
+    <LinearLayout
+        android:id="@+id/terminalToolbar"
+        android:layout_width="0dp"
+        android:layout_height="56dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="10dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <ImageButton
+            android:id="@+id/btnTerminalBack"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/go_back"
+            android:padding="10dp"
+            android:src="@drawable/ic_browser_back"
+            app:tint="@color/white" />
+
+        <ImageView
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_marginStart="4dp"
+            android:contentDescription="@null"
+            android:src="@drawable/ic_terminal"
+            app:tint="#8DFFB0" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="@string/piperos_terminal"
+                android:textColor="@color/white"
+                android:textSize="17sp"
+                android:textStyle="bold" />
+            <TextView
+                android:id="@+id/tvTerminalStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="@string/terminal_status_ready"
+                android:textColor="#9FFFFFFF"
+                android:textSize="11sp" />
+        </LinearLayout>
+
+        <ImageButton
+            android:id="@+id/btnTerminalClear"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/terminal_clear"
+            android:padding="9dp"
+            android:src="@drawable/ic_browser_reload"
+            app:tint="#B8FFFFFF" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/terminalTabsBar"
+        android:layout_width="0dp"
+        android:layout_height="48dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="12dp"
+        android:paddingEnd="8dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/terminalToolbar">
+
+        <HorizontalScrollView
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:fillViewport="false"
+            android:overScrollMode="never"
+            android:scrollbars="none">
+            <LinearLayout
+                android:id="@+id/terminalTabs"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:gravity="center_vertical"
+                android:orientation="horizontal" />
+        </HorizontalScrollView>
+
+        <ImageButton
+            android:id="@+id/btnNewTerminalTab"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/terminal_new_session"
+            android:padding="9dp"
+            android:src="@drawable/ic_browser_add"
+            app:tint="#8DFFB0" />
+
+        <ImageButton
+            android:id="@+id/btnCloseTerminalTab"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/terminal_close_session"
+            android:padding="9dp"
+            android:src="@drawable/ic_browser_close"
+            app:tint="#FB7185" />
+    </LinearLayout>
+
+    <ScrollView
+        android:id="@+id/terminalScroll"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginHorizontal="12dp"
+        android:layout_marginTop="4dp"
+        android:background="@drawable/bg_terminal_screen"
+        android:clipToPadding="false"
+        android:fillViewport="true"
+        android:padding="14dp"
+        app:layout_constraintBottom_toTopOf="@id/terminalKeysScroll"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/terminalTabsBar">
+        <TextView
+            android:id="@+id/tvTerminalOutput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fontFamily="monospace"
+            android:lineSpacingExtra="3dp"
+            android:textColor="#D9FCE5"
+            android:textIsSelectable="true"
+            android:textSize="13sp" />
+    </ScrollView>
+
+    <HorizontalScrollView
+        android:id="@+id/terminalKeysScroll"
+        android:layout_width="0dp"
+        android:layout_height="48dp"
+        android:layout_marginTop="6dp"
+        android:overScrollMode="never"
+        android:paddingHorizontal="12dp"
+        android:scrollbars="none"
+        app:layout_constraintBottom_toTopOf="@id/terminalInputRow"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+            <TextView android:id="@+id/btnTerminalCtrlC" style="@style/TerminalKey" android:text="CTRL+C" />
+            <TextView android:id="@+id/btnTerminalTabKey" style="@style/TerminalKey" android:text="TAB" />
+            <TextView android:id="@+id/btnTerminalEsc" style="@style/TerminalKey" android:text="ESC" />
+            <TextView android:id="@+id/btnTerminalHistoryUp" style="@style/TerminalKey" android:text="↑" />
+            <TextView android:id="@+id/btnTerminalHistoryDown" style="@style/TerminalKey" android:text="↓" />
+        </LinearLayout>
+    </HorizontalScrollView>
+
+    <LinearLayout
+        android:id="@+id/terminalInputRow"
+        android:layout_width="0dp"
+        android:layout_height="64dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:paddingBottom="8dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <EditText
+            android:id="@+id/etTerminalCommand"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_terminal_input"
+            android:fontFamily="monospace"
+            android:hint="@string/terminal_command_hint"
+            android:imeOptions="actionSend"
+            android:inputType="text|textNoSuggestions"
+            android:maxLines="1"
+            android:singleLine="true"
+            android:textColor="@color/white"
+            android:textColorHint="#72FFFFFF"
+            android:textSize="14sp" />
+
+        <ImageButton
+            android:id="@+id/btnTerminalSend"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/bg_terminal_send"
+            android:contentDescription="@string/terminal_run_command"
+            android:padding="12dp"
+            android:src="@drawable/ic_terminal"
+            app:tint="#08110B" />
+    </LinearLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

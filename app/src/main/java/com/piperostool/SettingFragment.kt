@@ -29,6 +29,11 @@ import kotlin.system.exitProcess
 
 
 class SettingFragment : Fragment() {
+    private companion object {
+        const val ANDROID_SOURCE_URL = "https://github.com/Phi574/PiperOSTool-Android"
+        const val RUNTIME_SOURCE_URL = "https://github.com/Phi574/Piperos_termux"
+    }
+
     private lateinit var layoutAdmin: LinearLayout
     private lateinit var switchAdmin: SwitchMaterial
     private lateinit var layoutFingerprint: LinearLayout
@@ -50,6 +55,7 @@ class SettingFragment : Fragment() {
     private lateinit var layoutResetBackground: LinearLayout
 
     private lateinit var tvCurrentBackground: TextView
+    private lateinit var settingsRoot: View
 // Firebase reference
     private val database = FirebaseDatabase.getInstance()
     private val auth = FirebaseAuth.getInstance()
@@ -105,6 +111,26 @@ class SettingFragment : Fragment() {
 
 
         initViews(view)
+        settingsRoot = view
+        view.findViewById<TextView>(R.id.tvSettingVersion).text =
+            getString(R.string.auth_version, AppVersion.name(requireContext()))
+        view.findViewById<View>(R.id.btnSettingLogout).setOnClickListener {
+            showLogoutConfirmation()
+        }
+        view.findViewById<View>(R.id.btnAndroidSource).setOnClickListener {
+            openProjectUrl(ANDROID_SOURCE_URL)
+        }
+        view.findViewById<View>(R.id.btnRuntimeSource).setOnClickListener {
+            openProjectUrl(RUNTIME_SOURCE_URL)
+        }
+        NetworkAccess.observe(viewLifecycleOwner, requireContext()) { online ->
+            layoutPasswordToggle.visibility = if (online) View.VISIBLE else View.GONE
+            btnChangeLock.visibility = if (online) View.VISIBLE else View.GONE
+            if (!online) {
+                tvChangeLockStatus.text = getString(R.string.settings_lock_offline)
+                NetworkAccess.showOffline(view)
+            }
+        }
 
         setupBiometric()
 
@@ -126,6 +152,10 @@ class SettingFragment : Fragment() {
 
         layoutFingerprint.setOnClickListener {
             val isFingerprintOn = switchFingerprint.isChecked
+            if (isFingerprintOn && !NetworkAccess.isOnline(requireContext())) {
+                NetworkAccess.showOffline(settingsRoot)
+                return@setOnClickListener
+            }
             if (isFingerprintOn) {
                 checkSecurityConstraintForFingerprint()
             } else {
@@ -152,6 +182,38 @@ class SettingFragment : Fragment() {
 
         }
 
+    }
+
+    private fun openProjectUrl(url: String) {
+        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+    }
+
+    private fun showLogoutConfirmation() {
+        AlertDialog.Builder(requireContext())
+            .setTitle(R.string.auth_logout)
+            .setMessage(R.string.logout_confirmation)
+            .setNegativeButton(android.R.string.cancel, null)
+            .setPositiveButton(R.string.auth_logout) { _, _ ->
+                auth.signOut()
+                requireActivity()
+                    .getSharedPreferences(LockScreenActivity.PREFS_NAME, Context.MODE_PRIVATE)
+                    .edit()
+                    .clear()
+                    .apply()
+                requireActivity()
+                    .getSharedPreferences("PiperPrefs", Context.MODE_PRIVATE)
+                    .edit()
+                    .remove("fingerprint_enabled")
+                    .apply()
+                startActivity(
+                    Intent(requireContext(), LoginActivity::class.java).apply {
+                        flags =
+                            Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    }
+                )
+                requireActivity().finish()
+            }
+            .show()
     }
 
 
@@ -286,6 +348,17 @@ class SettingFragment : Fragment() {
 // --- LOGIC KIỂM TRA FIREBASE & TRẠNG THÁI ---
 
     private fun checkPasswordStatusFromFirebase() {
+        if (!NetworkAccess.isOnline(requireContext())) {
+            val lockPrefs = requireContext().getSharedPreferences(
+                LockScreenActivity.PREFS_NAME,
+                Context.MODE_PRIVATE
+            )
+            val hasPassword =
+                lockPrefs.getString(LockScreenActivity.KEY_CACHED_PASS, null) != null
+            switchPassword.isChecked = hasPassword
+            tvChangeLockStatus.text = getString(R.string.settings_lock_offline)
+            return
+        }
 
         val myRef = database.getReference("users/$userId/security/password")
 
@@ -354,10 +427,15 @@ class SettingFragment : Fragment() {
     }
 
     private fun showLockTypeSelectionDialog() {
+        if (!NetworkAccess.isOnline(requireContext())) {
+            NetworkAccess.showOffline(settingsRoot)
+            return
+        }
 
         val dialog = com.google.android.material.bottomsheet.BottomSheetDialog(requireContext(), R.style.BottomSheetDialogTheme)
 
         val view = layoutInflater.inflate(R.layout.dialog_lock_type_selection, null)
+        PiperAutoFont.watch(view)
 
 
 

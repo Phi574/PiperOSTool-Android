@@ -9,6 +9,7 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
+import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.auth
@@ -24,6 +25,8 @@ class LoginActivity : AppCompatActivity() {
     private lateinit var btnLogin: Button
     private lateinit var tvGoToSignUp: TextView
     private lateinit var tvForgotPassword: TextView
+    private lateinit var root: View
+    private lateinit var offlineState: View
 
     // Khai báo Firebase
     private lateinit var auth: FirebaseAuth
@@ -49,6 +52,7 @@ class LoginActivity : AppCompatActivity() {
 
         initViews()
         setupListeners()
+        NetworkAccess.observe(this, this) { updateNetworkUi(it) }
     }
 
     public override fun onStart() {
@@ -66,22 +70,32 @@ class LoginActivity : AppCompatActivity() {
         btnLogin = findViewById(R.id.btnLogin)
         tvGoToSignUp = findViewById(R.id.tvSignUp) // Cập nhật đúng ID nút Đăng ký
         tvForgotPassword = findViewById(R.id.tvForgotPassword)
+        root = findViewById(R.id.loginRoot)
+        offlineState = findViewById(R.id.loginOfflineState)
+        findViewById<TextView>(R.id.authVersion).text =
+            getString(R.string.auth_version, AppVersion.name(this))
     }
 
     private fun setupListeners() {
         btnLogin.setOnClickListener {
-            if (validateInput()) {
-                performLogin()
+            NetworkAccess.requireOnline(root) {
+                if (validateInput()) {
+                    performLogin()
+                }
             }
         }
 
         tvGoToSignUp.setOnClickListener {
-            val intent = Intent(this, SignupActivity::class.java)
-            startActivity(intent)
+            NetworkAccess.requireOnline(root) {
+                val intent = Intent(this, SignupActivity::class.java)
+                startActivity(intent)
+            }
         }
 
         tvForgotPassword.setOnClickListener {
-            startActivity(Intent(this, ForgotPassword::class.java))
+            NetworkAccess.requireOnline(root) {
+                startActivity(Intent(this, ForgotPassword::class.java))
+            }
         }
 
         // Xóa lỗi khi người dùng bấm vào ô nhập
@@ -112,7 +126,7 @@ class LoginActivity : AppCompatActivity() {
 
         // Hiệu ứng nút bấm khi loading
         btnLogin.isEnabled = false
-        btnLogin.text = "LOADING..."
+        btnLogin.text = getString(R.string.auth_signing_in)
         btnLogin.alpha = 0.5f
 
         auth.signInWithEmailAndPassword(email, password)
@@ -127,11 +141,19 @@ class LoginActivity : AppCompatActivity() {
                     }
                 } else {
                     btnLogin.isEnabled = true
-                    btnLogin.text = "LOGIN"
+                    btnLogin.text = getString(R.string.auth_login_action)
                     btnLogin.alpha = 1.0f
                     Toast.makeText(this, "Kiểm tra lại thông tin: ${task.exception?.message}", Toast.LENGTH_LONG).show()
                 }
             }
+    }
+
+    private fun updateNetworkUi(online: Boolean) {
+        offlineState.visibility = if (online) View.GONE else View.VISIBLE
+        btnLogin.visibility = if (online) View.VISIBLE else View.GONE
+        tvForgotPassword.visibility = if (online) View.VISIBLE else View.GONE
+        tvGoToSignUp.visibility = if (online) View.VISIBLE else View.GONE
+        if (!online) NetworkAccess.showOffline(root)
     }
 
     private fun checkSecurityAndProceed(userId: String) {

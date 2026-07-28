@@ -4,265 +4,360 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="20dp">
+    android:fitsSystemWindows="true">
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@drawable/bg_glass_panel"
-        android:orientation="vertical"
-        android:padding="24dp"
-        app:layout_constraintTop_toTopOf="parent"
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:clipToPadding="false"
+        android:fillViewport="true"
+        android:layout_marginBottom="90dp"
+        android:overScrollMode="never"
+        android:paddingStart="16dp"
+        android:paddingTop="16dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="16dp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintVertical_bias="0.2">
-
-        <ImageView
-            android:layout_width="60dp"
-            android:layout_height="60dp"
-            android:src="@drawable/a3tn"
-            android:layout_marginBottom="16dp" />
-
-        <!-- DEVICE ADMIN (Sửa lại: Khóa cảm ứng switch) -->
-        <LinearLayout
-            android:id="@+id/layoutDeviceAdmin"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="?attr/selectableItemBackground"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:paddingVertical="12dp">
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Kích hoạt Quản trị viên"
-                android:textColor="@color/white"
-                android:textSize="16sp"
-                android:textStyle="bold" />
-
-            <com.google.android.material.switchmaterial.SwitchMaterial
-                android:id="@+id/switchDeviceAdmin"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:clickable="false"
-                android:focusable="false"
-                app:thumbTint="#00FF00"
-                app:trackTint="#333333" />
-        </LinearLayout>
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="15dp"
-            android:text="Cấp quyền cao nhất cho ứng dụng."
-            android:textColor="#B0B0B0"
-            android:textSize="12sp" />
-
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:layout_marginVertical="15dp"
-            android:background="#333" />
-
-        <!-- FINGERPRINT (Sửa lại: Khóa cảm ứng switch) -->
-        <LinearLayout
-            android:id="@+id/layoutFingerprint"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="?attr/selectableItemBackground"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:paddingVertical="12dp">
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Khóa bằng vân tay"
-                android:textColor="@color/white"
-                android:textSize="16sp"
-                android:textStyle="bold" />
-
-            <com.google.android.material.switchmaterial.SwitchMaterial
-                android:id="@+id/switchFingerprint"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:clickable="false"
-                android:focusable="false"
-                app:thumbTint="#00FF00"
-                app:trackTint="#333333" />
-        </LinearLayout>
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="15dp"
-            android:text="Yêu cầu có ít nhất một phương thức bảo mật (Mật khẩu hoặc Vân tay) đang bật."
-            android:textColor="#B0B0B0"
-            android:textSize="12sp" />
-
-        <!-- PASSWORD (Giữ nguyên vì đã đúng) -->
-        <LinearLayout
-            android:id="@+id/layoutPasswordToggle"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="?attr/selectableItemBackground"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:paddingVertical="12dp">
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Sử dụng Mật khẩu khóa"
-                android:textColor="@color/white"
-                android:textSize="16sp"
-                android:textStyle="bold" />
-
-            <com.google.android.material.switchmaterial.SwitchMaterial
-                android:id="@+id/switchPassword"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:clickable="false"
-                android:focusable="false"
-                app:thumbTint="#00FF00"
-                app:trackTint="#333333" />
-        </LinearLayout>
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
 
         <LinearLayout
-            android:id="@+id/btnChangeLock"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:padding="10dp"
-            android:layout_marginTop="0dp"
-            android:background="?attr/selectableItemBackground"
-            android:gravity="center_vertical">
-            <ImageView
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:src="@drawable/lock"
-                app:tint="@color/white"/>
-            <TextView
-                android:id="@+id/tvChangeLockStatus"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Thiết lập / Thay đổi mã khóa"
-                android:textColor="@color/white"
-                android:layout_marginStart="15dp"/>
-        </LinearLayout>
-
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:layout_marginVertical="15dp"
-            android:background="#333" />
-
-        <!-- PERMISSIONS -->
-        <LinearLayout
-            android:id="@+id/btnPermissions"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:paddingVertical="8dp"
-            android:background="?attr/selectableItemBackground">
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Cấp quyền &amp; Thông báo"
-                android:textColor="@color/white"
-                android:textSize="16sp"
-                android:textStyle="bold"/>
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Quản lý các quyền truy cập hệ thống."
-                android:textColor="#B0B0B0"
-                android:textSize="12sp"/>
-        </LinearLayout>
-
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:layout_marginVertical="15dp"
-            android:background="#333" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="PERSONALIZATION"
-                android:textColor="@color/white"
-                android:textStyle="bold"
-                android:textSize="14sp"
-                android:layout_marginBottom="12dp"/>
+            android:orientation="vertical">
 
             <LinearLayout
-                android:id="@+id/layoutChangeBackground"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:paddingVertical="8dp"
-                android:background="?attr/selectableItemBackground"
-                android:clickable="true"
-                android:focusable="true">
+                android:orientation="horizontal"
+                android:paddingVertical="8dp">
 
                 <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:src="@android:drawable/ic_menu_gallery"
-                    app:tint="#BDBDBD"/>
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/settings"
+                    app:tint="#8DFFB0" />
 
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_marginStart="14dp"
                     android:layout_weight="1"
-                    android:orientation="vertical"
-                    android:layout_marginStart="15dp">
+                    android:orientation="vertical">
+
                     <TextView
-                        android:layout_width="wrap_content"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Đổi hình nền giao diện"
-                        android:textColor="#FFFFFF"
-                        android:textSize="16sp"
-                        android:textStyle="bold"/>
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:text="CÀI ĐẶT"
+                        android:textColor="@color/white"
+                        android:textSize="22sp"
+                        android:textStyle="bold"
+                        app:autoSizeMaxTextSize="22sp"
+                        app:autoSizeMinTextSize="17sp"
+                        app:autoSizeStepGranularity="1sp"
+                        app:autoSizeTextType="uniform" />
+
                     <TextView
-                        android:id="@+id/tvCurrentBackground"
-                        android:layout_width="wrap_content"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Mặc định"
-                        android:textColor="#BDBDBD"
-                        android:textSize="12sp"/>
+                        android:layout_marginTop="2dp"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:text="Bảo mật, quyền truy cập và giao diện"
+                        android:textColor="#B8FFFFFF"
+                        android:textSize="13sp"
+                        app:autoSizeMaxTextSize="13sp"
+                        app:autoSizeMinTextSize="10sp"
+                        app:autoSizeStepGranularity="1sp"
+                        app:autoSizeTextType="uniform" />
                 </LinearLayout>
             </LinearLayout>
 
+            <TextView
+                style="@style/SettingsSectionTitle"
+                android:layout_marginTop="16dp"
+                android:text="BẢO MẬT &amp; QUYỀN"
+                android:textColor="#8DFFB0" />
+
             <LinearLayout
-                android:id="@+id/layoutResetBackground"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:paddingVertical="8dp"
-                android:layout_marginTop="8dp"
-                android:background="?attr/selectableItemBackground"
-                android:clickable="true"
-                android:focusable="true">
+                android:background="@drawable/bg_settings_surface"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:id="@+id/layoutDeviceAdmin"
+                    style="@style/SettingsRow"
+                    android:background="?attr/selectableItemBackground">
+
+                    <ImageView
+                        style="@style/SettingsRowIcon"
+                        android:src="@drawable/security_shield"
+                        app:tint="#7DD3FC" />
+
+                    <LinearLayout
+                        style="@style/SettingsRowTextGroup">
+                        <TextView
+                            style="@style/SettingsRowTitle"
+                            android:text="Quản trị viên thiết bị" />
+                        <TextView
+                            style="@style/SettingsRowSubtitle"
+                            android:text="Cho phép khóa và bảo vệ thiết bị" />
+                    </LinearLayout>
+
+                    <com.google.android.material.switchmaterial.SwitchMaterial
+                        android:id="@+id/switchDeviceAdmin"
+                        style="@style/SettingsSwitch" />
+                </LinearLayout>
+
+                <View style="@style/SettingsDivider" />
+
+                <LinearLayout
+                    android:id="@+id/layoutFingerprint"
+                    style="@style/SettingsRow"
+                    android:background="?attr/selectableItemBackground">
+
+                    <ImageView
+                        style="@style/SettingsRowIcon"
+                        android:src="@drawable/fingerprint"
+                        app:tint="#C4B5FD" />
+
+                    <LinearLayout style="@style/SettingsRowTextGroup">
+                        <TextView
+                            style="@style/SettingsRowTitle"
+                            android:text="Khóa bằng vân tay" />
+                        <TextView
+                            style="@style/SettingsRowSubtitle"
+                            android:text="Xác thực nhanh khi mở PiperOS" />
+                    </LinearLayout>
+
+                    <com.google.android.material.switchmaterial.SwitchMaterial
+                        android:id="@+id/switchFingerprint"
+                        style="@style/SettingsSwitch" />
+                </LinearLayout>
+
+                <View style="@style/SettingsDivider" />
+
+                <LinearLayout
+                    android:id="@+id/layoutPasswordToggle"
+                    style="@style/SettingsRow"
+                    android:background="?attr/selectableItemBackground">
+
+                    <ImageView
+                        style="@style/SettingsRowIcon"
+                        android:src="@drawable/lock"
+                        app:tint="#FCD34D" />
+
+                    <LinearLayout style="@style/SettingsRowTextGroup">
+                        <TextView
+                            style="@style/SettingsRowTitle"
+                            android:text="Mật khẩu khóa" />
+                        <TextView
+                            style="@style/SettingsRowSubtitle"
+                            android:text="PIN 4 số, PIN 6 số hoặc tùy chỉnh" />
+                    </LinearLayout>
+
+                    <com.google.android.material.switchmaterial.SwitchMaterial
+                        android:id="@+id/switchPassword"
+                        style="@style/SettingsSwitch" />
+                </LinearLayout>
+
+                <View style="@style/SettingsDivider" />
+
+                <LinearLayout
+                    android:id="@+id/btnChangeLock"
+                    style="@style/SettingsActionRow"
+                    android:background="?attr/selectableItemBackground">
+
+                    <ImageView
+                        style="@style/SettingsRowIcon"
+                        android:src="@drawable/security"
+                        app:tint="#F9A8D4" />
+
+                    <TextView
+                        android:id="@+id/tvChangeLockStatus"
+                        style="@style/SettingsActionTitle"
+                        android:text="Thiết lập hoặc thay đổi mã khóa" />
+
+                    <ImageView
+                        style="@style/SettingsChevron" />
+                </LinearLayout>
+
+                <View style="@style/SettingsDivider" />
+
+                <LinearLayout
+                    android:id="@+id/btnPermissions"
+                    style="@style/SettingsRow"
+                    android:background="?attr/selectableItemBackground">
+
+                    <ImageView
+                        style="@style/SettingsRowIcon"
+                        android:src="@drawable/notification"
+                        app:tint="#FB923C" />
+
+                    <LinearLayout style="@style/SettingsRowTextGroup">
+                        <TextView
+                            style="@style/SettingsRowTitle"
+                            android:text="Quyền &amp; thông báo" />
+                        <TextView
+                            style="@style/SettingsRowSubtitle"
+                            android:text="Quyền hệ thống và Live Update" />
+                    </LinearLayout>
+
+                    <ImageView style="@style/SettingsChevron" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <TextView
+                style="@style/SettingsSectionTitle"
+                android:layout_marginTop="18dp"
+                android:text="GIAO DIỆN"
+                android:textColor="#7DD3FC" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_settings_surface"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:id="@+id/layoutChangeBackground"
+                    style="@style/SettingsRow"
+                    android:background="?attr/selectableItemBackground">
+
+                    <ImageView
+                        style="@style/SettingsRowIcon"
+                        android:src="@android:drawable/ic_menu_gallery"
+                        app:tint="#7DD3FC" />
+
+                    <LinearLayout style="@style/SettingsRowTextGroup">
+                        <TextView
+                            style="@style/SettingsRowTitle"
+                            android:text="Hình nền" />
+                        <TextView
+                            android:id="@+id/tvCurrentBackground"
+                            style="@style/SettingsRowSubtitle"
+                            android:text="Mặc định" />
+                    </LinearLayout>
+
+                    <ImageView style="@style/SettingsChevron" />
+                </LinearLayout>
+
+                <View style="@style/SettingsDivider" />
+
+                <LinearLayout
+                    android:id="@+id/layoutResetBackground"
+                    style="@style/SettingsActionRow"
+                    android:background="?attr/selectableItemBackground">
+
+                    <ImageView
+                        style="@style/SettingsRowIcon"
+                        android:src="@android:drawable/ic_menu_revert"
+                        app:tint="#B8FFFFFF" />
+
+                    <TextView
+                        style="@style/SettingsActionTitle"
+                        android:text="Khôi phục nền mặc định" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <TextView
+                style="@style/SettingsSectionTitle"
+                android:layout_marginTop="18dp"
+                android:text="TÀI KHOẢN"
+                android:textColor="#FCA5A5" />
+
+            <LinearLayout
+                android:id="@+id/btnSettingLogout"
+                style="@style/SettingsRow"
+                android:background="@drawable/bg_settings_surface">
 
                 <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:src="@android:drawable/ic_menu_revert"
-                    app:tint="#BDBDBD"/>
+                    style="@style/SettingsRowIcon"
+                    android:src="@drawable/exit"
+                    app:tint="#FB7185" />
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="15dp"
-                    android:text="Khôi phục nền mặc định"
-                    android:textColor="#FFFFFF"
-                    android:textSize="16sp"/>
+                <LinearLayout style="@style/SettingsRowTextGroup">
+                    <TextView
+                        style="@style/SettingsRowTitle"
+                        android:text="@string/auth_logout"
+                        android:textColor="#FFFF8A8A" />
+                    <TextView
+                        android:id="@+id/tvSettingVersion"
+                        style="@style/SettingsRowSubtitle"
+                        android:text="@string/auth_version_placeholder" />
+                </LinearLayout>
+
+                <ImageView style="@style/SettingsChevron" />
             </LinearLayout>
-    </LinearLayout>
+
+            <TextView
+                style="@style/SettingsSectionTitle"
+                android:layout_marginTop="18dp"
+                android:text="@string/settings_project_section"
+                android:textColor="#86EFAC" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_settings_surface"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:id="@+id/btnAndroidSource"
+                    style="@style/SettingsRow"
+                    android:background="?attr/selectableItemBackground">
+
+                    <ImageView
+                        style="@style/SettingsRowIcon"
+                        android:src="@drawable/ic_browser_globe"
+                        app:tint="#86EFAC" />
+
+                    <LinearLayout style="@style/SettingsRowTextGroup">
+                        <TextView
+                            style="@style/SettingsRowTitle"
+                            android:text="@string/settings_android_source" />
+                        <TextView
+                            style="@style/SettingsRowSubtitle"
+                            android:text="@string/settings_android_source_summary" />
+                    </LinearLayout>
+
+                    <ImageView style="@style/SettingsChevron" />
+                </LinearLayout>
+
+                <View style="@style/SettingsDivider" />
+
+                <LinearLayout
+                    android:id="@+id/btnRuntimeSource"
+                    style="@style/SettingsRow"
+                    android:background="?attr/selectableItemBackground">
+
+                    <ImageView
+                        style="@style/SettingsRowIcon"
+                        android:src="@drawable/ic_terminal"
+                        app:tint="#67E8F9" />
+
+                    <LinearLayout style="@style/SettingsRowTextGroup">
+                        <TextView
+                            style="@style/SettingsRowTitle"
+                            android:text="@string/settings_runtime_source" />
+                        <TextView
+                            style="@style/SettingsRowSubtitle"
+                            android:text="@string/settings_runtime_source_summary" />
+                    </LinearLayout>
+
+                    <ImageView style="@style/SettingsChevron" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <Space
+                android:layout_width="match_parent"
+                android:layout_height="12dp" />
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
 </androidx.constraintlayout.widget.ConstraintLayout>

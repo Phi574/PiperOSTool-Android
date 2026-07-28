@@ -1,12 +1,12 @@
 package com.piperostool
 
 import android.content.Context
-import android.content.Intent
 import android.content.res.ColorStateList
 import android.content.res.Configuration
 import android.graphics.Color
+import android.graphics.Rect
 import android.os.Bundle
-import android.view.ViewGroup
+import android.view.View
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -16,13 +16,11 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import java.util.Locale
-import android.view.View
 
 class HomeActivity : AppCompatActivity() {
 
-    // Khai báo các nút
     private lateinit var btnHome: LinearLayout
-    private lateinit var btnModul: LinearLayout
+    private lateinit var btnBeta: LinearLayout
     private lateinit var btnApps: LinearLayout
     private lateinit var btnSettings: LinearLayout
     private lateinit var btnDevices: LinearLayout
@@ -34,27 +32,25 @@ class HomeActivity : AppCompatActivity() {
     private var currentLangCode = "vi"
     private var backPressedTime: Long = 0
     private var isNavHidden = false
+    private var isNavHiddenByKeyboard = false
 
     private lateinit var backToast: Toast
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // 1. Áp dụng ngôn ngữ trước khi setContentView
         val prefs = getSharedPreferences("PiperPrefs", Context.MODE_PRIVATE)
         currentLangCode = prefs.getString("app_language", "vi") ?: "vi"
         applyAppLanguage()
 
         setContentView(R.layout.activity_home)
 
-        // 2. Gọi hàm áp dụng hình nền tùy chỉnh
         applyCustomBackground()
-
         initViews()
         setupListeners()
         setupBackPressHandler()
+        setupKeyboardAwareBottomNav()
 
-        // Load Fragment mặc định
         replaceFragment(homeFragment())
         currentTab = 0
     }
@@ -62,7 +58,6 @@ class HomeActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
 
-        // Kiểm tra xem ngôn ngữ có bị đổi trong Settings không
         val prefs = getSharedPreferences("PiperPrefs", Context.MODE_PRIVATE)
         val savedLang = prefs.getString("app_language", "vi") ?: "vi"
 
@@ -77,23 +72,44 @@ class HomeActivity : AppCompatActivity() {
     private fun applyCustomBackground() {
         val prefs = getSharedPreferences("PiperPrefs", Context.MODE_PRIVATE)
         val hasCustomBg = prefs.getBoolean("has_custom_bg", false)
+        val bgView = findViewById<ImageView>(R.id.homeBackground)
 
-        val bgView = findViewById<android.widget.FrameLayout>(R.id.fragment_container)
+        bgView.scaleType = ImageView.ScaleType.CENTER_CROP
 
         if (hasCustomBg) {
             try {
                 val file = java.io.File(filesDir, "custom_bg.jpg")
                 if (file.exists()) {
                     val drawable = android.graphics.drawable.Drawable.createFromPath(file.absolutePath)
-                    bgView.background = drawable
+                    bgView.setImageDrawable(drawable)
                 } else {
-                    bgView.setBackgroundResource(R.drawable.backgroud)
+                    bgView.setImageResource(R.drawable.backgroud)
                 }
             } catch (e: Exception) {
-                bgView.setBackgroundResource(R.drawable.backgroud)
+                bgView.setImageResource(R.drawable.backgroud)
             }
         } else {
-            bgView.setBackgroundResource(R.drawable.backgroud)
+            bgView.setImageResource(R.drawable.backgroud)
+        }
+    }
+
+    private fun setupKeyboardAwareBottomNav() {
+        val rootView = findViewById<View>(R.id.homeRoot)
+        val visibleFrame = Rect()
+
+        rootView.viewTreeObserver.addOnGlobalLayoutListener {
+            rootView.getWindowVisibleDisplayFrame(visibleFrame)
+            val screenHeight = rootView.rootView.height
+            val keyboardHeight = screenHeight - visibleFrame.bottom
+            val isKeyboardVisible = keyboardHeight > screenHeight * 0.15f
+
+            if (isKeyboardVisible && !isNavHiddenByKeyboard) {
+                hideBottomNav(force = true)
+                isNavHiddenByKeyboard = true
+            } else if (!isKeyboardVisible && isNavHiddenByKeyboard) {
+                showBottomNav(force = true)
+                isNavHiddenByKeyboard = false
+            }
         }
     }
 
@@ -104,7 +120,7 @@ class HomeActivity : AppCompatActivity() {
                     replaceFragment(homeFragment())
                     currentTab = 0
                     updateTabUI(0)
-                    showBottomNav() // <--- FIX: ÉP HIỆN MENU KHI BẤM NÚT BACK VỀ TRANG CHỦ
+                    showBottomNav(force = true)
                     return
                 }
 
@@ -112,7 +128,7 @@ class HomeActivity : AppCompatActivity() {
                     backToast.cancel()
                     finish()
                 } else {
-                    backToast = Toast.makeText(baseContext, "Bấm lần nữa để thoát", Toast.LENGTH_SHORT)
+                    backToast = Toast.makeText(baseContext, "Bam lan nua de thoat", Toast.LENGTH_SHORT)
                     backToast.show()
                 }
                 backPressedTime = System.currentTimeMillis()
@@ -134,7 +150,7 @@ class HomeActivity : AppCompatActivity() {
 
     private fun initViews() {
         btnHome = findViewById(R.id.navHome)
-        btnModul = findViewById(R.id.navModul)
+        btnBeta = findViewById(R.id.navBeta)
         btnApps = findViewById(R.id.navApps)
         btnSettings = findViewById(R.id.navSettings)
         btnDevices = findViewById(R.id.navDevices)
@@ -162,15 +178,15 @@ class HomeActivity : AppCompatActivity() {
                 replaceFragment(homeFragment())
                 currentTab = 0
                 updateTabUI(0)
-                showBottomNav()
+                showBottomNav(force = true)
             }
         }
-        btnModul.setOnClickListener {
+        btnBeta.setOnClickListener {
             if (currentTab != 1) {
-                replaceFragment(ModuleFragment())
+                replaceFragment(BetaFragment())
                 currentTab = 1
                 updateTabUI(1)
-                showBottomNav()
+                showBottomNav(force = true)
             }
         }
         btnApps.setOnClickListener {
@@ -178,7 +194,7 @@ class HomeActivity : AppCompatActivity() {
                 replaceFragment(AppsFragment())
                 currentTab = 2
                 updateTabUI(2)
-                showBottomNav()
+                showBottomNav(force = true)
             }
         }
         btnSettings.setOnClickListener {
@@ -186,7 +202,7 @@ class HomeActivity : AppCompatActivity() {
                 replaceFragment(SettingFragment())
                 currentTab = 3
                 updateTabUI(3)
-                showBottomNav()
+                showBottomNav(force = true)
             }
         }
         btnDevices.setOnClickListener {
@@ -194,7 +210,7 @@ class HomeActivity : AppCompatActivity() {
                 replaceFragment(DevicesFragment())
                 currentTab = 4
                 updateTabUI(4)
-                showBottomNav()
+                showBottomNav(force = true)
             }
         }
     }
@@ -229,14 +245,14 @@ class HomeActivity : AppCompatActivity() {
         }
     }
 
-    fun hideBottomNav() {
-        if (currentTab != 2) return // FIX: Khóa tính năng ẩn nếu không nằm ở Tab Apps
+    fun hideBottomNav(force: Boolean = false) {
+        if (!force && currentTab != 2) return
         if (isNavHidden) return
 
         val bottomBar = findViewById<LinearLayout>(R.id.bottomNavCard)
 
         bottomBar?.let {
-            it.animate().cancel() // FIX: Hủy hiệu ứng cũ nếu có, chống "choảng" animation
+            it.animate().cancel()
             it.animate()
                 .translationY(it.height.toFloat() + 50f)
                 .setInterpolator(android.view.animation.AccelerateInterpolator())
@@ -246,13 +262,14 @@ class HomeActivity : AppCompatActivity() {
         }
     }
 
-    fun showBottomNav() {
+    fun showBottomNav(force: Boolean = false) {
+        if (!force && isNavHiddenByKeyboard) return
         if (!isNavHidden) return
 
         val bottomBar = findViewById<LinearLayout>(R.id.bottomNavCard)
 
         bottomBar?.let {
-            it.animate().cancel() // FIX: Hủy hiệu ứng cũ để lập tức kéo thanh menu lên
+            it.animate().cancel()
             it.animate()
                 .translationY(0f)
                 .setInterpolator(android.view.animation.DecelerateInterpolator())
