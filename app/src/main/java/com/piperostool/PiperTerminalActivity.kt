@@ -1,9 +1,10 @@
 package com.piperostool
 
 import android.content.Context
+import android.content.BroadcastReceiver
 import android.content.Intent
+import android.content.IntentFilter
 import android.graphics.Color
-import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -36,6 +37,31 @@ class PiperTerminalActivity : AppCompatActivity(), TerminalSessionManager.Listen
     private val commandHistory = mutableListOf<String>()
     private var historyIndex = 0
     private var activeSessionId = 0L
+    private var runtimeReceiverRegistered = false
+    private val runtimeStateReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            renderRuntimeStatus()
+            when (intent?.getStringExtra(TerminalRuntimeInstallService.EXTRA_PHASE)) {
+                TerminalRuntimeInstallService.Phase.COMPLETE.name -> {
+                    activeSessionId = TerminalSessionManager.ensureSession(
+                        this@PiperTerminalActivity
+                    ).id
+                    renderTabs()
+                    renderOutput()
+                    Toast.makeText(
+                        this@PiperTerminalActivity,
+                        R.string.terminal_runtime_complete,
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+                TerminalRuntimeInstallService.Phase.ERROR.name -> Toast.makeText(
+                    this@PiperTerminalActivity,
+                    intent.getStringExtra(TerminalRuntimeInstallService.EXTRA_MESSAGE),
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -67,7 +93,7 @@ class PiperTerminalActivity : AppCompatActivity(), TerminalSessionManager.Listen
 
         findViewById<View>(R.id.btnTerminalBack).setOnClickListener { finish() }
         runtimeStatusView.setOnClickListener {
-            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(RUNTIME_PROJECT_URL)))
+            requestRuntimeInstall()
         }
         findViewById<View>(R.id.btnTerminalClear).setOnClickListener {
             TerminalSessionManager.clearOutput(activeSessionId)
@@ -117,6 +143,15 @@ class PiperTerminalActivity : AppCompatActivity(), TerminalSessionManager.Listen
 
     override fun onStart() {
         super.onStart()
+        if (!runtimeReceiverRegistered) {
+            ContextCompat.registerReceiver(
+                this,
+                runtimeStateReceiver,
+                IntentFilter(TerminalRuntimeInstallService.ACTION_STATE_CHANGED),
+                ContextCompat.RECEIVER_NOT_EXPORTED
+            )
+            runtimeReceiverRegistered = true
+        }
         TerminalSessionManager.addListener(this)
         renderTabs()
         renderOutput()
@@ -124,6 +159,10 @@ class PiperTerminalActivity : AppCompatActivity(), TerminalSessionManager.Listen
 
     override fun onStop() {
         TerminalSessionManager.removeListener(this)
+        if (runtimeReceiverRegistered) {
+            unregisterReceiver(runtimeStateReceiver)
+            runtimeReceiverRegistered = false
+        }
         super.onStop()
     }
 
@@ -242,28 +281,55 @@ class PiperTerminalActivity : AppCompatActivity(), TerminalSessionManager.Listen
 
     private fun renderRuntimeStatus() {
         val runtime = TerminalRuntime.inspect(this)
-        runtimeStatusView.isSelected = runtime.installed
+        val installState = TerminalRuntimeInstallService.currentState
+        runtimeStatusView.isSelected = runtime.installed || installState.running
         runtimeModeView.setText(
-            if (runtime.installed) {
+            if (installState.running) {
+                R.string.terminal_runtime_installing_mode
+            } else if (runtime.installed) {
                 R.string.terminal_runtime_linux_mode
             } else {
                 R.string.terminal_runtime_android_mode
             }
         )
-        runtimeDetailView.setText(
-            if (runtime.installed) {
-                R.string.terminal_runtime_ready
-            } else {
-                R.string.terminal_runtime_missing
-            }
-        )
+        runtimeDetailView.text = when {
+            installState.running -> installState.message
+            installState.phase == TerminalRuntimeInstallService.Phase.ERROR ->
+                installState.message
+            runtime.updateAvailable -> getString(R.string.terminal_runtime_update_available)
+            runtime.installed -> getString(R.string.terminal_runtime_ready)
+            else -> getString(R.string.terminal_runtime_missing)
+        }
         runtimeModeView.setTextColor(
-            if (runtime.installed) 0xFF8DFFB0.toInt() else 0xFFFFD38A.toInt()
+            when {
+                installState.running -> 0xFF8AD6FF.toInt()
+                runtime.installed -> 0xFF8DFFB0.toInt()
+                else -> 0xFFFFD38A.toInt()
+            }
         )
         runtimeVersionView.text = getString(
             R.string.terminal_runtime_version,
-            AppVersion.name(this)
+            runtime.installedVersion ?: TerminalRuntime.RUNTIME_VERSION
         )
+    }
+
+    private fun requestRuntimeInstall() {
+        val state = TerminalRuntimeInstallService.currentState
+        if (state.running) {
+            Toast.makeText(this, state.message, Toast.LENGTH_SHORT).show()
+            return
+        }
+        val runtime = TerminalRuntime.inspect(this)
+        if (runtime.installed && !runtime.updateAvailable) {
+            Toast.makeText(this, R.string.terminal_runtime_already_current, Toast.LENGTH_SHORT).show()
+            return
+        }
+        ContextCompat.startForegroundService(
+            this,
+            Intent(this, TerminalRuntimeInstallService::class.java)
+                .setAction(TerminalRuntimeInstallService.ACTION_INSTALL)
+        )
+        mainHandler.postDelayed({ renderRuntimeStatus() }, 150)
     }
 
     private fun moveInHistory(direction: Int) {
@@ -318,8 +384,6 @@ class PiperTerminalActivity : AppCompatActivity(), TerminalSessionManager.Listen
         private const val MAX_HISTORY = 100
         private const val MAX_SESSIONS = 6
         private const val OUTPUT_REFRESH_DELAY_MS = 45L
-        private const val RUNTIME_PROJECT_URL =
-            "https://github.com/Phi574/Piperos_termux"
         private val ANSI_ESCAPE = Regex("\\u001B\\[[;?0-9]*[ -/]*[@-~]")
     }
 }
