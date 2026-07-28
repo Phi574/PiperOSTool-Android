@@ -33,3 +33,14 @@ prefix:         /data/data/com.piper.os.tool/files/usr
 
 The Android installer will verify a signed manifest, ABI, byte size and
 SHA-256 before extracting a runtime into private app storage.
+
+After runtime verification, the installer provisions the pinned PiperOS APT
+public key and this repository source:
+
+```text
+deb [signed-by=/data/data/com.piper.os.tool/files/usr/etc/apt/keyrings/piperos-archive-keyring.gpg] https://phi574.github.io/Piperos_termux stable main
+```
+
+The package repository is built by `Phi574/Piperos_termux` for `aarch64`,
+`arm` and `x86_64`. The app must never enable an unsigned source or mix
+official Termux binaries into the PiperOS `$PREFIX`.

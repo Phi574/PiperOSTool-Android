@@ -55,6 +55,11 @@ Runtime Termux đầy đủ chưa được đóng vào APK hiện tại. Tiến 
 và package repository được theo dõi tại
 [Phi574/Piperos_termux](https://github.com/Phi574/Piperos_termux).
 
+Kho package APT riêng của PiperOS được build cùng source runtime và phát hành
+tại `https://phi574.github.io/Piperos_termux`. Ứng dụng chỉ kích hoạt kho sau
+khi xác minh runtime manifest và khóa ký repository; package Termux chính thức
+không được trộn vào `$PREFIX` của PiperOS.
+
 ## Build
 
 Yêu cầu:

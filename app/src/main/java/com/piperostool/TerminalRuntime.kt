@@ -4,6 +4,13 @@ import android.content.Context
 import java.io.File
 
 object TerminalRuntime {
+    const val SOURCE_REPOSITORY_URL =
+        "https://github.com/Phi574/Piperos_termux"
+    const val PACKAGE_REPOSITORY_URL =
+        "https://phi574.github.io/Piperos_termux"
+    const val PACKAGE_REPOSITORY_SUITE = "stable"
+    const val PACKAGE_REPOSITORY_COMPONENT = "main"
+
     data class Status(
         val prefixDirectory: File,
         val homeDirectory: File,
