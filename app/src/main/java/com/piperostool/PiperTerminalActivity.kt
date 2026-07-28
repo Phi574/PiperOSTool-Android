@@ -3,6 +3,7 @@ package com.piperostool
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
+import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -25,6 +26,10 @@ class PiperTerminalActivity : AppCompatActivity(), TerminalSessionManager.Listen
     private lateinit var outputScroll: ScrollView
     private lateinit var commandInput: EditText
     private lateinit var statusView: TextView
+    private lateinit var runtimeStatusView: View
+    private lateinit var runtimeModeView: TextView
+    private lateinit var runtimeDetailView: TextView
+    private lateinit var runtimeVersionView: TextView
 
     private val mainHandler = Handler(Looper.getMainLooper())
     private val refreshOutput = Runnable { renderOutput() }
@@ -41,6 +46,10 @@ class PiperTerminalActivity : AppCompatActivity(), TerminalSessionManager.Listen
         outputScroll = findViewById(R.id.terminalScroll)
         commandInput = findViewById(R.id.etTerminalCommand)
         statusView = findViewById(R.id.tvTerminalStatus)
+        runtimeStatusView = findViewById(R.id.terminalRuntimeStatus)
+        runtimeModeView = findViewById(R.id.tvTerminalRuntimeMode)
+        runtimeDetailView = findViewById(R.id.tvTerminalRuntimeDetail)
+        runtimeVersionView = findViewById(R.id.tvTerminalRuntimeVersion)
         outputView.setTag(R.id.piper_auto_font_ignore, true)
         commandInput.setTag(R.id.piper_auto_font_ignore, true)
 
@@ -57,6 +66,9 @@ class PiperTerminalActivity : AppCompatActivity(), TerminalSessionManager.Listen
         )
 
         findViewById<View>(R.id.btnTerminalBack).setOnClickListener { finish() }
+        runtimeStatusView.setOnClickListener {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(RUNTIME_PROJECT_URL)))
+        }
         findViewById<View>(R.id.btnTerminalClear).setOnClickListener {
             TerminalSessionManager.clearOutput(activeSessionId)
         }
@@ -94,7 +106,13 @@ class PiperTerminalActivity : AppCompatActivity(), TerminalSessionManager.Listen
         }
 
         renderTabs()
+        renderRuntimeStatus()
         renderOutput()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        renderRuntimeStatus()
     }
 
     override fun onStart() {
@@ -222,6 +240,32 @@ class PiperTerminalActivity : AppCompatActivity(), TerminalSessionManager.Listen
         outputScroll.post { outputScroll.fullScroll(View.FOCUS_DOWN) }
     }
 
+    private fun renderRuntimeStatus() {
+        val runtime = TerminalRuntime.inspect(this)
+        runtimeStatusView.isSelected = runtime.installed
+        runtimeModeView.setText(
+            if (runtime.installed) {
+                R.string.terminal_runtime_linux_mode
+            } else {
+                R.string.terminal_runtime_android_mode
+            }
+        )
+        runtimeDetailView.setText(
+            if (runtime.installed) {
+                R.string.terminal_runtime_ready
+            } else {
+                R.string.terminal_runtime_missing
+            }
+        )
+        runtimeModeView.setTextColor(
+            if (runtime.installed) 0xFF8DFFB0.toInt() else 0xFFFFD38A.toInt()
+        )
+        runtimeVersionView.text = getString(
+            R.string.terminal_runtime_version,
+            AppVersion.name(this)
+        )
+    }
+
     private fun moveInHistory(direction: Int) {
         if (commandHistory.isEmpty()) return
         historyIndex = (historyIndex + direction).coerceIn(0, commandHistory.size)
@@ -274,6 +318,8 @@ class PiperTerminalActivity : AppCompatActivity(), TerminalSessionManager.Listen
         private const val MAX_HISTORY = 100
         private const val MAX_SESSIONS = 6
         private const val OUTPUT_REFRESH_DELAY_MS = 45L
+        private const val RUNTIME_PROJECT_URL =
+            "https://github.com/Phi574/Piperos_termux"
         private val ANSI_ESCAPE = Regex("\\u001B\\[[;?0-9]*[ -/]*[@-~]")
     }
 }

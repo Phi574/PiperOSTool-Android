@@ -31,11 +31,10 @@ object TerminalSessionManager {
     @Synchronized
     fun createSession(context: Context): SessionInfo {
         val id = nextId.getAndIncrement()
-        val session = TerminalSession(
+        val session = buildSession(
+            context = context,
             id = id,
-            title = "Shell $id",
-            homeDirectory = File(context.filesDir, "terminal/home"),
-            onOutput = { notifyOutput(id) }
+            displayIndex = sessions.size + 1
         )
         sessions += session
         session.start()
@@ -70,11 +69,10 @@ object TerminalSessionManager {
         if (index < 0) return
         val old = sessions[index]
         old.close()
-        TerminalSession(
+        buildSession(
+            context = context,
             id = old.id,
-            title = old.title,
-            homeDirectory = File(context.filesDir, "terminal/home"),
-            onOutput = { notifyOutput(sessionId) }
+            displayIndex = index + 1
         ).also {
             sessions[index] = it
             it.start()
@@ -82,11 +80,53 @@ object TerminalSessionManager {
         notifySessionsChanged()
     }
 
+    private fun buildSession(
+        context: Context,
+        id: Long,
+        displayIndex: Int
+    ): TerminalSession {
+        val runtime = TerminalRuntime.inspect(context)
+        val mode = if (runtime.installed) {
+            "PiperOS Linux Runtime"
+        } else {
+            "Android Shell Mode"
+        }
+        val runtimeMessage = if (runtime.installed) {
+            "PREFIX=${runtime.prefixDirectory.absolutePath}"
+        } else {
+            "Bootstrap Linux chưa được cài. pkg, Python, Git và SSH chưa khả dụng."
+        }
+
+        return TerminalSession(
+            id = id,
+            title = if (runtime.installed) {
+                "Linux $displayIndex"
+            } else {
+                "Shell $displayIndex"
+            },
+            homeDirectory = runtime.homeDirectory,
+            shellExecutable = runtime.shellExecutable,
+            prefixDirectory = runtime.prefixDirectory,
+            welcomeText = buildString {
+                appendLine("PiperOS Terminal ${AppVersion.name(context)}")
+                appendLine("Mode: $mode")
+                appendLine(runtimeMessage)
+                appendLine("HOME=${runtime.homeDirectory.absolutePath}")
+                appendLine()
+            },
+            onOutput = { notifyOutput(id) }
+        )
+    }
+
     @Synchronized
     fun closeSession(sessionId: Long) {
         val session = sessions.firstOrNull { it.id == sessionId } ?: return
         sessions.remove(session)
         session.close()
+        renumberSessions()
+        if (sessions.isEmpty()) {
+            nextId.set(1)
+        }
         notifySessionsChanged()
     }
 
@@ -94,6 +134,7 @@ object TerminalSessionManager {
     fun closeAll() {
         sessions.toList().forEach(TerminalSession::close)
         sessions.clear()
+        nextId.set(1)
         notifySessionsChanged()
     }
 
@@ -116,10 +157,20 @@ object TerminalSessionManager {
         listeners.forEach(Listener::onTerminalSessionsChanged)
     }
 
+    private fun renumberSessions() {
+        sessions.forEachIndexed { index, session ->
+            val prefix = session.title.substringBefore(' ')
+            session.title = "$prefix ${index + 1}"
+        }
+    }
+
     private class TerminalSession(
         val id: Long,
-        val title: String,
+        var title: String,
         private val homeDirectory: File,
+        private val shellExecutable: File?,
+        private val prefixDirectory: File,
+        private val welcomeText: String,
         private val onOutput: () -> Unit
     ) {
         private val output = StringBuilder()
@@ -132,22 +183,33 @@ object TerminalSessionManager {
 
         fun start() {
             homeDirectory.mkdirs()
-            append(
-                "PiperOS Terminal\n" +
-                    "Shell Android chạy trong vùng riêng của ứng dụng.\n" +
-                    "HOME=${homeDirectory.absolutePath}\n\n"
-            )
+            append(welcomeText)
             runCatching {
-                val builder = ProcessBuilder("/system/bin/sh")
+                val builder = ProcessBuilder(
+                    shellExecutable?.absolutePath ?: "/system/bin/sh"
+                )
                     .directory(homeDirectory)
                     .redirectErrorStream(true)
                 builder.environment().apply {
                     put("HOME", homeDirectory.absolutePath)
-                    put("TMPDIR", homeDirectory.parentFile?.resolve("tmp")?.apply {
-                        mkdirs()
-                    }?.absolutePath ?: homeDirectory.absolutePath)
                     put("TERM", "xterm-256color")
-                    put("PATH", "/system/bin:/system/xbin:/vendor/bin")
+                    if (shellExecutable != null) {
+                        val tmpDirectory = File(prefixDirectory, "tmp").apply { mkdirs() }
+                        put("PREFIX", prefixDirectory.absolutePath)
+                        put("TMPDIR", tmpDirectory.absolutePath)
+                        put(
+                            "PATH",
+                            "${File(prefixDirectory, "bin").absolutePath}:" +
+                                "/system/bin:/system/xbin:/vendor/bin"
+                        )
+                        put("LD_LIBRARY_PATH", File(prefixDirectory, "lib").absolutePath)
+                        put("LANG", "C.UTF-8")
+                    } else {
+                        put("TMPDIR", homeDirectory.parentFile?.resolve("tmp")?.apply {
+                            mkdirs()
+                        }?.absolutePath ?: homeDirectory.absolutePath)
+                        put("PATH", "/system/bin:/system/xbin:/vendor/bin")
+                    }
                 }
                 process = builder.start()
                 writer = OutputStreamWriter(process!!.outputStream)
@@ -206,7 +268,7 @@ object TerminalSessionManager {
         fun clearOutput() {
             synchronized(outputLock) {
                 output.clear()
-                output.append("PiperOS Terminal\n\n")
+                output.append(welcomeText)
             }
         }
 

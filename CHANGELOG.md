@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.5.1.beta
+
+- Added a visible Android Shell/Linux Runtime status panel to PiperOS Terminal.
+- Added automatic runtime detection for `$PREFIX/bin/bash` and `$PREFIX/bin/sh`.
+- Fixed terminal tab numbering after closing tabs or closing the final tab.
+- Added the active terminal mode and app version to the foreground notification.
+
 ## 2.5.0.beta
 
 - Added PiperOS Browser with persistent tabs, incognito tabs, downloads,

@@ -20,7 +20,7 @@
 
 ## Bản hiện tại
 
-`2.5.0.beta` sử dụng `minSdk 24`, `targetSdk 36` và tập trung vào:
+`2.5.1.beta` sử dụng `minSdk 24`, `targetSdk 36` và tập trung vào:
 
 - **PiperOS Browser:** nhiều tab, tab ẩn danh, khôi phục phiên, lịch sử theo
   ngày, User-Agent tùy chỉnh, nhập phần mở rộng, tải file và phát video.

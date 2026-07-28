@@ -69,16 +69,25 @@ class PiperTerminalService : Service(), TerminalSessionManager.Listener {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
         val count = TerminalSessionManager.sessionCount().coerceAtLeast(1)
+        val sessionText = resources.getQuantityString(
+            R.plurals.terminal_notification_sessions,
+            count,
+            count
+        )
+        val runtimeText = getString(
+            if (TerminalRuntime.inspect(this).installed) {
+                R.string.terminal_runtime_linux_mode
+            } else {
+                R.string.terminal_runtime_android_mode
+            }
+        )
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_terminal)
             .setContentTitle(getString(R.string.terminal_notification_title))
             .setContentText(
-                resources.getQuantityString(
-                    R.plurals.terminal_notification_sessions,
-                    count,
-                    count
-                )
+                getString(R.string.terminal_notification_content, sessionText, runtimeText)
             )
+            .setSubText(AppVersion.name(this))
             .setContentIntent(openIntent)
             .setCategory(Notification.CATEGORY_SERVICE)
             .setPriority(NotificationCompat.PRIORITY_LOW)
