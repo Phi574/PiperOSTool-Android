@@ -226,7 +226,7 @@
                     android:maxLines="1"
                     android:paddingStart="1dp"
                     android:paddingEnd="1dp"
-                    android:text="Info Device"
+                    android:text="Info"
                     android:textSize="10sp"
                     android:textStyle="bold"
                     android:textColor="@color/nav_unselected"

@@ -207,7 +207,7 @@ class HomeActivity : AppCompatActivity() {
         }
         btnDevices.setOnClickListener {
             if (currentTab != 4) {
-                replaceFragment(DevicesFragment())
+                replaceFragment(InfoFragment())
                 currentTab = 4
                 updateTabUI(4)
                 showBottomNav(force = true)

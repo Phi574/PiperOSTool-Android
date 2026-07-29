@@ -238,4 +238,20 @@
     <string name="terminal_clipboard">Clipboard Terminal</string>
     <string name="terminal_clipboard_empty">Chưa có nội dung sao chép được lưu.</string>
     <string name="terminal_clipboard_clear">Xóa lịch sử</string>
+    <string name="terminal_runtime_install_action">CÀI RUNTIME</string>
+    <string name="terminal_runtime_update_action">CẬP NHẬT</string>
+    <string name="terminal_runtime_remove_action">GỠ CÀI ĐẶT</string>
+    <string name="terminal_runtime_remove_title">Gỡ PiperOS Linux Runtime?</string>
+    <string name="terminal_runtime_remove_message">Các package và dữ liệu HOME của Linux sẽ bị xóa. Các tab đang chạy cũng sẽ đóng.</string>
+    <string name="terminal_runtime_removed">Đã gỡ PiperOS Linux Runtime</string>
+    <string name="terminal_runtime_remove_failed">Không thể gỡ runtime: %1$s</string>
+    <string name="terminal_choose_session_mode">Mở phiên terminal</string>
+    <string name="terminal_mode_linux">PiperOS Linux</string>
+    <string name="terminal_mode_linux_summary">pkg, Python, Git, SSH và môi trường $PREFIX</string>
+    <string name="terminal_mode_shell">Android Shell</string>
+    <string name="terminal_mode_shell_summary">Shell hệ thống gọn nhẹ, không cần runtime</string>
+    <string name="terminal_linux_not_installed">Hãy cài PiperOS Linux Runtime trước</string>
+    <string name="terminal_task_running">Đang chạy: %1$s</string>
+    <string name="terminal_task_processing">Đang xử lý</string>
+    <string name="terminal_confirmation_question">Lệnh đang chờ xác nhận</string>
 </resources>

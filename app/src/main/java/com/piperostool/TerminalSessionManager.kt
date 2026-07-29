@@ -8,6 +8,11 @@ import java.util.concurrent.CopyOnWriteArraySet
 import java.util.concurrent.atomic.AtomicLong
 
 object TerminalSessionManager {
+    enum class SessionMode {
+        LINUX,
+        ANDROID_SHELL
+    }
+
     interface Listener {
         fun onTerminalOutput(sessionId: Long)
         fun onTerminalSessionsChanged()
@@ -16,7 +21,13 @@ object TerminalSessionManager {
     data class SessionInfo(
         val id: Long,
         val title: String,
-        val running: Boolean
+        val running: Boolean,
+        val mode: SessionMode,
+        val busy: Boolean,
+        val progressPercent: Int?,
+        val awaitingConfirmation: Boolean,
+        val currentCommand: String?,
+        val lastExitCode: Int?
     )
 
     private val nextId = AtomicLong(1)
@@ -24,17 +35,20 @@ object TerminalSessionManager {
     private val listeners = CopyOnWriteArraySet<Listener>()
 
     @Synchronized
-    fun ensureSession(context: Context): SessionInfo {
-        return sessions.firstOrNull()?.toInfo() ?: createSession(context)
-    }
+    fun ensureSession(context: Context): SessionInfo =
+        sessions.firstOrNull()?.toInfo() ?: createSession(context, defaultMode(context))
 
     @Synchronized
-    fun createSession(context: Context): SessionInfo {
+    fun createSession(
+        context: Context,
+        mode: SessionMode = defaultMode(context)
+    ): SessionInfo {
         val id = nextId.getAndIncrement()
         val session = buildSession(
             context = context,
             id = id,
-            displayIndex = sessions.size + 1
+            displayIndex = sessions.count { it.mode == mode } + 1,
+            requestedMode = mode
         )
         sessions += session
         session.start()
@@ -68,55 +82,18 @@ object TerminalSessionManager {
         val index = sessions.indexOfFirst { it.id == sessionId }
         if (index < 0) return
         val old = sessions[index]
+        val modeIndex = sessions.take(index + 1).count { it.mode == old.mode }
         old.close()
         buildSession(
             context = context,
             id = old.id,
-            displayIndex = index + 1
+            displayIndex = modeIndex,
+            requestedMode = old.mode
         ).also {
             sessions[index] = it
             it.start()
         }
         notifySessionsChanged()
-    }
-
-    private fun buildSession(
-        context: Context,
-        id: Long,
-        displayIndex: Int
-    ): TerminalSession {
-        val runtime = TerminalRuntime.inspect(context)
-        val mode = if (runtime.installed) {
-            "PiperOS Linux Runtime"
-        } else {
-            "Android Shell Mode"
-        }
-        val runtimeMessage = if (runtime.installed) {
-            "PREFIX=${runtime.prefixDirectory.absolutePath}"
-        } else {
-            "Bootstrap Linux chưa được cài. pkg, Python, Git và SSH chưa khả dụng."
-        }
-
-        return TerminalSession(
-            context = context.applicationContext,
-            id = id,
-            title = if (runtime.installed) {
-                "Linux $displayIndex"
-            } else {
-                "Shell $displayIndex"
-            },
-            homeDirectory = runtime.homeDirectory,
-            shellExecutable = runtime.shellExecutable,
-            prefixDirectory = runtime.prefixDirectory,
-            welcomeText = buildString {
-                appendLine("PiperOS Terminal ${AppVersion.name(context)}")
-                appendLine("Mode: $mode")
-                appendLine(runtimeMessage)
-                appendLine("HOME=${runtime.homeDirectory.absolutePath}")
-                appendLine()
-            },
-            onOutput = { notifyOutput(id) }
-        )
     }
 
     @Synchronized
@@ -125,9 +102,7 @@ object TerminalSessionManager {
         sessions.remove(session)
         session.close()
         renumberSessions()
-        if (sessions.isEmpty()) {
-            nextId.set(1)
-        }
+        if (sessions.isEmpty()) nextId.set(1)
         notifySessionsChanged()
     }
 
@@ -150,6 +125,61 @@ object TerminalSessionManager {
         listeners -= listener
     }
 
+    private fun buildSession(
+        context: Context,
+        id: Long,
+        displayIndex: Int,
+        requestedMode: SessionMode
+    ): TerminalSession {
+        val runtime = TerminalRuntime.inspect(context)
+        val mode = if (requestedMode == SessionMode.LINUX && runtime.installed) {
+            SessionMode.LINUX
+        } else {
+            SessionMode.ANDROID_SHELL
+        }
+        val linuxMode = mode == SessionMode.LINUX
+        val home = if (linuxMode) {
+            runtime.homeDirectory
+        } else {
+            File(context.filesDir, "terminal/home")
+        }
+
+        return TerminalSession(
+            context = context.applicationContext,
+            id = id,
+            mode = mode,
+            title = if (linuxMode) "Linux $displayIndex" else "Shell $displayIndex",
+            homeDirectory = home,
+            shellExecutable = if (linuxMode) runtime.shellExecutable else null,
+            prefixDirectory = runtime.prefixDirectory,
+            welcomeText = buildString {
+                appendLine("PiperOS Terminal ${AppVersion.name(context)}")
+                appendLine(
+                    if (linuxMode) {
+                        "Mode: PiperOS Linux Runtime"
+                    } else {
+                        "Mode: Android Shell"
+                    }
+                )
+                if (linuxMode) {
+                    appendLine("PREFIX=${runtime.prefixDirectory.absolutePath}")
+                } else {
+                    appendLine("Shell Android dùng công cụ hệ thống, không dùng package Linux.")
+                }
+                appendLine("HOME=${home.absolutePath}")
+                appendLine()
+            },
+            onOutput = { notifyOutput(id) }
+        )
+    }
+
+    private fun defaultMode(context: Context): SessionMode =
+        if (TerminalRuntime.inspect(context).installed) {
+            SessionMode.LINUX
+        } else {
+            SessionMode.ANDROID_SHELL
+        }
+
     private fun notifyOutput(sessionId: Long) {
         listeners.forEach { it.onTerminalOutput(sessionId) }
     }
@@ -159,15 +189,21 @@ object TerminalSessionManager {
     }
 
     private fun renumberSessions() {
-        sessions.forEachIndexed { index, session ->
-            val prefix = session.title.substringBefore(' ')
-            session.title = "$prefix ${index + 1}"
+        SessionMode.entries.forEach { mode ->
+            sessions.filter { it.mode == mode }.forEachIndexed { index, session ->
+                session.title = if (mode == SessionMode.LINUX) {
+                    "Linux ${index + 1}"
+                } else {
+                    "Shell ${index + 1}"
+                }
+            }
         }
     }
 
     private class TerminalSession(
         private val context: Context,
         val id: Long,
+        val mode: SessionMode,
         var title: String,
         private val homeDirectory: File,
         private val shellExecutable: File?,
@@ -182,6 +218,21 @@ object TerminalSessionManager {
 
         @Volatile
         private var closed = false
+
+        @Volatile
+        private var busy = false
+
+        @Volatile
+        private var progressPercent: Int? = null
+
+        @Volatile
+        private var awaitingConfirmation = false
+
+        @Volatile
+        private var currentCommand: String? = null
+
+        @Volatile
+        private var lastExitCode: Int? = null
 
         fun start() {
             homeDirectory.mkdirs()
@@ -223,32 +274,37 @@ object TerminalSessionManager {
                             while (!closed) {
                                 val count = reader.read(buffer)
                                 if (count < 0) break
-                                append(String(buffer, 0, count))
+                                appendProcessOutput(String(buffer, 0, count))
                             }
                         }
                     } catch (_: Exception) {
                         if (!closed) append("\nKhông thể đọc đầu ra của shell.\n")
                     } finally {
-                        if (!closed) {
-                            append("\n[Shell đã kết thúc]\n")
-                        }
+                        if (!closed) append("\n[Shell đã kết thúc]\n")
                     }
                 }, "PiperTerminal-$id").apply {
                     isDaemon = true
                     start()
                 }
             }.onFailure {
-                append("Không thể khởi động /system/bin/sh: ${it.message}\n")
+                append("Không thể khởi động shell: ${it.message}\n")
             }
         }
 
         fun sendCommand(command: String): Boolean {
             if (closed || !isProcessRunning()) return false
+            busy = true
+            progressPercent = null
+            awaitingConfirmation = false
+            currentCommand = command
+            lastExitCode = null
             append("$ $command\n")
             return runCatching {
                 writer?.apply {
-                    write(command)
-                    write("\n")
+                    write(
+                        "{ $command; }; __piper_exit=${'$'}?; " +
+                            "printf '\\n$DONE_MARKER:%s\\n' \"${'$'}__piper_exit\"\n"
+                    )
                     flush()
                 }
                 true
@@ -257,6 +313,9 @@ object TerminalSessionManager {
 
         fun sendRaw(value: String): Boolean {
             if (closed || !isProcessRunning()) return false
+            if (value.trim().equals("y", true) || value.trim().equals("n", true)) {
+                awaitingConfirmation = false
+            }
             return runCatching {
                 writer?.apply {
                     write(value)
@@ -286,8 +345,48 @@ object TerminalSessionManager {
         fun toInfo(): SessionInfo = SessionInfo(
             id = id,
             title = title,
-            running = isProcessRunning()
+            running = isProcessRunning(),
+            mode = mode,
+            busy = busy,
+            progressPercent = progressPercent,
+            awaitingConfirmation = awaitingConfirmation,
+            currentCommand = currentCommand,
+            lastExitCode = lastExitCode
         )
+
+        private fun appendProcessOutput(text: String) {
+            var visibleText = text
+            DONE_REGEX.findAll(text).forEach { match ->
+                lastExitCode = match.groupValues[1].toIntOrNull()
+                busy = false
+                progressPercent = if (lastExitCode == 0) 100 else progressPercent
+                awaitingConfirmation = false
+                currentCommand = null
+            }
+            visibleText = DONE_REGEX.replace(visibleText, "")
+
+            PERCENT_REGEX.findAll(visibleText).lastOrNull()
+                ?.groupValues
+                ?.getOrNull(1)
+                ?.toIntOrNull()
+                ?.coerceIn(0, 100)
+                ?.let { progressPercent = it }
+
+            if (CONFIRMATION_REGEX.containsMatchIn(visibleText)) {
+                awaitingConfirmation = true
+            }
+
+            if (visibleText.isNotEmpty()) append(visibleText.replace('\r', '\n'))
+            if (DONE_REGEX.containsMatchIn(text)) {
+                append(
+                    if (lastExitCode == 0) {
+                        "\n[Hoàn tất]\n"
+                    } else {
+                        "\n[Kết thúc với mã ${lastExitCode ?: "?"}]\n"
+                    }
+                )
+            }
+        }
 
         private fun isProcessRunning(): Boolean {
             val activeProcess = process ?: return false
@@ -312,6 +411,12 @@ object TerminalSessionManager {
         companion object {
             private const val MAX_OUTPUT_CHARS = 160_000
             private const val TRIMMED_OUTPUT_CHARS = 120_000
+            private const val DONE_MARKER = "__PIPER_DONE__"
+            private val DONE_REGEX = Regex("""__PIPER_DONE__:(-?\d+)""")
+            private val PERCENT_REGEX = Regex("""(?<!\d)(\d{1,3})\s*%""")
+            private val CONFIRMATION_REGEX = Regex(
+                """(?i)(\[[Yy]/[Nn]\]|\[[Yy]/n\]|\[y/[Nn]\]|continue\?\s*\[[^]]+])"""
+            )
         }
     }
 }

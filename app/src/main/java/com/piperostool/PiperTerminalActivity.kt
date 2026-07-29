@@ -6,17 +6,25 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.res.Configuration
 import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
+import android.graphics.Typeface
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.text.Spannable
+import android.text.SpannableStringBuilder
+import android.text.style.ForegroundColorSpan
+import android.text.style.StyleSpan
 import android.view.Gravity
 import android.view.View
 import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.LinearLayout
+import android.widget.ProgressBar
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import org.json.JSONArray
@@ -31,6 +39,15 @@ class PiperTerminalActivity : AppCompatActivity(), TerminalSessionManager.Listen
     private lateinit var runtimeModeView: TextView
     private lateinit var runtimeDetailView: TextView
     private lateinit var runtimeVersionView: TextView
+    private lateinit var runtimeActionsView: View
+    private lateinit var runtimeInstallButton: TextView
+    private lateinit var runtimeRemoveButton: TextView
+    private lateinit var taskPanel: View
+    private lateinit var taskStatusView: TextView
+    private lateinit var taskPercentView: TextView
+    private lateinit var taskProgress: ProgressBar
+    private lateinit var confirmationActions: View
+    private lateinit var promptModeView: TextView
     private lateinit var keyboardController: TerminalKeyboardController
 
     private val mainHandler = Handler(Looper.getMainLooper())
@@ -39,6 +56,7 @@ class PiperTerminalActivity : AppCompatActivity(), TerminalSessionManager.Listen
     private var historyIndex = 0
     private var activeSessionId = 0L
     private var runtimeReceiverRegistered = false
+    private var removingRuntime = false
     private val runtimeStateReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             renderRuntimeStatus()
@@ -77,6 +95,15 @@ class PiperTerminalActivity : AppCompatActivity(), TerminalSessionManager.Listen
         runtimeModeView = findViewById(R.id.tvTerminalRuntimeMode)
         runtimeDetailView = findViewById(R.id.tvTerminalRuntimeDetail)
         runtimeVersionView = findViewById(R.id.tvTerminalRuntimeVersion)
+        runtimeActionsView = findViewById(R.id.terminalRuntimeActions)
+        runtimeInstallButton = findViewById(R.id.btnTerminalRuntimeInstall)
+        runtimeRemoveButton = findViewById(R.id.btnTerminalRuntimeRemove)
+        taskPanel = findViewById(R.id.terminalTaskPanel)
+        taskStatusView = findViewById(R.id.tvTerminalTaskStatus)
+        taskPercentView = findViewById(R.id.tvTerminalTaskPercent)
+        taskProgress = findViewById(R.id.terminalTaskProgress)
+        confirmationActions = findViewById(R.id.terminalConfirmationActions)
+        promptModeView = findViewById(R.id.tvTerminalPromptMode)
         outputView.setTag(R.id.piper_auto_font_ignore, true)
         commandInput.setTag(R.id.piper_auto_font_ignore, true)
 
@@ -93,9 +120,9 @@ class PiperTerminalActivity : AppCompatActivity(), TerminalSessionManager.Listen
         )
 
         findViewById<View>(R.id.btnTerminalBack).setOnClickListener { finish() }
-        runtimeStatusView.setOnClickListener {
-            requestRuntimeInstall()
-        }
+        runtimeStatusView.setOnClickListener { requestRuntimeInstall() }
+        runtimeInstallButton.setOnClickListener { requestRuntimeInstall() }
+        runtimeRemoveButton.setOnClickListener { confirmRuntimeRemoval() }
         findViewById<View>(R.id.btnTerminalClear).setOnClickListener {
             TerminalSessionManager.clearOutput(activeSessionId)
         }
@@ -107,6 +134,17 @@ class PiperTerminalActivity : AppCompatActivity(), TerminalSessionManager.Listen
         }
         findViewById<View>(R.id.btnTerminalSend).setOnClickListener {
             submitCommand()
+        }
+        findViewById<View>(R.id.btnTerminalYes).setOnClickListener {
+            TerminalSessionManager.sendRaw(activeSessionId, "y\n")
+            renderOutput()
+        }
+        findViewById<View>(R.id.btnTerminalNo).setOnClickListener {
+            TerminalSessionManager.sendRaw(activeSessionId, "n\n")
+            renderOutput()
+        }
+        outputScroll.setOnClickListener {
+            commandInput.requestFocus()
         }
         commandInput.setOnEditorActionListener { _, _, _ ->
             submitCommand()
@@ -186,12 +224,14 @@ class PiperTerminalActivity : AppCompatActivity(), TerminalSessionManager.Listen
     }
 
     private fun updateTerminalLayout() {
-        runtimeStatusView.visibility =
-            if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
-                View.GONE
-            } else {
-                View.VISIBLE
-            }
+        val landscape =
+            resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+        runtimeStatusView.visibility = if (landscape) View.GONE else View.VISIBLE
+        if (landscape) {
+            runtimeActionsView.visibility = View.GONE
+        } else {
+            renderRuntimeStatus()
+        }
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -209,6 +249,7 @@ class PiperTerminalActivity : AppCompatActivity(), TerminalSessionManager.Listen
         mainHandler.post {
             val sessions = TerminalSessionManager.listSessions()
             if (sessions.isEmpty()) {
+                if (removingRuntime) return@post
                 finish()
                 return@post
             }
@@ -238,7 +279,43 @@ class PiperTerminalActivity : AppCompatActivity(), TerminalSessionManager.Listen
             Toast.makeText(this, R.string.terminal_session_limit, Toast.LENGTH_SHORT).show()
             return
         }
-        activeSessionId = TerminalSessionManager.createSession(this).id
+        val runtimeInstalled = TerminalRuntime.inspect(this).installed
+        val content = layoutInflater.inflate(R.layout.dialog_terminal_mode, null)
+        val dialog = AlertDialog.Builder(this).setView(content).create()
+        content.findViewById<View>(R.id.terminalModeLinux).apply {
+            alpha = if (runtimeInstalled) 1f else 0.45f
+            setOnClickListener {
+                if (!runtimeInstalled) {
+                    Toast.makeText(
+                        this@PiperTerminalActivity,
+                        R.string.terminal_linux_not_installed,
+                        Toast.LENGTH_SHORT
+                    ).show()
+                } else {
+                    dialog.dismiss()
+                    openNewSession(TerminalSessionManager.SessionMode.LINUX)
+                }
+            }
+        }
+        content.findViewById<View>(R.id.terminalModeShell).setOnClickListener {
+            dialog.dismiss()
+            openNewSession(TerminalSessionManager.SessionMode.ANDROID_SHELL)
+        }
+        content.findViewById<View>(R.id.btnTerminalModeCancel).setOnClickListener {
+            dialog.dismiss()
+        }
+        dialog.setOnShowListener {
+            dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+            dialog.window?.setLayout(
+                (resources.displayMetrics.widthPixels * 0.9f).toInt(),
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+        }
+        dialog.show()
+    }
+
+    private fun openNewSession(mode: TerminalSessionManager.SessionMode) {
+        activeSessionId = TerminalSessionManager.createSession(this, mode).id
         renderTabs()
         renderOutput()
         commandInput.requestFocus()
@@ -303,8 +380,71 @@ class PiperTerminalActivity : AppCompatActivity(), TerminalSessionManager.Listen
             TerminalSessionManager.output(activeSessionId),
             ""
         )
-        outputView.text = plainOutput
+        outputView.text = styleTerminalOutput(plainOutput)
+        renderSessionState()
         outputScroll.post { outputScroll.fullScroll(View.FOCUS_DOWN) }
+    }
+
+    private fun styleTerminalOutput(output: String): CharSequence {
+        val styled = SpannableStringBuilder(output)
+        var offset = 0
+        output.split('\n').forEach { line ->
+            val color = when {
+                line.startsWith("$ ") -> 0xFF8DFFB0.toInt()
+                line.startsWith("[Hoàn tất]") -> 0xFF8DFFB0.toInt()
+                line.startsWith("[Kết thúc") ||
+                    line.contains("error", true) ||
+                    line.contains("failed", true) -> 0xFFFB7185.toInt()
+                line.contains("%") -> 0xFF8AD6FF.toInt()
+                else -> null
+            }
+            if (color != null && line.isNotEmpty()) {
+                styled.setSpan(
+                    ForegroundColorSpan(color),
+                    offset,
+                    offset + line.length,
+                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                )
+            }
+            if (line.startsWith("$ ")) {
+                styled.setSpan(
+                    StyleSpan(Typeface.BOLD),
+                    offset,
+                    offset + line.length,
+                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                )
+            }
+            offset += line.length + 1
+        }
+        return styled
+    }
+
+    private fun renderSessionState() {
+        val session = TerminalSessionManager.listSessions()
+            .firstOrNull { it.id == activeSessionId } ?: return
+        val linux = session.mode == TerminalSessionManager.SessionMode.LINUX
+        promptModeView.text = if (linux) "LINUX $" else "SHELL $"
+        promptModeView.setTextColor(if (linux) 0xFF8DFFB0.toInt() else 0xFF8AD6FF.toInt())
+        commandInput.hint = if (linux) {
+            "Nhập lệnh Linux..."
+        } else {
+            "Nhập lệnh Android shell..."
+        }
+
+        taskPanel.visibility = if (session.busy) View.VISIBLE else View.GONE
+        if (!session.busy) return
+        taskStatusView.text = session.currentCommand?.let {
+            getString(R.string.terminal_task_running, it)
+        } ?: getString(R.string.terminal_task_processing)
+        taskProgress.isIndeterminate = session.progressPercent == null
+        session.progressPercent?.let {
+            taskProgress.progress = it
+            taskPercentView.text = "$it%"
+        } ?: run {
+            taskPercentView.text = ""
+        }
+        confirmationActions.visibility =
+            if (session.awaitingConfirmation) View.VISIBLE else View.GONE
     }
 
     private fun renderRuntimeStatus() {
@@ -339,6 +479,20 @@ class PiperTerminalActivity : AppCompatActivity(), TerminalSessionManager.Listen
             R.string.terminal_runtime_version,
             runtime.installedVersion ?: TerminalRuntime.RUNTIME_VERSION
         )
+        val landscape =
+            resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+        runtimeInstallButton.visibility =
+            if (!runtime.installed || runtime.updateAvailable) View.VISIBLE else View.GONE
+        runtimeInstallButton.setText(
+            if (runtime.updateAvailable) {
+                R.string.terminal_runtime_update_action
+            } else {
+                R.string.terminal_runtime_install_action
+            }
+        )
+        runtimeRemoveButton.visibility = if (runtime.installed) View.VISIBLE else View.GONE
+        runtimeActionsView.visibility =
+            if (!landscape && !installState.running) View.VISIBLE else View.GONE
     }
 
     private fun requestRuntimeInstall() {
@@ -358,6 +512,79 @@ class PiperTerminalActivity : AppCompatActivity(), TerminalSessionManager.Listen
                 .setAction(TerminalRuntimeInstallService.ACTION_INSTALL)
         )
         mainHandler.postDelayed({ renderRuntimeStatus() }, 150)
+    }
+
+    private fun confirmRuntimeRemoval() {
+        if (TerminalRuntimeInstallService.currentState.running) {
+            Toast.makeText(
+                this,
+                TerminalRuntimeInstallService.currentState.message,
+                Toast.LENGTH_SHORT
+            ).show()
+            return
+        }
+        AlertDialog.Builder(this)
+            .setTitle(R.string.terminal_runtime_remove_title)
+            .setMessage(R.string.terminal_runtime_remove_message)
+            .setNegativeButton(android.R.string.cancel, null)
+            .setPositiveButton(R.string.terminal_runtime_remove_action) { _, _ ->
+                removeRuntime()
+            }
+            .show()
+    }
+
+    private fun removeRuntime() {
+        runtimeRemoveButton.isEnabled = false
+        removingRuntime = true
+        TerminalSessionManager.closeAll()
+        Thread({
+            val result = runCatching { TerminalRuntime.uninstall(this) }
+            mainHandler.post {
+                runtimeRemoveButton.isEnabled = true
+                if (result.isSuccess) {
+                    activeSessionId = TerminalSessionManager.createSession(
+                        this,
+                        TerminalSessionManager.SessionMode.ANDROID_SHELL
+                    ).id
+                    removingRuntime = false
+                    ContextCompat.startForegroundService(
+                        this,
+                        Intent(this, PiperTerminalService::class.java)
+                    )
+                    renderTabs()
+                    renderOutput()
+                    renderRuntimeStatus()
+                    Toast.makeText(
+                        this,
+                        R.string.terminal_runtime_removed,
+                        Toast.LENGTH_SHORT
+                    ).show()
+                } else {
+                    val fallbackMode = if (TerminalRuntime.inspect(this).installed) {
+                        TerminalSessionManager.SessionMode.LINUX
+                    } else {
+                        TerminalSessionManager.SessionMode.ANDROID_SHELL
+                    }
+                    activeSessionId = TerminalSessionManager.createSession(this, fallbackMode).id
+                    removingRuntime = false
+                    ContextCompat.startForegroundService(
+                        this,
+                        Intent(this, PiperTerminalService::class.java)
+                    )
+                    renderTabs()
+                    renderOutput()
+                    renderRuntimeStatus()
+                    Toast.makeText(
+                        this,
+                        getString(
+                            R.string.terminal_runtime_remove_failed,
+                            result.exceptionOrNull()?.message.orEmpty()
+                        ),
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            }
+        }, "PiperRuntimeRemove").start()
     }
 
     private fun moveInHistory(direction: Int) {

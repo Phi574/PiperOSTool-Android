@@ -1,6 +1,8 @@
 package com.piperostool
 
 import android.content.Context
+import android.system.Os
+import android.system.OsConstants
 import java.io.File
 
 object TerminalRuntime {
@@ -59,4 +61,29 @@ object TerminalRuntime {
     fun writeInstalledVersion(prefix: File, version: String) {
         File(prefix, VERSION_FILE_NAME).writeText(version.trim() + "\n")
     }
+
+    fun uninstall(context: Context) {
+        listOf(
+            File(context.filesDir, "usr"),
+            File(context.filesDir, "home"),
+            File(context.filesDir, ".piperos-runtime-staging"),
+            File(context.filesDir, ".piperos-runtime-backup"),
+            File(context.cacheDir, "piperos-runtime-install")
+        ).forEach(::deleteTreeWithoutFollowingLinks)
+    }
+
+    private fun deleteTreeWithoutFollowingLinks(file: File) {
+        if (!file.exists() && !isSymbolicLink(file)) return
+        val symbolicLink = isSymbolicLink(file)
+        if (file.isDirectory && !symbolicLink) {
+            file.listFiles()?.forEach(::deleteTreeWithoutFollowingLinks)
+        }
+        check(file.delete() || !file.exists()) {
+            "Không thể xóa ${file.absolutePath}"
+        }
+    }
+
+    private fun isSymbolicLink(file: File): Boolean = runCatching {
+        OsConstants.S_ISLNK(Os.lstat(file.absolutePath).st_mode)
+    }.getOrDefault(false)
 }
