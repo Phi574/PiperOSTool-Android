@@ -98,6 +98,7 @@ object TerminalSessionManager {
         }
 
         return TerminalSession(
+            context = context.applicationContext,
             id = id,
             title = if (runtime.installed) {
                 "Linux $displayIndex"
@@ -165,6 +166,7 @@ object TerminalSessionManager {
     }
 
     private class TerminalSession(
+        private val context: Context,
         val id: Long,
         var title: String,
         private val homeDirectory: File,
@@ -185,31 +187,32 @@ object TerminalSessionManager {
             homeDirectory.mkdirs()
             append(welcomeText)
             runCatching {
-                val builder = ProcessBuilder(
-                    shellExecutable?.absolutePath ?: "/system/bin/sh"
-                )
-                    .directory(homeDirectory)
-                    .redirectErrorStream(true)
-                builder.environment().apply {
-                    put("HOME", homeDirectory.absolutePath)
-                    put("TERM", "xterm-256color")
-                    if (shellExecutable != null) {
-                        val tmpDirectory = File(prefixDirectory, "tmp").apply { mkdirs() }
-                        put("PREFIX", prefixDirectory.absolutePath)
-                        put("TMPDIR", tmpDirectory.absolutePath)
-                        put(
-                            "PATH",
-                            "${File(prefixDirectory, "bin").absolutePath}:" +
-                                "/system/bin:/system/xbin:/vendor/bin"
-                        )
-                        put("LD_LIBRARY_PATH", File(prefixDirectory, "lib").absolutePath)
-                        put("LANG", "C.UTF-8")
-                    } else {
-                        put("TMPDIR", homeDirectory.parentFile?.resolve("tmp")?.apply {
-                            mkdirs()
-                        }?.absolutePath ?: homeDirectory.absolutePath)
-                        put("PATH", "/system/bin:/system/xbin:/vendor/bin")
-                    }
+                val builder = if (shellExecutable != null) {
+                    TermuxProcessLauncher.create(
+                        context = context,
+                        executable = shellExecutable,
+                        arguments = emptyList(),
+                        workingDirectory = homeDirectory,
+                        prefixDirectory = prefixDirectory,
+                        homeDirectory = homeDirectory
+                    )
+                } else {
+                    ProcessBuilder("/system/bin/sh")
+                        .directory(homeDirectory)
+                        .redirectErrorStream(true)
+                        .apply {
+                            environment().apply {
+                                put("HOME", homeDirectory.absolutePath)
+                                put("TERM", "xterm-256color")
+                                put(
+                                    "TMPDIR",
+                                    homeDirectory.parentFile?.resolve("tmp")?.apply {
+                                        mkdirs()
+                                    }?.absolutePath ?: homeDirectory.absolutePath
+                                )
+                                put("PATH", "/system/bin:/system/xbin:/vendor/bin")
+                            }
+                        }
                 }
                 process = builder.start()
                 writer = OutputStreamWriter(process!!.outputStream)

@@ -133,6 +133,7 @@ class TerminalRuntimeInstallService : Service() {
 
             publish(State(Phase.EXTRACTING, 72, getString(R.string.terminal_runtime_extracting)))
             val symlinkLines = extractArchive(archive, stagingPrefix)
+            rewriteBootstrapPaths(stagingPrefix)
             restoreSymlinks(stagingPrefix, symlinkLines)
             TerminalRuntime.writeInstalledVersion(stagingPrefix, selection.version)
             require(File(stagingPrefix, "bin/bash").isFile) {
@@ -390,6 +391,12 @@ class TerminalRuntimeInstallService : Service() {
     }
 
     private fun provisionPackageRepository(prefix: File) {
+        val source = File(prefix, "etc/apt/sources.list.d/piperos.list")
+        if (!isPackageRepositoryAvailable()) {
+            source.delete()
+            return
+        }
+
         val keyring = File(prefix, "etc/apt/keyrings/piperos-archive-keyring.gpg")
         keyring.parentFile?.mkdirsOrThrow()
         resources.openRawResource(R.raw.piperos_apt_repository_public).use { input ->
@@ -397,7 +404,6 @@ class TerminalRuntimeInstallService : Service() {
         }
         Os.chmod(keyring.absolutePath, READ_ONLY_FILE_MODE)
 
-        val source = File(prefix, "etc/apt/sources.list.d/piperos.list")
         source.parentFile?.mkdirsOrThrow()
         source.writeText(
             "deb [signed-by=${keyring.absolutePath}] " +
@@ -408,6 +414,18 @@ class TerminalRuntimeInstallService : Service() {
         Os.chmod(source.absolutePath, READ_ONLY_FILE_MODE)
     }
 
+    private fun isPackageRepositoryAvailable(): Boolean = runCatching {
+        val releaseUrl =
+            "${TerminalRuntime.PACKAGE_REPOSITORY_URL}/dists/" +
+                "${TerminalRuntime.PACKAGE_REPOSITORY_SUITE}/Release"
+        val connection = openConnection(releaseUrl)
+        try {
+            connection.responseCode in 200..299
+        } finally {
+            connection.disconnect()
+        }
+    }.getOrDefault(false)
+
     private fun activateRuntime(stagingPrefix: File, activePrefix: File, backupPrefix: File) {
         backupPrefix.deleteRecursively()
         if (activePrefix.exists()) {
@@ -417,6 +435,28 @@ class TerminalRuntimeInstallService : Service() {
             if (backupPrefix.exists()) backupPrefix.renameTo(activePrefix)
             error("Cannot activate downloaded runtime")
         }
+    }
+
+    private fun rewriteBootstrapPaths(prefix: File) {
+        val appDataDirectory = applicationInfo.dataDir
+        prefix.walkTopDown()
+            .filter { file ->
+                file.isFile &&
+                    file.length() in 1..MAX_REWRITABLE_SCRIPT_BYTES
+            }
+            .forEach { file ->
+                ensureNotCancelled()
+                val bytes = file.readBytes()
+                if (bytes.any { it == 0.toByte() }) return@forEach
+
+                val source = bytes.toString(Charsets.UTF_8)
+                val rewritten = source
+                    .replace(LEGACY_TERMUX_USER_DATA_DIR, appDataDirectory)
+                    .replace(LEGACY_TERMUX_DATA_DIR, appDataDirectory)
+                if (rewritten != source) {
+                    file.writeText(rewritten, Charsets.UTF_8)
+                }
+            }
     }
 
     private fun runSecondStage(prefix: File) {
@@ -430,20 +470,14 @@ class TerminalRuntimeInstallService : Service() {
             )
         ).firstOrNull(File::isFile) ?: return
         val bash = File(prefix, "bin/bash")
-        val process = ProcessBuilder(bash.absolutePath, script.absolutePath)
-            .directory(prefix)
-            .redirectErrorStream(true)
-            .apply {
-                environment().apply {
-                    put("HOME", File(filesDir, "home").apply { mkdirs() }.absolutePath)
-                    put("PREFIX", prefix.absolutePath)
-                    put("TMPDIR", File(prefix, "tmp").apply { mkdirs() }.absolutePath)
-                    put("PATH", "${File(prefix, "bin").absolutePath}:/system/bin")
-                    put("LD_LIBRARY_PATH", File(prefix, "lib").absolutePath)
-                    put("LANG", "C.UTF-8")
-                }
-            }
-            .start()
+        val process = TermuxProcessLauncher.create(
+            context = this,
+            executable = bash,
+            arguments = listOf(script.absolutePath),
+            workingDirectory = prefix,
+            prefixDirectory = prefix,
+            homeDirectory = File(filesDir, "home").apply { mkdirs() }
+        ).start()
         val output = StringBuilder()
         val outputThread = Thread({
             process.inputStream.bufferedReader().useLines { lines ->
@@ -670,9 +704,12 @@ class TerminalRuntimeInstallService : Service() {
         private const val MAX_ZIP_ENTRIES = 200_000
         private const val MAX_SYMLINK_FILE_BYTES = 8L * 1024 * 1024
         private const val MAX_SECOND_STAGE_OUTPUT = 128 * 1024
+        private const val MAX_REWRITABLE_SCRIPT_BYTES = 2L * 1024 * 1024
         private const val SECOND_STAGE_TIMEOUT_MS = 5L * 60 * 1000
         private const val SYMLINKS_FILE = "SYMLINKS.txt"
         private const val SYMLINK_SEPARATOR = "\u2190"
+        private const val LEGACY_TERMUX_DATA_DIR = "/data/data/com.termux"
+        private const val LEGACY_TERMUX_USER_DATA_DIR = "/data/user/0/com.termux"
         private const val DIRECTORY_MODE = 448 // 0700
         private const val FILE_MODE = 448 // 0700
         private const val READ_ONLY_FILE_MODE = 384 // 0600
