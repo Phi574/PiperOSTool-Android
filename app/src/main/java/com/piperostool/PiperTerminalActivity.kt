@@ -4,13 +4,13 @@ import android.content.Context
 import android.content.BroadcastReceiver
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.res.Configuration
 import android.graphics.Color
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.view.Gravity
 import android.view.View
-import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.LinearLayout
@@ -31,6 +31,7 @@ class PiperTerminalActivity : AppCompatActivity(), TerminalSessionManager.Listen
     private lateinit var runtimeModeView: TextView
     private lateinit var runtimeDetailView: TextView
     private lateinit var runtimeVersionView: TextView
+    private lateinit var keyboardController: TerminalKeyboardController
 
     private val mainHandler = Handler(Looper.getMainLooper())
     private val refreshOutput = Runnable { renderOutput() }
@@ -112,28 +113,38 @@ class PiperTerminalActivity : AppCompatActivity(), TerminalSessionManager.Listen
             true
         }
 
-        findViewById<View>(R.id.btnTerminalCtrlC).setOnClickListener {
-            TerminalSessionManager.restartSession(this, activeSessionId)
-            Toast.makeText(this, R.string.terminal_session_interrupted, Toast.LENGTH_SHORT).show()
-        }
-        findViewById<View>(R.id.btnTerminalTabKey).setOnClickListener {
-            insertAtCursor("\t")
-        }
-        findViewById<View>(R.id.btnTerminalEsc).setOnClickListener {
-            commandInput.clearFocus()
-            (getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager)
-                .hideSoftInputFromWindow(commandInput.windowToken, 0)
-        }
-        findViewById<View>(R.id.btnTerminalHistoryUp).setOnClickListener {
-            moveInHistory(-1)
-        }
-        findViewById<View>(R.id.btnTerminalHistoryDown).setOnClickListener {
-            moveInHistory(1)
-        }
+        keyboardController = TerminalKeyboardController(
+            context = this,
+            input = commandInput,
+            panel = findViewById(R.id.terminalCustomKeyboard),
+            rowsContainer = findViewById(R.id.terminalKeyboardRows),
+            functionKeys = findViewById(R.id.terminalFunctionKeys),
+            modeButton = findViewById(R.id.btnTerminalKeyboardMode),
+            clipboardButton = findViewById(R.id.btnTerminalClipboard),
+            onSubmit = ::submitCommand,
+            onInterrupt = {
+                TerminalSessionManager.restartSession(this, activeSessionId)
+                Toast.makeText(
+                    this,
+                    R.string.terminal_session_interrupted,
+                    Toast.LENGTH_SHORT
+                ).show()
+            },
+            onHistory = ::moveInHistory,
+            onPageScroll = { direction ->
+                outputScroll.pageScroll(
+                    if (direction < 0) View.FOCUS_UP else View.FOCUS_DOWN
+                )
+            },
+            onRawInput = { value ->
+                TerminalSessionManager.sendRaw(activeSessionId, value)
+            }
+        )
 
         renderTabs()
         renderRuntimeStatus()
         renderOutput()
+        updateTerminalLayout()
     }
 
     override fun onResume() {
@@ -153,17 +164,34 @@ class PiperTerminalActivity : AppCompatActivity(), TerminalSessionManager.Listen
             runtimeReceiverRegistered = true
         }
         TerminalSessionManager.addListener(this)
+        keyboardController.start()
         renderTabs()
         renderOutput()
     }
 
     override fun onStop() {
+        keyboardController.stop()
         TerminalSessionManager.removeListener(this)
         if (runtimeReceiverRegistered) {
             unregisterReceiver(runtimeStateReceiver)
             runtimeReceiverRegistered = false
         }
         super.onStop()
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        keyboardController.applyConfiguration()
+        updateTerminalLayout()
+    }
+
+    private fun updateTerminalLayout() {
+        runtimeStatusView.visibility =
+            if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+                View.GONE
+            } else {
+                View.VISIBLE
+            }
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -338,12 +366,6 @@ class PiperTerminalActivity : AppCompatActivity(), TerminalSessionManager.Listen
         val value = commandHistory.getOrNull(historyIndex).orEmpty()
         commandInput.setText(value)
         commandInput.setSelection(value.length)
-    }
-
-    private fun insertAtCursor(text: String) {
-        val position = commandInput.selectionStart.coerceAtLeast(0)
-        commandInput.text?.insert(position, text)
-        commandInput.requestFocus()
     }
 
     private fun rememberCommand(command: String) {

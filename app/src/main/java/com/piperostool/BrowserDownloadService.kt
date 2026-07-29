@@ -17,11 +17,13 @@ import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.webkit.URLUtil
-import android.webkit.MimeTypeMap
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.IconCompat
+import java.io.File
+import java.net.HttpURLConnection
+import java.net.URL
 
 class BrowserDownloadService : Service() {
     private data class TrackedDownload(
@@ -29,10 +31,18 @@ class BrowserDownloadService : Service() {
         val fileName: String
     )
 
+    private data class RemoteMetadata(
+        val finalUrl: String?,
+        val contentDisposition: String?,
+        val mimeType: String?
+    )
+
     private val handler = Handler(Looper.getMainLooper())
     private val trackedDownloads = mutableListOf<TrackedDownload>()
     private lateinit var downloadManager: DownloadManager
     private var foregroundStarted = false
+    private var pendingMetadataRequests = 0
+    private var downloadGeneration = 0L
 
     private val progressPoller = object : Runnable {
         override fun run() {
@@ -115,6 +125,7 @@ class BrowserDownloadService : Service() {
     }
 
     override fun onDestroy() {
+        downloadGeneration++
         handler.removeCallbacks(progressPoller)
         super.onDestroy()
     }
@@ -136,14 +147,52 @@ class BrowserDownloadService : Service() {
         val cookies = intent.getStringExtra(EXTRA_COOKIES)
         val suggestedFileName = intent.getStringExtra(EXTRA_SUGGESTED_FILE_NAME)
         val referrer = intent.getStringExtra(EXTRA_REFERRER)
-        val fileName = resolveFileName(
-            url = url,
-            contentDisposition = contentDisposition,
-            declaredMimeType = mimeType,
-            suggestedFileName = suggestedFileName
-        )
-        val resolvedMimeType = resolveMimeType(fileName, mimeType)
+        val generation = downloadGeneration
+        pendingMetadataRequests++
+        Thread({
+            val remote = probeRemoteMetadata(
+                url = url,
+                userAgent = userAgent,
+                cookies = cookies,
+                referrer = referrer
+            )
+            val resolved = BrowserDownloadMetadataResolver.resolve(
+                BrowserDownloadMetadataResolver.Input(
+                    url = url,
+                    contentDisposition = contentDisposition,
+                    declaredMimeType = mimeType,
+                    suggestedFileName = suggestedFileName,
+                    responseUrl = remote?.finalUrl,
+                    responseContentDisposition = remote?.contentDisposition,
+                    responseMimeType = remote?.mimeType
+                )
+            )
+            handler.post {
+                if (generation != downloadGeneration) return@post
+                pendingMetadataRequests = (pendingMetadataRequests - 1).coerceAtLeast(0)
+                enqueueResolvedDownload(
+                    url = url,
+                    fileName = uniqueFileName(resolved.fileName),
+                    mimeType = resolved.mimeType,
+                    userAgent = userAgent,
+                    cookies = cookies,
+                    referrer = referrer
+                )
+            }
+        }, "PiperBrowserDownloadMetadata").apply {
+            isDaemon = true
+            start()
+        }
+    }
 
+    private fun enqueueResolvedDownload(
+        url: String,
+        fileName: String,
+        mimeType: String?,
+        userAgent: String?,
+        cookies: String?,
+        referrer: String?
+    ) {
         val request = DownloadManager.Request(Uri.parse(url))
             .setTitle(fileName)
             .setDescription(getString(R.string.browser_download_in_progress))
@@ -157,7 +206,7 @@ class BrowserDownloadService : Service() {
                 "PiperOS/$fileName"
             )
 
-        if (!resolvedMimeType.isNullOrBlank()) request.setMimeType(resolvedMimeType)
+        if (!mimeType.isNullOrBlank()) request.setMimeType(mimeType)
         if (!userAgent.isNullOrBlank()) request.addRequestHeader("User-Agent", userAgent)
         if (!cookies.isNullOrBlank()) request.addRequestHeader("Cookie", cookies)
         if (!referrer.isNullOrBlank() && URLUtil.isNetworkUrl(referrer)) {
@@ -170,8 +219,98 @@ class BrowserDownloadService : Service() {
             notifyProgress(null, false)
             handler.post(progressPoller)
         }.onFailure {
-            if (trackedDownloads.isEmpty()) stopTracking()
+            if (trackedDownloads.isEmpty() && pendingMetadataRequests == 0) stopTracking()
         }
+    }
+
+    private fun probeRemoteMetadata(
+        url: String,
+        userAgent: String?,
+        cookies: String?,
+        referrer: String?
+    ): RemoteMetadata? {
+        val head = openMetadataConnection(
+            url = url,
+            method = "HEAD",
+            userAgent = userAgent,
+            cookies = cookies,
+            referrer = referrer
+        )
+        if (
+            head != null &&
+            (!head.contentDisposition.isNullOrBlank() || !isGenericMimeType(head.mimeType))
+        ) {
+            return head
+        }
+        return openMetadataConnection(
+            url = url,
+            method = "GET",
+            userAgent = userAgent,
+            cookies = cookies,
+            referrer = referrer
+        ) ?: head
+    }
+
+    private fun openMetadataConnection(
+        url: String,
+        method: String,
+        userAgent: String?,
+        cookies: String?,
+        referrer: String?
+    ): RemoteMetadata? = runCatching {
+        val connection = URL(url).openConnection() as HttpURLConnection
+        try {
+            connection.instanceFollowRedirects = true
+            connection.connectTimeout = METADATA_CONNECT_TIMEOUT_MS
+            connection.readTimeout = METADATA_READ_TIMEOUT_MS
+            connection.requestMethod = method
+            connection.setRequestProperty("Accept", "*/*")
+            if (method == "GET") connection.setRequestProperty("Range", "bytes=0-0")
+            if (!userAgent.isNullOrBlank()) {
+                connection.setRequestProperty("User-Agent", userAgent)
+            }
+            if (!cookies.isNullOrBlank()) connection.setRequestProperty("Cookie", cookies)
+            if (!referrer.isNullOrBlank() && URLUtil.isNetworkUrl(referrer)) {
+                connection.setRequestProperty("Referer", referrer)
+            }
+
+            val responseCode = connection.responseCode
+            if (responseCode !in 200..399) return@runCatching null
+            RemoteMetadata(
+                finalUrl = connection.url?.toString(),
+                contentDisposition = connection.getHeaderField("Content-Disposition"),
+                mimeType = connection.contentType
+            )
+        } finally {
+            connection.disconnect()
+        }
+    }.getOrNull()
+
+    private fun isGenericMimeType(mimeType: String?): Boolean {
+        val normalized = mimeType?.substringBefore(';')?.trim()?.lowercase()
+        return normalized.isNullOrBlank() || normalized in GENERIC_MIME_TYPES
+    }
+
+    @Suppress("DEPRECATION")
+    private fun uniqueFileName(fileName: String): String {
+        val downloadDirectory = File(
+            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+            "PiperOS"
+        )
+        if (!File(downloadDirectory, fileName).exists()) return fileName
+
+        val extension = fileName.substringAfterLast('.', "")
+        val baseName = if (extension.isBlank()) fileName else fileName.substringBeforeLast('.')
+        for (index in 1..999) {
+            val candidate = if (extension.isBlank()) {
+                "$baseName ($index)"
+            } else {
+                "$baseName ($index).$extension"
+            }
+            if (!File(downloadDirectory, candidate).exists()) return candidate
+        }
+        return "${baseName}-${System.currentTimeMillis()}" +
+            if (extension.isBlank()) "" else ".$extension"
     }
 
     private fun notifyProgress(progress: Int?, waiting: Boolean) {
@@ -275,6 +414,8 @@ class BrowserDownloadService : Service() {
     }
 
     private fun cancelTrackedDownloads() {
+        downloadGeneration++
+        pendingMetadataRequests = 0
         handler.removeCallbacks(progressPoller)
         trackedDownloads.forEach { downloadManager.remove(it.id) }
         trackedDownloads.clear()
@@ -282,6 +423,7 @@ class BrowserDownloadService : Service() {
     }
 
     private fun stopTracking() {
+        if (pendingMetadataRequests > 0) return
         handler.removeCallbacks(progressPoller)
         foregroundStarted = false
         stopForeground(STOP_FOREGROUND_REMOVE)
@@ -304,76 +446,6 @@ class BrowserDownloadService : Service() {
         getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
     }
 
-    private fun resolveFileName(
-        url: String,
-        contentDisposition: String?,
-        declaredMimeType: String?,
-        suggestedFileName: String?
-    ): String {
-        val suggested = suggestedFileName
-            ?.substringAfterLast('/')
-            ?.substringAfterLast('\\')
-            ?.trim()
-            ?.takeIf { it.isNotBlank() }
-        val guessed = URLUtil.guessFileName(url, contentDisposition, declaredMimeType)
-        var fileName = (suggested ?: guessed)
-            .replace(Regex("[\\\\/:*?\"<>|\\u0000-\\u001F]"), "_")
-            .trim()
-            .trim('.')
-            .take(180)
-            .ifBlank { "PiperOS-download" }
-
-        val currentExtension = fileName.substringAfterLast('.', "").lowercase()
-        val resolvedMime = resolveMimeType(fileName, declaredMimeType)
-        val expectedExtension = extensionForMimeType(resolvedMime)
-        if (
-            !expectedExtension.isNullOrBlank() &&
-            (currentExtension.isBlank() || currentExtension in GENERIC_EXTENSIONS)
-        ) {
-            if (currentExtension in GENERIC_EXTENSIONS) {
-                fileName = fileName.substringBeforeLast('.')
-            }
-            fileName = "$fileName.$expectedExtension"
-        }
-        return fileName
-    }
-
-    private fun resolveMimeType(fileName: String, declaredMimeType: String?): String? {
-        val normalized = declaredMimeType
-            ?.substringBefore(';')
-            ?.trim()
-            ?.lowercase()
-            ?.takeUnless { it in GENERIC_MIME_TYPES }
-        if (normalized != null) return normalized
-
-        val extension = fileName.substringAfterLast('.', "").lowercase()
-        return when (extension) {
-            "mp3" -> "audio/mpeg"
-            "m4a" -> "audio/mp4"
-            "mp4", "m4v" -> "video/mp4"
-            "webm" -> "video/webm"
-            "mkv" -> "video/x-matroska"
-            "mov" -> "video/quicktime"
-            "wav" -> "audio/wav"
-            "ogg", "oga" -> "audio/ogg"
-            else -> MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension)
-        }
-    }
-
-    private fun extensionForMimeType(mimeType: String?): String? {
-        return when (mimeType) {
-            "audio/mpeg", "audio/mp3" -> "mp3"
-            "audio/mp4", "audio/x-m4a" -> "m4a"
-            "video/mp4" -> "mp4"
-            "video/webm", "audio/webm" -> "webm"
-            "video/x-matroska" -> "mkv"
-            "video/quicktime" -> "mov"
-            "audio/wav", "audio/x-wav" -> "wav"
-            "audio/ogg", "application/ogg" -> "ogg"
-            else -> mimeType?.let(MimeTypeMap.getSingleton()::getExtensionFromMimeType)
-        }
-    }
-
     companion object {
         const val ACTION_DOWNLOAD = "com.piperostool.browser.DOWNLOAD"
         const val ACTION_CANCEL = "com.piperostool.browser.CANCEL_DOWNLOADS"
@@ -390,12 +462,14 @@ class BrowserDownloadService : Service() {
         private const val CANCEL_REQUEST_CODE = 4202
         private const val DOWNLOADS_REQUEST_CODE = 4203
         private const val POLL_INTERVAL_MS = 750L
+        private const val METADATA_CONNECT_TIMEOUT_MS = 12_000
+        private const val METADATA_READ_TIMEOUT_MS = 12_000
         private val GENERIC_MIME_TYPES = setOf(
             "application/octet-stream",
             "binary/octet-stream",
             "application/download",
-            "application/x-download"
+            "application/x-download",
+            "application/force-download"
         )
-        private val GENERIC_EXTENSIONS = setOf("bin", "dat", "download", "tmp")
     }
 }

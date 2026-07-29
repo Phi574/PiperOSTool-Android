@@ -234,4 +234,8 @@
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">50%</item>
     </style>
-   </resources>
+    <string name="terminal_keyboard_mode">Chuyển bàn phím PiperOS hoặc bàn phím hệ thống</string>
+    <string name="terminal_clipboard">Clipboard Terminal</string>
+    <string name="terminal_clipboard_empty">Chưa có nội dung sao chép được lưu.</string>
+    <string name="terminal_clipboard_clear">Xóa lịch sử</string>
+</resources>

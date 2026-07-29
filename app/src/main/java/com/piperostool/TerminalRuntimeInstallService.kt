@@ -117,7 +117,7 @@ class TerminalRuntimeInstallService : Service() {
             val selection = selectRuntime(JSONObject(String(manifestBytes, Charsets.UTF_8)))
 
             val availableBytes = StatFs(filesDir.absolutePath).availableBytes
-            val requiredBytes = selection.size * 4 + MIN_FREE_SPACE_BYTES
+            val requiredBytes = selection.size * 8 + MIN_FREE_SPACE_BYTES
             require(availableBytes >= requiredBytes) {
                 getString(
                     R.string.terminal_runtime_not_enough_space,
@@ -698,10 +698,10 @@ class TerminalRuntimeInstallService : Service() {
         private const val MAX_MANIFEST_BYTES = 256L * 1024
         private const val MAX_SIGNATURE_BYTES = 4L * 1024
         private const val MIN_ARCHIVE_BYTES = 1L * 1024 * 1024
-        private const val MAX_ARCHIVE_BYTES = 400L * 1024 * 1024
-        private const val MIN_FREE_SPACE_BYTES = 128L * 1024 * 1024
-        private const val MAX_EXPANDED_BYTES = 1536L * 1024 * 1024
-        private const val MAX_ZIP_ENTRIES = 200_000
+        private const val MAX_ARCHIVE_BYTES = 900L * 1024 * 1024
+        private const val MIN_FREE_SPACE_BYTES = 256L * 1024 * 1024
+        private const val MAX_EXPANDED_BYTES = 4L * 1024 * 1024 * 1024
+        private const val MAX_ZIP_ENTRIES = 400_000
         private const val MAX_SYMLINK_FILE_BYTES = 8L * 1024 * 1024
         private const val MAX_SECOND_STAGE_OUTPUT = 128 * 1024
         private const val MAX_REWRITABLE_SCRIPT_BYTES = 2L * 1024 * 1024
