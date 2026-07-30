@@ -85,6 +85,7 @@
     <string name="terminal_run_command">Chạy lệnh</string>
     <string name="terminal_session_interrupted">Đã dừng lệnh và khởi động lại phiên.</string>
     <string name="terminal_shell_not_running">Phiên shell không còn hoạt động.</string>
+    <string name="terminal_session_busy">Lệnh trước vẫn đang chạy. Hãy chờ hoặc nhấn CTRL+C.</string>
     <string name="terminal_session_limit">Chỉ có thể mở tối đa 6 phiên.</string>
     <string name="terminal_notification_title">PiperOS Terminal đang chạy</string>
     <string name="terminal_notification_channel">Phiên PiperOS Terminal</string>

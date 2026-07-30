@@ -57,6 +57,7 @@ class PiperTerminalActivity : AppCompatActivity(), TerminalSessionManager.Listen
     private var activeSessionId = 0L
     private var runtimeReceiverRegistered = false
     private var removingRuntime = false
+    private var runtimeActionsExpanded = false
     private val runtimeStateReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             renderRuntimeStatus()
@@ -120,7 +121,15 @@ class PiperTerminalActivity : AppCompatActivity(), TerminalSessionManager.Listen
         )
 
         findViewById<View>(R.id.btnTerminalBack).setOnClickListener { finish() }
-        runtimeStatusView.setOnClickListener { requestRuntimeInstall() }
+        runtimeStatusView.setOnClickListener {
+            val runtime = TerminalRuntime.inspect(this)
+            if (runtime.installed && !runtime.updateAvailable) {
+                runtimeActionsExpanded = !runtimeActionsExpanded
+                renderRuntimeStatus()
+            } else {
+                requestRuntimeInstall()
+            }
+        }
         runtimeInstallButton.setOnClickListener { requestRuntimeInstall() }
         runtimeRemoveButton.setOnClickListener { confirmRuntimeRemoval() }
         findViewById<View>(R.id.btnTerminalClear).setOnClickListener {
@@ -265,6 +274,21 @@ class PiperTerminalActivity : AppCompatActivity(), TerminalSessionManager.Listen
         val command = commandInput.text.toString().trim()
         if (command.isEmpty()) return
 
+        if (command == "clear" || command == "cls") {
+            TerminalSessionManager.clearOutput(activeSessionId)
+            rememberCommand(command)
+            commandInput.text?.clear()
+            historyIndex = commandHistory.size
+            return
+        }
+
+        val session = TerminalSessionManager.listSessions()
+            .firstOrNull { it.id == activeSessionId }
+        if (session?.busy == true) {
+            Toast.makeText(this, R.string.terminal_session_busy, Toast.LENGTH_SHORT).show()
+            return
+        }
+
         if (TerminalSessionManager.sendCommand(activeSessionId, command)) {
             rememberCommand(command)
             commandInput.text?.clear()
@@ -369,7 +393,12 @@ class PiperTerminalActivity : AppCompatActivity(), TerminalSessionManager.Listen
         }
         val current = sessions.firstOrNull { it.id == activeSessionId }
         statusView.text = if (current?.running == true) {
-            getString(R.string.terminal_status_running, current.title)
+            buildString {
+                append(current.title)
+                append("  •  ")
+                append(current.displayDirectory)
+                if (current.busy) append("  •  running")
+            }
         } else {
             getString(R.string.terminal_status_stopped)
         }
@@ -390,11 +419,12 @@ class PiperTerminalActivity : AppCompatActivity(), TerminalSessionManager.Listen
         var offset = 0
         output.split('\n').forEach { line ->
             val color = when {
-                line.startsWith("$ ") -> 0xFF8DFFB0.toInt()
-                line.startsWith("[Hoàn tất]") -> 0xFF8DFFB0.toInt()
-                line.startsWith("[Kết thúc") ||
+                line.startsWith("piper:") -> 0xFF8DFFB0.toInt()
+                line.startsWith("android:") -> 0xFF8AD6FF.toInt()
+                line.startsWith("[exit ") ||
                     line.contains("error", true) ||
-                    line.contains("failed", true) -> 0xFFFB7185.toInt()
+                    line.contains("failed", true) ||
+                    line.contains("not found", true) -> 0xFFFB7185.toInt()
                 line.contains("%") -> 0xFF8AD6FF.toInt()
                 else -> null
             }
@@ -406,7 +436,7 @@ class PiperTerminalActivity : AppCompatActivity(), TerminalSessionManager.Listen
                     Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
                 )
             }
-            if (line.startsWith("$ ")) {
+            if (line.startsWith("piper:") || line.startsWith("android:")) {
                 styled.setSpan(
                     StyleSpan(Typeface.BOLD),
                     offset,
@@ -423,7 +453,7 @@ class PiperTerminalActivity : AppCompatActivity(), TerminalSessionManager.Listen
         val session = TerminalSessionManager.listSessions()
             .firstOrNull { it.id == activeSessionId } ?: return
         val linux = session.mode == TerminalSessionManager.SessionMode.LINUX
-        promptModeView.text = if (linux) "LINUX $" else "SHELL $"
+        promptModeView.text = "${session.displayDirectory} $"
         promptModeView.setTextColor(if (linux) 0xFF8DFFB0.toInt() else 0xFF8AD6FF.toInt())
         commandInput.hint = if (linux) {
             "Nhập lệnh Linux..."
@@ -431,8 +461,12 @@ class PiperTerminalActivity : AppCompatActivity(), TerminalSessionManager.Listen
             "Nhập lệnh Android shell..."
         }
 
-        taskPanel.visibility = if (session.busy) View.VISIBLE else View.GONE
-        if (!session.busy) return
+        val showTaskPanel = session.showTaskProgress || session.awaitingConfirmation
+        taskPanel.visibility = if (showTaskPanel) View.VISIBLE else View.GONE
+        if (!showTaskPanel) {
+            confirmationActions.visibility = View.GONE
+            return
+        }
         taskStatusView.text = session.currentCommand?.let {
             getString(R.string.terminal_task_running, it)
         } ?: getString(R.string.terminal_task_processing)
@@ -491,8 +525,17 @@ class PiperTerminalActivity : AppCompatActivity(), TerminalSessionManager.Listen
             }
         )
         runtimeRemoveButton.visibility = if (runtime.installed) View.VISIBLE else View.GONE
-        runtimeActionsView.visibility =
-            if (!landscape && !installState.running) View.VISIBLE else View.GONE
+        val actionsNeeded =
+            !runtime.installed || runtime.updateAvailable || runtimeActionsExpanded
+        runtimeActionsView.visibility = if (
+            !landscape &&
+            !installState.running &&
+            actionsNeeded
+        ) {
+            View.VISIBLE
+        } else {
+            View.GONE
+        }
     }
 
     private fun requestRuntimeInstall() {

@@ -23,7 +23,11 @@ object TerminalSessionManager {
         val title: String,
         val running: Boolean,
         val mode: SessionMode,
+        val currentDirectory: String,
+        val displayDirectory: String,
+        val prompt: String,
         val busy: Boolean,
+        val showTaskProgress: Boolean,
         val progressPercent: Int?,
         val awaitingConfirmation: Boolean,
         val currentCommand: String?,
@@ -156,17 +160,16 @@ object TerminalSessionManager {
                 appendLine("PiperOS Terminal ${AppVersion.name(context)}")
                 appendLine(
                     if (linuxMode) {
-                        "Mode: PiperOS Linux Runtime"
+                        "Linux runtime ${runtime.installedVersion ?: TerminalRuntime.RUNTIME_VERSION}"
                     } else {
-                        "Mode: Android Shell"
+                        "Android shell • no root"
                     }
                 )
                 if (linuxMode) {
-                    appendLine("PREFIX=${runtime.prefixDirectory.absolutePath}")
+                    appendLine("Workspace: ~/projects  •  PREFIX: \$PREFIX")
                 } else {
-                    appendLine("Shell Android dùng công cụ hệ thống, không dùng package Linux.")
+                    appendLine("System tools only • Linux packages unavailable")
                 }
-                appendLine("HOME=${home.absolutePath}")
                 appendLine()
             },
             onOutput = { notifyOutput(id) }
@@ -215,12 +218,16 @@ object TerminalSessionManager {
         private val outputLock = Any()
         private var process: Process? = null
         private var writer: OutputStreamWriter? = null
+        private val parserBuffer = StringBuilder()
 
         @Volatile
         private var closed = false
 
         @Volatile
         private var busy = false
+
+        @Volatile
+        private var trackedTask = false
 
         @Volatile
         private var progressPercent: Int? = null
@@ -234,9 +241,16 @@ object TerminalSessionManager {
         @Volatile
         private var lastExitCode: Int? = null
 
+        @Volatile
+        private var currentDirectory = homeDirectory.absolutePath
+
         fun start() {
             homeDirectory.mkdirs()
-            append(welcomeText)
+            if (mode == SessionMode.LINUX) {
+                listOf("downloads", "projects", "scripts").forEach {
+                    File(homeDirectory, it).mkdirs()
+                }
+            }
             runCatching {
                 val builder = if (shellExecutable != null) {
                     TermuxProcessLauncher.create(
@@ -267,6 +281,8 @@ object TerminalSessionManager {
                 }
                 process = builder.start()
                 writer = OutputStreamWriter(process!!.outputStream)
+                append(welcomeText)
+                appendPrompt()
                 Thread({
                     try {
                         InputStreamReader(process!!.inputStream).use { reader ->
@@ -292,18 +308,21 @@ object TerminalSessionManager {
         }
 
         fun sendCommand(command: String): Boolean {
-            if (closed || !isProcessRunning()) return false
+            if (closed || busy || !isProcessRunning()) return false
             busy = true
+            trackedTask = shouldTrackTask(command)
             progressPercent = null
             awaitingConfirmation = false
             currentCommand = command
             lastExitCode = null
-            append("$ $command\n")
+            append("$command\n")
             return runCatching {
                 writer?.apply {
                     write(
                         "{ $command; }; __piper_exit=${'$'}?; " +
-                            "printf '\\n$DONE_MARKER:%s\\n' \"${'$'}__piper_exit\"\n"
+                            "__piper_pwd=\"${'$'}(pwd -P 2>/dev/null || pwd)\"; " +
+                            "printf '\\035PIPER_DONE:%s:%s\\036' " +
+                            "\"${'$'}__piper_exit\" \"${'$'}__piper_pwd\"\n"
                     )
                     flush()
                 }
@@ -331,6 +350,7 @@ object TerminalSessionManager {
             synchronized(outputLock) {
                 output.clear()
                 output.append(welcomeText)
+                if (!busy) output.append(promptText())
             }
         }
 
@@ -347,7 +367,11 @@ object TerminalSessionManager {
             title = title,
             running = isProcessRunning(),
             mode = mode,
+            currentDirectory = currentDirectory,
+            displayDirectory = displayDirectory(),
+            prompt = promptText(),
             busy = busy,
+            showTaskProgress = trackedTask && busy,
             progressPercent = progressPercent,
             awaitingConfirmation = awaitingConfirmation,
             currentCommand = currentCommand,
@@ -355,16 +379,30 @@ object TerminalSessionManager {
         )
 
         private fun appendProcessOutput(text: String) {
-            var visibleText = text
-            DONE_REGEX.findAll(text).forEach { match ->
-                lastExitCode = match.groupValues[1].toIntOrNull()
-                busy = false
-                progressPercent = if (lastExitCode == 0) 100 else progressPercent
-                awaitingConfirmation = false
-                currentCommand = null
-            }
-            visibleText = DONE_REGEX.replace(visibleText, "")
+            parserBuffer.append(text.replace("\r\n", "\n").replace('\r', '\n'))
+            while (true) {
+                val match = DONE_REGEX.find(parserBuffer)
+                if (match == null) {
+                    val markerStart = parserBuffer.lastIndexOf(DONE_START.toString())
+                    val visibleEnd = if (markerStart >= 0) markerStart else parserBuffer.length
+                    if (visibleEnd > 0) {
+                        consumeVisibleOutput(parserBuffer.substring(0, visibleEnd))
+                        parserBuffer.delete(0, visibleEnd)
+                    }
+                    return
+                }
 
+                if (match.range.first > 0) {
+                    consumeVisibleOutput(parserBuffer.substring(0, match.range.first))
+                }
+                val exitCode = match.groupValues[1].toIntOrNull()
+                val directory = match.groupValues[2].trim()
+                parserBuffer.delete(0, match.range.last + 1)
+                finishCommand(exitCode, directory)
+            }
+        }
+
+        private fun consumeVisibleOutput(visibleText: String) {
             PERCENT_REGEX.findAll(visibleText).lastOrNull()
                 ?.groupValues
                 ?.getOrNull(1)
@@ -376,16 +414,67 @@ object TerminalSessionManager {
                 awaitingConfirmation = true
             }
 
-            if (visibleText.isNotEmpty()) append(visibleText.replace('\r', '\n'))
-            if (DONE_REGEX.containsMatchIn(text)) {
-                append(
-                    if (lastExitCode == 0) {
-                        "\n[Hoàn tất]\n"
-                    } else {
-                        "\n[Kết thúc với mã ${lastExitCode ?: "?"}]\n"
-                    }
-                )
+            if (visibleText.isNotEmpty()) append(visibleText)
+        }
+
+        private fun finishCommand(exitCode: Int?, directory: String) {
+            lastExitCode = exitCode
+            if (directory.isNotEmpty()) currentDirectory = directory
+            busy = false
+            progressPercent = if (trackedTask && exitCode == 0) 100 else progressPercent
+            trackedTask = false
+            awaitingConfirmation = false
+            currentCommand = null
+
+            synchronized(outputLock) {
+                if (output.isNotEmpty() && output.last() != '\n') output.append('\n')
+                if (exitCode != null && exitCode != 0) {
+                    output.append("[exit $exitCode]\n")
+                }
+                output.append(promptText())
             }
+            onOutput()
+        }
+
+        private fun appendPrompt() {
+            append(promptText())
+        }
+
+        private fun promptText(): String =
+            "${if (mode == SessionMode.LINUX) "piper" else "android"}:" +
+                "${displayDirectory()} $ "
+
+        private fun displayDirectory(): String {
+            val path = currentDirectory.ifBlank { homeDirectory.absolutePath }
+            pathRelativeTo(path, homeDirectory.absolutePath, "~")?.let { return it }
+            pathRelativeTo(path, prefixDirectory.absolutePath, "\$PREFIX")?.let { return it }
+            return path
+        }
+
+        private fun pathRelativeTo(path: String, root: String, label: String): String? {
+            equivalentAndroidPaths(root).forEach { candidate ->
+                when {
+                    path == candidate -> return label
+                    path.startsWith("$candidate/") ->
+                        return "$label/" + path.removePrefix("$candidate/")
+                }
+            }
+            return null
+        }
+
+        private fun equivalentAndroidPaths(path: String): Set<String> = buildSet {
+            add(path)
+            when {
+                path.startsWith("/data/user/0/") ->
+                    add(path.replaceFirst("/data/user/0/", "/data/data/"))
+                path.startsWith("/data/data/") ->
+                    add(path.replaceFirst("/data/data/", "/data/user/0/"))
+            }
+        }
+
+        private fun shouldTrackTask(command: String): Boolean {
+            val normalized = command.trim().lowercase()
+            return LONG_TASK_REGEX.containsMatchIn(normalized)
         }
 
         private fun isProcessRunning(): Boolean {
@@ -411,11 +500,22 @@ object TerminalSessionManager {
         companion object {
             private const val MAX_OUTPUT_CHARS = 160_000
             private const val TRIMMED_OUTPUT_CHARS = 120_000
-            private const val DONE_MARKER = "__PIPER_DONE__"
-            private val DONE_REGEX = Regex("""__PIPER_DONE__:(-?\d+)""")
+            private const val DONE_START = '\u001D'
+            private const val DONE_END = '\u001E'
+            private val DONE_REGEX = Regex(
+                "$DONE_START" +
+                    """PIPER_DONE:(-?\d+):([^$DONE_END]*)""" +
+                    "$DONE_END"
+            )
             private val PERCENT_REGEX = Regex("""(?<!\d)(\d{1,3})\s*%""")
             private val CONFIRMATION_REGEX = Regex(
                 """(?i)(\[[Yy]/[Nn]\]|\[[Yy]/n\]|\[y/[Nn]\]|continue\?\s*\[[^]]+])"""
+            )
+            private val LONG_TASK_REGEX = Regex(
+                """^(pkg|apt|apt-get|dpkg|pip|pip3|npm|pnpm|yarn|cargo|gem|""" +
+                    """wget|curl|aria2c|make|cmake|ninja|meson|gradle|\./gradlew)\b|""" +
+                    """^python(?:3(?:\.\d+)?)?\s+-m\s+pip\b|""" +
+                    """^git\s+(clone|pull|fetch|submodule|lfs)\b"""
             )
         }
     }
