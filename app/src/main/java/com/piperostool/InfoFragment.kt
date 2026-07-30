@@ -1,5 +1,6 @@
 package com.piperostool
 
+import android.Manifest
 import android.app.ActivityManager
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -18,6 +19,7 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+import androidx.core.content.ContextCompat
 import androidx.core.content.pm.PackageInfoCompat
 import androidx.fragment.app.Fragment
 import java.util.Locale
@@ -114,6 +116,14 @@ class InfoFragment : Fragment() {
             !it.isEncoder && it.supportedTypes.any { type -> type.startsWith("audio/") }
         }
         val sessions = TerminalSessionManager.listSessions()
+        val mockScenario = MockRouteStore.load(context)
+        val mockState = MockLocationService.snapshot
+        val mockPermissionGranted =
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+        val mockAppSelected = MockLocationService.isMockLocationEnabled(context)
 
         return listOf(
             InfoSection(
@@ -229,6 +239,60 @@ class InfoFragment : Fragment() {
                     InfoRow("PREFIX", runtime.prefixDirectory.absolutePath),
                     InfoRow("HOME", runtime.homeDirectory.absolutePath)
                 )
+            ),
+            InfoSection(
+                title = "INFO FAKE MAP GPS",
+                summary = fakeMapSummary(mockState, mockScenario, mockAppSelected),
+                icon = R.drawable.ic_location_pin,
+                color = color("#34D399"),
+                rows = listOf(
+                    InfoRow("Trạng thái", fakeMapStatus(mockState)),
+                    InfoRow(
+                        "Chế độ",
+                        when (mockScenario?.mode) {
+                            MockScenarioMode.FIXED -> "Vị trí cố định"
+                            MockScenarioMode.ROUTE -> "Hành trình di chuyển"
+                            null -> "Chưa cấu hình"
+                        }
+                    ),
+                    InfoRow(
+                        "Ứng dụng vị trí mô phỏng",
+                        if (mockAppSelected) "Đã chọn PiperOS Tool" else "Chưa chọn"
+                    ),
+                    InfoRow(
+                        "Quyền vị trí chính xác",
+                        if (mockPermissionGranted) "Đã cấp" else "Chưa cấp"
+                    ),
+                    InfoRow(
+                        "Provider",
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                            "GPS + Network + Fused"
+                        } else {
+                            "GPS + Network"
+                        }
+                    ),
+                    InfoRow("Chu kỳ cập nhật", "500 ms"),
+                    InfoRow("Chạy nền", "Foreground service + WakeLock"),
+                    InfoRow("Thông báo", notificationMode()),
+                    InfoRow(
+                        "Điểm tuyến đã lưu",
+                        mockScenario?.points?.size?.toString() ?: "0"
+                    ),
+                    InfoRow(
+                        "Tốc độ cấu hình",
+                        mockScenario?.let {
+                            String.format(Locale.US, "%.1f km/h", it.speedKmh)
+                        } ?: "-"
+                    ),
+                    InfoRow(
+                        "Lặp hành trình",
+                        when {
+                            mockScenario?.mode != MockScenarioMode.ROUTE -> "-"
+                            mockScenario.loop -> "Bật"
+                            else -> "Tắt"
+                        }
+                    )
+                )
             )
         )
     }
@@ -261,6 +325,33 @@ class InfoFragment : Fragment() {
 
     private fun notificationMode(): String =
         if (Build.VERSION.SDK_INT >= 36) "Android 16 Live Update" else "Thông báo tiêu chuẩn"
+
+    private fun fakeMapStatus(state: MockLocationService.State): String = when {
+        !state.running -> "Đã dừng"
+        state.paused -> "Đang tạm dừng"
+        state.arrived -> "Đã đến điểm cuối"
+        else -> "Đang mô phỏng"
+    }
+
+    private fun fakeMapSummary(
+        state: MockLocationService.State,
+        scenario: MockScenario?,
+        mockAppSelected: Boolean
+    ): String {
+        if (state.running) {
+            val mode = if (scenario?.mode == MockScenarioMode.ROUTE) {
+                "Hành trình"
+            } else {
+                "Cố định"
+            }
+            return "${fakeMapStatus(state)} • $mode"
+        }
+        return if (mockAppSelected) {
+            "Sẵn sàng • Chưa chạy mô phỏng"
+        } else {
+            "Cần chọn PiperOS Tool làm ứng dụng vị trí mô phỏng"
+        }
+    }
 
     private fun copyAllInformation(sections: List<InfoSection>) {
         val text = buildString {
