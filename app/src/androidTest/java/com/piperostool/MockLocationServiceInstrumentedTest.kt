@@ -25,13 +25,7 @@ class MockLocationServiceInstrumentedTest {
 
     @Test
     fun fixedScenarioIsPublishedWhenMockAppIsSelected() {
-        assumeTrue(
-            ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ) == PackageManager.PERMISSION_GRANTED
-        )
-        assumeTrue(MockLocationService.isMockLocationEnabled(context))
+        assumeMockLocationIsAvailable()
         val expected = RoutePoint(21.0278, 105.8342)
         MockRouteStore.save(
             context,
@@ -52,6 +46,43 @@ class MockLocationServiceInstrumentedTest {
         assertTrue(state.running)
         assertEquals(expected.latitude, state.point?.latitude ?: 0.0, 0.00001)
         assertEquals(expected.longitude, state.point?.longitude ?: 0.0, 0.00001)
+    }
+
+    @Test
+    fun routeContinuesWhileAppIsInBackground() {
+        assumeMockLocationIsAvailable()
+        val start = RoutePoint(21.0278, 105.8342)
+        val end = RoutePoint(21.0478, 105.8542)
+        MockRouteStore.save(
+            context,
+            MockScenario(
+                mode = MockScenarioMode.ROUTE,
+                travelMode = MockTravelMode.CAR,
+                speedKmh = 120.0,
+                naturalStops = false,
+                loop = true,
+                points = listOf(start, end)
+            )
+        )
+
+        MockLocationService.start(context)
+        waitUntil { MockLocationService.snapshot.point != null }
+        val first = MockLocationService.snapshot.point!!
+        Thread.sleep(3_000L)
+
+        val current = MockLocationService.snapshot
+        assertTrue(current.running)
+        assertTrue(RouteProgressor.distanceMeters(first, current.point!!) > 20.0)
+    }
+
+    private fun assumeMockLocationIsAvailable() {
+        assumeTrue(
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+        )
+        assumeTrue(MockLocationService.isMockLocationEnabled(context))
     }
 
     private fun waitUntil(

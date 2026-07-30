@@ -18,10 +18,12 @@ import android.os.Build
 import android.os.Handler
 import android.os.HandlerThread
 import android.os.IBinder
+import android.os.PowerManager
 import android.os.Process
 import android.os.SystemClock
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
+import androidx.core.graphics.drawable.IconCompat
 import kotlin.math.roundToInt
 import kotlin.random.Random
 
@@ -45,7 +47,11 @@ class MockLocationService : Service() {
     private var paused = false
     private var arrived = false
     private var providersReady = false
+    private val activeMockProviders = linkedSetOf<String>()
+    private var wakeLock: PowerManager.WakeLock? = null
     private var lastTickElapsed = 0L
+    private var lastNotificationElapsed = 0L
+    private var lastCheckpointElapsed = 0L
     private var nextNaturalStopElapsed = Long.MAX_VALUE
     private var dwellUntilElapsed = 0L
     private var lastPoint: RoutePoint? = null
@@ -70,20 +76,34 @@ class MockLocationService : Service() {
         when (intent?.action) {
             ACTION_STOP -> stopMocking()
             ACTION_PAUSE -> {
-                paused = true
-                publishState()
-                updateNotification()
+                if (restoreSessionIfNeeded()) {
+                    paused = true
+                    publishState()
+                    saveCheckpoint(force = true)
+                    updateNotification()
+                }
             }
             ACTION_RESUME -> {
-                paused = false
-                arrived = false
-                lastTickElapsed = SystemClock.elapsedRealtime()
-                publishState()
-                updateNotification()
+                if (restoreSessionIfNeeded()) {
+                    paused = false
+                    arrived = false
+                    lastTickElapsed = SystemClock.elapsedRealtime()
+                    publishState()
+                    saveCheckpoint(force = true)
+                    updateNotification()
+                }
             }
-            else -> startMocking()
+            ACTION_START -> startMocking(resumeCheckpoint = false)
+            null -> {
+                if (MockLocationRuntimeStore.load(this)?.active == true) {
+                    startMocking(resumeCheckpoint = true)
+                } else {
+                    stopSelf(startId)
+                }
+            }
+            else -> stopSelf(startId)
         }
-        return START_NOT_STICKY
+        return START_STICKY
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -91,13 +111,29 @@ class MockLocationService : Service() {
     override fun onDestroy() {
         worker.removeCallbacksAndMessages(null)
         if (providersReady) removeMockProviders()
+        releaseWakeLock()
         workerThread.quitSafely()
         snapshot = State()
         sendStateBroadcast()
         super.onDestroy()
     }
 
-    private fun startMocking() {
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        saveCheckpoint(force = true)
+        super.onTaskRemoved(rootIntent)
+    }
+
+    private fun restoreSessionIfNeeded(): Boolean {
+        if (scenario != null) return true
+        if (MockLocationRuntimeStore.load(this)?.active != true) {
+            stopSelf()
+            return false
+        }
+        startMocking(resumeCheckpoint = true)
+        return scenario != null
+    }
+
+    private fun startMocking(resumeCheckpoint: Boolean) {
         val loaded = MockRouteStore.load(this)
         if (loaded == null) {
             fail(getString(R.string.fake_map_select_point))
@@ -123,13 +159,27 @@ class MockLocationService : Service() {
 
         scenario = loaded
         progressor = RouteProgressor(loaded.points)
-        distanceMeters = 0.0
-        forward = true
-        paused = false
-        arrived = false
+        val checkpoint = MockLocationRuntimeStore.load(this).takeIf { resumeCheckpoint }
+        distanceMeters = checkpoint?.distanceMeters
+            ?.coerceIn(0.0, progressor?.totalDistanceMeters ?: 0.0)
+            ?: 0.0
+        forward = checkpoint?.forward ?: true
+        paused = checkpoint?.paused ?: false
+        arrived = checkpoint?.arrived ?: false
+        lastPoint = checkpoint?.point
         lastTickElapsed = SystemClock.elapsedRealtime()
+        lastNotificationElapsed = 0L
+        lastCheckpointElapsed = 0L
         scheduleNextNaturalStop(lastTickElapsed)
-        snapshot = State(running = true)
+        snapshot = State(
+            running = true,
+            paused = paused,
+            arrived = arrived,
+            progress = calculateProgress(),
+            point = lastPoint
+        )
+        acquireWakeLock()
+        saveCheckpoint(force = true)
         worker.removeCallbacks(ticker)
         worker.post(ticker)
     }
@@ -210,7 +260,11 @@ class MockLocationService : Service() {
             point = position.point
         )
         sendStateBroadcast()
-        updateNotification()
+        saveCheckpoint()
+        if (now - lastNotificationElapsed >= NOTIFICATION_UPDATE_INTERVAL_MS) {
+            updateNotification()
+            lastNotificationElapsed = now
+        }
     }
 
     private fun publishLastPoint(speedMetersPerSecond: Float) {
@@ -231,23 +285,33 @@ class MockLocationService : Service() {
 
     @Suppress("DEPRECATION")
     private fun prepareMockProviders() {
-        MOCK_PROVIDERS.forEach { provider ->
-            runCatching { locationManager.removeTestProvider(provider) }
-            locationManager.addTestProvider(
-                provider,
-                false,
-                provider == LocationManager.GPS_PROVIDER,
-                false,
-                false,
-                true,
-                true,
-                true,
-                ProviderProperties.POWER_USAGE_LOW,
-                ProviderProperties.ACCURACY_FINE
-            )
-            locationManager.setTestProviderEnabled(provider, true)
+        activeMockProviders.clear()
+        candidateProviders().forEach { provider ->
+            runCatching {
+                runCatching { locationManager.removeTestProvider(provider) }
+                locationManager.addTestProvider(
+                    provider,
+                    false,
+                    provider == LocationManager.GPS_PROVIDER,
+                    false,
+                    false,
+                    true,
+                    true,
+                    true,
+                    ProviderProperties.POWER_USAGE_LOW,
+                    ProviderProperties.ACCURACY_FINE
+                )
+                locationManager.setTestProviderEnabled(provider, true)
+                activeMockProviders += provider
+            }
         }
-        providersReady = true
+        check(
+            LocationManager.GPS_PROVIDER in activeMockProviders &&
+                LocationManager.NETWORK_PROVIDER in activeMockProviders
+        ) {
+            "Required mock providers are unavailable"
+        }
+        providersReady = activeMockProviders.isNotEmpty()
     }
 
     private fun publishMockLocation(
@@ -255,7 +319,7 @@ class MockLocationService : Service() {
         speedMetersPerSecond: Float,
         bearing: Float
     ) {
-        MOCK_PROVIDERS.forEach { provider ->
+        activeMockProviders.toList().forEach { provider ->
             val location = Location(provider).apply {
                 latitude = point.latitude
                 longitude = point.longitude
@@ -271,18 +335,25 @@ class MockLocationService : Service() {
                     bearingAccuracyDegrees = 3f
                 }
             }
-            locationManager.setTestProviderLocation(provider, location)
+            runCatching { locationManager.setTestProviderLocation(provider, location) }
+                .onFailure {
+                    runCatching { restoreProvider(provider) }
+                    runCatching { locationManager.setTestProviderLocation(provider, location) }
+                }
         }
     }
 
     private fun removeMockProviders() {
-        MOCK_PROVIDERS.forEach { provider ->
+        activeMockProviders.toList().forEach { provider ->
             runCatching { locationManager.removeTestProvider(provider) }
         }
+        activeMockProviders.clear()
         providersReady = false
     }
 
     private fun stopMocking() {
+        MockLocationRuntimeStore.clear(this)
+        releaseWakeLock()
         snapshot = State()
         sendStateBroadcast()
         stopForeground(STOP_FOREGROUND_REMOVE)
@@ -290,6 +361,8 @@ class MockLocationService : Service() {
     }
 
     private fun fail(message: String) {
+        MockLocationRuntimeStore.clear(this)
+        releaseWakeLock()
         snapshot = State(error = message)
         sendStateBroadcast()
         stopForeground(STOP_FOREGROUND_REMOVE)
@@ -343,18 +416,25 @@ class MockLocationService : Service() {
                 active.travelMode.displayName
             )
         }
-        return NotificationCompat.Builder(this, CHANNEL_ID)
+        val progress = (snapshot.progress * 100.0).roundToInt().coerceIn(0, 100)
+        val builder = NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_location_pin)
             .setContentTitle(getString(R.string.fake_map_notification_title))
             .setContentText(content)
             .setContentIntent(openIntent)
-            .setCategory(Notification.CATEGORY_SERVICE)
-            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setCategory(
+                if (active.mode == MockScenarioMode.ROUTE) {
+                    Notification.CATEGORY_PROGRESS
+                } else {
+                    Notification.CATEGORY_SERVICE
+                }
+            )
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setOnlyAlertOnce(true)
             .setOngoing(true)
             .setProgress(
                 100,
-                (snapshot.progress * 100.0).roundToInt().coerceIn(0, 100),
+                progress,
                 active.mode == MockScenarioMode.FIXED
             )
             .addAction(
@@ -367,7 +447,30 @@ class MockLocationService : Service() {
                 getString(R.string.fake_map_notification_stop),
                 stopIntent
             )
-            .build()
+
+        if (Build.VERSION.SDK_INT >= 36) {
+            val style = NotificationCompat.ProgressStyle()
+            if (active.mode == MockScenarioMode.FIXED) {
+                style.setProgressIndeterminate(true)
+            } else {
+                style
+                    .setProgress(progress)
+                    .setStyledByProgress(true)
+                    .setProgressTrackerIcon(
+                        IconCompat.createWithResource(this, R.drawable.ic_location_pin)
+                    )
+                    .addProgressSegment(
+                        NotificationCompat.ProgressStyle.Segment(100)
+                            .setColor(ContextCompat.getColor(this, R.color.green_neon))
+                    )
+                builder.setShortCriticalText("$progress%")
+            }
+            builder
+                .setStyle(style)
+                .setRequestPromotedOngoing(true)
+        }
+
+        return builder.build()
     }
 
     private fun startAsForeground(notification: Notification) {
@@ -387,7 +490,7 @@ class MockLocationService : Service() {
         val channel = NotificationChannel(
             CHANNEL_ID,
             getString(R.string.fake_map_notification_channel),
-            NotificationManager.IMPORTANCE_LOW
+            NotificationManager.IMPORTANCE_DEFAULT
         ).apply {
             description = getString(R.string.fake_map_notification_channel_description)
             setSound(null, null)
@@ -406,22 +509,90 @@ class MockLocationService : Service() {
     private fun coordinateLabel(point: RoutePoint): String =
         String.format("%.5f, %.5f", point.latitude, point.longitude)
 
+    @Suppress("DEPRECATION")
+    private fun restoreProvider(provider: String) {
+        runCatching { locationManager.removeTestProvider(provider) }
+        locationManager.addTestProvider(
+            provider,
+            false,
+            provider == LocationManager.GPS_PROVIDER,
+            false,
+            false,
+            true,
+            true,
+            true,
+            ProviderProperties.POWER_USAGE_LOW,
+            ProviderProperties.ACCURACY_FINE
+        )
+        locationManager.setTestProviderEnabled(provider, true)
+        activeMockProviders += provider
+    }
+
+    private fun candidateProviders(): List<String> = buildList {
+        add(LocationManager.GPS_PROVIDER)
+        add(LocationManager.NETWORK_PROVIDER)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            add(LocationManager.FUSED_PROVIDER)
+        }
+    }
+
+    private fun calculateProgress(): Double {
+        val totalDistance = progressor?.totalDistanceMeters ?: return 0.0
+        return if (totalDistance > 0.0) {
+            (distanceMeters / totalDistance).coerceIn(0.0, 1.0)
+        } else {
+            1.0
+        }
+    }
+
+    private fun saveCheckpoint(force: Boolean = false) {
+        val now = SystemClock.elapsedRealtime()
+        if (!force && now - lastCheckpointElapsed < CHECKPOINT_INTERVAL_MS) return
+        if (scenario == null || !snapshot.running) return
+        MockLocationRuntimeStore.save(
+            this,
+            MockLocationCheckpoint(
+                active = true,
+                distanceMeters = distanceMeters,
+                forward = forward,
+                paused = paused,
+                arrived = arrived,
+                point = lastPoint
+            )
+        )
+        lastCheckpointElapsed = now
+    }
+
+    @Suppress("WakelockTimeout")
+    private fun acquireWakeLock() {
+        if (wakeLock?.isHeld == true) return
+        wakeLock = getSystemService(PowerManager::class.java)
+            .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "$packageName:mock-location")
+            .apply {
+                setReferenceCounted(false)
+                acquire()
+            }
+    }
+
+    private fun releaseWakeLock() {
+        wakeLock?.takeIf { it.isHeld }?.release()
+        wakeLock = null
+    }
+
     companion object {
         const val ACTION_START = "com.piperostool.mock.START"
         const val ACTION_STOP = "com.piperostool.mock.STOP"
         const val ACTION_PAUSE = "com.piperostool.mock.PAUSE"
         const val ACTION_RESUME = "com.piperostool.mock.RESUME"
         const val ACTION_STATE_CHANGED = "com.piperostool.mock.STATE_CHANGED"
-        private const val CHANNEL_ID = "piperos_mock_location"
+        private const val CHANNEL_ID = "piperos_mock_location_live"
         private const val NOTIFICATION_ID = 4801
         private const val REQUEST_OPEN = 4802
         private const val REQUEST_PAUSE = 4803
         private const val REQUEST_STOP = 4804
-        private const val UPDATE_INTERVAL_MS = 1_000L
-        private val MOCK_PROVIDERS = listOf(
-            LocationManager.GPS_PROVIDER,
-            LocationManager.NETWORK_PROVIDER
-        )
+        private const val UPDATE_INTERVAL_MS = 500L
+        private const val NOTIFICATION_UPDATE_INTERVAL_MS = 1_000L
+        private const val CHECKPOINT_INTERVAL_MS = 2_000L
 
         @Volatile
         var snapshot = State()
