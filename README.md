@@ -20,7 +20,7 @@
 
 ## Bản hiện tại
 
-`2.5.3.beta` sử dụng `minSdk 24`, `targetSdk 36` và tập trung vào:
+`2.5.8.beta` sử dụng `minSdk 24`, `targetSdk 36` và tập trung vào:
 
 - **PiperOS Browser:** nhiều tab, tab ẩn danh, khôi phục phiên, lịch sử theo
   ngày, User-Agent tùy chỉnh, nhập phần mở rộng, tải file và phát video.
@@ -28,6 +28,8 @@
   sắp xếp, hàng đợi riêng, phát nền, Picture-in-Picture và điều khiển media.
 - **PiperOS Terminal:** shell Android cục bộ nhiều phiên, lịch sử lệnh và
   foreground service. Runtime Linux đầy đủ đang được phát triển riêng.
+- **PiperOS Fake Map GPS:** mô phỏng vị trí cố định hoặc hành trình có tốc độ,
+  phương tiện, dừng đỗ và lặp tuyến qua ứng dụng vị trí mô phỏng của Android.
 - **Apps & Device:** xem ứng dụng, sao lưu APK, thông tin thiết bị và các công
   cụ quản lý quyền.
 - **Android 16:** hỗ trợ thông báo tiến trình Live Update khi hệ thống cho

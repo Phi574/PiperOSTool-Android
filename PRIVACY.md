@@ -32,6 +32,8 @@ Depending on the feature the user opens, PiperOS may request:
 - usage access for device activity information;
 - foreground service and notification permissions for downloads, playback
   and user-started terminal sessions;
+- precise location and the Developer Options mock-location role when the user
+  starts PiperOS Fake Map GPS;
 - elevated settings permissions for advanced device tools.
 
 PiperOS must not silently grant itself restricted permissions. Android system
@@ -43,6 +45,14 @@ Web pages are loaded directly through Android System WebView and the selected
 network or VPN. Visited websites may collect data under their own policies.
 Imported browser extensions can read or modify pages matching their declared
 rules; only import files from trusted sources.
+
+## Fake Map GPS traffic
+
+Map tiles are requested from OpenStreetMap infrastructure. In route mode, the
+selected start and destination coordinates are sent to the configured OSRM
+routing service to calculate road geometry. PiperOS stores the latest selected
+scenario on the device so it can restore the controls. The app does not upload
+the simulated movement history to PiperOS servers.
 
 ## Contact
 

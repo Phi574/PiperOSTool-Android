@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.5.8.beta
+
+- Added PiperOS Fake Map GPS to the Beta page.
+- Added fixed mock locations and simulated routes with walking, motorbike,
+  car and plane presets.
+- Added adjustable speed, natural stops, looping, pause/resume and a
+  foreground notification.
+- Added OpenStreetMap rendering and OSRM road geometry with a direct-route
+  fallback when routing is unavailable.
+- Added Developer Options guidance and mock-location provider validation.
+
 ## 2.5.1.beta
 
 - Added a visible Android Shell/Linux Runtime status panel to PiperOS Terminal.

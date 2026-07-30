@@ -4,6 +4,11 @@ PiperOS Tool uses open-source Android libraries, including AndroidX,
 Material Components, Firebase Android SDK, Glide and AndroidX Media3. Their
 licenses and copyright notices remain applicable to those components.
 
+PiperOS Fake Map GPS uses osmdroid (Apache License 2.0), OpenStreetMap map
+data and the OSRM routing API. OpenStreetMap attribution is displayed directly
+on the map. OpenStreetMap data is available under ODbL; OSRM is distributed
+under the BSD 2-Clause license.
+
 The bundled **Silkscreen** and **VT323** fonts are licensed under the SIL Open
 Font License 1.1. Their license texts are stored in:
 

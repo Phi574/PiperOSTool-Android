@@ -1,0 +1,355 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/fakeMapRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FF070B0D">
+
+    <LinearLayout
+        android:id="@+id/fakeMapToolbar"
+        android:layout_width="0dp"
+        android:layout_height="64dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="8dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <ImageButton
+            android:id="@+id/btnFakeMapBack"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/go_back"
+            android:padding="12dp"
+            android:src="@drawable/ic_browser_back"
+            app:tint="@color/white" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="4dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="@string/fake_map_title"
+                android:textColor="@color/white"
+                android:textSize="19sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/fakeMapStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="@string/fake_map_stopped"
+                android:textColor="#A8FFFFFF"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnMockSettings"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="42dp"
+            android:minWidth="0dp"
+            android:paddingHorizontal="10dp"
+            android:text="@string/fake_map_developer_settings"
+            android:textColor="#8DFFB0"
+            android:textSize="11sp"
+            app:icon="@drawable/ic_location_pin"
+            app:iconSize="17dp"
+            app:iconTint="#8DFFB0" />
+    </LinearLayout>
+
+    <org.osmdroid.views.MapView
+        android:id="@+id/fakeMapView"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:contentDescription="@string/fake_map_subtitle"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHeight_percent="0.43"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/fakeMapToolbar" />
+
+    <TextView
+        android:id="@+id/fakeMapSelectionHint"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:layout_marginTop="10dp"
+        android:background="@drawable/bg_fake_map_chip"
+        android:maxWidth="280dp"
+        android:text="@string/fake_map_pick_fixed"
+        android:textColor="@color/white"
+        android:textSize="12sp"
+        app:layout_constraintStart_toStartOf="@id/fakeMapView"
+        app:layout_constraintTop_toTopOf="@id/fakeMapView" />
+
+    <ImageButton
+        android:id="@+id/btnUseCurrentLocation"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:layout_marginEnd="12dp"
+        android:layout_marginBottom="12dp"
+        android:background="@drawable/bg_fake_map_chip"
+        android:contentDescription="@string/fake_map_use_current"
+        android:padding="10dp"
+        android:src="@drawable/ic_location_crosshair"
+        app:layout_constraintBottom_toBottomOf="@id/fakeMapView"
+        app:layout_constraintEnd_toEndOf="@id/fakeMapView"
+        app:tint="#8DFFB0" />
+
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/fakeMapControls"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:background="@drawable/bg_fake_map_panel"
+        android:clipToPadding="false"
+        android:fillViewport="true"
+        android:overScrollMode="never"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/fakeMapView">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingStart="14dp"
+            android:paddingTop="12dp"
+            android:paddingEnd="14dp"
+            android:paddingBottom="16dp">
+
+            <com.google.android.material.button.MaterialButtonToggleGroup
+                android:id="@+id/fakeMapModeGroup"
+                android:layout_width="match_parent"
+                android:layout_height="42dp"
+                app:checkedButton="@id/btnModeFixed"
+                app:selectionRequired="true"
+                app:singleSelection="true">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnModeFixed"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="0dp"
+                    android:layout_height="42dp"
+                    android:layout_weight="1"
+                    android:text="@string/fake_map_fixed"
+                    android:textColor="@color/white"
+                    android:textSize="12sp"
+                    app:strokeColor="#668DFFB0" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnModeRoute"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="0dp"
+                    android:layout_height="42dp"
+                    android:layout_weight="1"
+                    android:text="@string/fake_map_route"
+                    android:textColor="@color/white"
+                    android:textSize="12sp"
+                    app:strokeColor="#668DFFB0" />
+            </com.google.android.material.button.MaterialButtonToggleGroup>
+
+            <com.google.android.material.button.MaterialButtonToggleGroup
+                android:id="@+id/fakeMapPointGroup"
+                android:layout_width="match_parent"
+                android:layout_height="42dp"
+                android:layout_marginTop="8dp"
+                android:visibility="gone"
+                app:checkedButton="@id/btnPickStart"
+                app:selectionRequired="true"
+                app:singleSelection="true">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnPickStart"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="0dp"
+                    android:layout_height="42dp"
+                    android:layout_weight="1"
+                    android:text="@string/fake_map_pick_start"
+                    android:textColor="@color/white"
+                    android:textSize="11sp"
+                    app:strokeColor="#55FFFFFF" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnPickEnd"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="0dp"
+                    android:layout_height="42dp"
+                    android:layout_weight="1"
+                    android:text="@string/fake_map_pick_end"
+                    android:textColor="@color/white"
+                    android:textSize="11sp"
+                    app:strokeColor="#55FFFFFF" />
+            </com.google.android.material.button.MaterialButtonToggleGroup>
+
+            <HorizontalScrollView
+                android:id="@+id/fakeMapTravelScroll"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="8dp"
+                android:overScrollMode="never"
+                android:scrollbars="none"
+                android:visibility="gone">
+
+                <com.google.android.material.button.MaterialButtonToggleGroup
+                    android:id="@+id/fakeMapTravelGroup"
+                    android:layout_width="wrap_content"
+                    android:layout_height="42dp"
+                    app:checkedButton="@id/btnTravelMotorbike"
+                    app:selectionRequired="true"
+                    app:singleSelection="true">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnTravelWalk"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="42dp"
+                        android:minWidth="80dp"
+                        android:text="@string/fake_map_walk"
+                        android:textColor="@color/white"
+                        android:textSize="11sp"
+                        app:strokeColor="#55FFFFFF" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnTravelMotorbike"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="42dp"
+                        android:minWidth="80dp"
+                        android:text="@string/fake_map_motorbike"
+                        android:textColor="@color/white"
+                        android:textSize="11sp"
+                        app:strokeColor="#55FFFFFF" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnTravelCar"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="42dp"
+                        android:minWidth="80dp"
+                        android:text="@string/fake_map_car"
+                        android:textColor="@color/white"
+                        android:textSize="11sp"
+                        app:strokeColor="#55FFFFFF" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnTravelPlane"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="42dp"
+                        android:minWidth="80dp"
+                        android:text="@string/fake_map_plane"
+                        android:textColor="@color/white"
+                        android:textSize="11sp"
+                        app:strokeColor="#55FFFFFF" />
+                </com.google.android.material.button.MaterialButtonToggleGroup>
+            </HorizontalScrollView>
+
+            <TextView
+                android:id="@+id/fakeMapSpeedLabel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text=""
+                android:textColor="@color/white"
+                android:textSize="13sp"
+                android:visibility="gone" />
+
+            <SeekBar
+                android:id="@+id/fakeMapSpeed"
+                android:layout_width="match_parent"
+                android:layout_height="36dp"
+                android:progressTint="#8DFFB0"
+                android:thumbTint="#8DFFB0"
+                android:visibility="gone" />
+
+            <LinearLayout
+                android:id="@+id/fakeMapRouteOptions"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/switchNaturalStops"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:text="@string/fake_map_natural_stops"
+                    android:textColor="@color/white"
+                    android:textSize="13sp"
+                    app:thumbTint="#8DFFB0"
+                    app:trackTint="#52645A" />
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/switchRouteLoop"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:text="@string/fake_map_loop"
+                    android:textColor="@color/white"
+                    android:textSize="13sp"
+                    app:thumbTint="#8DFFB0"
+                    app:trackTint="#52645A" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/fakeMapRouteInfo"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:ellipsize="end"
+                android:maxLines="2"
+                android:textColor="#B8FFFFFF"
+                android:textSize="12sp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:layout_marginTop="10dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnStartMock"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:text="@string/fake_map_start"
+                    android:textColor="#07120B"
+                    android:textSize="12sp"
+                    app:backgroundTint="#8DFFB0"
+                    app:cornerRadius="6dp"
+                    app:icon="@drawable/ic_location_pin"
+                    app:iconTint="#07120B" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnStopMock"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="100dp"
+                    android:layout_height="48dp"
+                    android:layout_marginStart="8dp"
+                    android:text="@string/fake_map_stop"
+                    android:textColor="#FF7890"
+                    android:textSize="12sp"
+                    android:visibility="gone"
+                    app:cornerRadius="6dp"
+                    app:icon="@drawable/ic_stop"
+                    app:iconTint="#FF7890"
+                    app:strokeColor="#88FF7890" />
+            </LinearLayout>
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

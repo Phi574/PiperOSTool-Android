@@ -288,5 +288,89 @@
             </androidx.constraintlayout.widget.ConstraintLayout>
         </com.google.android.material.card.MaterialCardView>
 
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/featureFakeMap"
+            android:layout_width="match_parent"
+            android:layout_height="112dp"
+            android:layout_marginTop="14dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackground"
+            app:cardBackgroundColor="#E612171C"
+            app:cardCornerRadius="8dp"
+            app:cardElevation="0dp"
+            app:strokeColor="#5AFFFFFF"
+            app:strokeWidth="1dp">
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:padding="18dp">
+
+                <FrameLayout
+                    android:id="@+id/fakeMapFeatureIcon"
+                    android:layout_width="68dp"
+                    android:layout_height="68dp"
+                    android:background="@drawable/bg_fake_map_feature"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent">
+
+                    <ImageView
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:layout_gravity="center"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_location_pin"
+                        app:tint="#07120B" />
+                </FrameLayout>
+
+                <TextView
+                    android:id="@+id/fakeMapFeatureTitle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:text="@string/piperos_fake_map"
+                    android:textColor="@color/white"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    app:autoSizeMaxTextSize="18sp"
+                    app:autoSizeMinTextSize="13sp"
+                    app:autoSizeStepGranularity="1sp"
+                    app:autoSizeTextType="uniform"
+                    app:layout_constraintEnd_toStartOf="@id/fakeMapFeatureArrow"
+                    app:layout_constraintStart_toEndOf="@id/fakeMapFeatureIcon"
+                    app:layout_constraintTop_toTopOf="@id/fakeMapFeatureIcon" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginTop="6dp"
+                    android:ellipsize="end"
+                    android:maxLines="2"
+                    android:text="@string/piperos_fake_map_summary"
+                    android:textColor="#AFFFFFFF"
+                    android:textSize="13sp"
+                    app:layout_constraintEnd_toStartOf="@id/fakeMapFeatureArrow"
+                    app:layout_constraintStart_toEndOf="@id/fakeMapFeatureIcon"
+                    app:layout_constraintTop_toBottomOf="@id/fakeMapFeatureTitle" />
+
+                <ImageView
+                    android:id="@+id/fakeMapFeatureArrow"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:contentDescription="@null"
+                    android:rotation="180"
+                    android:src="@drawable/ic_browser_back"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:tint="#B8FFFFFF" />
+            </androidx.constraintlayout.widget.ConstraintLayout>
+        </com.google.android.material.card.MaterialCardView>
+
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>

@@ -38,5 +38,8 @@ class BetaFragment : Fragment() {
         view.findViewById<View>(R.id.featurePiperTerminal).setOnClickListener {
             startActivity(Intent(requireContext(), PiperTerminalActivity::class.java))
         }
+        view.findViewById<View>(R.id.featureFakeMap).setOnClickListener {
+            startActivity(Intent(requireContext(), FakeMapActivity::class.java))
+        }
     }
 }
