@@ -44,13 +44,30 @@
 
 ```mermaid
 flowchart LR
-    A["PiperOS Tool APK"] --> B["Browser & Media"]
-    A --> C["Device tools"]
-    A --> D["Terminal UI / Service"]
-    D --> E["PiperOS Termux Runtime"]
-    E --> F["aarch64"]
-    E --> G["arm"]
-    E --> H["x86_64"]
+    A["PiperOS Tool APK"]
+
+    A --> B["PiperOS Browser"]
+    A --> C["PiperOS Media"]
+    A --> D["Apps & Device tools"]
+    A --> E["Fake Map GPS"]
+    A --> F["Info Center"]
+    A --> G["Terminal UI / Service"]
+
+    B --> H["Downloads & WebView"]
+    C --> I["Media3 & PiP"]
+    E --> J["Android Mock Location"]
+
+    B --> K["Notifications"]
+    C --> K
+    E --> K
+    K --> L["Android 16 Live Update"]
+    K --> M["Standard notification"]
+
+    G --> N["PiperOS Termux Runtime"]
+    N --> O["PiperOS Package Repository"]
+    N --> P["aarch64"]
+    N --> Q["arm"]
+    N --> R["x86_64"]
 ```
 
 Runtime Termux đầy đủ chưa được đóng vào APK hiện tại. Tiến độ build bootstrap
