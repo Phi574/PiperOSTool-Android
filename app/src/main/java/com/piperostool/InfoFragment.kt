@@ -176,6 +176,8 @@ class InfoFragment : Fragment() {
                 rows = listOf(
                     InfoRow("Nguồn APK", "Ứng dụng đã cài hoặc tệp trên thiết bị"),
                     InfoRow("Giải nén", "Theo tệp, nhóm hoặc toàn bộ archive"),
+                    InfoRow("Backup", "Chọn nhiều tệp/thư mục và vị trí lưu"),
+                    InfoRow("Xem tệp", "Ảnh, GIF, video, audio, PDF và văn bản"),
                     InfoRow("Manifest", "Báo cáo package và quyền từ PackageManager"),
                     InfoRow("Strings", "Chỉnh XML khi tài nguyên đang ở dạng văn bản"),
                     InfoRow("Xây dựng", "Ghép thay đổi, căn chỉnh ZIP và ký lại APK"),

@@ -52,6 +52,9 @@ class AppsFragment : Fragment() {
     private lateinit var etSearchApp: EditText
     private lateinit var btnRefreshApps: ImageView
     private lateinit var btnOpenApkEditor: View
+    private lateinit var btnSortApps: View
+    private lateinit var tvAppsOverview: TextView
+    private lateinit var tvAppsVisibleCount: TextView
 
     private lateinit var tabUser: TextView
     private lateinit var tabSystem: TextView
@@ -62,6 +65,7 @@ class AppsFragment : Fragment() {
 
     private var currentTabFilter = 0
     private var currentSearchQuery = ""
+    private var sortMode = AppSortMode.NAME
 
     private val apkPicker = registerForActivityResult(
         ActivityResultContracts.OpenDocument()
@@ -100,6 +104,9 @@ class AppsFragment : Fragment() {
         etSearchApp = view.findViewById(R.id.etSearchApp)
         btnRefreshApps = view.findViewById(R.id.btnRefreshApps)
         btnOpenApkEditor = view.findViewById(R.id.btnOpenApkEditor)
+        btnSortApps = view.findViewById(R.id.btnSortApps)
+        tvAppsOverview = view.findViewById(R.id.tvAppsOverview)
+        tvAppsVisibleCount = view.findViewById(R.id.tvAppsVisibleCount)
         tabUser = view.findViewById(R.id.tabUser)
         tabSystem = view.findViewById(R.id.tabSystem)
         tabDisabled = view.findViewById(R.id.tabDisabled)
@@ -137,6 +144,7 @@ class AppsFragment : Fragment() {
                 "application/zip"
             ))
         }
+        btnSortApps.setOnClickListener { showSortOptions() }
 
         rvApps.addOnScrollListener(object : RecyclerView.OnScrollListener() {
             override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
@@ -163,9 +171,9 @@ class AppsFragment : Fragment() {
 
     private fun switchTab(tabIndex: Int) {
         currentTabFilter = tabIndex
-        tabUser.setTextColor(if (tabIndex == 0) Color.parseColor("#00E5FF") else Color.WHITE)
-        tabSystem.setTextColor(if (tabIndex == 1) Color.parseColor("#00E5FF") else Color.WHITE)
-        tabDisabled.setTextColor(if (tabIndex == 2) Color.parseColor("#00E5FF") else Color.WHITE)
+        tabUser.setTextColor(if (tabIndex == 0) Color.parseColor("#7DFFB0") else Color.WHITE)
+        tabSystem.setTextColor(if (tabIndex == 1) Color.parseColor("#7DFFB0") else Color.WHITE)
+        tabDisabled.setTextColor(if (tabIndex == 2) Color.parseColor("#7DFFB0") else Color.WHITE)
         applyFilters()
     }
 
@@ -197,13 +205,35 @@ class AppsFragment : Fragment() {
                 }
             }
         }
-        universalAdapter.updateData(searchResults)
+        val sorted = when (sortMode) {
+            AppSortMode.NAME -> searchResults.sortedBy { it.sortName.lowercase(Locale.getDefault()) }
+            AppSortMode.SIZE -> searchResults.sortedByDescending { it.sortSize }
+            AppSortMode.UPDATED -> searchResults.sortedByDescending { it.sortUpdated }
+        }
+        universalAdapter.updateData(sorted)
+        tvAppsVisibleCount.text = "${sorted.count { it is AppListItem.App }} ứng dụng" +
+            if (currentSearchQuery.isBlank()) "" else " • ${sorted.count { it is AppListItem.Activity }} activity"
     }
 
     private fun updateTabCounts() {
         tabUser.text = "Người dùng (${allApps.count { !it.isSystem && it.isEnabled }})"
         tabSystem.text = "Hệ thống (${allApps.count { it.isSystem && it.isEnabled }})"
         tabDisabled.text = "Đã tắt (${allApps.count { !it.isEnabled }})"
+        val totalSize = allApps.sumOf { it.apkSizeBytes }
+        tvAppsOverview.text = "${allApps.size} ứng dụng • " +
+            Formatter.formatShortFileSize(requireContext(), totalSize)
+    }
+
+    private fun showSortOptions() {
+        val options = arrayOf("Tên A-Z", "Dung lượng lớn nhất", "Cập nhật gần nhất")
+        AlertDialog.Builder(requireContext())
+            .setTitle("Sắp xếp ứng dụng")
+            .setSingleChoiceItems(options, sortMode.ordinal) { dialog, which ->
+                sortMode = AppSortMode.entries[which]
+                applyFilters()
+                dialog.dismiss()
+            }
+            .show()
     }
 
     private fun loadApps() {
@@ -258,6 +288,7 @@ class AppsFragment : Fragment() {
                                 isSystem = isSys,
                                 isEnabled = appInfo.enabled,
                                 apkSize = formattedSize,
+                                apkSizeBytes = sizeBytes,
                                 isRunning = isRunning,
                                 permissionsCount = permsCount
                             )
@@ -583,6 +614,7 @@ data class AppInfoModel(
     val isSystem: Boolean,
     val isEnabled: Boolean,
     val apkSize: String,
+    val apkSizeBytes: Long,
     val isRunning: Boolean,
     val permissionsCount: Int
 )
@@ -590,7 +622,25 @@ data class AppInfoModel(
 sealed class AppListItem {
     data class App(val info: AppInfoModel) : AppListItem()
     data class Activity(val app: AppInfoModel, val activityInfo: ActivityInfo) : AppListItem()
+
+    val sortName: String
+        get() = when (this) {
+            is App -> info.name
+            is Activity -> activityInfo.name
+        }
+    val sortSize: Long
+        get() = when (this) {
+            is App -> info.apkSizeBytes
+            is Activity -> app.apkSizeBytes
+        }
+    val sortUpdated: Long
+        get() = when (this) {
+            is App -> info.updateTime
+            is Activity -> app.updateTime
+        }
 }
+
+private enum class AppSortMode { NAME, SIZE, UPDATED }
 
 // =========================================================
 // ADAPTER CHO LƯỚI GRID MÀN HÌNH CHÍNH
@@ -605,6 +655,8 @@ class UniversalAppAdapter(
         val ivIcon: ImageView = view.findViewById(R.id.ivAppIcon)
         val tvName: TextView = view.findViewById(R.id.tvAppName)
         val tvPackage: TextView = view.findViewById(R.id.tvAppPackage)
+        val tvMeta: TextView = view.findViewById(R.id.tvAppMeta)
+        val tvBadge: TextView = view.findViewById(R.id.tvAppBadge)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -620,6 +672,16 @@ class UniversalAppAdapter(
                 holder.tvName.setTextColor(Color.WHITE)
 
                 holder.tvPackage.text = "${item.info.packageName}  •  ${item.info.apkSize}"
+                holder.tvMeta.text = "v${item.info.versionName} • SDK ${item.info.targetSdk} • ${item.info.permissionsCount} quyền"
+                holder.tvBadge.text = when {
+                    !item.info.isEnabled -> "ĐÃ TẮT"
+                    item.info.isRunning -> "ĐANG CHẠY"
+                    item.info.isSystem -> "HỆ THỐNG"
+                    else -> "NGƯỜI DÙNG"
+                }
+                holder.tvBadge.setTextColor(
+                    Color.parseColor(if (item.info.isRunning) "#7DFFB0" else "#B8FFFFFF")
+                )
 
                 holder.itemView.setOnClickListener { onAppClick(item.info) }
             }
@@ -628,6 +690,9 @@ class UniversalAppAdapter(
                 holder.tvName.text = "⚡ ${item.activityInfo.name.substringAfterLast('.')}"
                 holder.tvName.setTextColor(Color.parseColor("#00E5FF"))
                 holder.tvPackage.text = "Act Ngầm"
+                holder.tvMeta.text = item.app.packageName
+                holder.tvBadge.text = "ACTIVITY"
+                holder.tvBadge.setTextColor(Color.parseColor("#00E5FF"))
 
                 holder.itemView.setOnClickListener { onActivityClick(item.app, item.activityInfo) }
             }

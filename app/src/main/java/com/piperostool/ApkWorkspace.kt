@@ -3,6 +3,7 @@ package com.piperostool
 import android.content.Context
 import android.net.Uri
 import android.os.SystemClock
+import androidx.documentfile.provider.DocumentFile
 import java.io.File
 import java.io.FileOutputStream
 import java.util.zip.ZipFile
@@ -24,7 +25,8 @@ data class ApkWorkspaceEntry(
     val archivePath: String,
     val isDirectory: Boolean,
     val size: Long,
-    val extractedFile: File?
+    val extractedFile: File?,
+    val childCount: Int = 0
 )
 
 enum class ApkDecodeScope(val label: String) {
@@ -54,12 +56,14 @@ class ApkWorkspace private constructor(
                 val childPath = normalized + first
                 val isDirectory = remainder.contains('/') || entry.isDirectory
                 val exact = if (isDirectory) null else entry
+                val existing = children[first]
                 children[first] = ApkWorkspaceEntry(
                     name = first,
                     archivePath = childPath,
                     isDirectory = isDirectory,
                     size = exact?.size ?: 0L,
-                    extractedFile = File(filesDirectory, childPath).takeIf { it.isFile }
+                    extractedFile = File(filesDirectory, childPath).takeIf { it.exists() },
+                    childCount = if (isDirectory) (existing?.childCount ?: 0) + 1 else 0
                 )
             }
         }
@@ -69,7 +73,8 @@ class ApkWorkspace private constructor(
                 archivePath = normalized + file.name,
                 isDirectory = file.isDirectory,
                 size = if (file.isFile) file.length() else 0L,
-                extractedFile = file
+                extractedFile = file,
+                childCount = if (file.isDirectory) file.list()?.size ?: 0 else 0
             )
         }
         return children.values.sortedWith(
@@ -90,6 +95,87 @@ class ApkWorkspace private constructor(
             }
         }
         return output
+    }
+
+    fun exportSelection(
+        paths: Collection<String>,
+        destination: DocumentFile,
+        context: Context,
+        onProgress: (ApkWorkspaceProgress) -> Unit
+    ): Int {
+        require(destination.isDirectory && destination.canWrite()) {
+            "Thư mục đích không cho phép ghi"
+        }
+        val normalized = paths.map { it.trim('/') }.filter { it.isNotEmpty() }.distinct()
+        require(normalized.isNotEmpty()) { "Chưa chọn tệp hoặc thư mục" }
+        val started = SystemClock.elapsedRealtime()
+        val exportedFiles = linkedMapOf<String, File>()
+        val directorySelections = linkedSetOf<String>()
+
+        ZipFile(sourceApk).use { zip ->
+            val entries = zip.entries().asSequence().filterNot { it.isDirectory }.toList()
+            normalized.forEach { selected ->
+                val selectedEntry = zip.getEntry(selected)
+                if (selectedEntry != null && !selectedEntry.isDirectory) {
+                    exportedFiles[selected] = extractEntry(selected)
+                } else {
+                    val prefix = "$selected/"
+                    if (
+                        selectedEntry?.isDirectory == true ||
+                        entries.any { it.name.startsWith(prefix) } ||
+                        File(filesDirectory, selected).isDirectory
+                    ) {
+                        directorySelections += selected
+                    }
+                    entries.filter { it.name.startsWith(prefix) }.forEach { entry ->
+                        exportedFiles[entry.name] = extractEntry(entry.name)
+                    }
+                    val localRoot = File(filesDirectory, selected)
+                    if (localRoot.isDirectory) {
+                        localRoot.walkTopDown().filter { it.isFile }.forEach { file ->
+                            exportedFiles[file.relativeTo(filesDirectory).invariantSeparatorsPath] = file
+                        }
+                    }
+                }
+            }
+        }
+
+        normalized.forEach { selected ->
+            val local = File(filesDirectory, selected)
+            if (local.isFile) exportedFiles[selected] = local
+        }
+
+        val topFolders = mutableMapOf<String, DocumentFile>()
+        directorySelections.forEach { selected ->
+            topFolders[selected] = createUniqueDirectory(
+                destination,
+                selected.substringAfterLast('/')
+            )
+        }
+        exportedFiles.entries.forEachIndexed { index, (archivePath, source) ->
+            val owner = normalized.firstOrNull {
+                archivePath == it || archivePath.startsWith("$it/")
+            } ?: archivePath
+            val ownerIsDirectory = owner in directorySelections
+            val relative = if (ownerIsDirectory) archivePath.removePrefix("$owner/") else source.name
+            val rootDocument = if (ownerIsDirectory) {
+                topFolders.getOrPut(owner) {
+                    createUniqueDirectory(destination, owner.substringAfterLast('/'))
+                }
+            } else {
+                destination
+            }
+            writeDocumentFile(context, rootDocument, relative, source)
+            onProgress(
+                ApkWorkspaceProgress(
+                    phase = "Đang backup $archivePath",
+                    completed = index + 1,
+                    total = exportedFiles.size,
+                    startedElapsed = started
+                )
+            )
+        }
+        return exportedFiles.size
     }
 
     fun decode(
@@ -137,6 +223,59 @@ class ApkWorkspace private constructor(
         val rootPath = filesDirectory.canonicalPath + File.separator
         check(output.canonicalPath.startsWith(rootPath)) { "Đường dẫn ZIP không an toàn" }
         return output
+    }
+
+    private fun writeDocumentFile(
+        context: Context,
+        root: DocumentFile,
+        relativePath: String,
+        source: File
+    ) {
+        val parts = relativePath.split('/').filter { it.isNotBlank() }
+        var directory = root
+        parts.dropLast(1).forEach { name ->
+            directory = directory.findFile(name)?.takeIf { it.isDirectory }
+                ?: directory.createDirectory(name)
+                ?: error("Không thể tạo thư mục $name")
+        }
+        val name = parts.lastOrNull() ?: source.name
+        val mime = android.webkit.MimeTypeMap.getSingleton()
+            .getMimeTypeFromExtension(source.extension.lowercase()) ?: "application/octet-stream"
+        val target = createUniqueFile(directory, mime, name)
+        context.contentResolver.openOutputStream(target.uri)?.use { output ->
+            source.inputStream().use { input -> input.copyTo(output) }
+        } ?: error("Không thể ghi $name")
+    }
+
+    private fun createUniqueDirectory(parent: DocumentFile, requestedName: String): DocumentFile {
+        var candidate = requestedName.ifBlank { "backup" }
+        var suffix = 1
+        while (parent.findFile(candidate) != null) {
+            candidate = "$requestedName ($suffix)"
+            suffix++
+        }
+        return parent.createDirectory(candidate) ?: error("Không thể tạo thư mục $candidate")
+    }
+
+    private fun createUniqueFile(
+        parent: DocumentFile,
+        mime: String,
+        requestedName: String
+    ): DocumentFile {
+        val dot = requestedName.lastIndexOf('.')
+        val base = if (dot > 0) requestedName.substring(0, dot) else requestedName
+        val extension = if (dot > 0) requestedName.substring(dot) else ""
+        var candidate = requestedName
+        var suffix = 1
+        while (parent.findFile(candidate) != null) {
+            candidate = "$base ($suffix)$extension"
+            suffix++
+        }
+        val created = parent.createFile(mime, candidate) ?: error("Không thể tạo $candidate")
+        if (created.name != candidate && !created.renameTo(candidate)) {
+            error("Không thể giữ đúng tên tệp $candidate")
+        }
+        return created
     }
 
     private fun matches(scope: ApkDecodeScope, name: String): Boolean = when (scope) {

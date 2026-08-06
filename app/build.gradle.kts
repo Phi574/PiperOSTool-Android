@@ -14,8 +14,8 @@ android {
         applicationId = "com.piper.os.tool"
         minSdk = 24
         targetSdk = 36
-        versionCode = 16
-        versionName = "2.6.0.beta"
+        versionCode = 17
+        versionName = "2.6.1.beta"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -61,6 +61,7 @@ dependencies {
     implementation(libs.media3.session)
     implementation("org.osmdroid:osmdroid-android:6.1.20")
     implementation("com.android.tools.build:apksig:8.13.2")
+    implementation("androidx.documentfile:documentfile:1.1.0")
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

@@ -1,64 +1,59 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fitsSystemWindows="true"
     android:orientation="vertical"
-    android:paddingTop="20dp">
+    android:paddingTop="16dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginHorizontal="20dp"
-        android:layout_marginBottom="14dp"
+        android:layout_marginHorizontal="16dp"
         android:gravity="center_vertical"
         android:orientation="horizontal">
-
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:orientation="vertical">
-
             <TextView
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="ỨNG DỤNG"
+                android:text="ỨNG DỤNG &amp; APK"
                 android:textColor="@color/white"
-                android:textSize="24sp"
+                android:textSize="22sp"
                 android:textStyle="bold" />
-
             <TextView
-                android:layout_width="wrap_content"
+                android:id="@+id/tvAppsOverview"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:text="Quản lý, phân tích và chỉnh sửa APK"
-                android:textColor="#AFFFFFFF"
-                android:textSize="12sp" />
+                android:layout_marginTop="3dp"
+                android:text="Đang đọc ứng dụng..."
+                android:textColor="#9FFFFFFF"
+                android:textSize="11sp" />
         </LinearLayout>
-
         <LinearLayout
             android:id="@+id/btnOpenApkEditor"
-            android:layout_width="116dp"
-            android:layout_height="42dp"
-            android:background="@drawable/bg_settings_surface"
+            android:layout_width="118dp"
+            android:layout_height="44dp"
+            android:background="@drawable/bg_terminal_send"
             android:clickable="true"
             android:focusable="true"
             android:gravity="center"
             android:orientation="horizontal">
-
             <ImageView
                 android:layout_width="20dp"
                 android:layout_height="20dp"
                 android:contentDescription="@null"
                 android:src="@drawable/apk" />
-
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
+                android:layout_marginStart="7dp"
                 android:text="MỞ APK"
-                android:textColor="#7DFFB0"
+                android:textColor="#07120B"
                 android:textSize="12sp"
                 android:textStyle="bold" />
         </LinearLayout>
@@ -66,96 +61,94 @@
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginHorizontal="20dp"
-        android:layout_marginBottom="12dp">
-
+        android:layout_height="52dp"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginTop="16dp"
+        android:orientation="horizontal">
         <EditText
             android:id="@+id/etSearchApp"
             android:layout_width="0dp"
-            android:layout_height="50dp"
+            android:layout_height="match_parent"
             android:layout_weight="1"
             android:background="@drawable/bg_glass_input"
-            android:hint="Tên ứng dụng, package hoặc activity..."
-            android:paddingHorizontal="16dp"
-            android:textColor="#FFFFFF"
-            android:textColorHint="#A0A0A0" />
-
-        <ImageView
+            android:hint="Tên app, package hoặc activity..."
+            android:paddingHorizontal="15dp"
+            android:singleLine="true"
+            android:textColor="@color/white"
+            android:textColorHint="#78FFFFFF"
+            android:textSize="13sp" />
+        <ImageButton
             android:id="@+id/btnRefreshApps"
-            android:layout_width="50dp"
-            android:layout_height="50dp"
+            android:layout_width="52dp"
+            android:layout_height="52dp"
             android:layout_marginStart="8dp"
-            android:background="@drawable/bg_glass_panel"
-            android:padding="12dp"
-            android:src="@drawable/reload"
+            android:background="@drawable/bg_settings_surface"
             android:clickable="true"
-            android:focusable="true"/>
+            android:contentDescription="Làm mới ứng dụng"
+            android:focusable="true"
+            android:padding="14dp"
+            android:src="@drawable/reload" />
     </LinearLayout>
-
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginHorizontal="20dp"
-        android:layout_marginBottom="12dp"
+        android:layout_height="44dp"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginTop="10dp"
+        android:background="@drawable/bg_settings_surface"
         android:orientation="horizontal"
+        android:padding="3dp"
         android:weightSum="3">
+        <TextView android:id="@+id/tabUser" style="@style/AppsSegment" android:text="Người dùng" android:textColor="#7DFFB0" />
+        <TextView android:id="@+id/tabSystem" style="@style/AppsSegment" android:text="Hệ thống" />
+        <TextView android:id="@+id/tabDisabled" style="@style/AppsSegment" android:text="Đã tắt" />
+    </LinearLayout>
 
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="42dp"
+        android:layout_marginHorizontal="18dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
         <TextView
-            android:id="@+id/tabUser"
+            android:id="@+id/tvAppsVisibleCount"
             android:layout_width="0dp"
-            android:layout_height="40dp"
-            android:layout_marginEnd="4dp"
+            android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:background="@drawable/bg_glass_panel"
-            android:gravity="center"
-            android:text="Người dùng"
-            android:textColor="#00E5FF"
-            android:textSize="12sp"
-            android:textStyle="bold" />
-
+            android:text="0 ứng dụng"
+            android:textColor="#90FFFFFF"
+            android:textSize="11sp" />
         <TextView
-            android:id="@+id/tabSystem"
-            android:layout_width="0dp"
-            android:layout_height="40dp"
-            android:layout_marginHorizontal="4dp"
-            android:layout_weight="1"
-            android:background="@drawable/bg_glass_panel"
+            android:id="@+id/btnSortApps"
+            android:layout_width="100dp"
+            android:layout_height="34dp"
+            android:background="?attr/selectableItemBackground"
+            android:clickable="true"
+            android:focusable="true"
             android:gravity="center"
-            android:text="Hệ thống"
-            android:textColor="#FFFFFF"
-            android:textSize="12sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/tabDisabled"
-            android:layout_width="0dp"
-            android:layout_height="40dp"
-            android:layout_marginStart="4dp"
-            android:layout_weight="1"
-            android:background="@drawable/bg_glass_panel"
-            android:gravity="center"
-            android:text="Đã tắt"
-            android:textColor="#FFFFFF"
-            android:textSize="12sp"
+            android:text="SẮP XẾP"
+            android:textColor="#B8FFFFFF"
+            android:textSize="11sp"
             android:textStyle="bold" />
     </LinearLayout>
 
-    <ProgressBar
-        android:id="@+id/progressBar"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:layout_marginTop="50dp" />
-
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rvApps"
+    <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:clipToPadding="false"
-        android:paddingHorizontal="12dp"
-        android:paddingBottom="110dp"
-        android:visibility="gone" />
+        android:layout_height="0dp"
+        android:layout_weight="1">
+        <ProgressBar
+            android:id="@+id/progressBar"
+            android:layout_width="42dp"
+            android:layout_height="42dp"
+            android:layout_gravity="center"
+            android:indeterminateTint="#7DFFB0" />
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvApps"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:paddingHorizontal="10dp"
+            android:paddingBottom="110dp"
+            android:visibility="gone" />
+    </FrameLayout>
 </LinearLayout>

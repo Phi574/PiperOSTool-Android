@@ -237,7 +237,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="6dp"
-                    android:text="Trích xuất File"
+                    android:text="Backup APK gốc"
                     android:textColor="#E040FB"
                     android:textSize="11sp"
                     android:textStyle="bold" />

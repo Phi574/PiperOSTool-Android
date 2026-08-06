@@ -9,14 +9,19 @@ import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore
 import android.text.format.Formatter
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.View
 import android.widget.ProgressBar
 import android.widget.TextView
+import android.widget.EditText
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.FileProvider
 import androidx.core.content.pm.PackageInfoCompat
+import androidx.documentfile.provider.DocumentFile
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -40,10 +45,31 @@ class ApkEditorActivity : AppCompatActivity() {
     private lateinit var progressBar: ProgressBar
     private lateinit var progressPercent: TextView
     private lateinit var progressDetail: TextView
+    private lateinit var search: EditText
+    private lateinit var fileCount: TextView
+    private lateinit var selectionBar: View
+    private lateinit var selectionCount: TextView
     private lateinit var adapter: WorkspaceFileAdapter
     private var workspace: ApkWorkspace? = null
     private var currentPrefix = ""
     private var busy = false
+    private var selectionMode = false
+    private val selectedPaths = linkedSetOf<String>()
+    private var currentEntries = emptyList<ApkWorkspaceEntry>()
+    private var pendingBackupPaths = emptyList<String>()
+
+    private val backupDestination = registerForActivityResult(
+        ActivityResultContracts.OpenDocumentTree()
+    ) { uri ->
+        uri ?: return@registerForActivityResult
+        runCatching {
+            contentResolver.takePersistableUriPermission(
+                uri,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+            )
+        }
+        exportBackup(uri)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -54,6 +80,7 @@ class ApkEditorActivity : AppCompatActivity() {
         configureActions()
         val restored = savedInstanceState?.getString(STATE_WORKSPACE)?.let(ApkWorkspace::restore)
         if (restored != null) {
+            currentPrefix = savedInstanceState.getString(STATE_PREFIX).orEmpty()
             setWorkspace(restored)
         } else {
             importSource()
@@ -62,11 +89,14 @@ class ApkEditorActivity : AppCompatActivity() {
 
     override fun onSaveInstanceState(outState: Bundle) {
         workspace?.let { outState.putString(STATE_WORKSPACE, it.root.absolutePath) }
+        outState.putString(STATE_PREFIX, currentPrefix)
         super.onSaveInstanceState(outState)
     }
 
     override fun onBackPressed() {
-        if (currentPrefix.isNotEmpty()) {
+        if (selectionMode) {
+            leaveSelectionMode()
+        } else if (currentPrefix.isNotEmpty()) {
             currentPrefix = currentPrefix.substringBeforeLast('/', "")
             renderFiles()
         } else {
@@ -85,7 +115,11 @@ class ApkEditorActivity : AppCompatActivity() {
         progressBar = findViewById(R.id.apkEditorProgress)
         progressPercent = findViewById(R.id.apkEditorProgressPercent)
         progressDetail = findViewById(R.id.apkEditorProgressDetail)
-        adapter = WorkspaceFileAdapter(::openEntry)
+        search = findViewById(R.id.apkEditorSearch)
+        fileCount = findViewById(R.id.apkEditorFileCount)
+        selectionBar = findViewById(R.id.apkEditorSelectionBar)
+        selectionCount = findViewById(R.id.apkEditorSelectionCount)
+        adapter = WorkspaceFileAdapter(::handleEntryClick, ::toggleSelection)
         findViewById<RecyclerView>(R.id.apkEditorFiles).apply {
             layoutManager = LinearLayoutManager(this@ApkEditorActivity)
             adapter = this@ApkEditorActivity.adapter
@@ -109,6 +143,14 @@ class ApkEditorActivity : AppCompatActivity() {
         findViewById<View>(R.id.btnApkManifest).setOnClickListener { openManifestReport() }
         findViewById<View>(R.id.btnApkStrings).setOnClickListener { openStrings() }
         findViewById<View>(R.id.btnApkBuild).setOnClickListener { buildApk() }
+        findViewById<View>(R.id.btnApkSelect).setOnClickListener { enterSelectionMode() }
+        findViewById<View>(R.id.btnApkSelectionCancel).setOnClickListener { leaveSelectionMode() }
+        findViewById<View>(R.id.btnApkSelectionBackup).setOnClickListener { chooseBackupDestination() }
+        search.addTextChangedListener(object : TextWatcher {
+            override fun afterTextChanged(value: Editable?) = applyFileFilter(value?.toString().orEmpty())
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
+        })
     }
 
     private fun importSource() {
@@ -137,14 +179,90 @@ class ApkEditorActivity : AppCompatActivity() {
             append(" • ")
             append(Formatter.formatShortFileSize(this@ApkEditorActivity, value.sourceApk.length()))
         }
+        if (currentPrefix.isEmpty()) {
+            currentPrefix = intent.getStringExtra(EXTRA_START_PATH)?.trim('/').orEmpty()
+        }
         renderFiles()
     }
 
     private fun renderFiles() {
-        val entries = workspace?.list(currentPrefix).orEmpty()
-        adapter.submit(entries)
+        currentEntries = workspace?.list(currentPrefix).orEmpty()
+        applyFileFilter(search.text?.toString().orEmpty())
         breadcrumb.text = if (currentPrefix.isEmpty()) "APK /" else "APK / $currentPrefix"
-        empty.visibility = if (entries.isEmpty()) View.VISIBLE else View.GONE
+        fileCount.text = "${currentEntries.count { it.isDirectory }} thư mục • " +
+            "${currentEntries.count { !it.isDirectory }} tệp"
+    }
+
+    private fun applyFileFilter(query: String) {
+        val filtered = if (query.isBlank()) currentEntries else currentEntries.filter {
+            it.name.contains(query.trim(), ignoreCase = true)
+        }
+        adapter.submit(filtered)
+        adapter.setSelected(selectedPaths)
+        empty.visibility = if (filtered.isEmpty()) View.VISIBLE else View.GONE
+    }
+
+    private fun handleEntryClick(entry: ApkWorkspaceEntry) {
+        if (selectionMode) toggleSelection(entry) else openEntry(entry)
+    }
+
+    private fun enterSelectionMode() {
+        if (busy) return
+        selectionMode = true
+        selectionBar.visibility = View.VISIBLE
+        updateSelectionUi()
+        Toast.makeText(this, "Chạm để chọn tệp hoặc thư mục", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun toggleSelection(entry: ApkWorkspaceEntry) {
+        if (!selectionMode) selectionMode = true
+        if (!selectedPaths.add(entry.archivePath)) selectedPaths.remove(entry.archivePath)
+        selectionBar.visibility = View.VISIBLE
+        updateSelectionUi()
+    }
+
+    private fun updateSelectionUi() {
+        selectionCount.text = "ĐÃ CHỌN ${selectedPaths.size}"
+        findViewById<View>(R.id.btnApkSelectionBackup).isEnabled = selectedPaths.isNotEmpty()
+        findViewById<View>(R.id.btnApkSelectionBackup).alpha =
+            if (selectedPaths.isEmpty()) 0.45f else 1f
+        adapter.setSelected(selectedPaths)
+    }
+
+    private fun leaveSelectionMode() {
+        selectionMode = false
+        selectedPaths.clear()
+        selectionBar.visibility = View.GONE
+        adapter.setSelected(emptySet())
+    }
+
+    private fun chooseBackupDestination() {
+        if (selectedPaths.isEmpty()) return
+        pendingBackupPaths = selectedPaths.toList()
+        backupDestination.launch(null)
+    }
+
+    private fun exportBackup(uri: Uri) {
+        val paths = pendingBackupPaths
+        if (paths.isEmpty()) return
+        runBusy("Chuẩn bị backup") {
+            val destination = DocumentFile.fromTreeUri(this@ApkEditorActivity, uri)
+                ?: error("Không mở được thư mục đích")
+            val count = workspace!!.exportSelection(
+                paths,
+                destination,
+                this@ApkEditorActivity
+            ) { progress -> runOnUiThread { showProgress(progress) } }
+            withContext(Dispatchers.Main) {
+                pendingBackupPaths = emptyList()
+                leaveSelectionMode()
+                Toast.makeText(
+                    this@ApkEditorActivity,
+                    "Đã backup $count tệp tới thư mục bạn chọn",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+        }
     }
 
     private fun openEntry(entry: ApkWorkspaceEntry) {
@@ -158,21 +276,10 @@ class ApkEditorActivity : AppCompatActivity() {
             val file = workspace!!.extractEntry(entry.archivePath)
             withContext(Dispatchers.Main) {
                 renderFiles()
-                if (isText(file)) {
-                    startActivity(
-                        Intent(this@ApkEditorActivity, TextEditorActivity::class.java)
-                            .putExtra(TextEditorActivity.EXTRA_FILE_PATH, file.absolutePath)
-                    )
-                } else {
-                    AlertDialog.Builder(this@ApkEditorActivity)
-                        .setTitle(entry.name)
-                        .setMessage(
-                            "Tệp nhị phân đã được giải nén vào workspace. " +
-                                "Kích thước: ${Formatter.formatShortFileSize(this@ApkEditorActivity, file.length())}."
-                        )
-                        .setPositiveButton("Đóng", null)
-                        .show()
-                }
+                startActivity(
+                    Intent(this@ApkEditorActivity, PiperFilePreviewActivity::class.java)
+                        .putExtra(PiperFilePreviewActivity.EXTRA_FILE_PATH, file.absolutePath)
+                )
             }
         }
     }
@@ -412,7 +519,9 @@ class ApkEditorActivity : AppCompatActivity() {
     companion object {
         const val EXTRA_APK_PATH = "apk_path"
         const val EXTRA_PACKAGE_NAME = "package_name"
+        const val EXTRA_START_PATH = "start_path"
         private const val STATE_WORKSPACE = "workspace"
+        private const val STATE_PREFIX = "prefix"
         private val TEXT_EXTENSIONS = setOf(
             "xml", "json", "txt", "html", "htm", "css", "js", "md", "properties", "yml", "yaml"
         )

@@ -6,6 +6,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 
 class WorkspaceFileAdapter(
@@ -13,11 +14,13 @@ class WorkspaceFileAdapter(
     private val onLongClick: (ApkWorkspaceEntry) -> Unit = {}
 ) : RecyclerView.Adapter<WorkspaceFileAdapter.Holder>() {
     private var entries = emptyList<ApkWorkspaceEntry>()
+    private var selectedPaths = emptySet<String>()
 
     class Holder(view: View) : RecyclerView.ViewHolder(view) {
         val icon: ImageView = view.findViewById(R.id.archiveEntryIcon)
         val name: TextView = view.findViewById(R.id.archiveEntryName)
         val meta: TextView = view.findViewById(R.id.archiveEntryMeta)
+        val trailing: ImageView = view.findViewById(R.id.archiveEntryTrailing)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): Holder = Holder(
@@ -28,11 +31,27 @@ class WorkspaceFileAdapter(
         val entry = entries[position]
         holder.name.text = entry.name
         holder.icon.setImageResource(if (entry.isDirectory) R.drawable.module else fileIcon(entry.name))
+        val selected = entry.archivePath in selectedPaths
+        holder.itemView.setBackgroundColor(
+            if (selected) 0x2534D399 else android.graphics.Color.TRANSPARENT
+        )
+        holder.trailing.setImageResource(
+            if (selected) R.drawable.check_circle else R.drawable.ic_chevron_right
+        )
+        holder.trailing.setColorFilter(
+            ContextCompat.getColor(
+                holder.itemView.context,
+                if (selected) R.color.green_neon else android.R.color.darker_gray
+            )
+        )
         holder.meta.text = when {
+            entry.isDirectory && entry.childCount > 0 -> "Thư mục • ${entry.childCount} mục"
             entry.isDirectory -> "Thư mục"
+            entry.archivePath.startsWith("/") ->
+                "${fileType(entry.name)} • ${Formatter.formatShortFileSize(holder.itemView.context, entry.size)}"
             entry.extractedFile != null ->
-                "Đã giải nén • ${Formatter.formatShortFileSize(holder.itemView.context, entry.size)}"
-            else -> "Trong APK • ${Formatter.formatShortFileSize(holder.itemView.context, entry.size)}"
+                "Đã chỉnh / giải nén • ${Formatter.formatShortFileSize(holder.itemView.context, entry.size)}"
+            else -> "${fileType(entry.name)} • ${Formatter.formatShortFileSize(holder.itemView.context, entry.size)}"
         }
         holder.itemView.setOnClickListener { onClick(entry) }
         holder.itemView.setOnLongClickListener {
@@ -48,12 +67,23 @@ class WorkspaceFileAdapter(
         notifyDataSetChanged()
     }
 
+    fun setSelected(paths: Set<String>) {
+        selectedPaths = paths
+        notifyDataSetChanged()
+    }
+
+    private fun fileType(name: String): String =
+        name.substringAfterLast('.', "Tệp").uppercase().ifBlank { "TỆP" }
+
     private fun fileIcon(name: String): Int = when (name.substringAfterLast('.', "").lowercase()) {
         "apk", "aab" -> R.drawable.apk
         "xml", "json", "txt", "properties", "yml", "yaml" -> R.drawable.details
         "dex" -> R.drawable.ic_terminal
         "so" -> R.drawable.system
-        "png", "jpg", "jpeg", "webp" -> R.drawable.a2tn
+        "png", "jpg", "jpeg", "webp", "gif", "bmp", "ico" -> R.drawable.a2tn
+        "mp4", "mkv", "webm", "3gp", "mov", "avi", "m4v" -> R.drawable.nhacvideo
+        "mp3", "m4a", "aac", "wav", "ogg", "flac", "opus" -> R.drawable.ic_media_library
+        "pdf" -> R.drawable.details
         else -> R.drawable.backup
     }
 }
