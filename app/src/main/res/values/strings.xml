@@ -53,6 +53,8 @@
     <string name="piperos_terminal_summary">Shell Android nhiều phiên, chạy nền và lưu lịch sử lệnh.</string>
     <string name="piperos_fake_map">PiperOS Fake Map GPS</string>
     <string name="piperos_fake_map_summary">Mô phỏng vị trí cố định hoặc hành trình di chuyển trên bản đồ.</string>
+    <string name="piperos_file_manager">PiperOS File Manager</string>
+    <string name="piperos_file_manager_summary">Duyệt, tìm kiếm, mở, nén và giải nén tệp trên thiết bị.</string>
     <string name="fake_map_title">FAKE MAP GPS</string>
     <string name="fake_map_subtitle">Chạm bản đồ để chọn vị trí</string>
     <string name="fake_map_developer_settings">Thiết lập</string>

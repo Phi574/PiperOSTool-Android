@@ -31,8 +31,9 @@ import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
-import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import kotlinx.coroutines.CoroutineScope
@@ -50,6 +51,7 @@ class AppsFragment : Fragment() {
     private lateinit var progressBar: ProgressBar
     private lateinit var etSearchApp: EditText
     private lateinit var btnRefreshApps: ImageView
+    private lateinit var btnOpenApkEditor: View
 
     private lateinit var tabUser: TextView
     private lateinit var tabSystem: TextView
@@ -60,6 +62,23 @@ class AppsFragment : Fragment() {
 
     private var currentTabFilter = 0
     private var currentSearchQuery = ""
+
+    private val apkPicker = registerForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        uri ?: return@registerForActivityResult
+        runCatching {
+            requireContext().contentResolver.takePersistableUriPermission(
+                uri,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION
+            )
+        }
+        startActivity(
+            Intent(requireContext(), ApkEditorActivity::class.java)
+                .setData(uri)
+                .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        )
+    }
 
     // BỘ NHỚ ĐỆM TĨNH (CACHE)
     companion object {
@@ -80,11 +99,12 @@ class AppsFragment : Fragment() {
         progressBar = view.findViewById(R.id.progressBar)
         etSearchApp = view.findViewById(R.id.etSearchApp)
         btnRefreshApps = view.findViewById(R.id.btnRefreshApps)
+        btnOpenApkEditor = view.findViewById(R.id.btnOpenApkEditor)
         tabUser = view.findViewById(R.id.tabUser)
         tabSystem = view.findViewById(R.id.tabSystem)
         tabDisabled = view.findViewById(R.id.tabDisabled)
 
-        rvApps.layoutManager = GridLayoutManager(requireContext(), 2)
+        rvApps.layoutManager = LinearLayoutManager(requireContext())
 
         universalAdapter = UniversalAppAdapter(
             items = emptyList(),
@@ -110,6 +130,12 @@ class AppsFragment : Fragment() {
             cachedAllApps = null
             loadApps()
             Toast.makeText(requireContext(), "Đang làm mới danh sách App...", Toast.LENGTH_SHORT).show()
+        }
+        btnOpenApkEditor.setOnClickListener {
+            apkPicker.launch(arrayOf(
+                "application/vnd.android.package-archive",
+                "application/zip"
+            ))
         }
 
         rvApps.addOnScrollListener(object : RecyclerView.OnScrollListener() {
@@ -291,6 +317,7 @@ class AppsFragment : Fragment() {
         val tvInfoSdk = dialogView.findViewById<TextView>(R.id.tvInfoSdk)
         val tvInfoPerms = dialogView.findViewById<TextView>(R.id.tvInfoPerms)
         val btnDialogBackup = dialogView.findViewById<LinearLayout>(R.id.btnDialogBackup)
+        val btnDialogEditApk = dialogView.findViewById<LinearLayout>(R.id.btnDialogEditApk)
 
         val btnLaunch = dialogView.findViewById<LinearLayout>(R.id.btnLaunch)
         val btnDetails = dialogView.findViewById<LinearLayout>(R.id.btnDetails)
@@ -354,6 +381,15 @@ class AppsFragment : Fragment() {
         btnDialogBackup.setOnClickListener {
             bottomSheetDialog.dismiss()
             backupApk(app)
+        }
+
+        btnDialogEditApk.setOnClickListener {
+            bottomSheetDialog.dismiss()
+            startActivity(
+                Intent(requireContext(), ApkEditorActivity::class.java)
+                    .putExtra(ApkEditorActivity.EXTRA_APK_PATH, app.apkPath)
+                    .putExtra(ApkEditorActivity.EXTRA_PACKAGE_NAME, app.packageName)
+            )
         }
 
         bottomSheetDialog.window?.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
@@ -583,7 +619,7 @@ class UniversalAppAdapter(
                 holder.tvName.text = item.info.name
                 holder.tvName.setTextColor(Color.WHITE)
 
-                holder.tvPackage.text = item.info.apkSize
+                holder.tvPackage.text = "${item.info.packageName}  •  ${item.info.apkSize}"
 
                 holder.itemView.setOnClickListener { onAppClick(item.info) }
             }

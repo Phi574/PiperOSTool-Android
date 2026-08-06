@@ -9,6 +9,64 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginHorizontal="20dp"
+        android:layout_marginBottom="14dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="ỨNG DỤNG"
+                android:textColor="@color/white"
+                android:textSize="24sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="Quản lý, phân tích và chỉnh sửa APK"
+                android:textColor="#AFFFFFFF"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/btnOpenApkEditor"
+            android:layout_width="116dp"
+            android:layout_height="42dp"
+            android:background="@drawable/bg_settings_surface"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:contentDescription="@null"
+                android:src="@drawable/apk" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:text="MỞ APK"
+                android:textColor="#7DFFB0"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:layout_marginHorizontal="20dp"
         android:layout_marginBottom="12dp">
@@ -19,7 +77,7 @@
             android:layout_height="50dp"
             android:layout_weight="1"
             android:background="@drawable/bg_glass_input"
-            android:hint="Tìm kiếm (App hoặc Activity ngầm)..."
+            android:hint="Tên ứng dụng, package hoặc activity..."
             android:paddingHorizontal="16dp"
             android:textColor="#FFFFFF"
             android:textColorHint="#A0A0A0" />
@@ -96,6 +154,8 @@
         android:id="@+id/rvApps"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:clipToPadding="false"
         android:paddingHorizontal="12dp"
+        android:paddingBottom="110dp"
         android:visibility="gone" />
 </LinearLayout>

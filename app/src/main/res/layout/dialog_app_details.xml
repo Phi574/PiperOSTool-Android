@@ -249,13 +249,38 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
             android:orientation="horizontal"
-            android:weightSum="2">
+            android:weightSum="3">
+
+            <LinearLayout
+                android:id="@+id/btnDialogEditApk"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_marginEnd="6dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_settings_surface"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:orientation="horizontal">
+                <ImageView
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:src="@drawable/apk" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="7dp"
+                    android:text="APK Editor"
+                    android:textColor="#7DFFB0"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
 
             <LinearLayout
                 android:id="@+id/btnLaunch"
                 android:layout_width="0dp"
                 android:layout_height="48dp"
-                android:layout_marginEnd="6dp"
+                android:layout_marginHorizontal="6dp"
                 android:layout_weight="1"
                 android:background="@drawable/bg_pill_blue"
                 android:clickable="true"

@@ -5,7 +5,7 @@
 <h1 align="center">PiperOS Tool</h1>
 
 <p align="center">
-  Bộ công cụ Android thử nghiệm gồm trình duyệt, trình phát media, quản lý thiết bị và terminal cục bộ.
+  Bộ công cụ Android thử nghiệm gồm APK Editor, quản lý tệp, trình duyệt, media, thiết bị và terminal cục bộ.
 </p>
 
 <p align="center">
@@ -20,7 +20,17 @@
 
 ## Bản hiện tại
 
-`2.5.8.beta` sử dụng `minSdk 24`, `targetSdk 36` và tập trung vào:
+`2.6.0.beta` sử dụng `minSdk 24`, `targetSdk 36` và tập trung vào:
+
+- **PiperOS APK Editor:** mở APK đã cài hoặc tệp APK, duyệt cấu trúc archive,
+  trích xuất theo nhóm/toàn bộ, chỉnh tệp văn bản, xem báo cáo manifest và
+  xây dựng APK mới được ký bằng khóa PiperOS Editor.
+- **PiperOS File Manager:** duyệt bộ nhớ như trình quản lý tệp, tìm kiếm, đổi
+  tên, xóa, nén ZIP, duyệt và giải nén ZIP/JAR/XAPK/APKS.
+
+> APK được xây dựng lại dùng khóa **PiperOS Editor test key**. Khóa này chỉ
+> dành cho thử nghiệm, không dùng để phát hành; APK đầu ra không thể cập nhật
+> đè lên ứng dụng gốc nếu chữ ký của ứng dụng gốc khác.
 
 - **PiperOS Browser:** nhiều tab, tab ẩn danh, khôi phục phiên, lịch sử theo
   ngày, User-Agent tùy chỉnh, nhập phần mở rộng, tải file và phát video.
@@ -48,14 +58,17 @@ flowchart LR
 
     A --> B["PiperOS Browser"]
     A --> C["PiperOS Media"]
-    A --> D["Apps & Device tools"]
+    A --> D["Apps & APK Editor"]
     A --> E["Fake Map GPS"]
     A --> F["Info Center"]
     A --> G["Terminal UI / Service"]
+    A --> S["PiperOS File Manager"]
 
     B --> H["Downloads & WebView"]
     C --> I["Media3 & PiP"]
     E --> J["Android Mock Location"]
+    D --> T["Extract, edit, align & sign APK"]
+    S --> U["ZIP, JAR, XAPK & APKS"]
 
     B --> K["Notifications"]
     C --> K

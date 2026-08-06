@@ -169,6 +169,34 @@ class InfoFragment : Fragment() {
                 )
             ),
             InfoSection(
+                title = "INFO APK EDITOR",
+                summary = "Duyệt, trích xuất, chỉnh tệp và ký APK",
+                icon = R.drawable.apk,
+                color = color("#F59E0B"),
+                rows = listOf(
+                    InfoRow("Nguồn APK", "Ứng dụng đã cài hoặc tệp trên thiết bị"),
+                    InfoRow("Giải nén", "Theo tệp, nhóm hoặc toàn bộ archive"),
+                    InfoRow("Manifest", "Báo cáo package và quyền từ PackageManager"),
+                    InfoRow("Strings", "Chỉnh XML khi tài nguyên đang ở dạng văn bản"),
+                    InfoRow("Xây dựng", "Ghép thay đổi, căn chỉnh ZIP và ký lại APK"),
+                    InfoRow("Chữ ký đầu ra", "PiperOS Editor test key (v1/v2/v3)"),
+                    InfoRow("Thư mục kết quả", "Downloads/PiperOS_APK_Editor")
+                )
+            ),
+            InfoSection(
+                title = "INFO FILE MANAGER",
+                summary = "Duyệt tệp và archive trên bộ nhớ thiết bị",
+                icon = R.drawable.packaget,
+                color = color("#38BDF8"),
+                rows = listOf(
+                    InfoRow("Phạm vi", "Bộ nhớ dùng chung do người dùng cấp quyền"),
+                    InfoRow("Archive", "ZIP, JAR, XAPK và APKS"),
+                    InfoRow("Công cụ", "Tìm kiếm, đổi tên, xóa, nén và giải nén"),
+                    InfoRow("APK", "Mở trực tiếp bằng PiperOS APK Editor"),
+                    InfoRow("Bảo vệ", "Chặn đường dẫn ZIP không an toàn")
+                )
+            ),
+            InfoSection(
                 title = "INFO TRÌNH DUYỆT",
                 summary = webViewPackage?.versionName ?: "Android System WebView",
                 icon = R.drawable.browser,

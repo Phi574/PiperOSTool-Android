@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/apkEditorRoot" android:layout_width="match_parent" android:layout_height="match_parent" android:background="#090D10" android:orientation="vertical">
+    <LinearLayout android:id="@+id/apkEditorToolbar" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:minHeight="66dp" android:orientation="horizontal" android:paddingHorizontal="14dp" android:paddingVertical="9dp">
+        <ImageButton android:id="@+id/btnApkEditorBack" android:layout_width="44dp" android:layout_height="44dp" android:background="?attr/selectableItemBackgroundBorderless" android:contentDescription="Quay lại" android:padding="10dp" android:src="@drawable/ic_browser_back" />
+        <ImageView android:layout_width="38dp" android:layout_height="38dp" android:layout_marginStart="8dp" android:contentDescription="@null" android:src="@drawable/apk" />
+        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="12dp" android:layout_weight="1" android:orientation="vertical">
+            <TextView android:id="@+id/apkEditorTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:ellipsize="end" android:maxLines="1" android:text="APK EDITOR" android:textColor="@color/white" android:textSize="17sp" android:textStyle="bold" />
+            <TextView android:id="@+id/apkEditorSubtitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:ellipsize="middle" android:maxLines="1" android:text="Đang chuẩn bị workspace..." android:textColor="#9FFFFFFF" android:textSize="10sp" />
+        </LinearLayout>
+    </LinearLayout>
+    <HorizontalScrollView android:layout_width="match_parent" android:layout_height="58dp" android:fillViewport="true" android:scrollbars="none">
+        <LinearLayout android:layout_width="wrap_content" android:layout_height="match_parent" android:gravity="center_vertical" android:orientation="horizontal" android:paddingHorizontal="12dp">
+            <TextView android:id="@+id/btnApkDecode" style="@style/ApkEditorAction" android:text="GIẢI NÉN" />
+            <TextView android:id="@+id/btnApkManifest" style="@style/ApkEditorAction" android:text="MANIFEST" />
+            <TextView android:id="@+id/btnApkStrings" style="@style/ApkEditorAction" android:text="STRINGS" />
+            <TextView android:id="@+id/btnApkBuild" style="@style/ApkEditorPrimaryAction" android:text="XÂY DỰNG APK" />
+        </LinearLayout>
+    </HorizontalScrollView>
+    <TextView android:id="@+id/apkEditorBreadcrumb" android:layout_width="match_parent" android:layout_height="42dp" android:background="#B0101519" android:ellipsize="start" android:gravity="center_vertical" android:maxLines="1" android:paddingHorizontal="18dp" android:text="APK /" android:textColor="#7DFFB0" android:textSize="12sp" />
+    <LinearLayout android:id="@+id/apkEditorProgressPanel" android:layout_width="match_parent" android:layout_height="wrap_content" android:background="#E0141B20" android:orientation="vertical" android:paddingHorizontal="18dp" android:paddingVertical="12dp" android:visibility="gone">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:orientation="horizontal">
+            <TextView android:id="@+id/apkEditorProgressDetail" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:ellipsize="middle" android:maxLines="1" android:textColor="#DFFFFFFF" android:textSize="11sp" />
+            <TextView android:id="@+id/apkEditorProgressPercent" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="12dp" android:text="0%" android:textColor="#7DFFB0" android:textSize="12sp" android:textStyle="bold" />
+        </LinearLayout>
+        <ProgressBar android:id="@+id/apkEditorProgress" style="?android:attr/progressBarStyleHorizontal" android:layout_width="match_parent" android:layout_height="4dp" android:layout_marginTop="9dp" android:max="100" android:progressTint="#7DFFB0" />
+    </LinearLayout>
+    <FrameLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1">
+        <androidx.recyclerview.widget.RecyclerView android:id="@+id/apkEditorFiles" android:layout_width="match_parent" android:layout_height="match_parent" android:clipToPadding="false" android:paddingVertical="6dp" />
+        <TextView android:id="@+id/apkEditorEmpty" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="center" android:text="Thư mục trống" android:textColor="#7FFFFFFF" android:textSize="13sp" android:visibility="gone" />
+    </FrameLayout>
+</LinearLayout>
