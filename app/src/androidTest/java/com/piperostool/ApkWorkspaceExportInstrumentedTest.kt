@@ -33,17 +33,50 @@ class ApkWorkspaceExportInstrumentedTest {
             .apply { deleteRecursively(); mkdirs() }
         val workspace = ApkWorkspace.createFromPath(context, source)
 
-        val count = workspace.exportSelection(
+        val result = ApkBackupEngine(
+            context,
+            workspace,
+            DocumentFile.fromFile(destination)
+        ).export(
             listOf("assets", "classes.dex"),
-            DocumentFile.fromFile(destination),
-            context
-        ) { }
+        )
 
-        assertEquals(3, count)
+        assertEquals(3, result.fileCount)
         val assetsBackup = destination.listFiles()?.single { it.isDirectory && it.name.startsWith("assets") }
         assertEquals("banner", File(assetsBackup, "banner.txt").readText())
         assertEquals("hello", File(assetsBackup, "nested/message.txt").readText())
         assertTrue(File(destination, "classes.dex").isFile)
+        workspace.root.deleteRecursively()
+        source.delete()
+        destination.deleteRecursively()
+    }
+
+    @Test
+    fun exportsTwoThousandSmallFilesWithoutReopeningApkPerFile() {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val source = File(context.cacheDir, "workspace-export-many.apk")
+        ZipOutputStream(source.outputStream().buffered()).use { zip ->
+            zip.putNextEntry(ZipEntry("AndroidManifest.xml"))
+            zip.write("manifest".toByteArray())
+            zip.closeEntry()
+            repeat(2_000) { index ->
+                zip.putNextEntry(ZipEntry("assets/data/group-${index % 20}/item-$index.txt"))
+                zip.write("value-$index".toByteArray())
+                zip.closeEntry()
+            }
+        }
+        val destination = File(context.cacheDir, "workspace-export-many-result")
+            .apply { deleteRecursively(); mkdirs() }
+        val workspace = ApkWorkspace.createFromPath(context, source)
+        val started = android.os.SystemClock.elapsedRealtime()
+
+        val result = ApkBackupEngine(context, workspace, DocumentFile.fromFile(destination))
+            .export(listOf("assets"))
+
+        val elapsed = android.os.SystemClock.elapsedRealtime() - started
+        assertEquals(2_000, result.fileCount)
+        assertEquals("value-1999", destination.walkTopDown().first { it.name == "item-1999.txt" }.readText())
+        assertTrue("Backup took ${elapsed}ms", elapsed < 90_000L)
         workspace.root.deleteRecursively()
         source.delete()
         destination.deleteRecursively()

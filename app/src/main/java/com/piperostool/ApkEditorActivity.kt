@@ -20,8 +20,8 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.FileProvider
+import androidx.core.content.ContextCompat
 import androidx.core.content.pm.PackageInfoCompat
-import androidx.documentfile.provider.DocumentFile
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -31,6 +31,7 @@ import androidx.recyclerview.widget.RecyclerView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.bumptech.glide.Glide
 import java.io.File
 import java.util.Locale
 
@@ -119,7 +120,7 @@ class ApkEditorActivity : AppCompatActivity() {
         fileCount = findViewById(R.id.apkEditorFileCount)
         selectionBar = findViewById(R.id.apkEditorSelectionBar)
         selectionCount = findViewById(R.id.apkEditorSelectionCount)
-        adapter = WorkspaceFileAdapter(::handleEntryClick, ::toggleSelection)
+        adapter = WorkspaceFileAdapter(::handleEntryClick, ::toggleSelection, ::loadThumbnail)
         findViewById<RecyclerView>(R.id.apkEditorFiles).apply {
             layoutManager = LinearLayoutManager(this@ApkEditorActivity)
             adapter = this@ApkEditorActivity.adapter
@@ -206,6 +207,17 @@ class ApkEditorActivity : AppCompatActivity() {
         if (selectionMode) toggleSelection(entry) else openEntry(entry)
     }
 
+    private fun loadThumbnail(entry: ApkWorkspaceEntry, target: android.widget.ImageView) {
+        lifecycleScope.launch(Dispatchers.IO) {
+            val file = runCatching { workspace?.previewFile(entry.archivePath) }.getOrNull()
+            withContext(Dispatchers.Main) {
+                if (file != null && target.contentDescription == entry.archivePath && !isDestroyed) {
+                    Glide.with(target).load(file).dontAnimate().centerCrop().into(target)
+                }
+            }
+        }
+    }
+
     private fun enterSelectionMode() {
         if (busy) return
         selectionMode = true
@@ -245,24 +257,20 @@ class ApkEditorActivity : AppCompatActivity() {
     private fun exportBackup(uri: Uri) {
         val paths = pendingBackupPaths
         if (paths.isEmpty()) return
-        runBusy("Chuẩn bị backup") {
-            val destination = DocumentFile.fromTreeUri(this@ApkEditorActivity, uri)
-                ?: error("Không mở được thư mục đích")
-            val count = workspace!!.exportSelection(
-                paths,
-                destination,
-                this@ApkEditorActivity
-            ) { progress -> runOnUiThread { showProgress(progress) } }
-            withContext(Dispatchers.Main) {
-                pendingBackupPaths = emptyList()
-                leaveSelectionMode()
-                Toast.makeText(
-                    this@ApkEditorActivity,
-                    "Đã backup $count tệp tới thư mục bạn chọn",
-                    Toast.LENGTH_LONG
-                ).show()
-            }
-        }
+        val currentWorkspace = workspace ?: return
+        val service = Intent(this, ApkBackupService::class.java)
+            .setAction(ApkBackupService.ACTION_START)
+            .putExtra(ApkBackupService.EXTRA_WORKSPACE_ROOT, currentWorkspace.root.absolutePath)
+            .putExtra(ApkBackupService.EXTRA_DESTINATION_URI, uri.toString())
+            .putStringArrayListExtra(ApkBackupService.EXTRA_PATHS, ArrayList(paths))
+        ContextCompat.startForegroundService(this, service)
+        pendingBackupPaths = emptyList()
+        leaveSelectionMode()
+        Toast.makeText(
+            this,
+            "Backup đang chạy nền. Bạn có thể tắt màn hình hoặc rời ứng dụng.",
+            Toast.LENGTH_LONG
+        ).show()
     }
 
     private fun openEntry(entry: ApkWorkspaceEntry) {
@@ -270,6 +278,16 @@ class ApkEditorActivity : AppCompatActivity() {
         if (entry.isDirectory) {
             currentPrefix = entry.archivePath
             renderFiles()
+            return
+        }
+        if (ApkMediaTypes.isVisualMedia(entry.name)) {
+            val media = currentEntries.filter { !it.isDirectory && ApkMediaTypes.isVisualMedia(it.name) }
+            startActivity(
+                Intent(this, PiperMediaGalleryActivity::class.java)
+                    .putExtra(PiperMediaGalleryActivity.EXTRA_WORKSPACE_ROOT, workspace!!.root.absolutePath)
+                    .putStringArrayListExtra(PiperMediaGalleryActivity.EXTRA_MEDIA_PATHS, ArrayList(media.map { it.archivePath }))
+                    .putExtra(PiperMediaGalleryActivity.EXTRA_INITIAL_INDEX, media.indexOfFirst { it.archivePath == entry.archivePath }.coerceAtLeast(0))
+            )
             return
         }
         runBusy("Đang mở ${entry.name}") {

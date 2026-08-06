@@ -43,6 +43,7 @@ class ApkWorkspace private constructor(
 ) {
     val filesDirectory = File(root, "files")
     val outputDirectory = File(root, "output")
+    private val previewDirectory = File(root, "previews")
 
     fun list(prefix: String): List<ApkWorkspaceEntry> {
         val normalized = prefix.trim('/').let { if (it.isEmpty()) "" else "$it/" }
@@ -93,6 +94,22 @@ class ApkWorkspace private constructor(
             zip.getInputStream(entry).use { input ->
                 FileOutputStream(output).use(input::copyTo)
             }
+        }
+        return output
+    }
+
+    fun previewFile(path: String): File {
+        val edited = File(filesDirectory, path)
+        if (edited.isFile) return edited
+        val output = File(previewDirectory, path)
+        val rootPath = previewDirectory.canonicalPath + File.separator
+        check(output.canonicalPath.startsWith(rootPath)) { "Đường dẫn preview không an toàn" }
+        if (output.isFile) return output
+        output.parentFile?.mkdirs()
+        ZipFile(sourceApk).use { zip ->
+            val entry = zip.getEntry(path) ?: error("Không tìm thấy $path trong APK")
+            check(!entry.isDirectory) { "$path là thư mục" }
+            zip.getInputStream(entry).use { input -> FileOutputStream(output).use(input::copyTo) }
         }
         return output
     }

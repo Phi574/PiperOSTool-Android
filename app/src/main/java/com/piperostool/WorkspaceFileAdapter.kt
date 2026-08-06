@@ -8,10 +8,12 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
 
 class WorkspaceFileAdapter(
     private val onClick: (ApkWorkspaceEntry) -> Unit,
-    private val onLongClick: (ApkWorkspaceEntry) -> Unit = {}
+    private val onLongClick: (ApkWorkspaceEntry) -> Unit = {},
+    private val onThumbnailRequested: (ApkWorkspaceEntry, ImageView) -> Unit = { _, _ -> }
 ) : RecyclerView.Adapter<WorkspaceFileAdapter.Holder>() {
     private var entries = emptyList<ApkWorkspaceEntry>()
     private var selectedPaths = emptySet<String>()
@@ -30,34 +32,32 @@ class WorkspaceFileAdapter(
     override fun onBindViewHolder(holder: Holder, position: Int) {
         val entry = entries[position]
         holder.name.text = entry.name
+        holder.icon.contentDescription = entry.archivePath
+        Glide.with(holder.icon).clear(holder.icon)
+        holder.icon.setColorFilter(null)
+        holder.icon.scaleType = ImageView.ScaleType.CENTER_INSIDE
         holder.icon.setImageResource(if (entry.isDirectory) R.drawable.module else fileIcon(entry.name))
+        if (!entry.isDirectory && ApkMediaTypes.isVisualMedia(entry.name)) {
+            holder.icon.scaleType = ImageView.ScaleType.CENTER_CROP
+            entry.extractedFile?.takeIf { it.isFile }?.let { file ->
+                Glide.with(holder.icon).load(file).dontAnimate().centerCrop().into(holder.icon)
+            } ?: onThumbnailRequested(entry, holder.icon)
+        }
+
         val selected = entry.archivePath in selectedPaths
-        holder.itemView.setBackgroundColor(
-            if (selected) 0x2534D399 else android.graphics.Color.TRANSPARENT
-        )
-        holder.trailing.setImageResource(
-            if (selected) R.drawable.check_circle else R.drawable.ic_chevron_right
-        )
+        holder.itemView.setBackgroundColor(if (selected) 0x2534D399 else android.graphics.Color.TRANSPARENT)
+        holder.trailing.setImageResource(if (selected) R.drawable.check_circle else R.drawable.ic_chevron_right)
         holder.trailing.setColorFilter(
-            ContextCompat.getColor(
-                holder.itemView.context,
-                if (selected) R.color.green_neon else android.R.color.darker_gray
-            )
+            ContextCompat.getColor(holder.itemView.context, if (selected) R.color.green_neon else android.R.color.darker_gray)
         )
         holder.meta.text = when {
             entry.isDirectory && entry.childCount > 0 -> "Thư mục • ${entry.childCount} mục"
             entry.isDirectory -> "Thư mục"
-            entry.archivePath.startsWith("/") ->
-                "${fileType(entry.name)} • ${Formatter.formatShortFileSize(holder.itemView.context, entry.size)}"
-            entry.extractedFile != null ->
-                "Đã chỉnh / giải nén • ${Formatter.formatShortFileSize(holder.itemView.context, entry.size)}"
+            entry.extractedFile != null -> "Đã chỉnh / giải nén • ${Formatter.formatShortFileSize(holder.itemView.context, entry.size)}"
             else -> "${fileType(entry.name)} • ${Formatter.formatShortFileSize(holder.itemView.context, entry.size)}"
         }
         holder.itemView.setOnClickListener { onClick(entry) }
-        holder.itemView.setOnLongClickListener {
-            onLongClick(entry)
-            true
-        }
+        holder.itemView.setOnLongClickListener { onLongClick(entry); true }
     }
 
     override fun getItemCount(): Int = entries.size
@@ -72,16 +72,15 @@ class WorkspaceFileAdapter(
         notifyDataSetChanged()
     }
 
-    private fun fileType(name: String): String =
-        name.substringAfterLast('.', "Tệp").uppercase().ifBlank { "TỆP" }
+    private fun fileType(name: String): String = name.substringAfterLast('.', "Tệp").uppercase().ifBlank { "TỆP" }
 
-    private fun fileIcon(name: String): Int = when (name.substringAfterLast('.', "").lowercase()) {
+    private fun fileIcon(name: String): Int = when (ApkMediaTypes.extension(name)) {
         "apk", "aab" -> R.drawable.apk
         "xml", "json", "txt", "properties", "yml", "yaml" -> R.drawable.details
         "dex" -> R.drawable.ic_terminal
         "so" -> R.drawable.system
-        "png", "jpg", "jpeg", "webp", "gif", "bmp", "ico" -> R.drawable.a2tn
-        "mp4", "mkv", "webm", "3gp", "mov", "avi", "m4v" -> R.drawable.nhacvideo
+        in ApkMediaTypes.imageExtensions -> R.drawable.a2tn
+        in ApkMediaTypes.videoExtensions -> R.drawable.nhacvideo
         "mp3", "m4a", "aac", "wav", "ogg", "flac", "opus" -> R.drawable.ic_media_library
         "pdf" -> R.drawable.details
         else -> R.drawable.backup

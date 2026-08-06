@@ -20,13 +20,16 @@
 
 ## Bản hiện tại
 
-`2.6.1.beta` sử dụng `minSdk 24`, `targetSdk 36` và tập trung vào:
+`2.6.2.beta` sử dụng `minSdk 24`, `targetSdk 36` và tập trung vào:
 
 - **PiperOS APK Editor:** mở APK đã cài hoặc tệp APK, duyệt cấu trúc archive,
   trích xuất theo nhóm/toàn bộ, chỉnh tệp văn bản, xem báo cáo manifest và
   xây dựng APK mới được ký bằng khóa PiperOS Editor. Có thể chọn nhiều tệp
-  hoặc nguyên thư mục để backup tới vị trí tùy chọn và xem trực tiếp ảnh,
-  GIF, video, âm thanh, PDF cùng các tệp văn bản.
+  hoặc nguyên thư mục để backup tới vị trí tùy chọn. Backup lớn dùng tối đa
+  bốn luồng, chạy bằng foreground service khi tắt màn hình/rời ứng dụng và
+  báo tiến độ qua notification. Danh sách có thumbnail ảnh/video; gallery hỗ
+  trợ vuốt ngang qua media cùng thư mục. Trình xem vẫn hỗ trợ GIF, âm thanh,
+  PDF cùng các tệp văn bản.
 - **PiperOS File Manager:** duyệt bộ nhớ như trình quản lý tệp, tìm kiếm, đổi
   tên, xóa, nén ZIP, duyệt và giải nén ZIP/JAR/XAPK/APKS.
 

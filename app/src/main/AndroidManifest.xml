@@ -69,6 +69,12 @@
             android:foregroundServiceType="dataSync" />
 
         <service
+            android:name=".ApkBackupService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync"
+            android:stopWithTask="false" />
+
+        <service
             android:name=".PiperPlaybackService"
             android:exported="true"
             android:foregroundServiceType="mediaPlayback">
@@ -145,6 +151,11 @@
             android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".PiperFilePreviewActivity"
+            android:configChanges="keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
+            android:exported="false"
+            android:theme="@style/Theme.PiperOSTool" />
+        <activity
+            android:name=".PiperMediaGalleryActivity"
             android:configChanges="keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
             android:exported="false"
             android:theme="@style/Theme.PiperOSTool" />
