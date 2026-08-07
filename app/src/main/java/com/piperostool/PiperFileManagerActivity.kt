@@ -21,6 +21,7 @@ import android.widget.ArrayAdapter
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.FileProvider
@@ -68,6 +69,7 @@ class PiperFileManagerActivity : AppCompatActivity() {
         bindViews()
         applyInsets()
         configureActions()
+        configureBackNavigation()
         ensureStorageAccess()
         render()
     }
@@ -98,24 +100,31 @@ class PiperFileManagerActivity : AppCompatActivity() {
         super.onStop()
     }
 
-    override fun onBackPressed() {
-        when {
-            archiveFile != null && archivePrefix.isNotEmpty() -> {
-                archivePrefix = archivePrefix.substringBeforeLast('/', "")
-                render()
+    private fun configureBackNavigation() {
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                when {
+                    archiveFile != null && archivePrefix.isNotEmpty() -> {
+                        archivePrefix = archivePrefix.substringBeforeLast('/', "")
+                        render()
+                    }
+                    archiveFile != null -> {
+                        archiveFile = null
+                        archivePrefix = ""
+                        render()
+                    }
+                    currentDirectory.parentFile != null &&
+                        currentDirectory != Environment.getExternalStorageDirectory() -> {
+                        currentDirectory = currentDirectory.parentFile!!
+                        render()
+                    }
+                    else -> {
+                        isEnabled = false
+                        onBackPressedDispatcher.onBackPressed()
+                    }
+                }
             }
-            archiveFile != null -> {
-                archiveFile = null
-                archivePrefix = ""
-                render()
-            }
-            currentDirectory.parentFile != null &&
-                currentDirectory != Environment.getExternalStorageDirectory() -> {
-                currentDirectory = currentDirectory.parentFile!!
-                render()
-            }
-            else -> super.onBackPressed()
-        }
+        })
     }
 
     private fun bindViews() {
@@ -143,7 +152,9 @@ class PiperFileManagerActivity : AppCompatActivity() {
     }
 
     private fun configureActions() {
-        findViewById<View>(R.id.btnFileManagerBack).setOnClickListener { onBackPressed() }
+        findViewById<View>(R.id.btnFileManagerBack).setOnClickListener {
+            onBackPressedDispatcher.onBackPressed()
+        }
         findViewById<View>(R.id.btnFileManagerHome).setOnClickListener {
             archiveFile = null
             currentDirectory = Environment.getExternalStorageDirectory()

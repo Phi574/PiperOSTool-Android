@@ -1,6 +1,7 @@
 package com.piperostool
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -97,7 +98,7 @@ class FileOperationService : Service() {
 
     private fun updateProgress(progress: FileOperationProgress) {
         if (canPostNotifications()) {
-            NotificationManagerCompat.from(this).notify(
+            notifySafely(
                 NOTIFICATION_ID,
                 notification(
                     if (progress.total > 0) "${progress.completed}/${progress.total} • ${progress.currentName}"
@@ -138,7 +139,7 @@ class FileOperationService : Service() {
 
     private fun showResult(success: Boolean, message: String) {
         if (!canPostNotifications()) return
-        NotificationManagerCompat.from(this).notify(
+        notifySafely(
             RESULT_NOTIFICATION_ID,
             NotificationCompat.Builder(this, CHANNEL_ID)
                 .setSmallIcon(if (success) R.drawable.check_circle else R.drawable.ic_browser_close)
@@ -148,6 +149,16 @@ class FileOperationService : Service() {
                 .setAutoCancel(true)
                 .build()
         )
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun notifySafely(id: Int, value: Notification) {
+        if (!canPostNotifications()) return
+        try {
+            NotificationManagerCompat.from(this).notify(id, value)
+        } catch (_: SecurityException) {
+            // Permission can be revoked while a background operation is running.
+        }
     }
 
     private fun startAsForeground(value: Notification) {

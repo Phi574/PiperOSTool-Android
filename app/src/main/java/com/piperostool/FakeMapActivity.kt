@@ -323,7 +323,7 @@ class FakeMapActivity : AppCompatActivity() {
         }
         findViewById<View>(R.id.btnUndoWaypoint).setOnClickListener {
             if (routeWaypoints.isNotEmpty()) {
-                routeWaypoints.removeLast()
+                routeWaypoints.removeAt(routeWaypoints.lastIndex)
                 calculateRoute()
             } else {
                 Toast.makeText(this, "Chưa có điểm đi qua", Toast.LENGTH_SHORT).show()

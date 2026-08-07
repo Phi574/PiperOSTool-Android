@@ -16,6 +16,7 @@ import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.EditText
 import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.result.contract.ActivityResultContracts
@@ -79,6 +80,7 @@ class ApkEditorActivity : AppCompatActivity() {
         bindViews()
         applyInsets()
         configureActions()
+        configureBackNavigation()
         val restored = savedInstanceState?.getString(STATE_WORKSPACE)?.let(ApkWorkspace::restore)
         if (restored != null) {
             currentPrefix = savedInstanceState.getString(STATE_PREFIX).orEmpty()
@@ -94,15 +96,22 @@ class ApkEditorActivity : AppCompatActivity() {
         super.onSaveInstanceState(outState)
     }
 
-    override fun onBackPressed() {
-        if (selectionMode) {
-            leaveSelectionMode()
-        } else if (currentPrefix.isNotEmpty()) {
-            currentPrefix = currentPrefix.substringBeforeLast('/', "")
-            renderFiles()
-        } else {
-            super.onBackPressed()
-        }
+    private fun configureBackNavigation() {
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                when {
+                    selectionMode -> leaveSelectionMode()
+                    currentPrefix.isNotEmpty() -> {
+                        currentPrefix = currentPrefix.substringBeforeLast('/', "")
+                        renderFiles()
+                    }
+                    else -> {
+                        isEnabled = false
+                        onBackPressedDispatcher.onBackPressed()
+                    }
+                }
+            }
+        })
     }
 
     private fun bindViews() {
@@ -139,7 +148,9 @@ class ApkEditorActivity : AppCompatActivity() {
     }
 
     private fun configureActions() {
-        findViewById<View>(R.id.btnApkEditorBack).setOnClickListener { onBackPressed() }
+        findViewById<View>(R.id.btnApkEditorBack).setOnClickListener {
+            onBackPressedDispatcher.onBackPressed()
+        }
         findViewById<View>(R.id.btnApkDecode).setOnClickListener { showDecodeOptions() }
         findViewById<View>(R.id.btnApkManifest).setOnClickListener { openManifestReport() }
         findViewById<View>(R.id.btnApkStrings).setOnClickListener { openStrings() }
@@ -441,21 +452,28 @@ class ApkEditorActivity : AppCompatActivity() {
     }
 
     private fun exportToDownloads(file: File): Uri? {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            return runCatching {
+                val directory = File(
+                    Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+                    "PiperOS_APK_Editor"
+                ).apply { mkdirs() }
+                val target = File(directory, file.name)
+                file.copyTo(target, overwrite = true)
+                fileUri(target)
+            }.getOrNull()
+        }
         val values = ContentValues().apply {
             put(MediaStore.Downloads.DISPLAY_NAME, file.name)
             put(MediaStore.Downloads.MIME_TYPE, "application/vnd.android.package-archive")
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/PiperOS_APK_Editor")
-                put(MediaStore.Downloads.IS_PENDING, 1)
-            }
+            put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/PiperOS_APK_Editor")
+            put(MediaStore.Downloads.IS_PENDING, 1)
         }
         val uri = contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values) ?: return null
         contentResolver.openOutputStream(uri)?.use { output -> file.inputStream().use { it.copyTo(output) } }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            values.clear()
-            values.put(MediaStore.Downloads.IS_PENDING, 0)
-            contentResolver.update(uri, values, null, null)
-        }
+        values.clear()
+        values.put(MediaStore.Downloads.IS_PENDING, 0)
+        contentResolver.update(uri, values, null, null)
         return uri
     }
 

@@ -1,6 +1,7 @@
 package com.piperostool
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -68,10 +69,7 @@ class ApkBackupService : Service() {
                     val now = SystemClock.elapsedRealtime()
                     if (now - lastNotificationAt >= NOTIFICATION_INTERVAL_MS || progress.completedFiles == progress.totalFiles) {
                         lastNotificationAt = now
-                        if (canPostNotifications()) {
-                            NotificationManagerCompat.from(this@ApkBackupService)
-                                .notify(NOTIFICATION_ID, buildProgressNotification(progress))
-                        }
+                        notifySafely(NOTIFICATION_ID, buildProgressNotification(progress))
                     }
                 }
                 showTerminal("Backup APK hoàn tất", "${result.fileCount} tệp • ${Formatter.formatShortFileSize(this@ApkBackupService, result.byteCount)}", false)
@@ -136,8 +134,7 @@ class ApkBackupService : Service() {
     }
 
     private fun showTerminal(title: String, content: String, isError: Boolean) {
-        if (!canPostNotifications()) return
-        NotificationManagerCompat.from(this).notify(
+        notifySafely(
             RESULT_NOTIFICATION_ID,
             NotificationCompat.Builder(this, CHANNEL_ID)
                 .setSmallIcon(if (isError) R.drawable.ic_browser_close else R.drawable.check_circle)
@@ -148,6 +145,16 @@ class ApkBackupService : Service() {
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                 .build()
         )
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun notifySafely(id: Int, notification: Notification) {
+        if (!canPostNotifications()) return
+        try {
+            NotificationManagerCompat.from(this).notify(id, notification)
+        } catch (_: SecurityException) {
+            // Permission can be revoked while a background operation is running.
+        }
     }
 
     private fun canPostNotifications(): Boolean =
