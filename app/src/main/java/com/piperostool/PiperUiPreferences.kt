@@ -9,15 +9,21 @@ import android.graphics.drawable.GradientDrawable
 import android.view.View
 import android.view.ViewGroup
 import android.view.Window
+import android.util.TypedValue
 import android.widget.Button
+import android.widget.CompoundButton
 import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
+import android.widget.FrameLayout
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
+import androidx.core.graphics.ColorUtils
 import androidx.core.view.WindowCompat
 import com.google.android.material.card.MaterialCardView
+import com.google.android.material.button.MaterialButton
+import com.google.android.material.textfield.TextInputLayout
 import java.util.ArrayDeque
 
 enum class PiperUiStyle(val key: String) {
@@ -101,7 +107,9 @@ object PiperModernUi {
 
     fun watch(activity: Activity) {
         if (!PiperUiPreferences.isModern(activity)) return
-        applyWindow(activity.window, isDark(activity))
+        val dark = isDark(activity)
+        applyWindow(activity.window, dark)
+        installAmbientBackground(activity, dark)
         val root = activity.window.decorView
         if (root.getTag(R.id.piper_modern_ui_watcher) != true) {
             root.setTag(R.id.piper_modern_ui_watcher, true)
@@ -110,6 +118,15 @@ object PiperModernUi {
             }
         }
         root.post { applyTree(root, palette(activity)) }
+    }
+
+    fun apply(root: View) {
+        if (PiperUiPreferences.isModern(root.context)) {
+            val colors = palette(root.context)
+            root.backgroundTintList = null
+            root.background = rounded(colors.surface, colors.border, 8f, root)
+            applyTree(root, colors)
+        }
     }
 
     private fun applyWindow(window: Window, dark: Boolean) {
@@ -127,9 +144,10 @@ object PiperModernUi {
         pending.add(root)
         while (pending.isNotEmpty()) {
             val view = pending.removeFirst()
-            if (view.getTag(R.id.piper_modern_ui_applied) != true) {
+            // Text may be rebound by adapters after inflation, so refresh it on every layout pass.
+            if (view is TextView || view.getTag(R.id.piper_modern_ui_applied) != palette.hashCode()) {
                 applyView(view, palette)
-                view.setTag(R.id.piper_modern_ui_applied, true)
+                view.setTag(R.id.piper_modern_ui_applied, palette.hashCode())
             }
             if (view is ViewGroup && !preserveChildren(view)) {
                 for (index in 0 until view.childCount) pending.addLast(view.getChildAt(index))
@@ -143,8 +161,39 @@ object PiperModernUi {
             view.visibility = View.GONE
             return
         }
-        if (name.endsWith("Root") || name == "homeRoot") {
-            view.setBackgroundColor(palette.background)
+        if (isPageRoot(name)) {
+            view.setBackgroundColor(Color.TRANSPARENT)
+            return
+        }
+
+        if (name == "modernAuthOverlay") {
+            view.setBackgroundColor(Color.TRANSPARENT)
+            return
+        }
+
+        if (name.endsWith("FeatureIcon", ignoreCase = true)) {
+            view.backgroundTintList = null
+            view.background = rounded(
+                ColorUtils.blendARGB(palette.surface, palette.accent, 0.07f),
+                ColorUtils.blendARGB(palette.border, palette.accent, 0.18f),
+                8f,
+                view
+            )
+            return
+        }
+
+        if (isSettingsRow(name)) {
+            val selectable = TypedValue()
+            if (view.context.theme.resolveAttribute(
+                    android.R.attr.selectableItemBackground,
+                    selectable,
+                    true
+                ) && selectable.resourceId != 0
+            ) {
+                view.setBackgroundResource(selectable.resourceId)
+            } else {
+                view.setBackgroundColor(Color.TRANSPARENT)
+            }
             return
         }
 
@@ -152,18 +201,58 @@ object PiperModernUi {
 
         when (view) {
             is MaterialCardView -> {
+                view.backgroundTintList = null
                 view.setCardBackgroundColor(palette.surface)
                 view.strokeColor = palette.border
                 view.strokeWidth = view.resources.displayMetrics.density.toInt().coerceAtLeast(1)
                 view.radius = 8f * view.resources.displayMetrics.density
                 view.cardElevation = 0f
             }
+            is MaterialButton -> {
+                view.isAllCaps = false
+                val primary = isPrimaryAction(name)
+                view.setTextColor(if (primary) palette.onAccent else palette.text)
+                view.backgroundTintList = android.content.res.ColorStateList.valueOf(
+                    if (primary) palette.accent else palette.surface
+                )
+                view.strokeColor = android.content.res.ColorStateList.valueOf(
+                    if (primary) palette.accent else palette.border
+                )
+                view.strokeWidth = view.resources.displayMetrics.density.toInt().coerceAtLeast(1)
+                view.cornerRadius = (8f * view.resources.displayMetrics.density).toInt()
+                view.iconTint = android.content.res.ColorStateList.valueOf(
+                    if (primary) palette.onAccent else palette.secondaryText
+                )
+            }
+            is TextInputLayout -> {
+                view.boxBackgroundColor = palette.surface
+                view.boxStrokeColor = palette.border
+                view.defaultHintTextColor = android.content.res.ColorStateList.valueOf(palette.secondaryText)
+                view.setBoxCornerRadii(8f, 8f, 8f, 8f)
+            }
+            is CompoundButton -> {
+                view.setTextColor(palette.text)
+            }
             is EditText -> {
+                view.backgroundTintList = null
                 view.setTextColor(palette.text)
                 view.setHintTextColor(palette.secondaryText)
-                view.background = rounded(palette.surface, palette.border, 8f, view)
+                view.compoundDrawableTintList = android.content.res.ColorStateList.valueOf(
+                    palette.secondaryText
+                )
+                val parentName = (view.parent as? View)?.let(::resourceName).orEmpty()
+                view.background = if (
+                    view.parent is TextInputLayout || parentName in setOf(
+                        "browserSearchBox", "browserAddressRow", "mediaSearchBar"
+                    )
+                ) {
+                    null
+                } else {
+                    rounded(palette.surface, palette.border, 8f, view)
+                }
             }
             is Button -> {
+                view.backgroundTintList = null
                 view.isAllCaps = false
                 view.setTextColor(if (isPrimaryAction(name)) palette.onAccent else palette.text)
                 view.background = rounded(
@@ -173,26 +262,55 @@ object PiperModernUi {
                     view
                 )
             }
-            is TextView -> modernizeText(view, palette)
+            is TextView -> {
+                modernizeText(view, palette)
+                if (
+                    (view.isClickable || name == "tvTerminalPromptMode") &&
+                    view.background != null && !isNavigationItem(name)
+                ) {
+                    view.backgroundTintList = null
+                    view.background = rounded(palette.surface, palette.border, 8f, view)
+                }
+            }
             is ImageButton -> {
                 view.setBackgroundColor(Color.TRANSPARENT)
-                view.imageTintList = android.content.res.ColorStateList.valueOf(palette.secondaryText)
+                view.imageTintList = if (name in setOf("btnExitBrowser")) {
+                    null
+                } else {
+                    android.content.res.ColorStateList.valueOf(palette.secondaryText)
+                }
             }
             is ImageView -> {
-                if (
-                    (view.imageTintList != null || name.startsWith("icon", true)) &&
-                    !name.contains("Artwork", true)
-                ) {
-                    view.imageTintList = android.content.res.ColorStateList.valueOf(palette.secondaryText)
+                val parentName = (view.parent as? View)?.let(::resourceName).orEmpty()
+                if (name in setOf("mediaArtwork", "browserStartLogo")) {
+                    view.imageTintList = null
+                    return
+                }
+                when {
+                    parentName in setOf(
+                        "fakeMapFeatureIcon",
+                        "terminalFeatureIcon",
+                        "fileManagerFeatureIcon"
+                    ) ->
+                        view.imageTintList = android.content.res.ColorStateList.valueOf(palette.accent)
+                    (name.startsWith("icon", true) || name.endsWith("Arrow", true)) &&
+                        !name.contains("Artwork", true) ->
+                        view.imageTintList = android.content.res.ColorStateList.valueOf(palette.secondaryText)
                 }
             }
             is ViewGroup -> {
                 if (
-                    view.background != null && view.parent != null && !isSpecialSurface(name) &&
-                    (!view.isClickable || name.startsWith("feature") || name.contains("Card"))
+                    view.background != null && view.parent != null && !isSpecialSurface(name)
                 ) {
+                    view.backgroundTintList = null
                     view.background = rounded(palette.surface, palette.border, 8f, view)
                     view.elevation = 0f
+                }
+            }
+            else -> {
+                val maxDividerHeight = (2f * view.resources.displayMetrics.density).toInt()
+                if (view.layoutParams?.height in 1..maxDividerHeight) {
+                    view.setBackgroundColor(palette.border)
                 }
             }
         }
@@ -211,9 +329,9 @@ object PiperModernUi {
 
     private fun preserveChildren(view: View): Boolean {
         val name = resourceName(view)
-        return name.contains("WebView", true) || name.contains("PlayerView", true) ||
-            name.contains("Map", true) && !name.endsWith("Root") ||
-            name.contains("TerminalScreen", true) || name.contains("terminalOutput", true)
+        val className = view.javaClass.name
+        return className.contains("WebView") || className.contains("PlayerView") ||
+            className.contains("osmdroid.views.MapView") || name == "terminalScroll"
     }
 
     private fun preserveTextSurface(name: String): Boolean =
@@ -221,8 +339,52 @@ object PiperModernUi {
 
     private fun isSpecialSurface(name: String): Boolean =
         name.contains("disc", true) || name.contains("video", true) ||
-            name.contains("player", true) || name.contains("map", true) ||
-            name.contains("progress", true)
+            name.contains("player", true) ||
+            name.contains("progress", true) || name == "terminalScroll"
+
+    private fun isPageRoot(name: String): Boolean = name in setOf(
+        "homeRoot", "lockRoot", "loginRoot", "signupRoot", "forgotRoot", "welcomeRoot",
+        "browserRoot", "mediaRoot", "mediaGalleryRoot", "fileManagerRoot", "filePreviewRoot",
+        "fakeMapRoot", "terminalRoot", "apkEditorRoot", "textEditorRoot"
+    )
+
+    private fun isSettingsRow(name: String): Boolean = name in setOf(
+        "layoutDeviceAdmin", "layoutFingerprint", "layoutPasswordToggle", "btnChangeLock",
+        "btnPermissions", "layoutUiStyle", "layoutColorMode", "layoutLanguage", "layoutFont",
+        "layoutChangeBackground", "layoutResetBackground", "btnAndroidSource", "btnRuntimeSource"
+    )
+
+    private fun installAmbientBackground(activity: Activity, dark: Boolean) {
+        val content = activity.findViewById<FrameLayout>(android.R.id.content) ?: return
+        val existing = content.findViewWithTag<PiperAmbientBackgroundView>(AMBIENT_TAG)
+        if (existing != null) {
+            existing.darkMode = dark
+            return
+        }
+        val ambient = PiperAmbientBackgroundView(activity).apply {
+            tag = AMBIENT_TAG
+            darkMode = dark
+            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+        }
+        content.addView(
+            ambient,
+            0,
+            FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+            )
+        )
+    }
+
+    fun textColor(context: Context): Int = palette(context).text
+
+    fun secondaryTextColor(context: Context): Int = palette(context).secondaryText
+
+    fun accentColor(context: Context): Int = palette(context).accent
+
+    fun surfaceColor(context: Context): Int = palette(context).surface
+
+    fun borderColor(context: Context): Int = palette(context).border
 
     private fun isPrimaryAction(name: String): Boolean =
         name.contains("start", true) || name.contains("login", true) ||
@@ -259,22 +421,24 @@ object PiperModernUi {
         }
 
     private val lightPalette = Palette(
-        background = Color.rgb(247, 247, 245),
-        surface = Color.WHITE,
+        background = Color.rgb(248, 248, 246),
+        surface = Color.argb(226, 255, 255, 255),
         text = Color.rgb(31, 33, 36),
         secondaryText = Color.rgb(105, 108, 112),
-        border = Color.rgb(220, 222, 219),
+        border = Color.argb(184, 216, 219, 218),
         accent = Color.rgb(18, 124, 86),
         onAccent = Color.WHITE
     )
 
     private val darkPalette = Palette(
-        background = Color.rgb(17, 19, 21),
-        surface = Color.rgb(27, 30, 33),
+        background = Color.rgb(18, 18, 22),
+        surface = Color.argb(228, 28, 30, 34),
         text = Color.rgb(241, 243, 244),
         secondaryText = Color.rgb(174, 178, 182),
-        border = Color.rgb(59, 63, 67),
+        border = Color.argb(190, 64, 68, 72),
         accent = Color.rgb(99, 220, 165),
         onAccent = Color.rgb(9, 45, 31)
     )
+
+    private const val AMBIENT_TAG = "piper_modern_ambient_background"
 }

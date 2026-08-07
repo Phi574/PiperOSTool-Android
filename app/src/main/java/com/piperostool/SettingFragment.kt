@@ -58,9 +58,11 @@ class SettingFragment : Fragment() {
     private lateinit var layoutUiStyle: View
     private lateinit var layoutColorMode: View
     private lateinit var layoutLanguage: View
+    private lateinit var layoutFont: View
     private lateinit var tvUiStyleValue: TextView
     private lateinit var tvColorModeValue: TextView
     private lateinit var tvLanguageValue: TextView
+    private lateinit var tvFontValue: TextView
     private lateinit var settingsRoot: View
 // Firebase reference
     private val database = FirebaseDatabase.getInstance()
@@ -77,6 +79,26 @@ class SettingFragment : Fragment() {
                 Toast.makeText(context, "Lỗi khi lưu ảnh! Hãy thử ảnh khác.", Toast.LENGTH_SHORT).show()
             }
         }
+    }
+    private val pickFontLauncher = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        val activeContext = context ?: return@registerForActivityResult
+        if (uri == null) return@registerForActivityResult
+        PiperFontPreferences.importFont(activeContext, uri)
+            .onSuccess { font ->
+                Toast.makeText(
+                    activeContext,
+                    getString(R.string.settings_font_imported, font.name),
+                    Toast.LENGTH_SHORT
+                ).show()
+                activity?.recreate()
+            }
+            .onFailure {
+                Toast.makeText(
+                    activeContext,
+                    R.string.settings_font_import_failed,
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
     }
     private val adminResultLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         updateAdminSwitchState()
@@ -148,6 +170,7 @@ class SettingFragment : Fragment() {
         layoutUiStyle.setOnClickListener { showUiStyleDialog() }
         layoutColorMode.setOnClickListener { showColorModeDialog() }
         layoutLanguage.setOnClickListener { showLanguageDialog() }
+        layoutFont.setOnClickListener { showFontDialog() }
 
 
         // --- XỬ LÝ HÌNH NỀN (MỚI) ---
@@ -264,9 +287,11 @@ class SettingFragment : Fragment() {
         layoutUiStyle = view.findViewById(R.id.layoutUiStyle)
         layoutColorMode = view.findViewById(R.id.layoutColorMode)
         layoutLanguage = view.findViewById(R.id.layoutLanguage)
+        layoutFont = view.findViewById(R.id.layoutFont)
         tvUiStyleValue = view.findViewById(R.id.tvUiStyleValue)
         tvColorModeValue = view.findViewById(R.id.tvColorModeValue)
         tvLanguageValue = view.findViewById(R.id.tvLanguageValue)
+        tvFontValue = view.findViewById(R.id.tvFontValue)
 
 
         btnPermissions.setOnClickListener {
@@ -302,6 +327,7 @@ class SettingFragment : Fragment() {
                 R.string.settings_language_vi
             }
         )
+        tvFontValue.text = PiperFontPreferences.selectedName(requireContext())
     }
 
     private fun showUiStyleDialog() {
@@ -362,6 +388,37 @@ class SettingFragment : Fragment() {
             }
             .setNegativeButton(android.R.string.cancel, null)
             .show()
+    }
+
+    private fun showFontDialog() {
+        val activeContext = requireContext()
+        val selected = PiperFontPreferences.selectedKey(activeContext)
+        PiperActionSheet.showSingleSelect(
+            context = activeContext,
+            title = getString(R.string.settings_font),
+            choices = PiperFontPreferences.choices(activeContext).map { choice ->
+                PiperSheetChoice(
+                    key = choice.key,
+                    label = choice.name,
+                    selected = choice.key == selected,
+                    removable = choice.removable
+                )
+            },
+            addLabel = getString(R.string.settings_font_add),
+            onSelect = { key ->
+                PiperFontPreferences.select(activeContext, key)
+                requireActivity().recreate()
+            },
+            onRemove = { key ->
+                PiperFontPreferences.delete(activeContext, key)
+                requireActivity().recreate()
+            },
+            onAdd = {
+                pickFontLauncher.launch(
+                    arrayOf("font/ttf", "font/otf", "application/x-font-ttf", "application/octet-stream")
+                )
+            }
+        )
     }
 
 

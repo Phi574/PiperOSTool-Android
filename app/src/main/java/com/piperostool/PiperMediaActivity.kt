@@ -738,6 +738,8 @@ class PiperMediaActivity : AppCompatActivity() {
 
     private fun createSourceChip(label: String, source: String?): MaterialButton {
         val selected = currentSource == source
+        val modern = PiperUiPreferences.isModern(this)
+        val accent = PiperModernUi.accentColor(this)
         return MaterialButton(
             this,
             null,
@@ -752,13 +754,25 @@ class PiperMediaActivity : AppCompatActivity() {
             insetBottom = 0
             cornerRadius = dp(6)
             backgroundTintList = ColorStateList.valueOf(
-                if (selected) Color.rgb(35, 89, 60) else Color.rgb(16, 23, 27)
+                if (modern) {
+                    if (selected) accent else PiperModernUi.surfaceColor(this@PiperMediaActivity)
+                } else {
+                    if (selected) Color.rgb(35, 89, 60) else Color.rgb(16, 23, 27)
+                }
             )
             strokeColor = ColorStateList.valueOf(
-                if (selected) Color.rgb(57, 229, 140)
-                else Color.argb(85, 255, 255, 255)
+                if (modern) {
+                    if (selected) accent else PiperModernUi.borderColor(this@PiperMediaActivity)
+                } else if (selected) {
+                    Color.rgb(57, 229, 140)
+                } else {
+                    Color.argb(85, 255, 255, 255)
+                }
             )
-            setTextColor(Color.WHITE)
+            setTextColor(
+                if (modern && !selected) PiperModernUi.textColor(this@PiperMediaActivity)
+                else Color.WHITE
+            )
             setOnClickListener {
                 currentSource = source
                 rebuildSourceChips()
@@ -774,6 +788,35 @@ class PiperMediaActivity : AppCompatActivity() {
     }
 
     private fun showSourceSelectionDialog() {
+        val sources = orderedSources(allMedia)
+        if (sources.isEmpty()) {
+            Toast.makeText(this, R.string.media_no_sources, Toast.LENGTH_SHORT).show()
+            return
+        }
+        val counts = allMedia.groupingBy(PiperMediaAsset::source).eachCount()
+        PiperActionSheet.showMultiSelect(
+            context = this,
+            title = getString(R.string.media_choose_sources),
+            options = sources.map { source ->
+                getString(R.string.media_source_with_count, source, counts[source] ?: 0)
+            },
+            selected = sources.indices.filterTo(mutableSetOf()) { sources[it] in enabledSources }
+        ) { indexes ->
+            if (indexes.isEmpty()) {
+                Toast.makeText(this, R.string.media_choose_at_least_one_source, Toast.LENGTH_SHORT).show()
+                return@showMultiSelect
+            }
+            enabledSources.clear()
+            enabledSources += indexes.map(sources::get)
+            if (currentSource !in enabledSources) currentSource = null
+            saveEnabledSources()
+            updateFilterCounts()
+            rebuildSourceChips()
+            showFilter(currentFilter)
+        }
+    }
+
+    private fun showSourceSelectionDialogLegacy() {
         val sources = orderedSources(allMedia)
         if (sources.isEmpty()) {
             Toast.makeText(this, R.string.media_no_sources, Toast.LENGTH_SHORT).show()
@@ -1026,17 +1069,25 @@ class PiperMediaActivity : AppCompatActivity() {
 
     private fun updatePlaybackUi() {
         val activeController = controller ?: return
+        val inactive = if (PiperUiPreferences.isModern(this)) {
+            PiperModernUi.secondaryTextColor(this)
+        } else {
+            Color.WHITE
+        }
+        val active = if (PiperUiPreferences.isModern(this)) {
+            PiperModernUi.accentColor(this)
+        } else {
+            Color.rgb(57, 229, 140)
+        }
         playPause.setImageResource(
             if (activeController.isPlaying) R.drawable.ic_media_pause
             else R.drawable.ic_media_play
         )
         shuffle.imageTintList = ColorStateList.valueOf(
-            if (activeController.shuffleModeEnabled) Color.rgb(57, 229, 140)
-            else Color.WHITE
+            if (activeController.shuffleModeEnabled) active else inactive
         )
         repeat.imageTintList = ColorStateList.valueOf(
-            if (activeController.repeatMode == Player.REPEAT_MODE_OFF) Color.WHITE
-            else Color.rgb(57, 229, 140)
+            if (activeController.repeatMode == Player.REPEAT_MODE_OFF) inactive else active
         )
         repeatOneBadge.visibility =
             if (activeController.repeatMode == Player.REPEAT_MODE_ONE) View.VISIBLE else View.GONE
@@ -1205,6 +1256,15 @@ class PiperMediaActivity : AppCompatActivity() {
                 .placeholder(if (item.isVideo) R.drawable.ic_media_library else R.drawable.a3tn)
                 .error(if (item.isVideo) R.drawable.ic_media_library else R.drawable.a3tn)
                 .into(view.findViewById(R.id.mediaItemArtwork))
+            if (PiperUiPreferences.isModern(this@PiperMediaActivity)) {
+                view.findViewById<TextView>(R.id.mediaItemTitle)
+                    .setTextColor(PiperModernUi.textColor(this@PiperMediaActivity))
+                view.findViewById<TextView>(R.id.mediaItemSubtitle)
+                    .setTextColor(PiperModernUi.secondaryTextColor(this@PiperMediaActivity))
+                view.findViewById<TextView>(R.id.mediaItemDetails)
+                    .setTextColor(PiperModernUi.secondaryTextColor(this@PiperMediaActivity))
+            }
+            PiperModernUi.apply(view)
             return view
         }
     }

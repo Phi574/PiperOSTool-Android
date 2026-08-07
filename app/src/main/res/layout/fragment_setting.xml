@@ -301,6 +301,31 @@
                 <View style="@style/SettingsDivider" />
 
                 <LinearLayout
+                    android:id="@+id/layoutFont"
+                    style="@style/SettingsRow"
+                    android:background="?attr/selectableItemBackground">
+
+                    <ImageView
+                        style="@style/SettingsRowIcon"
+                        android:src="@drawable/ic_font"
+                        app:tint="#A78BFA" />
+
+                    <LinearLayout style="@style/SettingsRowTextGroup">
+                        <TextView
+                            style="@style/SettingsRowTitle"
+                            android:text="@string/settings_font" />
+                        <TextView
+                            android:id="@+id/tvFontValue"
+                            style="@style/SettingsRowSubtitle"
+                            android:text="@string/settings_font_bilingual" />
+                    </LinearLayout>
+
+                    <ImageView style="@style/SettingsChevron" />
+                </LinearLayout>
+
+                <View style="@style/SettingsDivider" />
+
+                <LinearLayout
                     android:id="@+id/layoutChangeBackground"
                     style="@style/SettingsRow"
                     android:background="?attr/selectableItemBackground">

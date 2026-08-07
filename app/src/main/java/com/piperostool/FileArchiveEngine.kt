@@ -79,16 +79,51 @@ object FileArchiveEngine {
         cancelled: () -> Boolean,
         progress: (FileOperationProgress) -> Unit
     ) {
+        compress(listOf(source), output, format, preset, password, cancelled, progress)
+    }
+
+    fun compress(
+        sources: List<File>,
+        output: File,
+        format: FileArchiveFormat,
+        preset: ArchiveCompressionPreset,
+        password: String?,
+        cancelled: () -> Boolean,
+        progress: (FileOperationProgress) -> Unit
+    ) {
+        val validSources = sources.distinctBy(File::getAbsolutePath)
+        require(validSources.isNotEmpty() && validSources.all(File::exists)) { "Source does not exist" }
+        output.parentFile?.mkdirs()
+        if (format == FileArchiveFormat.ZIP) {
+            compressZip(validSources, output, preset, password, cancelled, progress)
+        } else if (format == FileArchiveFormat.SEVEN_Z) {
+            require(password.isNullOrEmpty()) { "Encrypted 7Z creation is unavailable; use ZIP AES-256" }
+            compressSevenZ(validSources, output, cancelled, progress)
+        } else {
+            require(password.isNullOrEmpty()) { "AES-256 password is available for ZIP only" }
+            compressTar(validSources, output, format, preset, cancelled, progress)
+        }
+    }
+
+    private fun legacyCompressRemoved(
+        source: File,
+        output: File,
+        format: FileArchiveFormat,
+        preset: ArchiveCompressionPreset,
+        password: String?,
+        cancelled: () -> Boolean,
+        progress: (FileOperationProgress) -> Unit
+    ) {
         require(source.exists()) { "Nguồn không tồn tại" }
         output.parentFile?.mkdirs()
         if (format == FileArchiveFormat.ZIP) {
-            compressZip(source, output, preset, password, cancelled, progress)
+            compressZip(listOf(source), output, preset, password, cancelled, progress)
         } else if (format == FileArchiveFormat.SEVEN_Z) {
             require(password.isNullOrEmpty()) { "Tạo 7Z mã hóa chưa được thư viện hỗ trợ; hãy chọn ZIP AES-256" }
-            compressSevenZ(source, output, cancelled, progress)
+            compressSevenZ(listOf(source), output, cancelled, progress)
         } else {
             require(password.isNullOrEmpty()) { "Mật khẩu AES-256 chỉ áp dụng cho ZIP" }
-            compressTar(source, output, format, preset, cancelled, progress)
+            compressTar(listOf(source), output, format, preset, cancelled, progress)
         }
     }
 
@@ -107,8 +142,8 @@ object FileArchiveEngine {
         }
     }
 
-    private fun compressZip(source: File, output: File, preset: ArchiveCompressionPreset, password: String?, cancelled: () -> Boolean, progress: (FileOperationProgress) -> Unit) {
-        val files = source.walkTopDown().filter { it.isFile }.toList().ifEmpty { listOf(source) }
+    private fun compressZip(sources: List<File>, output: File, preset: ArchiveCompressionPreset, password: String?, cancelled: () -> Boolean, progress: (FileOperationProgress) -> Unit) {
+        val files = sources.flatMap { it.walkTopDown().filter(File::isFile).toList() }
         val zip = ZipFile(output, password?.takeIf { it.isNotEmpty() }?.toCharArray())
         val parameters = ZipParameters().apply {
             compressionLevel = when (preset) {
@@ -124,7 +159,7 @@ object FileArchiveEngine {
                 aesKeyStrength = AesKeyStrength.KEY_STRENGTH_256
             }
         }
-        val base = source.parentFile ?: source
+        val base = sources.first().parentFile ?: sources.first()
         files.forEachIndexed { index, file ->
             check(!cancelled()) { "Đã hủy" }
             parameters.fileNameInZip = file.relativeTo(base).invariantSeparatorsPath
@@ -133,9 +168,9 @@ object FileArchiveEngine {
         }
     }
 
-    private fun compressSevenZ(source: File, output: File, cancelled: () -> Boolean, progress: (FileOperationProgress) -> Unit) {
-        val files = source.walkTopDown().filter { it.isFile }.toList()
-        val base = source.parentFile ?: source
+    private fun compressSevenZ(sources: List<File>, output: File, cancelled: () -> Boolean, progress: (FileOperationProgress) -> Unit) {
+        val files = sources.flatMap { it.walkTopDown().filter(File::isFile).toList() }
+        val base = sources.first().parentFile ?: sources.first()
         SevenZOutputFile(output).use { archive ->
             files.forEachIndexed { index, file ->
                 check(!cancelled()) { "Đã hủy" }
@@ -155,9 +190,9 @@ object FileArchiveEngine {
         }
     }
 
-    private fun compressTar(source: File, output: File, format: FileArchiveFormat, preset: ArchiveCompressionPreset, cancelled: () -> Boolean, progress: (FileOperationProgress) -> Unit) {
-        val files = source.walkTopDown().filter { it.isFile }.toList()
-        val base = source.parentFile ?: source
+    private fun compressTar(sources: List<File>, output: File, format: FileArchiveFormat, preset: ArchiveCompressionPreset, cancelled: () -> Boolean, progress: (FileOperationProgress) -> Unit) {
+        val files = sources.flatMap { it.walkTopDown().filter(File::isFile).toList() }
+        val base = sources.first().parentFile ?: sources.first()
         FileOutputStream(output).buffered(BUFFER_SIZE).use { raw ->
             compressorOutput(raw, format, preset).use { compressed ->
                 TarArchiveOutputStream(compressed).use { tar ->

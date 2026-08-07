@@ -52,6 +52,10 @@ class PiperFileManagerActivity : AppCompatActivity() {
     private var archiveFile: File? = null
     private var archivePrefix = ""
     private var allEntries = emptyList<ApkWorkspaceEntry>()
+    private var visibleEntries = emptyList<ApkWorkspaceEntry>()
+    private val selectedPaths = linkedSetOf<String>()
+    private lateinit var selectionBar: View
+    private lateinit var selectionCount: TextView
     private var receiverRegistered = false
 
     private val operationReceiver = object : BroadcastReceiver() {
@@ -133,7 +137,15 @@ class PiperFileManagerActivity : AppCompatActivity() {
         pathView = findViewById(R.id.fileManagerPath)
         search = findViewById(R.id.fileManagerSearch)
         empty = findViewById(R.id.fileManagerEmpty)
-        adapter = FileManagerAdapter(::openEntry, ::showEntryActions, ::loadSpecialIcon)
+        selectionBar = findViewById(R.id.fileSelectionBar)
+        selectionCount = findViewById(R.id.fileSelectionCount)
+        adapter = FileManagerAdapter(
+            onClick = { entry ->
+                if (selectedPaths.isEmpty()) openEntry(entry) else toggleSelection(entry)
+            },
+            onLongClick = ::toggleSelection,
+            onSpecialIcon = ::loadSpecialIcon
+        )
         findViewById<RecyclerView>(R.id.fileManagerFiles).apply {
             layoutManager = LinearLayoutManager(this@PiperFileManagerActivity)
             adapter = this@PiperFileManagerActivity.adapter
@@ -162,6 +174,16 @@ class PiperFileManagerActivity : AppCompatActivity() {
         }
         findViewById<View>(R.id.btnFileManagerRefresh).setOnClickListener { render() }
         findViewById<View>(R.id.btnFileManagerMore).setOnClickListener { showManagerActions() }
+        findViewById<View>(R.id.fileSelectionClose).setOnClickListener { clearSelection() }
+        findViewById<View>(R.id.fileSelectAll).setOnClickListener {
+            selectedPaths.clear()
+            selectedPaths += visibleEntries.map(ApkWorkspaceEntry::archivePath)
+            updateSelectionUi()
+        }
+        findViewById<View>(R.id.fileCompressSelected).setOnClickListener {
+            selectedFiles().takeIf { it.isNotEmpty() }?.let(::showCompressDialog)
+        }
+        findViewById<View>(R.id.fileBackupSelected).setOnClickListener { backupSelected() }
         search.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(value: Editable?) = applySearch(value?.toString().orEmpty())
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
@@ -199,8 +221,39 @@ class PiperFileManagerActivity : AppCompatActivity() {
         val filtered = if (query.isBlank()) allEntries else allEntries.filter {
             it.name.contains(query, ignoreCase = true)
         }
+        visibleEntries = filtered
         adapter.submit(filtered)
         empty.visibility = if (filtered.isEmpty()) View.VISIBLE else View.GONE
+    }
+
+    private fun toggleSelection(entry: ApkWorkspaceEntry) {
+        if (entry.archivePath in selectedPaths) selectedPaths -= entry.archivePath
+        else selectedPaths += entry.archivePath
+        updateSelectionUi()
+    }
+
+    private fun clearSelection() {
+        selectedPaths.clear()
+        updateSelectionUi()
+    }
+
+    private fun updateSelectionUi() {
+        selectionBar.visibility = if (selectedPaths.isEmpty()) View.GONE else View.VISIBLE
+        selectionCount.text = "${selectedPaths.size} đã chọn"
+        adapter.updateSelection(selectedPaths)
+    }
+
+    private fun selectedFiles(): List<File> = selectedPaths.map(::File).filter(File::exists)
+
+    private fun backupSelected() {
+        val files = selectedFiles()
+        if (files.isEmpty()) return
+        val backupRoot = File(
+            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+            "PiperOS_Backups/${System.currentTimeMillis()}"
+        )
+        startBatchFileOperation(FileOperationService.ACTION_BACKUP, files, backupRoot)
+        clearSelection()
     }
 
     private fun listDirectory(directory: File): List<ApkWorkspaceEntry> =
@@ -348,6 +401,35 @@ class PiperFileManagerActivity : AppCompatActivity() {
 
     private fun showManagerActions() {
         val archive = archiveFile
+        val actions = if (archive != null) {
+            listOf(
+                PiperSheetAction("Giải nén toàn bộ", archive.name, R.drawable.backup) {
+                    showExtractDialog(archive)
+                },
+                PiperSheetAction("Đóng tệp nén", "Quay lại thư mục", R.drawable.ic_browser_close) {
+                    archiveFile = null
+                    render()
+                }
+            )
+        } else {
+            listOf(
+                PiperSheetAction("Tạo thư mục", null, R.drawable.ic_browser_add, ::createFolder),
+                PiperSheetAction("Sắp xếp theo tên", "A đến Z", R.drawable.ic_file_document) {
+                    adapter.submit(allEntries.sortedBy { it.name.lowercase() })
+                },
+                PiperSheetAction("Sắp xếp theo kích thước", "Lớn nhất trước", R.drawable.ic_browser_download) {
+                    adapter.submit(allEntries.sortedByDescending { it.size })
+                },
+                PiperSheetAction("Chọn nhiều", "Giữ một mục cũng có thể bắt đầu", R.drawable.check_circle) {
+                    if (visibleEntries.isNotEmpty()) toggleSelection(visibleEntries.first())
+                }
+            )
+        }
+        PiperActionSheet.show(this, "Công cụ tệp", actions)
+    }
+
+    private fun showManagerActionsLegacy() {
+        val archive = archiveFile
         val options = if (archive != null) {
             arrayOf("Giải nén toàn bộ", "Đóng archive")
         } else {
@@ -405,7 +487,10 @@ class PiperFileManagerActivity : AppCompatActivity() {
             }.show()
     }
 
-    private fun showCompressDialog(file: File) {
+    private fun showCompressDialog(file: File) = showCompressDialog(listOf(file))
+
+    private fun showCompressDialog(files: List<File>) {
+        val file = files.firstOrNull() ?: return
         val formats = FileArchiveFormat.entries
         val presets = ArchiveCompressionPreset.entries
         val nameInput = EditText(this).apply {
@@ -465,14 +550,26 @@ class PiperFileManagerActivity : AppCompatActivity() {
                 }
                 val baseName = nameInput.text.toString().trim().ifEmpty { file.nameWithoutExtension }
                 val output = uniqueOutput(File(file.parentFile, baseName + format.extension))
-                startFileOperation(
-                    FileOperationService.ACTION_COMPRESS,
-                    file,
-                    output,
-                    format,
-                    presets[levelSpinner.selectedItemPosition],
-                    password
-                )
+                if (files.size == 1) {
+                    startFileOperation(
+                        FileOperationService.ACTION_COMPRESS,
+                        file,
+                        output,
+                        format,
+                        presets[levelSpinner.selectedItemPosition],
+                        password
+                    )
+                } else {
+                    startBatchFileOperation(
+                        FileOperationService.ACTION_COMPRESS,
+                        files,
+                        output,
+                        format,
+                        presets[levelSpinner.selectedItemPosition],
+                        password
+                    )
+                    clearSelection()
+                }
             }
             .show()
     }
@@ -515,6 +612,32 @@ class PiperFileManagerActivity : AppCompatActivity() {
         val intent = Intent(this, FileOperationService::class.java)
             .setAction(action)
             .putExtra(FileOperationService.EXTRA_SOURCE, source.absolutePath)
+            .putExtra(FileOperationService.EXTRA_TARGET, target.absolutePath)
+            .putExtra(FileOperationService.EXTRA_PASSWORD, password)
+        format?.let { intent.putExtra(FileOperationService.EXTRA_FORMAT, it.name) }
+        preset?.let { intent.putExtra(FileOperationService.EXTRA_PRESET, it.name) }
+        ContextCompat.startForegroundService(this, intent)
+        Toast.makeText(this, "Tác vụ đang chạy nền", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun startBatchFileOperation(
+        action: String,
+        sources: List<File>,
+        target: File,
+        format: FileArchiveFormat? = null,
+        preset: ArchiveCompressionPreset? = null,
+        password: String? = null
+    ) {
+        if (FileOperationService.running) {
+            Toast.makeText(this, "Một tác vụ tệp khác đang chạy", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val intent = Intent(this, FileOperationService::class.java)
+            .setAction(action)
+            .putStringArrayListExtra(
+                FileOperationService.EXTRA_SOURCES,
+                ArrayList(sources.map(File::getAbsolutePath))
+            )
             .putExtra(FileOperationService.EXTRA_TARGET, target.absolutePath)
             .putExtra(FileOperationService.EXTRA_PASSWORD, password)
         format?.let { intent.putExtra(FileOperationService.EXTRA_FORMAT, it.name) }

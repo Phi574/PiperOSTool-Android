@@ -53,6 +53,14 @@
     <string name="settings_language">Ngôn ngữ</string>
     <string name="settings_language_vi">Tiếng Việt</string>
     <string name="settings_language_en">English</string>
+    <string name="settings_font">Phông chữ</string>
+    <string name="settings_font_system">Hệ thống</string>
+    <string name="settings_font_bilingual">VT323 tiếng Việt + Silkscreen tiếng Anh</string>
+    <string name="settings_font_inter">Inter</string>
+    <string name="settings_font_add">Thêm phông chữ từ thiết bị</string>
+    <string name="settings_font_remove">Xóa phông chữ</string>
+    <string name="settings_font_imported">Đã thêm phông chữ %1$s</string>
+    <string name="settings_font_import_failed">Không thể sử dụng tệp phông chữ này</string>
     <string name="settings_restart_ui_message">Giao diện sẽ được tải lại để áp dụng lựa chọn mới.</string>
     <string name="nav_home">Trang chủ</string>
     <string name="nav_beta">Beta</string>

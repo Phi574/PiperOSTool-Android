@@ -3,8 +3,11 @@ package com.piperostool
 import android.app.Activity
 import android.app.Application
 import android.content.Context
+import android.content.res.Configuration
 import android.graphics.Typeface
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.View
 import android.view.ViewGroup
 import android.view.ViewParent
@@ -16,16 +19,26 @@ import androidx.core.content.res.ResourcesCompat
 import androidx.core.widget.TextViewCompat
 import androidx.core.widget.doAfterTextChanged
 import java.util.ArrayDeque
+import java.lang.ref.WeakReference
 
 object PiperAutoFont {
     private enum class TextLanguage { VIETNAMESE, ENGLISH }
 
     private lateinit var vt323: Typeface
     private lateinit var silkscreen: Typeface
+    private lateinit var inter: Typeface
+    private var cachedCustomKey: String? = null
+    private var cachedCustomTypeface: Typeface? = null
 
     fun initialize(context: Context) {
         vt323 = checkNotNull(ResourcesCompat.getFont(context, R.font.vt323))
         silkscreen = checkNotNull(ResourcesCompat.getFont(context, R.font.silkscreen))
+        inter = checkNotNull(ResourcesCompat.getFont(context, R.font.inter))
+    }
+
+    fun clearTypefaceCache() {
+        cachedCustomKey = null
+        cachedCustomTypeface = null
     }
 
     fun watch(root: View) {
@@ -48,17 +61,35 @@ object PiperAutoFont {
         PiperUiText.apply(textView)
         ensureTextWatcher(textView)
         configureCompactTextFit(textView)
-        val language = detectLanguage(textView)
+        val fontKey = PiperFontPreferences.selectedKey(textView.context)
+        val language = if (fontKey == PiperFontPreferences.BILINGUAL) {
+            detectLanguage(textView)
+        } else {
+            null
+        }
         val requestedStyle = textView.typeface?.style ?: Typeface.NORMAL
-        val signature = "${language.name}|${textView.text}|$requestedStyle"
+        val signature = "$fontKey|${language?.name}|${textView.text}|$requestedStyle"
         if (textView.getTag(R.id.piper_auto_font_signature) == signature) return
 
-        val family = when (language) {
-            TextLanguage.VIETNAMESE -> vt323
-            TextLanguage.ENGLISH -> silkscreen
+        val family = when {
+            fontKey == PiperFontPreferences.SYSTEM -> Typeface.DEFAULT
+            fontKey == PiperFontPreferences.INTER -> inter
+            fontKey == PiperFontPreferences.BILINGUAL && language == TextLanguage.VIETNAMESE -> vt323
+            fontKey == PiperFontPreferences.BILINGUAL -> silkscreen
+            else -> customTypeface(textView.context, fontKey) ?: Typeface.DEFAULT
         }
         textView.typeface = Typeface.create(family, requestedStyle)
         textView.setTag(R.id.piper_auto_font_signature, signature)
+    }
+
+    private fun customTypeface(context: Context, key: String): Typeface? {
+        if (cachedCustomKey == key) return cachedCustomTypeface
+        val loaded = PiperFontPreferences.customFontFile(context, key)?.let { file ->
+            runCatching { Typeface.createFromFile(file) }.getOrNull()
+        }
+        cachedCustomKey = key
+        cachedCustomTypeface = loaded
+        return loaded
     }
 
     private fun applyToTree(root: View) {
@@ -165,11 +196,29 @@ object PiperAutoFont {
 }
 
 class PiperOsApplication : Application(), Application.ActivityLifecycleCallbacks {
+    private var resumedActivity = WeakReference<Activity>(null)
+    private var lastNightMode = Configuration.UI_MODE_NIGHT_UNDEFINED
+
     override fun onCreate() {
         super.onCreate()
         PiperUiPreferences.initialize(this)
         PiperAutoFont.initialize(this)
+        lastNightMode = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
         registerActivityLifecycleCallbacks(this)
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        val newNightMode = newConfig.uiMode and Configuration.UI_MODE_NIGHT_MASK
+        val systemThemeChanged = newNightMode != lastNightMode
+        lastNightMode = newNightMode
+        if (systemThemeChanged && PiperUiPreferences.colorMode(this) == PiperColorMode.SYSTEM) {
+            Handler(Looper.getMainLooper()).post {
+                resumedActivity.get()
+                    ?.takeUnless { it.isFinishing || it.isDestroyed }
+                    ?.recreate()
+            }
+        }
     }
 
     override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
@@ -178,12 +227,15 @@ class PiperOsApplication : Application(), Application.ActivityLifecycleCallbacks
     }
 
     override fun onActivityResumed(activity: Activity) {
+        resumedActivity = WeakReference(activity)
         PiperAutoFont.watch(activity.window.decorView)
         PiperModernUi.watch(activity)
     }
 
     override fun onActivityStarted(activity: Activity) = Unit
-    override fun onActivityPaused(activity: Activity) = Unit
+    override fun onActivityPaused(activity: Activity) {
+        if (resumedActivity.get() === activity) resumedActivity.clear()
+    }
     override fun onActivityStopped(activity: Activity) = Unit
     override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) = Unit
     override fun onActivityDestroyed(activity: Activity) = Unit

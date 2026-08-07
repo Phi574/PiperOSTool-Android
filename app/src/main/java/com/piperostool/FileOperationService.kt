@@ -43,7 +43,11 @@ class FileOperationService : Service() {
             return START_NOT_STICKY
         }
         if (job?.isActive == true || intent == null) return START_NOT_STICKY
-        val source = intent.getStringExtra(EXTRA_SOURCE)?.let(::File) ?: return START_NOT_STICKY
+        val sources = intent.getStringArrayListExtra(EXTRA_SOURCES)
+            ?.map(::File)
+            ?.takeIf { it.isNotEmpty() }
+            ?: intent.getStringExtra(EXTRA_SOURCE)?.let { listOf(File(it)) }
+            ?: return START_NOT_STICKY
         val target = intent.getStringExtra(EXTRA_TARGET)?.let(::File) ?: return START_NOT_STICKY
         val action = intent.action ?: return START_NOT_STICKY
         cancelled.set(false)
@@ -62,12 +66,16 @@ class FileOperationService : Service() {
                     ACTION_COMPRESS -> {
                         val format = FileArchiveFormat.valueOf(requireNotNull(intent.getStringExtra(EXTRA_FORMAT)))
                         val preset = ArchiveCompressionPreset.valueOf(requireNotNull(intent.getStringExtra(EXTRA_PRESET)))
-                        FileArchiveEngine.compress(source, target, format, preset, password, cancelled::get, onProgress)
+                        FileArchiveEngine.compress(sources, target, format, preset, password, cancelled::get, onProgress)
                         message = "Đã tạo ${target.name}"
                     }
                     ACTION_EXTRACT -> {
-                        FileArchiveEngine.extract(source, target, password, cancelled::get, onProgress)
+                        FileArchiveEngine.extract(sources.first(), target, password, cancelled::get, onProgress)
                         message = "Đã giải nén vào ${target.name}"
+                    }
+                    ACTION_BACKUP -> {
+                        backup(sources, target, onProgress)
+                        message = "Backup complete: ${sources.size} selected item(s)"
                     }
                 }
                 success = !cancelled.get()
@@ -95,6 +103,34 @@ class FileOperationService : Service() {
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
+
+    private fun backup(
+        sources: List<File>,
+        target: File,
+        progress: (FileOperationProgress) -> Unit
+    ) {
+        target.mkdirs()
+        val files = sources.flatMap { source ->
+            if (source.isDirectory) source.walkTopDown().filter(File::isFile).toList()
+            else listOf(source)
+        }
+        files.forEachIndexed { index, file ->
+            check(!cancelled.get()) { "Cancelled" }
+            val root = sources.first { source ->
+                file.absolutePath == source.absolutePath ||
+                    file.absolutePath.startsWith(source.absolutePath + File.separator)
+            }
+            val relative = if (root.isDirectory) file.relativeTo(root).path else ""
+            val output = if (relative.isEmpty()) {
+                File(target, root.name)
+            } else {
+                File(File(target, root.name), relative)
+            }
+            output.parentFile?.mkdirs()
+            file.copyTo(output, overwrite = true)
+            progress(FileOperationProgress(index + 1, files.size, file.name))
+        }
+    }
 
     private fun updateProgress(progress: FileOperationProgress) {
         if (canPostNotifications()) {
@@ -192,9 +228,11 @@ class FileOperationService : Service() {
             private set
         const val ACTION_COMPRESS = "com.piperostool.file.COMPRESS"
         const val ACTION_EXTRACT = "com.piperostool.file.EXTRACT"
+        const val ACTION_BACKUP = "com.piperostool.file.BACKUP"
         const val ACTION_CANCEL = "com.piperostool.file.CANCEL"
         const val ACTION_FINISHED = "com.piperostool.file.FINISHED"
         const val EXTRA_SOURCE = "source"
+        const val EXTRA_SOURCES = "sources"
         const val EXTRA_TARGET = "target"
         const val EXTRA_FORMAT = "format"
         const val EXTRA_PRESET = "preset"

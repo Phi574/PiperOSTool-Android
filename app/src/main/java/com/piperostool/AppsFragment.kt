@@ -171,9 +171,15 @@ class AppsFragment : Fragment() {
 
     private fun switchTab(tabIndex: Int) {
         currentTabFilter = tabIndex
-        tabUser.setTextColor(if (tabIndex == 0) Color.parseColor("#7DFFB0") else Color.WHITE)
-        tabSystem.setTextColor(if (tabIndex == 1) Color.parseColor("#7DFFB0") else Color.WHITE)
-        tabDisabled.setTextColor(if (tabIndex == 2) Color.parseColor("#7DFFB0") else Color.WHITE)
+        val active = if (PiperUiPreferences.isModern(requireContext())) {
+            PiperModernUi.accentColor(requireContext())
+        } else Color.parseColor("#7DFFB0")
+        val inactive = if (PiperUiPreferences.isModern(requireContext())) {
+            PiperModernUi.textColor(requireContext())
+        } else Color.WHITE
+        tabUser.setTextColor(if (tabIndex == 0) active else inactive)
+        tabSystem.setTextColor(if (tabIndex == 1) active else inactive)
+        tabDisabled.setTextColor(if (tabIndex == 2) active else inactive)
         applyFilters()
     }
 
@@ -669,7 +675,11 @@ class UniversalAppAdapter(
             is AppListItem.App -> {
                 holder.ivIcon.setImageDrawable(item.info.icon)
                 holder.tvName.text = item.info.name
-                holder.tvName.setTextColor(Color.WHITE)
+                holder.tvName.setTextColor(
+                    if (PiperUiPreferences.isModern(holder.itemView.context)) {
+                        PiperModernUi.textColor(holder.itemView.context)
+                    } else Color.WHITE
+                )
 
                 holder.tvPackage.text = "${item.info.packageName}  •  ${item.info.apkSize}"
                 holder.tvMeta.text = "v${item.info.versionName} • SDK ${item.info.targetSdk} • ${item.info.permissionsCount} quyền"
@@ -679,23 +689,33 @@ class UniversalAppAdapter(
                     item.info.isSystem -> "HỆ THỐNG"
                     else -> "NGƯỜI DÙNG"
                 }
-                holder.tvBadge.setTextColor(
-                    Color.parseColor(if (item.info.isRunning) "#7DFFB0" else "#B8FFFFFF")
-                )
+                holder.tvBadge.setTextColor(if (PiperUiPreferences.isModern(holder.itemView.context)) {
+                    if (item.info.isRunning) PiperModernUi.accentColor(holder.itemView.context)
+                    else PiperModernUi.secondaryTextColor(holder.itemView.context)
+                } else Color.parseColor(if (item.info.isRunning) "#7DFFB0" else "#B8FFFFFF"))
 
                 holder.itemView.setOnClickListener { onAppClick(item.info) }
             }
             is AppListItem.Activity -> {
                 holder.ivIcon.setImageDrawable(item.app.icon)
                 holder.tvName.text = "⚡ ${item.activityInfo.name.substringAfterLast('.')}"
-                holder.tvName.setTextColor(Color.parseColor("#00E5FF"))
+                holder.tvName.setTextColor(if (PiperUiPreferences.isModern(holder.itemView.context)) {
+                    PiperModernUi.accentColor(holder.itemView.context)
+                } else Color.parseColor("#00E5FF"))
                 holder.tvPackage.text = "Act Ngầm"
                 holder.tvMeta.text = item.app.packageName
                 holder.tvBadge.text = "ACTIVITY"
-                holder.tvBadge.setTextColor(Color.parseColor("#00E5FF"))
+                holder.tvBadge.setTextColor(if (PiperUiPreferences.isModern(holder.itemView.context)) {
+                    PiperModernUi.accentColor(holder.itemView.context)
+                } else Color.parseColor("#00E5FF"))
 
                 holder.itemView.setOnClickListener { onActivityClick(item.app, item.activityInfo) }
             }
+        }
+        if (PiperUiPreferences.isModern(holder.itemView.context)) {
+            holder.tvPackage.setTextColor(PiperModernUi.secondaryTextColor(holder.itemView.context))
+            holder.tvMeta.setTextColor(PiperModernUi.secondaryTextColor(holder.itemView.context))
+            PiperModernUi.apply(holder.itemView)
         }
     }
 

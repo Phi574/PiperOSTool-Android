@@ -942,6 +942,7 @@ class PiperBrowserActivity : AppCompatActivity() {
             }
         )
         root.addView(content)
+        PiperModernUi.apply(root)
         dialog.setContentView(root)
         dialog.show()
     }
@@ -961,6 +962,10 @@ class PiperBrowserActivity : AppCompatActivity() {
             isClickable = true
             isFocusable = true
             background = getDrawable(android.R.drawable.list_selector_background)
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply { bottomMargin = dp(8) }
 
             addView(
                 ImageView(this@PiperBrowserActivity).apply {
@@ -971,10 +976,14 @@ class PiperBrowserActivity : AppCompatActivity() {
                             null
                         } else {
                             android.content.res.ColorStateList.valueOf(
-                                ContextCompat.getColor(
-                                    this@PiperBrowserActivity,
-                                    R.color.green_neon
-                                )
+                                if (PiperUiPreferences.isModern(this@PiperBrowserActivity)) {
+                                    PiperModernUi.accentColor(this@PiperBrowserActivity)
+                                } else {
+                                    ContextCompat.getColor(
+                                        this@PiperBrowserActivity,
+                                        R.color.green_neon
+                                    )
+                                }
                             )
                         }
                 },
@@ -1084,6 +1093,7 @@ class PiperBrowserActivity : AppCompatActivity() {
                 1f
             )
         )
+        PiperModernUi.apply(root)
         dialog.setContentView(root)
         dialog.show()
     }
@@ -1216,6 +1226,7 @@ class PiperBrowserActivity : AppCompatActivity() {
                 1f
             )
         )
+        PiperModernUi.apply(root)
         dialog.setContentView(root)
         dialog.show()
     }
@@ -1646,6 +1657,7 @@ class PiperBrowserActivity : AppCompatActivity() {
                 1f
             )
         )
+        PiperModernUi.apply(root)
         dialog.setContentView(root)
         dialog.show()
     }

@@ -71,6 +71,8 @@
             android:layout_height="match_parent"
             android:layout_weight="1"
             android:background="@drawable/bg_glass_input"
+            android:drawableStart="@drawable/ic_browser_search"
+            android:drawablePadding="10dp"
             android:hint="Tên app, package hoặc activity..."
             android:paddingHorizontal="15dp"
             android:singleLine="true"

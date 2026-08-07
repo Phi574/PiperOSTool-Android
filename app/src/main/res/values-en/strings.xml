@@ -53,6 +53,14 @@
     <string name="settings_language">Language</string>
     <string name="settings_language_vi">Vietnamese</string>
     <string name="settings_language_en">English</string>
+    <string name="settings_font">Font</string>
+    <string name="settings_font_system">System</string>
+    <string name="settings_font_bilingual">VT323 Vietnamese + Silkscreen English</string>
+    <string name="settings_font_inter">Inter</string>
+    <string name="settings_font_add">Add font from device</string>
+    <string name="settings_font_remove">Remove font</string>
+    <string name="settings_font_imported">Added font %1$s</string>
+    <string name="settings_font_import_failed">This font file cannot be used</string>
     <string name="settings_restart_ui_message">The interface will reload to apply the new selection.</string>
     <string name="nav_home">Home</string>
     <string name="nav_beta">Beta</string>

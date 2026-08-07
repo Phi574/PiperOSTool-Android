@@ -65,7 +65,12 @@ class InfoFragment : Fragment() {
         item.findViewById<TextView>(R.id.tvInfoSectionSummary).text = section.summary
         item.findViewById<ImageView>(R.id.ivInfoSectionIcon).apply {
             setImageResource(section.icon)
-            setColorFilter(section.color)
+            if (section.icon in setOf(R.drawable.a3tn, R.drawable.browser, R.drawable.nhacvideo)) {
+                clearColorFilter()
+                imageTintList = null
+            } else {
+                setColorFilter(section.color)
+            }
         }
         val rows = item.findViewById<LinearLayout>(R.id.infoSectionRows)
         val chevron = item.findViewById<ImageView>(R.id.ivInfoSectionChevron)
