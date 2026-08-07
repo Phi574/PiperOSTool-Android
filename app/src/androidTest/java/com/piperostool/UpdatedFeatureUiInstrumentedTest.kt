@@ -69,4 +69,25 @@ class UpdatedFeatureUiInstrumentedTest {
             }
         }
     }
+
+    @Test
+    fun modernHomeKeepsAppearanceControlsAvailable() {
+        val context = androidx.test.core.app.ApplicationProvider.getApplicationContext<android.content.Context>()
+        val previousStyle = PiperUiPreferences.style(context)
+        try {
+            PiperUiPreferences.setStyle(context, PiperUiStyle.MODERN)
+            ActivityScenario.launch(HomeActivity::class.java).use { scenario ->
+                scenario.onActivity { activity ->
+                    assertEquals(View.GONE, activity.findViewById<View>(R.id.homeBackground).visibility)
+                    activity.findViewById<View>(R.id.navSettings).performClick()
+                    activity.supportFragmentManager.executePendingTransactions()
+                    assertNotNull(activity.findViewById<View>(R.id.layoutUiStyle))
+                    assertNotNull(activity.findViewById<View>(R.id.layoutColorMode))
+                    assertNotNull(activity.findViewById<View>(R.id.layoutLanguage))
+                }
+            }
+        } finally {
+            PiperUiPreferences.setStyle(context, previousStyle)
+        }
+    }
 }

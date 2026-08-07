@@ -55,6 +55,12 @@ class SettingFragment : Fragment() {
     private lateinit var layoutResetBackground: LinearLayout
 
     private lateinit var tvCurrentBackground: TextView
+    private lateinit var layoutUiStyle: View
+    private lateinit var layoutColorMode: View
+    private lateinit var layoutLanguage: View
+    private lateinit var tvUiStyleValue: TextView
+    private lateinit var tvColorModeValue: TextView
+    private lateinit var tvLanguageValue: TextView
     private lateinit var settingsRoot: View
 // Firebase reference
     private val database = FirebaseDatabase.getInstance()
@@ -137,6 +143,11 @@ class SettingFragment : Fragment() {
         setupDeviceAdmin()
 
         updateBackgroundStatusText()
+        updateAppearanceStatus()
+
+        layoutUiStyle.setOnClickListener { showUiStyleDialog() }
+        layoutColorMode.setOnClickListener { showColorModeDialog() }
+        layoutLanguage.setOnClickListener { showLanguageDialog() }
 
 
         // --- XỬ LÝ HÌNH NỀN (MỚI) ---
@@ -250,6 +261,12 @@ class SettingFragment : Fragment() {
         layoutResetBackground = view.findViewById(R.id.layoutResetBackground)
 
         tvCurrentBackground = view.findViewById(R.id.tvCurrentBackground)
+        layoutUiStyle = view.findViewById(R.id.layoutUiStyle)
+        layoutColorMode = view.findViewById(R.id.layoutColorMode)
+        layoutLanguage = view.findViewById(R.id.layoutLanguage)
+        tvUiStyleValue = view.findViewById(R.id.tvUiStyleValue)
+        tvColorModeValue = view.findViewById(R.id.tvColorModeValue)
+        tvLanguageValue = view.findViewById(R.id.tvLanguageValue)
 
 
         btnPermissions.setOnClickListener {
@@ -261,6 +278,90 @@ class SettingFragment : Fragment() {
         }
 
 
+    }
+
+    private fun updateAppearanceStatus() {
+        tvUiStyleValue.setText(
+            if (PiperUiPreferences.style(requireContext()) == PiperUiStyle.MODERN) {
+                R.string.settings_ui_modern
+            } else {
+                R.string.settings_ui_classic
+            }
+        )
+        tvColorModeValue.setText(
+            when (PiperUiPreferences.colorMode(requireContext())) {
+                PiperColorMode.SYSTEM -> R.string.settings_color_system
+                PiperColorMode.LIGHT -> R.string.settings_color_light
+                PiperColorMode.DARK -> R.string.settings_color_dark
+            }
+        )
+        tvLanguageValue.setText(
+            if (PiperUiPreferences.language(requireContext()) == "en") {
+                R.string.settings_language_en
+            } else {
+                R.string.settings_language_vi
+            }
+        )
+    }
+
+    private fun showUiStyleDialog() {
+        val values = arrayOf(
+            getString(R.string.settings_ui_modern),
+            getString(R.string.settings_ui_classic)
+        )
+        val current = if (PiperUiPreferences.style(requireContext()) == PiperUiStyle.MODERN) 0 else 1
+        AlertDialog.Builder(requireContext())
+            .setTitle(R.string.settings_ui_style)
+            .setSingleChoiceItems(values, current) { dialog, which ->
+                PiperUiPreferences.setStyle(
+                    requireContext(),
+                    if (which == 0) PiperUiStyle.MODERN else PiperUiStyle.CLASSIC
+                )
+                dialog.dismiss()
+                requireActivity().recreate()
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    private fun showColorModeDialog() {
+        val modes = arrayOf(
+            PiperColorMode.SYSTEM,
+            PiperColorMode.LIGHT,
+            PiperColorMode.DARK
+        )
+        val values = arrayOf(
+            getString(R.string.settings_color_system),
+            getString(R.string.settings_color_light),
+            getString(R.string.settings_color_dark)
+        )
+        val current = modes.indexOf(PiperUiPreferences.colorMode(requireContext()))
+        AlertDialog.Builder(requireContext())
+            .setTitle(R.string.settings_color_mode)
+            .setSingleChoiceItems(values, current) { dialog, which ->
+                PiperUiPreferences.setColorMode(requireContext(), modes[which])
+                dialog.dismiss()
+                requireActivity().recreate()
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    private fun showLanguageDialog() {
+        val values = arrayOf(
+            getString(R.string.settings_language_vi),
+            getString(R.string.settings_language_en)
+        )
+        val current = if (PiperUiPreferences.language(requireContext()) == "en") 1 else 0
+        AlertDialog.Builder(requireContext())
+            .setTitle(R.string.settings_language)
+            .setSingleChoiceItems(values, current) { dialog, which ->
+                PiperUiPreferences.setLanguage(requireContext(), if (which == 1) "en" else "vi")
+                dialog.dismiss()
+                requireActivity().recreate()
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
     }
 
 

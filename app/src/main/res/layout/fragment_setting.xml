@@ -226,6 +226,81 @@
                 android:orientation="vertical">
 
                 <LinearLayout
+                    android:id="@+id/layoutUiStyle"
+                    style="@style/SettingsRow"
+                    android:background="?attr/selectableItemBackground">
+
+                    <ImageView
+                        style="@style/SettingsRowIcon"
+                        android:src="@drawable/apps"
+                        app:tint="#34A87C" />
+
+                    <LinearLayout style="@style/SettingsRowTextGroup">
+                        <TextView
+                            style="@style/SettingsRowTitle"
+                            android:text="@string/settings_ui_style" />
+                        <TextView
+                            android:id="@+id/tvUiStyleValue"
+                            style="@style/SettingsRowSubtitle"
+                            android:text="@string/settings_ui_modern" />
+                    </LinearLayout>
+
+                    <ImageView style="@style/SettingsChevron" />
+                </LinearLayout>
+
+                <View style="@style/SettingsDivider" />
+
+                <LinearLayout
+                    android:id="@+id/layoutColorMode"
+                    style="@style/SettingsRow"
+                    android:background="?attr/selectableItemBackground">
+
+                    <ImageView
+                        style="@style/SettingsRowIcon"
+                        android:src="@drawable/ic_autorenew"
+                        app:tint="#6B8AFD" />
+
+                    <LinearLayout style="@style/SettingsRowTextGroup">
+                        <TextView
+                            style="@style/SettingsRowTitle"
+                            android:text="@string/settings_color_mode" />
+                        <TextView
+                            android:id="@+id/tvColorModeValue"
+                            style="@style/SettingsRowSubtitle"
+                            android:text="@string/settings_color_system" />
+                    </LinearLayout>
+
+                    <ImageView style="@style/SettingsChevron" />
+                </LinearLayout>
+
+                <View style="@style/SettingsDivider" />
+
+                <LinearLayout
+                    android:id="@+id/layoutLanguage"
+                    style="@style/SettingsRow"
+                    android:background="?attr/selectableItemBackground">
+
+                    <ImageView
+                        style="@style/SettingsRowIcon"
+                        android:src="@drawable/ic_browser_globe"
+                        app:tint="#D18A32" />
+
+                    <LinearLayout style="@style/SettingsRowTextGroup">
+                        <TextView
+                            style="@style/SettingsRowTitle"
+                            android:text="@string/settings_language" />
+                        <TextView
+                            android:id="@+id/tvLanguageValue"
+                            style="@style/SettingsRowSubtitle"
+                            android:text="@string/settings_language_vi" />
+                    </LinearLayout>
+
+                    <ImageView style="@style/SettingsChevron" />
+                </LinearLayout>
+
+                <View style="@style/SettingsDivider" />
+
+                <LinearLayout
                     android:id="@+id/layoutChangeBackground"
                     style="@style/SettingsRow"
                     android:background="?attr/selectableItemBackground">

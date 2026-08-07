@@ -2,7 +2,6 @@ package com.piperostool
 
 import android.content.Context
 import android.content.res.ColorStateList
-import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.Rect
 import android.os.Bundle
@@ -15,7 +14,6 @@ import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
-import java.util.Locale
 
 class HomeActivity : AppCompatActivity() {
 
@@ -29,7 +27,6 @@ class HomeActivity : AppCompatActivity() {
     private lateinit var listTexts: List<TextView>
 
     private var currentTab = 0
-    private var currentLangCode = "vi"
     private var backPressedTime: Long = 0
     private var isNavHidden = false
     private var isNavHiddenByKeyboard = false
@@ -38,10 +35,6 @@ class HomeActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        val prefs = getSharedPreferences("PiperPrefs", Context.MODE_PRIVATE)
-        currentLangCode = prefs.getString("app_language", "vi") ?: "vi"
-        applyAppLanguage()
 
         setContentView(R.layout.activity_home)
 
@@ -58,14 +51,6 @@ class HomeActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
 
-        val prefs = getSharedPreferences("PiperPrefs", Context.MODE_PRIVATE)
-        val savedLang = prefs.getString("app_language", "vi") ?: "vi"
-
-        if (savedLang != currentLangCode) {
-            recreate()
-            return
-        }
-
         updateTabUI(currentTab)
     }
 
@@ -73,6 +58,11 @@ class HomeActivity : AppCompatActivity() {
         val prefs = getSharedPreferences("PiperPrefs", Context.MODE_PRIVATE)
         val hasCustomBg = prefs.getBoolean("has_custom_bg", false)
         val bgView = findViewById<ImageView>(R.id.homeBackground)
+
+        if (PiperUiPreferences.isModern(this)) {
+            bgView.visibility = View.GONE
+            return
+        }
 
         bgView.scaleType = ImageView.ScaleType.CENTER_CROP
 
@@ -128,24 +118,13 @@ class HomeActivity : AppCompatActivity() {
                     backToast.cancel()
                     finish()
                 } else {
-                    backToast = Toast.makeText(baseContext, "Bam lan nua de thoat", Toast.LENGTH_SHORT)
+                    backToast = Toast.makeText(baseContext, R.string.home_press_again_to_exit, Toast.LENGTH_SHORT)
                     backToast.show()
                 }
                 backPressedTime = System.currentTimeMillis()
             }
         }
         onBackPressedDispatcher.addCallback(this, callback)
-    }
-
-    private fun applyAppLanguage() {
-        val prefs = getSharedPreferences("PiperPrefs", Context.MODE_PRIVATE)
-        val lang = prefs.getString("app_language", "vi") ?: "vi"
-
-        val locale = Locale(lang)
-        Locale.setDefault(locale)
-        val config = Configuration()
-        config.setLocale(locale)
-        resources.updateConfiguration(config, resources.displayMetrics)
     }
 
     private fun initViews() {
@@ -226,13 +205,23 @@ class HomeActivity : AppCompatActivity() {
         val prefs = getSharedPreferences("PiperPrefs", Context.MODE_PRIVATE)
         val theme = prefs.getString("app_theme", "system")
 
-        val activeColorCode = when (theme) {
-            "purple" -> Color.parseColor("#E040FB")
-            "green" -> Color.parseColor("#00FF00")
-            else -> ContextCompat.getColor(this, R.color.green_neon)
+        val activeColorCode = if (PiperUiPreferences.isModern(this)) {
+            if (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK ==
+                android.content.res.Configuration.UI_MODE_NIGHT_YES
+            ) Color.parseColor("#63DCA5") else Color.parseColor("#127C56")
+        } else {
+            when (theme) {
+                "purple" -> Color.parseColor("#E040FB")
+                "green" -> Color.parseColor("#00FF00")
+                else -> ContextCompat.getColor(this, R.color.green_neon)
+            }
         }
 
-        val unselectedColor = ContextCompat.getColor(this, R.color.nav_unselected)
+        val unselectedColor = if (PiperUiPreferences.isModern(this)) {
+            if (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK ==
+                android.content.res.Configuration.UI_MODE_NIGHT_YES
+            ) Color.parseColor("#AEB2B6") else Color.parseColor("#696C70")
+        } else ContextCompat.getColor(this, R.color.nav_unselected)
 
         for (i in listIcons.indices) {
             if (i == selectedIndex) {

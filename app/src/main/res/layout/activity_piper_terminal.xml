@@ -406,7 +406,7 @@
             android:background="@drawable/bg_terminal_key"
             android:contentDescription="@string/terminal_clipboard"
             android:gravity="center"
-            android:text="CLIP"
+            android:text="@string/terminal_clip_short"
             android:textColor="#D9FCE5"
             android:textSize="9sp"
             android:textStyle="bold" />

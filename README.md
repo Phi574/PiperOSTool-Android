@@ -20,7 +20,11 @@
 
 ## Bản hiện tại
 
-`2.6.6.beta` sử dụng `minSdk 24`, `targetSdk 36` và tập trung vào:
+`3.0.0.beta` sử dụng `minSdk 24`, `targetSdk 36` và tập trung vào:
+
+- **Giao diện thích ứng:** giao diện Modern tối giản là mặc định, giao diện Classic
+  giữ nguyên trải nghiệm cũ. Người dùng có thể chọn sáng, tối hoặc theo hệ thống và
+  chuyển toàn bộ ứng dụng giữa tiếng Việt và tiếng Anh trong Settings.
 
 - **PiperOS APK Editor:** mở APK đã cài hoặc tệp APK, duyệt cấu trúc archive,
   trích xuất theo nhóm/toàn bộ, chỉnh tệp văn bản, xem báo cáo manifest và

@@ -24,19 +24,21 @@
             android:src="@drawable/a3tn" />
 
         <TextView
+            android:id="@+id/homeScreenTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:letterSpacing="0.1"
-            android:text="HOME"
+            android:text="@string/home_screen_title"
             android:textColor="#FFFFFF"
             android:textSize="22sp"
             android:textStyle="bold" />
 
         <TextView
+            android:id="@+id/homeScreenSummary"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="All systems operational. Security scans have been bypassed."
+            android:text="@string/home_screen_summary"
             android:textColor="#B3FFFFFF"
             android:textSize="14sp" />
 

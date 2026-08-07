@@ -11,20 +11,20 @@
         <item name="colorOnSecondary">@color/black</item>
         <!-- Status bar color. -->
         <item name="android:statusBarColor">#000000</item>
-        <item name="android:fontFamily">@font/vt323</item>
-        <item name="fontFamily">@font/vt323</item>
+        <item name="android:fontFamily">@font/piper_app_font</item>
+        <item name="fontFamily">@font/piper_app_font</item>
         <item name="android:imageButtonStyle">@style/PiperContainedImageButton</item>
         <item name="imageButtonStyle">@style/PiperContainedImageButton</item>
     </style>
-    <style name="Theme.PiperOSTool.AppCompat.NoActionBar" parent="Theme.AppCompat.NoActionBar">
-        <item name="android:fontFamily">@font/vt323</item>
-        <item name="fontFamily">@font/vt323</item>
+    <style name="Theme.PiperOSTool.AppCompat.NoActionBar" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="android:fontFamily">@font/piper_app_font</item>
+        <item name="fontFamily">@font/piper_app_font</item>
         <item name="android:imageButtonStyle">@style/PiperContainedImageButton</item>
         <item name="imageButtonStyle">@style/PiperContainedImageButton</item>
     </style>
     <style name="Theme.PiperOSTool.AppCompat.Light.NoActionBar" parent="Theme.AppCompat.Light.NoActionBar">
-        <item name="android:fontFamily">@font/vt323</item>
-        <item name="fontFamily">@font/vt323</item>
+        <item name="android:fontFamily">@font/piper_app_font</item>
+        <item name="fontFamily">@font/piper_app_font</item>
         <item name="android:imageButtonStyle">@style/PiperContainedImageButton</item>
         <item name="imageButtonStyle">@style/PiperContainedImageButton</item>
     </style>
@@ -38,19 +38,19 @@
         <item name="android:adjustViewBounds">false</item>
         <item name="android:scaleType">centerInside</item>
     </style>
-    <style name="Theme.App.Dialog" parent="Theme.AppCompat.Light.Dialog.Alert">
+    <style name="Theme.App.Dialog" parent="Theme.AppCompat.DayNight.Dialog.Alert">
         <item name="android:windowBackground">@android:color/transparent</item>
         <item name="android:windowIsFloating">true</item>
         <item name="android:windowNoTitle">true</item>
-        <item name="android:fontFamily">@font/vt323</item>
-        <item name="fontFamily">@font/vt323</item>
+        <item name="android:fontFamily">@font/piper_app_font</item>
+        <item name="fontFamily">@font/piper_app_font</item>
         <item name="android:imageButtonStyle">@style/PiperContainedImageButton</item>
         <item name="imageButtonStyle">@style/PiperContainedImageButton</item>
     </style>
     <style name="BottomSheetDialogTheme" parent="Theme.Design.Light.BottomSheetDialog">
         <item name="bottomSheetStyle">@style/BottomSheetStyle</item>
-        <item name="android:fontFamily">@font/vt323</item>
-        <item name="fontFamily">@font/vt323</item>
+        <item name="android:fontFamily">@font/piper_app_font</item>
+        <item name="fontFamily">@font/piper_app_font</item>
         <item name="android:imageButtonStyle">@style/PiperContainedImageButton</item>
         <item name="imageButtonStyle">@style/PiperContainedImageButton</item>
     </style>
@@ -60,8 +60,8 @@
     </style>
     <style name="TransparentBottomSheetDialogTheme" parent="Theme.Design.Light.BottomSheetDialog">
         <item name="bottomSheetStyle">@style/TransparentBottomSheetStyle</item>
-        <item name="android:fontFamily">@font/vt323</item>
-        <item name="fontFamily">@font/vt323</item>
+        <item name="android:fontFamily">@font/piper_app_font</item>
+        <item name="fontFamily">@font/piper_app_font</item>
         <item name="android:imageButtonStyle">@style/PiperContainedImageButton</item>
         <item name="imageButtonStyle">@style/PiperContainedImageButton</item>
     </style>

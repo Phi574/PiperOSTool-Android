@@ -16,7 +16,6 @@ import androidx.core.content.res.ResourcesCompat
 import androidx.core.widget.TextViewCompat
 import androidx.core.widget.doAfterTextChanged
 import java.util.ArrayDeque
-import java.util.Locale
 
 object PiperAutoFont {
     private enum class TextLanguage { VIETNAMESE, ENGLISH }
@@ -46,6 +45,7 @@ object PiperAutoFont {
             !::vt323.isInitialized ||
             textView.getTag(R.id.piper_auto_font_ignore) == true
         ) return
+        PiperUiText.apply(textView)
         ensureTextWatcher(textView)
         configureCompactTextFit(textView)
         val language = detectLanguage(textView)
@@ -68,10 +68,12 @@ object PiperAutoFont {
             when (val view = pending.removeFirst()) {
                 is TextView -> apply(view)
                 is ViewGroup -> {
+                    PiperUiText.apply(view)
                     for (index in 0 until view.childCount) {
                         pending.addLast(view.getChildAt(index))
                     }
                 }
+                else -> PiperUiText.apply(view)
             }
         }
     }
@@ -139,7 +141,7 @@ object PiperAutoFont {
             parent = group.parent
         }
 
-        return if (Locale.getDefault().language.equals("vi", ignoreCase = true)) {
+        return if (PiperUiPreferences.language(textView.context) == "vi") {
             TextLanguage.VIETNAMESE
         } else {
             TextLanguage.ENGLISH
@@ -165,16 +167,19 @@ object PiperAutoFont {
 class PiperOsApplication : Application(), Application.ActivityLifecycleCallbacks {
     override fun onCreate() {
         super.onCreate()
+        PiperUiPreferences.initialize(this)
         PiperAutoFont.initialize(this)
         registerActivityLifecycleCallbacks(this)
     }
 
     override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
         PiperAutoFont.watch(activity.window.decorView)
+        PiperModernUi.watch(activity)
     }
 
     override fun onActivityResumed(activity: Activity) {
         PiperAutoFont.watch(activity.window.decorView)
+        PiperModernUi.watch(activity)
     }
 
     override fun onActivityStarted(activity: Activity) = Unit

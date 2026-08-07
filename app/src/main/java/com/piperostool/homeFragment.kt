@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.TextView
 import androidx.fragment.app.Fragment
 
 class homeFragment : Fragment() {
@@ -17,5 +18,9 @@ class homeFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        if (!PiperUiPreferences.isModern(requireContext())) {
+            view.findViewById<TextView>(R.id.homeScreenTitle).setText(R.string.home_classic_title)
+            view.findViewById<TextView>(R.id.homeScreenSummary).setText(R.string.home_classic_summary)
+        }
     }
 }

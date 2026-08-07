@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <item name="piper_modern_ui_applied" type="id" />
+    <item name="piper_modern_ui_watcher" type="id" />
     <item name="piper_auto_font_watcher" type="id" />
     <item name="piper_auto_font_signature" type="id" />
     <item name="piper_auto_font_text_watcher" type="id" />

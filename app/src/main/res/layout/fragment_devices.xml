@@ -69,7 +69,7 @@
                         android:layout_marginTop="2dp"
                         android:ellipsize="end"
                         android:maxLines="1"
-                        android:text="Android device"
+                        android:text="@string/android_device"
                         android:textColor="#B8FFFFFF"
                         android:textSize="13sp" />
                 </LinearLayout>
