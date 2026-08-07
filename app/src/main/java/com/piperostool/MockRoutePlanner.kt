@@ -6,7 +6,8 @@ import java.net.URL
 
 data class PlannedMockRoute(
     val points: List<RoutePoint>,
-    val usedFallback: Boolean
+    val usedFallback: Boolean,
+    val distanceMeters: Double = runCatching { RouteProgressor(points).totalDistanceMeters }.getOrDefault(0.0)
 )
 
 object MockRoutePlanner {
@@ -19,21 +20,29 @@ object MockRoutePlanner {
             return PlannedMockRoute(listOf(start, end), usedFallback = false)
         }
         return runCatching {
-            requestRoadRoute(start, end)
+            requestRoadRoutes(listOf(start, end)).first()
         }.getOrElse {
             PlannedMockRoute(listOf(start, end), usedFallback = true)
         }
     }
 
-    private fun requestRoadRoute(
-        start: RoutePoint,
-        end: RoutePoint
-    ): PlannedMockRoute {
-        val coordinates =
-            "${start.longitude},${start.latitude};${end.longitude},${end.latitude}"
+    fun planAlternatives(
+        controlPoints: List<RoutePoint>,
+        mode: MockTravelMode
+    ): List<PlannedMockRoute> {
+        require(controlPoints.size >= 2) { "Cần điểm đầu và điểm cuối" }
+        if (mode == MockTravelMode.PLANE) {
+            return listOf(PlannedMockRoute(controlPoints, usedFallback = false))
+        }
+        return runCatching { requestRoadRoutes(controlPoints) }
+            .getOrElse { listOf(PlannedMockRoute(controlPoints, usedFallback = true)) }
+    }
+
+    private fun requestRoadRoutes(controlPoints: List<RoutePoint>): List<PlannedMockRoute> {
+        val coordinates = controlPoints.joinToString(";") { "${it.longitude},${it.latitude}" }
         val url = URL(
             "https://router.project-osrm.org/route/v1/driving/$coordinates" +
-                "?overview=full&geometries=geojson&steps=false"
+                "?overview=full&geometries=geojson&steps=false&alternatives=3"
         )
         val connection = (url.openConnection() as HttpURLConnection).apply {
             connectTimeout = 12_000
@@ -49,24 +58,29 @@ object MockRoutePlanner {
             val body = connection.inputStream.bufferedReader().use { it.readText() }
             val root = JSONObject(body)
             check(root.optString("code") == "Ok") { "No route found" }
-            val coordinatesJson = root
-                .getJSONArray("routes")
-                .getJSONObject(0)
-                .getJSONObject("geometry")
-                .getJSONArray("coordinates")
-            val points = buildList {
-                for (index in 0 until coordinatesJson.length()) {
-                    val coordinate = coordinatesJson.getJSONArray(index)
-                    add(
-                        RoutePoint(
-                            latitude = coordinate.getDouble(1),
-                            longitude = coordinate.getDouble(0)
+            val routes = root.getJSONArray("routes")
+            return buildList {
+                for (routeIndex in 0 until routes.length()) {
+                    val route = routes.getJSONObject(routeIndex)
+                    val coordinatesJson = route.getJSONObject("geometry").getJSONArray("coordinates")
+                    val points = buildList {
+                        for (index in 0 until coordinatesJson.length()) {
+                            val coordinate = coordinatesJson.getJSONArray(index)
+                            add(RoutePoint(coordinate.getDouble(1), coordinate.getDouble(0)))
+                        }
+                    }
+                    if (points.size >= 2) {
+                        add(
+                            PlannedMockRoute(
+                                points = points,
+                                usedFallback = false,
+                                distanceMeters = route.optDouble("distance", RouteProgressor(points).totalDistanceMeters)
+                            )
                         )
-                    )
+                    }
                 }
             }
-            check(points.size >= 2) { "Route geometry is empty" }
-            return PlannedMockRoute(points, usedFallback = false)
+                .also { check(it.isNotEmpty()) { "Route geometry is empty" } }
         } finally {
             connection.disconnect()
         }

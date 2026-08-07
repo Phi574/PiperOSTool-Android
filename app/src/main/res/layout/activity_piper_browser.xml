@@ -7,74 +7,13 @@
     android:layout_height="match_parent"
     android:background="#FF0A0D10">
 
-    <LinearLayout
-        android:id="@+id/browserTopBar"
-        android:layout_width="0dp"
-        android:layout_height="56dp"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingStart="6dp"
-        android:paddingEnd="12dp"
-        app:layout_constraintEnd_toEndOf="parent"
+    <TextView
+        android:id="@+id/browserPageTitle"
+        android:layout_width="1dp"
+        android:layout_height="1dp"
+        android:visibility="gone"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
-
-        <ImageButton
-            android:id="@+id/btnCloseBrowser"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="@string/close_browser"
-            android:padding="13dp"
-            android:src="@drawable/ic_browser_close"
-            app:tint="@color/white" />
-
-        <ImageView
-            android:layout_width="30dp"
-            android:layout_height="30dp"
-            android:contentDescription="@null"
-            android:src="@drawable/a3tn" />
-
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="10dp"
-            android:layout_weight="1"
-            android:orientation="vertical">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/piperos_browser"
-                android:textColor="@color/white"
-                android:textSize="14sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/browserPageTitle"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:ellipsize="end"
-                android:maxLines="1"
-                android:text="@string/new_tab"
-                android:textColor="#9FFFFFFF"
-                android:textSize="11sp" />
-        </LinearLayout>
-
-        <TextView
-            android:id="@+id/browserPrivateBadge"
-            android:layout_width="wrap_content"
-            android:layout_height="28dp"
-            android:background="@drawable/bg_offline_notice"
-            android:gravity="center"
-            android:paddingStart="10dp"
-            android:paddingEnd="10dp"
-            android:text="@string/incognito"
-            android:textColor="@color/white"
-            android:textSize="11sp"
-            android:textStyle="bold"
-            android:visibility="gone" />
-    </LinearLayout>
+        app:layout_constraintTop_toTopOf="parent" />
 
     <ProgressBar
         android:id="@+id/browserProgress"
@@ -86,7 +25,7 @@
         android:visibility="gone"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/browserTopBar" />
+        app:layout_constraintTop_toTopOf="parent" />
 
     <FrameLayout
         android:id="@+id/browserContent"
@@ -207,6 +146,20 @@
             android:paddingStart="12dp"
             android:paddingEnd="6dp">
 
+            <TextView
+                android:id="@+id/browserPrivateBadge"
+                android:layout_width="wrap_content"
+                android:layout_height="30dp"
+                android:layout_marginEnd="6dp"
+                android:background="@drawable/bg_offline_notice"
+                android:gravity="center"
+                android:paddingHorizontal="8dp"
+                android:text="@string/incognito"
+                android:textColor="@color/white"
+                android:textSize="9sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+
             <ImageView
                 android:id="@+id/browserSecurityIcon"
                 android:layout_width="20dp"
@@ -250,6 +203,16 @@
             android:layout_height="54dp"
             android:gravity="center"
             android:orientation="horizontal">
+
+            <ImageButton
+                android:id="@+id/btnExitBrowser"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/close_browser"
+                android:padding="10dp"
+                android:src="@drawable/a3tn" />
 
             <ImageButton
                 android:id="@+id/btnBrowserBack"

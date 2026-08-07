@@ -47,12 +47,13 @@ class PiperMediaGalleryActivity : AppCompatActivity() {
         findViewById<View>(R.id.btnMediaGalleryBack).setOnClickListener { finish() }
 
         val workspace = intent.getStringExtra(EXTRA_WORKSPACE_ROOT)?.let(ApkWorkspace::restore)
+        val directFiles = intent.getBooleanExtra(EXTRA_DIRECT_FILES, false)
         paths = intent.getStringArrayListExtra(EXTRA_MEDIA_PATHS).orEmpty()
-        if (workspace == null || paths.isEmpty()) {
+        if ((!directFiles && workspace == null) || paths.isEmpty()) {
             finish()
             return
         }
-        adapter = GalleryAdapter(workspace)
+        adapter = GalleryAdapter(workspace, directFiles)
         pager.adapter = adapter
         pager.offscreenPageLimit = 1
         pager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
@@ -97,7 +98,10 @@ class PiperMediaGalleryActivity : AppCompatActivity() {
         super.onDestroy()
     }
 
-    private inner class GalleryAdapter(private val workspace: ApkWorkspace) :
+    private inner class GalleryAdapter(
+        private val workspace: ApkWorkspace?,
+        private val directFiles: Boolean
+    ) :
         RecyclerView.Adapter<GalleryAdapter.Holder>() {
         private val players = mutableMapOf<Int, ExoPlayer>()
         private var activePosition = 0
@@ -121,7 +125,10 @@ class PiperMediaGalleryActivity : AppCompatActivity() {
             holder.progress.visibility = View.VISIBLE
             val path = paths[position]
             holder.loadJob = lifecycleScope.launch(Dispatchers.IO) {
-                val file = runCatching { workspace.previewFile(path) }.getOrNull()
+                val file = runCatching {
+                    if (directFiles) File(path).takeIf { it.isFile }
+                    else workspace?.previewFile(path)
+                }.getOrNull()
                 withContext(Dispatchers.Main) {
                     if (file == null || holder.bindingAdapterPosition != position || isDestroyed) return@withContext
                     holder.progress.visibility = View.GONE
@@ -174,5 +181,6 @@ class PiperMediaGalleryActivity : AppCompatActivity() {
         const val EXTRA_WORKSPACE_ROOT = "workspace_root"
         const val EXTRA_MEDIA_PATHS = "media_paths"
         const val EXTRA_INITIAL_INDEX = "initial_index"
+        const val EXTRA_DIRECT_FILES = "direct_files"
     }
 }

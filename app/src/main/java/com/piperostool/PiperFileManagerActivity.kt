@@ -1,6 +1,10 @@
 package com.piperostool
 
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -10,11 +14,17 @@ import android.text.Editable
 import android.text.TextWatcher
 import android.view.View
 import android.widget.EditText
+import android.widget.CheckBox
+import android.widget.LinearLayout
+import android.widget.Spinner
+import android.widget.ArrayAdapter
+import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.FileProvider
+import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -29,7 +39,6 @@ import java.io.FileOutputStream
 import java.util.Locale
 import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
-import java.util.zip.ZipOutputStream
 
 class PiperFileManagerActivity : AppCompatActivity() {
     private lateinit var root: View
@@ -37,11 +46,20 @@ class PiperFileManagerActivity : AppCompatActivity() {
     private lateinit var pathView: TextView
     private lateinit var search: EditText
     private lateinit var empty: TextView
-    private lateinit var adapter: WorkspaceFileAdapter
+    private lateinit var adapter: FileManagerAdapter
     private var currentDirectory = Environment.getExternalStorageDirectory()
     private var archiveFile: File? = null
     private var archivePrefix = ""
     private var allEntries = emptyList<ApkWorkspaceEntry>()
+    private var receiverRegistered = false
+
+    private val operationReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            val message = intent?.getStringExtra(FileOperationService.EXTRA_MESSAGE).orEmpty()
+            if (message.isNotBlank()) Toast.makeText(this@PiperFileManagerActivity, message, Toast.LENGTH_LONG).show()
+            render()
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -57,6 +75,27 @@ class PiperFileManagerActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         if (::adapter.isInitialized) render()
+    }
+
+    override fun onStart() {
+        super.onStart()
+        if (!receiverRegistered) {
+            ContextCompat.registerReceiver(
+                this,
+                operationReceiver,
+                IntentFilter(FileOperationService.ACTION_FINISHED),
+                ContextCompat.RECEIVER_NOT_EXPORTED
+            )
+            receiverRegistered = true
+        }
+    }
+
+    override fun onStop() {
+        if (receiverRegistered) {
+            unregisterReceiver(operationReceiver)
+            receiverRegistered = false
+        }
+        super.onStop()
     }
 
     override fun onBackPressed() {
@@ -85,7 +124,7 @@ class PiperFileManagerActivity : AppCompatActivity() {
         pathView = findViewById(R.id.fileManagerPath)
         search = findViewById(R.id.fileManagerSearch)
         empty = findViewById(R.id.fileManagerEmpty)
-        adapter = WorkspaceFileAdapter(::openEntry, ::showEntryActions)
+        adapter = FileManagerAdapter(::openEntry, ::showEntryActions, ::loadSpecialIcon)
         findViewById<RecyclerView>(R.id.fileManagerFiles).apply {
             layoutManager = LinearLayoutManager(this@PiperFileManagerActivity)
             adapter = this@PiperFileManagerActivity.adapter
@@ -165,6 +204,33 @@ class PiperFileManagerActivity : AppCompatActivity() {
         }?.sortedWith(compareByDescending<ApkWorkspaceEntry> { it.isDirectory }.thenBy { it.name.lowercase() })
             ?: emptyList()
 
+    private fun loadSpecialIcon(entry: ApkWorkspaceEntry, target: ImageView) {
+        val file = entry.extractedFile ?: return
+        lifecycleScope.launch(Dispatchers.IO) {
+            val icon = runCatching {
+                when {
+                    file.isFile && file.extension.equals("apk", true) -> {
+                        packageManager.getPackageArchiveInfo(file.absolutePath, 0)?.applicationInfo?.let {
+                            it.sourceDir = file.absolutePath
+                            it.publicSourceDir = file.absolutePath
+                            it.loadIcon(packageManager)
+                        }
+                    }
+                    file.isDirectory && file.parentFile?.name in setOf("data", "obb") &&
+                        file.parentFile?.parentFile?.name.equals("Android", true) ->
+                        packageManager.getApplicationIcon(file.name)
+                    else -> null
+                }
+            }.getOrNull()
+            withContext(Dispatchers.Main) {
+                if (icon != null && target.contentDescription == entry.archivePath && !isDestroyed) {
+                    target.scaleType = ImageView.ScaleType.CENTER_CROP
+                    target.setImageDrawable(icon)
+                }
+            }
+        }
+    }
+
     private fun listArchive(file: File): List<ApkWorkspaceEntry> {
         val prefix = archivePrefix.trim('/').let { if (it.isEmpty()) "" else "$it/" }
         val items = linkedMapOf<String, ApkWorkspaceEntry>()
@@ -206,7 +272,12 @@ class PiperFileManagerActivity : AppCompatActivity() {
                 Intent(this, ApkEditorActivity::class.java)
                     .putExtra(ApkEditorActivity.EXTRA_APK_PATH, file.absolutePath)
             )
-            file.extension.lowercase() in ARCHIVE_EXTENSIONS -> {
+            ApkMediaTypes.isVisualMedia(file.name) -> openMediaGallery(file)
+            FileArchiveFormat.detect(file.name) == FileArchiveFormat.ZIP -> {
+                if (runCatching { net.lingala.zip4j.ZipFile(file).isEncrypted }.getOrDefault(false)) {
+                    showExtractDialog(file)
+                    return
+                }
                 runCatching { ZipFile(file).close() }
                     .onSuccess {
                         archiveFile = file
@@ -215,12 +286,24 @@ class PiperFileManagerActivity : AppCompatActivity() {
                     }
                     .onFailure { Toast.makeText(this, "Archive lỗi: ${it.message}", Toast.LENGTH_LONG).show() }
             }
+            FileArchiveFormat.detect(file.name) != null -> showExtractDialog(file)
             isText(file) -> startActivity(
                 Intent(this, TextEditorActivity::class.java)
                     .putExtra(TextEditorActivity.EXTRA_FILE_PATH, file.absolutePath)
             )
             else -> openExternal(file)
         }
+    }
+
+    private fun openMediaGallery(file: File) {
+        val media = allEntries.mapNotNull { it.extractedFile }
+            .filter { it.isFile && ApkMediaTypes.isVisualMedia(it.name) }
+        startActivity(
+            Intent(this, PiperMediaGalleryActivity::class.java)
+                .putStringArrayListExtra(PiperMediaGalleryActivity.EXTRA_MEDIA_PATHS, ArrayList(media.map(File::getAbsolutePath)))
+                .putExtra(PiperMediaGalleryActivity.EXTRA_DIRECT_FILES, true)
+                .putExtra(PiperMediaGalleryActivity.EXTRA_INITIAL_INDEX, media.indexOf(file).coerceAtLeast(0))
+        )
     }
 
     private fun showEntryActions(entry: ApkWorkspaceEntry) {
@@ -236,8 +319,8 @@ class PiperFileManagerActivity : AppCompatActivity() {
         val actions = buildList {
             add("Mở")
             add("Đổi tên")
-            add("Nén thành ZIP")
-            if (file.extension.lowercase() in ARCHIVE_EXTENSIONS) add("Giải nén tại đây")
+            add("Nén / mã hóa")
+            if (FileArchiveFormat.detect(file.name) != null) add("Giải nén tại đây")
             add("Xóa")
         }
         AlertDialog.Builder(this).setTitle(file.name)
@@ -245,8 +328,8 @@ class PiperFileManagerActivity : AppCompatActivity() {
                 when (actions[index]) {
                     "Mở" -> openEntry(entry)
                     "Đổi tên" -> rename(file)
-                    "Nén thành ZIP" -> compress(file)
-                    "Giải nén tại đây" -> extractAll(file)
+                    "Nén / mã hóa" -> showCompressDialog(file)
+                    "Giải nén tại đây" -> showExtractDialog(file)
                     "Xóa" -> confirmDelete(file)
                 }
             }.show()
@@ -262,7 +345,7 @@ class PiperFileManagerActivity : AppCompatActivity() {
         AlertDialog.Builder(this).setTitle("Công cụ tệp")
             .setItems(options) { _, which ->
                 if (archive != null) {
-                    if (which == 0) extractAll(archive) else {
+                    if (which == 0) showExtractDialog(archive) else {
                         archiveFile = null
                         render()
                     }
@@ -311,65 +394,148 @@ class PiperFileManagerActivity : AppCompatActivity() {
             }.show()
     }
 
-    private fun compress(file: File) {
-        lifecycleScope.launch(Dispatchers.IO) {
-            val result = runCatching {
-                val defaultName = file.nameWithoutExtension + ".zip"
-                val output = File(
-                    file.parentFile,
-                    if (file.name.equals(defaultName, ignoreCase = true)) {
-                        file.nameWithoutExtension + "-archive.zip"
-                    } else {
-                        defaultName
-                    }
+    private fun showCompressDialog(file: File) {
+        val formats = FileArchiveFormat.entries
+        val presets = ArchiveCompressionPreset.entries
+        val nameInput = EditText(this).apply {
+            hint = "Tên archive"
+            setText(file.nameWithoutExtension)
+            selectAll()
+        }
+        val formatSpinner = Spinner(this).apply {
+            adapter = ArrayAdapter(
+                this@PiperFileManagerActivity,
+                android.R.layout.simple_spinner_dropdown_item,
+                formats.map { it.label }
+            )
+        }
+        val levelSpinner = Spinner(this).apply {
+            adapter = ArrayAdapter(
+                this@PiperFileManagerActivity,
+                android.R.layout.simple_spinner_dropdown_item,
+                presets.map { it.label }
+            )
+            setSelection(ArchiveCompressionPreset.NORMAL.ordinal)
+        }
+        val passwordEnabled = CheckBox(this).apply {
+            text = "Mật khẩu AES-256 (chỉ ZIP)"
+            setTextColor(getColor(R.color.white))
+        }
+        val passwordInput = EditText(this).apply {
+            hint = "Mật khẩu"
+            inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
+            visibility = View.GONE
+        }
+        passwordEnabled.setOnCheckedChangeListener { _, checked ->
+            passwordInput.visibility = if (checked) View.VISIBLE else View.GONE
+            if (checked) formatSpinner.setSelection(FileArchiveFormat.ZIP.ordinal)
+        }
+        val panel = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(20), dp(8), dp(20), 0)
+            addView(nameInput)
+            addView(TextView(this@PiperFileManagerActivity).apply { text = "Định dạng"; setTextColor(0xBFFFFFFF.toInt()) })
+            addView(formatSpinner)
+            addView(TextView(this@PiperFileManagerActivity).apply { text = "Mức nén"; setTextColor(0xBFFFFFFF.toInt()) })
+            addView(levelSpinner)
+            addView(passwordEnabled)
+            addView(passwordInput)
+        }
+        AlertDialog.Builder(this)
+            .setTitle("Tạo archive")
+            .setView(panel)
+            .setNegativeButton("Hủy", null)
+            .setPositiveButton("Bắt đầu") { _, _ ->
+                val format = formats[formatSpinner.selectedItemPosition]
+                val password = passwordInput.text.toString().takeIf { passwordEnabled.isChecked && it.isNotEmpty() }
+                if (passwordEnabled.isChecked && password == null) {
+                    Toast.makeText(this, "Mật khẩu không được để trống", Toast.LENGTH_SHORT).show()
+                    return@setPositiveButton
+                }
+                val baseName = nameInput.text.toString().trim().ifEmpty { file.nameWithoutExtension }
+                val output = uniqueOutput(File(file.parentFile, baseName + format.extension))
+                startFileOperation(
+                    FileOperationService.ACTION_COMPRESS,
+                    file,
+                    output,
+                    format,
+                    presets[levelSpinner.selectedItemPosition],
+                    password
                 )
-                ZipOutputStream(FileOutputStream(output)).use { zip ->
-                    val base = if (file.isDirectory) file.parentFile!! else file.parentFile!!
-                    file.walkTopDown().filter { it.isFile }.forEach { child ->
-                        zip.putNextEntry(ZipEntry(child.relativeTo(base).invariantSeparatorsPath))
-                        child.inputStream().use { it.copyTo(zip) }
-                        zip.closeEntry()
-                    }
-                }
-                output
             }
-            withContext(Dispatchers.Main) {
-                result.onSuccess {
-                    Toast.makeText(
-                        this@PiperFileManagerActivity,
-                        "Đã tạo ${it.name}",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }.onFailure {
-                    Toast.makeText(
-                        this@PiperFileManagerActivity,
-                        "Nén lỗi: ${it.message}",
-                        Toast.LENGTH_LONG
-                    ).show()
-                }
-                render()
+            .show()
+    }
+
+    private fun showExtractDialog(archive: File) {
+        val password = EditText(this).apply {
+            hint = "Mật khẩu nếu archive có mã hóa"
+            inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
+        }
+        AlertDialog.Builder(this)
+            .setTitle("Giải nén ${archive.name}")
+            .setMessage("Tác vụ tiếp tục khi tắt màn hình hoặc rời ứng dụng.")
+            .setView(password)
+            .setNegativeButton("Hủy", null)
+            .setPositiveButton("Giải nén") { _, _ ->
+                val target = uniqueDirectory(File(archive.parentFile, archiveBaseName(archive.name)))
+                startFileOperation(
+                    FileOperationService.ACTION_EXTRACT,
+                    archive,
+                    target,
+                    password = password.text.toString().takeIf(String::isNotEmpty)
+                )
+                archiveFile = null
             }
+            .show()
+    }
+
+    private fun startFileOperation(
+        action: String,
+        source: File,
+        target: File,
+        format: FileArchiveFormat? = null,
+        preset: ArchiveCompressionPreset? = null,
+        password: String? = null
+    ) {
+        if (FileOperationService.running) {
+            Toast.makeText(this, "Một tác vụ tệp khác đang chạy", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val intent = Intent(this, FileOperationService::class.java)
+            .setAction(action)
+            .putExtra(FileOperationService.EXTRA_SOURCE, source.absolutePath)
+            .putExtra(FileOperationService.EXTRA_TARGET, target.absolutePath)
+            .putExtra(FileOperationService.EXTRA_PASSWORD, password)
+        format?.let { intent.putExtra(FileOperationService.EXTRA_FORMAT, it.name) }
+        preset?.let { intent.putExtra(FileOperationService.EXTRA_PRESET, it.name) }
+        ContextCompat.startForegroundService(this, intent)
+        Toast.makeText(this, "Tác vụ đang chạy nền", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun uniqueOutput(requested: File): File {
+        if (!requested.exists()) return requested
+        val extension = requested.name.substringAfter(requested.nameWithoutExtension, "")
+        var index = 1
+        while (true) {
+            val candidate = File(requested.parentFile, "${requested.nameWithoutExtension} ($index)$extension")
+            if (!candidate.exists()) return candidate
+            index++
         }
     }
 
-    private fun extractAll(archive: File) {
-        lifecycleScope.launch(Dispatchers.IO) {
-            runCatching {
-                val target = File(archive.parentFile, archive.nameWithoutExtension)
-                ZipFile(archive).use { zip ->
-                    zip.entries().asSequence().forEach { entry ->
-                        val output = safeArchiveOutput(target, entry.name)
-                        if (entry.isDirectory) output.mkdirs() else {
-                            output.parentFile?.mkdirs()
-                            zip.getInputStream(entry).use { input -> FileOutputStream(output).use(input::copyTo) }
-                        }
-                    }
-                }
-            }.onFailure {
-                withContext(Dispatchers.Main) { Toast.makeText(this@PiperFileManagerActivity, "Giải nén lỗi: ${it.message}", Toast.LENGTH_LONG).show() }
-            }
-            withContext(Dispatchers.Main) { archiveFile = null; render() }
+    private fun uniqueDirectory(requested: File): File {
+        if (!requested.exists()) return requested
+        var index = 1
+        while (true) {
+            val candidate = File(requested.parentFile, "${requested.name} ($index)")
+            if (!candidate.exists()) return candidate
+            index++
         }
+    }
+
+    private fun archiveBaseName(name: String): String {
+        val format = FileArchiveFormat.detect(name) ?: return name.substringBeforeLast('.')
+        return name.dropLast(format.extension.length).ifBlank { "extracted" }
     }
 
     private fun extractArchiveEntry(entry: ApkWorkspaceEntry) {
@@ -452,8 +618,9 @@ class PiperFileManagerActivity : AppCompatActivity() {
 
     private fun isText(file: File): Boolean = file.extension.lowercase(Locale.US) in TEXT_EXTENSIONS
 
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
+
     companion object {
-        private val ARCHIVE_EXTENSIONS = setOf("zip", "jar", "xapk", "apks")
         private val TEXT_EXTENSIONS = setOf("txt", "xml", "json", "md", "html", "css", "js", "properties", "yml", "yaml", "log")
     }
 }

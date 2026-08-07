@@ -20,7 +20,7 @@
 
 ## Bản hiện tại
 
-`2.6.2.beta` sử dụng `minSdk 24`, `targetSdk 36` và tập trung vào:
+`2.6.5.beta` sử dụng `minSdk 24`, `targetSdk 36` và tập trung vào:
 
 - **PiperOS APK Editor:** mở APK đã cài hoặc tệp APK, duyệt cấu trúc archive,
   trích xuất theo nhóm/toàn bộ, chỉnh tệp văn bản, xem báo cáo manifest và
@@ -30,21 +30,26 @@
   báo tiến độ qua notification. Danh sách có thumbnail ảnh/video; gallery hỗ
   trợ vuốt ngang qua media cùng thư mục. Trình xem vẫn hỗ trợ GIF, âm thanh,
   PDF cùng các tệp văn bản.
-- **PiperOS File Manager:** duyệt bộ nhớ như trình quản lý tệp, tìm kiếm, đổi
-  tên, xóa, nén ZIP, duyệt và giải nén ZIP/JAR/XAPK/APKS.
+- **PiperOS File Manager:** thumbnail ảnh/video/APK và app data, gallery vuốt
+  ngang, icon thư mục theo ngữ nghĩa; nén/giải nén ZIP, 7Z, TAR, GZIP, BZIP2,
+  XZ, LZ4 và ZSTD. ZIP hỗ trợ mật khẩu AES-256. Tác vụ archive chạy bằng
+  foreground service với WakeLock và notification tiến độ.
 
 > APK được xây dựng lại dùng khóa **PiperOS Editor test key**. Khóa này chỉ
 > dành cho thử nghiệm, không dùng để phát hành; APK đầu ra không thể cập nhật
 > đè lên ứng dụng gốc nếu chữ ký của ứng dụng gốc khác.
 
 - **PiperOS Browser:** nhiều tab, tab ẩn danh, khôi phục phiên, lịch sử theo
-  ngày, User-Agent tùy chỉnh, nhập phần mở rộng, tải file và phát video.
+  ngày, User-Agent tùy chỉnh, nhập phần mở rộng, tải file và phát video. Bản
+  2.6.5 bỏ thanh tiêu đề trên cùng, dùng lịch sử/tab cho thao tác Back và đặt
+  nút thoát PiperOS trong toolbar dưới.
 - **PiperOS Media:** quét nhạc/video trên thiết bị, lọc theo nguồn, tìm kiếm,
   sắp xếp, hàng đợi riêng, phát nền, Picture-in-Picture và điều khiển media.
 - **PiperOS Terminal:** shell Android cục bộ nhiều phiên, lịch sử lệnh và
   foreground service. Runtime Linux đầy đủ đang được phát triển riêng.
 - **PiperOS Fake Map GPS:** mô phỏng vị trí cố định hoặc hành trình có tốc độ,
   phương tiện, dừng đỗ và lặp tuyến qua ứng dụng vị trí mô phỏng của Android.
+  Hành trình hỗ trợ nhiều waypoint, tuyến gợi ý và marker GPS chuyển động trực tiếp.
 - **Apps & Device:** xem ứng dụng, sao lưu APK, thông tin thiết bị và các công
   cụ quản lý quyền.
 - **Android 16:** hỗ trợ thông báo tiến trình Live Update khi hệ thống cho

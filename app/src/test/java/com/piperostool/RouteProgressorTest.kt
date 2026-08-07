@@ -7,6 +7,19 @@ import org.junit.Test
 
 class RouteProgressorTest {
     @Test
+    fun planeRouteKeepsUserWaypointsInOrder() {
+        val points = listOf(
+            RoutePoint(21.0, 105.0),
+            RoutePoint(21.1, 105.2),
+            RoutePoint(21.3, 105.4)
+        )
+
+        val routes = MockRoutePlanner.planAlternatives(points, MockTravelMode.PLANE)
+
+        assertEquals(points, routes.single().points)
+    }
+
+    @Test
     fun halfwayDistanceProducesHalfwayCoordinate() {
         val route = RouteProgressor(
             listOf(

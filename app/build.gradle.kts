@@ -14,8 +14,8 @@ android {
         applicationId = "com.piper.os.tool"
         minSdk = 24
         targetSdk = 36
-        versionCode = 18
-        versionName = "2.6.2.beta"
+        versionCode = 19
+        versionName = "2.6.5.beta"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -63,6 +63,10 @@ dependencies {
     implementation("com.android.tools.build:apksig:8.13.2")
     implementation("androidx.documentfile:documentfile:1.1.0")
     implementation("androidx.viewpager2:viewpager2:1.1.0")
+    implementation("net.lingala.zip4j:zip4j:2.11.6")
+    implementation("org.apache.commons:commons-compress:1.28.0")
+    implementation("org.tukaani:xz:1.12")
+    implementation("com.github.luben:zstd-jni:1.5.7-10@aar")
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

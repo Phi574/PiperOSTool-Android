@@ -187,15 +187,20 @@ class InfoFragment : Fragment() {
             ),
             InfoSection(
                 title = "INFO FILE MANAGER",
-                summary = "Duyệt tệp và archive trên bộ nhớ thiết bị",
+                summary = "Preview media • Archive đa định dạng • Chạy nền",
                 icon = R.drawable.packaget,
                 color = color("#38BDF8"),
                 rows = listOf(
                     InfoRow("Phạm vi", "Bộ nhớ dùng chung do người dùng cấp quyền"),
-                    InfoRow("Archive", "ZIP, JAR, XAPK và APKS"),
+                    InfoRow("Thumbnail", "Ảnh, video, APK, app data và thư mục hệ thống"),
+                    InfoRow("Gallery", "Vuốt ngang ảnh/video trong cùng thư mục"),
+                    InfoRow("Archive", "ZIP, 7Z, TAR, GZIP, BZIP2, XZ, LZ4 và ZSTD"),
+                    InfoRow("Mã hóa", "ZIP AES-256 có mật khẩu"),
+                    InfoRow("Mức nén", "Nhanh nhất tới Super nén"),
+                    InfoRow("Chạy nền", "Foreground service + WakeLock + tiến độ"),
                     InfoRow("Công cụ", "Tìm kiếm, đổi tên, xóa, nén và giải nén"),
                     InfoRow("APK", "Mở trực tiếp bằng PiperOS APK Editor"),
-                    InfoRow("Bảo vệ", "Chặn đường dẫn ZIP không an toàn")
+                    InfoRow("Bảo vệ", "Chặn path traversal khi giải nén")
                 )
             ),
             InfoSection(

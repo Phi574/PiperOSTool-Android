@@ -75,6 +75,12 @@
             android:stopWithTask="false" />
 
         <service
+            android:name=".FileOperationService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync"
+            android:stopWithTask="false" />
+
+        <service
             android:name=".PiperPlaybackService"
             android:exported="true"
             android:foregroundServiceType="mediaPlayback">

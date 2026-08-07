@@ -268,7 +268,7 @@ class PiperBrowserActivity : AppCompatActivity() {
     }
 
     private fun setupActions() {
-        findViewById<View>(R.id.btnCloseBrowser).setOnClickListener { finish() }
+        findViewById<View>(R.id.btnExitBrowser).setOnClickListener { finish() }
         findViewById<View>(R.id.btnHomeSearch).setOnClickListener {
             navigateFromInput(homeSearchInput)
         }
@@ -1814,11 +1814,6 @@ class PiperBrowserActivity : AppCompatActivity() {
 
     private fun applyResponsiveLayout(configuration: Configuration) {
         val landscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-        findViewById<View>(R.id.browserTopBar).layoutParams =
-            findViewById<View>(R.id.browserTopBar).layoutParams.apply {
-                height = dp(if (landscape) 48 else 56)
-            }
-
         val bottomPanel = findViewById<LinearLayout>(R.id.browserBottomPanel)
         val addressRow = findViewById<LinearLayout>(R.id.browserAddressRow)
         val toolbar = findViewById<LinearLayout>(R.id.browserToolbar)
@@ -1833,7 +1828,7 @@ class PiperBrowserActivity : AppCompatActivity() {
             LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(48))
         }
         toolbar.layoutParams = if (landscape) {
-            LinearLayout.LayoutParams(dp(330), dp(48))
+            LinearLayout.LayoutParams(dp(378), dp(48))
         } else {
             LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(54))
         }

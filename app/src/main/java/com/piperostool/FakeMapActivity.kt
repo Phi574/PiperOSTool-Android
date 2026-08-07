@@ -1,5 +1,6 @@
 package com.piperostool
 
+import android.animation.ValueAnimator
 import android.Manifest
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -38,12 +39,14 @@ import org.osmdroid.views.overlay.Polyline
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.roundToInt
+import android.view.animation.AccelerateDecelerateInterpolator
 
 class FakeMapActivity : AppCompatActivity() {
     private enum class SelectionTarget {
         FIXED,
         START,
-        END
+        END,
+        WAYPOINT
     }
 
     private lateinit var root: View
@@ -60,6 +63,7 @@ class FakeMapActivity : AppCompatActivity() {
     private lateinit var speedLabel: TextView
     private lateinit var speedSeek: SeekBar
     private lateinit var routeOptions: View
+    private lateinit var waypointActions: View
     private lateinit var naturalStops: SwitchMaterial
     private lateinit var routeLoop: SwitchMaterial
     private lateinit var startButton: MaterialButton
@@ -72,12 +76,18 @@ class FakeMapActivity : AppCompatActivity() {
     private var fixedPoint: RoutePoint? = null
     private var routeStart: RoutePoint? = null
     private var routeEnd: RoutePoint? = null
+    private val routeWaypoints = mutableListOf<RoutePoint>()
     private var routePoints = emptyList<RoutePoint>()
+    private var suggestedRoutes = emptyList<PlannedMockRoute>()
     private var routeLoading = false
     private var fixedMarker: Marker? = null
     private var startMarker: Marker? = null
     private var endMarker: Marker? = null
+    private val waypointMarkers = mutableListOf<Marker>()
     private var routeLine: Polyline? = null
+    private var liveMarker: Marker? = null
+    private var liveMarkerPoint: RoutePoint? = null
+    private var liveMarkerAnimator: ValueAnimator? = null
     private var pendingPermissionAction: (() -> Unit)? = null
     private var receiverRegistered = false
     private var lastErrorShown: String? = null
@@ -186,6 +196,7 @@ class FakeMapActivity : AppCompatActivity() {
         speedLabel = findViewById(R.id.fakeMapSpeedLabel)
         speedSeek = findViewById(R.id.fakeMapSpeed)
         routeOptions = findViewById(R.id.fakeMapRouteOptions)
+        waypointActions = findViewById(R.id.fakeMapWaypointActions)
         naturalStops = findViewById(R.id.switchNaturalStops)
         routeLoop = findViewById(R.id.switchRouteLoop)
         startButton = findViewById(R.id.btnStartMock)
@@ -262,10 +273,10 @@ class FakeMapActivity : AppCompatActivity() {
         }
         pointGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->
             if (!isChecked) return@addOnButtonCheckedListener
-            selectionTarget = if (checkedId == R.id.btnPickEnd) {
-                SelectionTarget.END
-            } else {
-                SelectionTarget.START
+            selectionTarget = when (checkedId) {
+                R.id.btnPickEnd -> SelectionTarget.END
+                R.id.btnPickWaypoint -> SelectionTarget.WAYPOINT
+                else -> SelectionTarget.START
             }
             renderSelectionHint()
         }
@@ -303,6 +314,21 @@ class FakeMapActivity : AppCompatActivity() {
         stopButton.setOnClickListener {
             MockLocationService.sendAction(this, MockLocationService.ACTION_STOP)
         }
+        findViewById<View>(R.id.btnRouteSuggestions).setOnClickListener {
+            if (routeStart == null || routeEnd == null) {
+                Toast.makeText(this, "Hãy chọn điểm đầu và điểm cuối trước", Toast.LENGTH_SHORT).show()
+            } else {
+                calculateRoute(showChooser = true)
+            }
+        }
+        findViewById<View>(R.id.btnUndoWaypoint).setOnClickListener {
+            if (routeWaypoints.isNotEmpty()) {
+                routeWaypoints.removeLast()
+                calculateRoute()
+            } else {
+                Toast.makeText(this, "Chưa có điểm đi qua", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     private fun restoreScenario() {
@@ -336,6 +362,7 @@ class FakeMapActivity : AppCompatActivity() {
         speedLabel.visibility = if (routeMode) View.VISIBLE else View.GONE
         speedSeek.visibility = if (routeMode) View.VISIBLE else View.GONE
         routeOptions.visibility = if (routeMode) View.VISIBLE else View.GONE
+        waypointActions.visibility = if (routeMode) View.VISIBLE else View.GONE
         if (!routeMode) selectionTarget = SelectionTarget.FIXED
         renderSelectionHint()
         renderRouteInfo()
@@ -348,6 +375,10 @@ class FakeMapActivity : AppCompatActivity() {
                 SelectionTarget.FIXED -> R.string.fake_map_pick_fixed
                 SelectionTarget.START -> R.string.fake_map_pick_start
                 SelectionTarget.END -> R.string.fake_map_pick_end
+                SelectionTarget.WAYPOINT -> {
+                    selectionHint.text = "Chạm bản đồ để thêm điểm đi qua (${routeWaypoints.size})"
+                    return
+                }
             }
         )
     }
@@ -361,11 +392,20 @@ class FakeMapActivity : AppCompatActivity() {
             SelectionTarget.START -> {
                 routeStart = point
                 routePoints = emptyList()
+                routeWaypoints.clear()
                 selectionTarget = SelectionTarget.END
                 pointGroup.check(R.id.btnPickEnd)
             }
             SelectionTarget.END -> {
                 routeEnd = point
+                routePoints = emptyList()
+            }
+            SelectionTarget.WAYPOINT -> {
+                if (routeStart == null || routeEnd == null) {
+                    Toast.makeText(this, "Chọn điểm đầu và điểm cuối trước", Toast.LENGTH_SHORT).show()
+                    return
+                }
+                routeWaypoints += point
                 routePoints = emptyList()
             }
         }
@@ -379,40 +419,64 @@ class FakeMapActivity : AppCompatActivity() {
         }
     }
 
-    private fun calculateRoute() {
+    private fun calculateRoute(showChooser: Boolean = false) {
         val start = routeStart ?: return
         val end = routeEnd ?: return
+        val controlPoints = listOf(start) + routeWaypoints + end
         val generation = routeGeneration.incrementAndGet()
         routeLoading = true
         routeInfo.setText(R.string.fake_map_route_loading)
         startButton.isEnabled = false
         routeExecutor.execute {
-            val result = MockRoutePlanner.plan(start, end, travelMode)
+            val results = MockRoutePlanner.planAlternatives(controlPoints, travelMode)
             runOnUiThread {
                 if (generation != routeGeneration.get() || isFinishing || isDestroyed) {
                     return@runOnUiThread
                 }
                 routeLoading = false
-                routePoints = result.points
+                suggestedRoutes = results
+                routePoints = results.first().points
                 startButton.isEnabled = true
                 redrawMap()
                 renderRouteInfo()
                 saveDraftIfReady()
-                if (result.usedFallback) {
+                if (results.first().usedFallback) {
                     Toast.makeText(
                         this,
                         R.string.fake_map_route_failed,
                         Toast.LENGTH_LONG
                     ).show()
+                } else if (showChooser && results.size > 1) {
+                    showRouteSuggestions(results)
                 }
             }
         }
+    }
+
+    private fun showRouteSuggestions(routes: List<PlannedMockRoute>) {
+        val labels = routes.mapIndexed { index, route ->
+            val duration = route.distanceMeters / (speedKmh / 3.6)
+            "Tuyến ${index + 1} • %.1f km • %s".format(route.distanceMeters / 1_000.0, formatDuration(duration))
+        }.toTypedArray()
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("Chọn tuyến đường")
+            .setSingleChoiceItems(labels, routes.indexOfFirst { it.points == routePoints }.coerceAtLeast(0)) { dialog, which ->
+                routePoints = routes[which].points
+                redrawMap()
+                renderRouteInfo()
+                saveDraftIfReady()
+                dialog.dismiss()
+            }
+            .setNegativeButton("Hủy", null)
+            .show()
     }
 
     private fun redrawMap() {
         listOfNotNull(fixedMarker, startMarker, endMarker, routeLine).forEach {
             map.overlays.remove(it)
         }
+        waypointMarkers.forEach { map.overlays.remove(it) }
+        waypointMarkers.clear()
         fixedMarker = null
         startMarker = null
         endMarker = null
@@ -440,6 +504,9 @@ class FakeMapActivity : AppCompatActivity() {
                     R.drawable.ic_map_marker_end
                 )
             }
+            routeWaypoints.forEachIndexed { index, point ->
+                waypointMarkers += addMarker(point, "Điểm qua ${index + 1}", R.drawable.ic_location_pin)
+            }
             if (routePoints.size >= 2) {
                 routeLine = Polyline(map).apply {
                     outlinePaint.color = 0xFF39E879.toInt()
@@ -452,6 +519,10 @@ class FakeMapActivity : AppCompatActivity() {
                     map.zoomToBoundingBox(BoundingBox.fromGeoPoints(geoPoints), true, 72)
                 }
             }
+        }
+        liveMarker?.let { marker ->
+            map.overlays.remove(marker)
+            map.overlays.add(marker)
         }
         map.invalidate()
     }
@@ -504,7 +575,7 @@ class FakeMapActivity : AppCompatActivity() {
             R.string.fake_map_route_ready,
             distance / 1_000.0,
             formatDuration(durationSeconds)
-        )
+        ) + if (routeWaypoints.isEmpty()) "" else " • ${routeWaypoints.size} điểm qua"
     }
 
     private fun beginSimulation() {
@@ -607,6 +678,41 @@ class FakeMapActivity : AppCompatActivity() {
             }
         )
         stopButton.visibility = if (state.running) View.VISIBLE else View.GONE
+        if (state.running && state.point != null) {
+            animateLiveMarker(state.point)
+        } else {
+            liveMarkerAnimator?.cancel()
+            liveMarker?.let(map.overlays::remove)
+            liveMarker = null
+            liveMarkerPoint = null
+            map.invalidate()
+        }
+    }
+
+    private fun animateLiveMarker(target: RoutePoint) {
+        val marker = liveMarker ?: addMarker(target, "GPS đang mô phỏng", R.drawable.ic_location_crosshair).also {
+            liveMarker = it
+            liveMarkerPoint = target
+            map.controller.animateTo(GeoPoint(target.latitude, target.longitude))
+            return
+        }
+        val start = liveMarkerPoint ?: target
+        liveMarkerAnimator?.cancel()
+        liveMarkerAnimator = ValueAnimator.ofFloat(0f, 1f).apply {
+            duration = 800L
+            interpolator = AccelerateDecelerateInterpolator()
+            addUpdateListener { animator ->
+                val fraction = animator.animatedFraction.toDouble()
+                marker.position = GeoPoint(
+                    start.latitude + (target.latitude - start.latitude) * fraction,
+                    start.longitude + (target.longitude - start.longitude) * fraction
+                )
+                map.invalidate()
+            }
+            start()
+        }
+        liveMarkerPoint = target
+        map.controller.animateTo(GeoPoint(target.latitude, target.longitude))
     }
 
     private fun useCurrentLocation() {

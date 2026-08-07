@@ -193,7 +193,46 @@
                     android:textColor="@color/white"
                     android:textSize="11sp"
                     app:strokeColor="#55FFFFFF" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnPickWaypoint"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="0dp"
+                    android:layout_height="42dp"
+                    android:layout_weight="1"
+                    android:text="ĐIỂM QUA"
+                    android:textColor="@color/white"
+                    android:textSize="10sp"
+                    app:strokeColor="#55FFFFFF" />
             </com.google.android.material.button.MaterialButtonToggleGroup>
+
+            <LinearLayout
+                android:id="@+id/fakeMapWaypointActions"
+                android:layout_width="match_parent"
+                android:layout_height="40dp"
+                android:layout_marginTop="6dp"
+                android:gravity="end|center_vertical"
+                android:orientation="horizontal"
+                android:visibility="gone">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnRouteSuggestions"
+                    style="@style/Widget.MaterialComponents.Button.TextButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="38dp"
+                    android:text="TUYẾN GỢI Ý"
+                    android:textColor="#8DFFB0"
+                    android:textSize="10sp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnUndoWaypoint"
+                    style="@style/Widget.MaterialComponents.Button.TextButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="38dp"
+                    android:text="XÓA ĐIỂM CUỐI"
+                    android:textColor="#FFD37D"
+                    android:textSize="10sp" />
+            </LinearLayout>
 
             <HorizontalScrollView
                 android:id="@+id/fakeMapTravelScroll"
