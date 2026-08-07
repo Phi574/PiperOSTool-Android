@@ -35,12 +35,15 @@ class WorkspaceFileAdapter(
         holder.icon.contentDescription = entry.archivePath
         Glide.with(holder.icon).clear(holder.icon)
         holder.icon.setColorFilter(null)
+        val iconInset = dp(holder.icon, 6)
+        holder.icon.setPadding(iconInset, iconInset, iconInset, iconInset)
         holder.icon.scaleType = ImageView.ScaleType.CENTER_INSIDE
         holder.icon.setImageResource(if (entry.isDirectory) R.drawable.module else fileIcon(entry.name))
         if (!entry.isDirectory && ApkMediaTypes.isVisualMedia(entry.name)) {
-            holder.icon.scaleType = ImageView.ScaleType.CENTER_CROP
+            holder.icon.setPadding(0, 0, 0, 0)
+            holder.icon.scaleType = ImageView.ScaleType.FIT_CENTER
             entry.extractedFile?.takeIf { it.isFile }?.let { file ->
-                Glide.with(holder.icon).load(file).dontAnimate().centerCrop().into(holder.icon)
+                Glide.with(holder.icon).load(file).dontAnimate().fitCenter().into(holder.icon)
             } ?: onThumbnailRequested(entry, holder.icon)
         }
 
@@ -85,4 +88,7 @@ class WorkspaceFileAdapter(
         "pdf" -> R.drawable.details
         else -> R.drawable.backup
     }
+
+    private fun dp(view: View, value: Int): Int =
+        (value * view.resources.displayMetrics.density).toInt()
 }

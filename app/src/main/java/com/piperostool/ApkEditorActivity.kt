@@ -212,7 +212,9 @@ class ApkEditorActivity : AppCompatActivity() {
             val file = runCatching { workspace?.previewFile(entry.archivePath) }.getOrNull()
             withContext(Dispatchers.Main) {
                 if (file != null && target.contentDescription == entry.archivePath && !isDestroyed) {
-                    Glide.with(target).load(file).dontAnimate().centerCrop().into(target)
+                    target.setPadding(0, 0, 0, 0)
+                    target.scaleType = android.widget.ImageView.ScaleType.FIT_CENTER
+                    Glide.with(target).load(file).dontAnimate().fitCenter().into(target)
                 }
             }
         }

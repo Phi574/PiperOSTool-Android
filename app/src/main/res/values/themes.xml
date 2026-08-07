@@ -13,14 +13,30 @@
         <item name="android:statusBarColor">#000000</item>
         <item name="android:fontFamily">@font/vt323</item>
         <item name="fontFamily">@font/vt323</item>
+        <item name="android:imageButtonStyle">@style/PiperContainedImageButton</item>
+        <item name="imageButtonStyle">@style/PiperContainedImageButton</item>
     </style>
     <style name="Theme.PiperOSTool.AppCompat.NoActionBar" parent="Theme.AppCompat.NoActionBar">
         <item name="android:fontFamily">@font/vt323</item>
         <item name="fontFamily">@font/vt323</item>
+        <item name="android:imageButtonStyle">@style/PiperContainedImageButton</item>
+        <item name="imageButtonStyle">@style/PiperContainedImageButton</item>
     </style>
     <style name="Theme.PiperOSTool.AppCompat.Light.NoActionBar" parent="Theme.AppCompat.Light.NoActionBar">
         <item name="android:fontFamily">@font/vt323</item>
         <item name="fontFamily">@font/vt323</item>
+        <item name="android:imageButtonStyle">@style/PiperContainedImageButton</item>
+        <item name="imageButtonStyle">@style/PiperContainedImageButton</item>
+    </style>
+
+    <style name="PiperContainedImageView">
+        <item name="android:adjustViewBounds">false</item>
+        <item name="android:scaleType">centerInside</item>
+    </style>
+
+    <style name="PiperContainedImageButton" parent="Widget.AppCompat.ImageButton">
+        <item name="android:adjustViewBounds">false</item>
+        <item name="android:scaleType">centerInside</item>
     </style>
     <style name="Theme.App.Dialog" parent="Theme.AppCompat.Light.Dialog.Alert">
         <item name="android:windowBackground">@android:color/transparent</item>
@@ -28,11 +44,15 @@
         <item name="android:windowNoTitle">true</item>
         <item name="android:fontFamily">@font/vt323</item>
         <item name="fontFamily">@font/vt323</item>
+        <item name="android:imageButtonStyle">@style/PiperContainedImageButton</item>
+        <item name="imageButtonStyle">@style/PiperContainedImageButton</item>
     </style>
     <style name="BottomSheetDialogTheme" parent="Theme.Design.Light.BottomSheetDialog">
         <item name="bottomSheetStyle">@style/BottomSheetStyle</item>
         <item name="android:fontFamily">@font/vt323</item>
         <item name="fontFamily">@font/vt323</item>
+        <item name="android:imageButtonStyle">@style/PiperContainedImageButton</item>
+        <item name="imageButtonStyle">@style/PiperContainedImageButton</item>
     </style>
 
     <style name="BottomSheetStyle" parent="Widget.Design.BottomSheet.Modal">
@@ -42,6 +62,8 @@
         <item name="bottomSheetStyle">@style/TransparentBottomSheetStyle</item>
         <item name="android:fontFamily">@font/vt323</item>
         <item name="fontFamily">@font/vt323</item>
+        <item name="android:imageButtonStyle">@style/PiperContainedImageButton</item>
+        <item name="imageButtonStyle">@style/PiperContainedImageButton</item>
     </style>
 
     <style name="TransparentBottomSheetStyle" parent="Widget.Design.BottomSheet.Modal">
@@ -113,6 +135,7 @@
         <item name="android:layout_width">24dp</item>
         <item name="android:layout_height">24dp</item>
         <item name="android:contentDescription">@null</item>
+        <item name="android:scaleType">centerInside</item>
     </style>
 
     <style name="SettingsRowTextGroup">
@@ -160,6 +183,7 @@
         <item name="android:layout_height">18dp</item>
         <item name="android:contentDescription">@null</item>
         <item name="android:src">@drawable/ic_chevron_right</item>
+        <item name="android:scaleType">centerInside</item>
     </style>
 
     <style name="SettingsSwitch">

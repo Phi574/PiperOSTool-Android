@@ -14,9 +14,10 @@
 
     <ImageView
         android:id="@+id/ivAppIcon"
-        android:layout_width="54dp"
-        android:layout_height="54dp"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
         android:contentDescription="@null"
+        android:padding="3dp"
         android:scaleType="fitCenter" />
 
     <LinearLayout

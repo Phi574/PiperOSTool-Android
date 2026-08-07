@@ -1835,8 +1835,8 @@ class PiperBrowserActivity : AppCompatActivity() {
 
         findViewById<ImageView>(R.id.browserStartLogo).layoutParams =
             findViewById<ImageView>(R.id.browserStartLogo).layoutParams.apply {
-                width = dp(if (landscape) 60 else 92)
-                height = dp(if (landscape) 60 else 92)
+                width = dp(if (landscape) 52 else 72)
+                height = dp(if (landscape) 52 else 72)
             }
         findViewById<TextView>(R.id.browserStartTitle).textSize =
             if (landscape) 23f else 30f

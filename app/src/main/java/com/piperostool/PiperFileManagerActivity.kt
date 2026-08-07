@@ -224,7 +224,7 @@ class PiperFileManagerActivity : AppCompatActivity() {
             }.getOrNull()
             withContext(Dispatchers.Main) {
                 if (icon != null && target.contentDescription == entry.archivePath && !isDestroyed) {
-                    target.scaleType = ImageView.ScaleType.CENTER_CROP
+                    target.scaleType = ImageView.ScaleType.CENTER_INSIDE
                     target.setImageDrawable(icon)
                 }
             }

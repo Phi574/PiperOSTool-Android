@@ -49,9 +49,10 @@
 
             <ImageView
                 android:id="@+id/browserStartLogo"
-                android:layout_width="92dp"
-                android:layout_height="92dp"
+                android:layout_width="72dp"
+                android:layout_height="72dp"
                 android:contentDescription="@string/piperos_browser"
+                android:scaleType="centerInside"
                 android:src="@drawable/a3tn" />
 
             <TextView

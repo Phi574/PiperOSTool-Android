@@ -9,7 +9,7 @@
     android:gravity="center_vertical"
     android:orientation="horizontal"
     android:paddingHorizontal="16dp">
-    <ImageView android:id="@+id/archiveEntryIcon" android:layout_width="52dp" android:layout_height="52dp" android:background="#172127" android:clipToOutline="true" android:contentDescription="@null" android:padding="3dp" android:scaleType="fitCenter" android:src="@drawable/backup" />
+    <ImageView android:id="@+id/archiveEntryIcon" android:layout_width="48dp" android:layout_height="48dp" android:background="#172127" android:clipToOutline="true" android:contentDescription="@null" android:padding="6dp" android:scaleType="centerInside" android:src="@drawable/backup" />
     <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="14dp" android:layout_weight="1" android:orientation="vertical">
         <TextView android:id="@+id/archiveEntryName" android:layout_width="match_parent" android:layout_height="wrap_content" android:ellipsize="middle" android:maxLines="1" android:textColor="@color/white" android:textSize="14sp" android:textStyle="bold" />
         <TextView android:id="@+id/archiveEntryMeta" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:ellipsize="end" android:maxLines="1" android:textColor="#9FFFFFFF" android:textSize="11sp" />

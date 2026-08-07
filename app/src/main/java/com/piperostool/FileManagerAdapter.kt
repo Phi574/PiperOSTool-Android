@@ -33,12 +33,17 @@ class FileManagerAdapter(
         holder.name.text = entry.name
         holder.icon.contentDescription = entry.archivePath
         Glide.with(holder.icon).clear(holder.icon)
+        val iconInset = dp(holder.icon, 6)
+        holder.icon.setPadding(iconInset, iconInset, iconInset, iconInset)
         holder.icon.scaleType = ImageView.ScaleType.CENTER_INSIDE
         holder.icon.setImageResource(iconFor(entry))
         if (file?.isFile == true && ApkMediaTypes.isVisualMedia(file.name)) {
-            holder.icon.scaleType = ImageView.ScaleType.CENTER_CROP
-            Glide.with(holder.icon).load(file).dontAnimate().centerCrop().into(holder.icon)
+            holder.icon.setPadding(0, 0, 0, 0)
+            holder.icon.scaleType = ImageView.ScaleType.FIT_CENTER
+            Glide.with(holder.icon).load(file).dontAnimate().fitCenter().into(holder.icon)
         } else if (file != null && (file.isDirectory || file.extension.equals("apk", true))) {
+            val specialInset = dp(holder.icon, 4)
+            holder.icon.setPadding(specialInset, specialInset, specialInset, specialInset)
             onSpecialIcon(entry, holder.icon)
         }
         holder.meta.text = when {
@@ -85,4 +90,7 @@ class FileManagerAdapter(
             else -> R.drawable.packaget
         }
     }
+
+    private fun dp(view: View, value: Int): Int =
+        (value * view.resources.displayMetrics.density).toInt()
 }
