@@ -184,7 +184,7 @@
             android:name=".TerminalRuntimeInstallService"
             android:exported="false"
             android:foregroundServiceType="dataSync" />
-        <activity android:name=".PermissionManagerActivity" android:exported="false" android:theme="@style/Theme.App.Dialog" />
+        <activity android:name=".PermissionManagerActivity" android:exported="false" android:theme="@style/Theme.PiperOSTool.AppCompat.NoActionBar" />
         <activity android:name=".WelcomeActivity" android:exported="false" android:theme="@style/Theme.PiperOSTool.AppCompat.NoActionBar"/>
         <activity android:name=".LockScreenActivity" android:exported="false" android:screenOrientation="portrait" />
         <receiver

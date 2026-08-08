@@ -239,6 +239,17 @@
     <string name="tabs">Các tab</string>
     <string name="more_options">Tùy chọn khác</string>
     <string name="browser_options">Tùy chọn trình duyệt</string>
+    <string name="browser_privacy_report">Báo cáo quyền riêng tư</string>
+    <string name="browser_privacy_summary_safe">Chưa phát hiện dấu hiệu theo dõi phổ biến</string>
+    <string name="browser_privacy_summary_warning">Phát hiện %1$d miền có dấu hiệu theo dõi</string>
+    <string name="browser_privacy_https">Kết nối được mã hóa</string>
+    <string name="browser_privacy_requests">%1$d yêu cầu mạng</string>
+    <string name="browser_privacy_third_party">%1$d miền bên thứ ba</string>
+    <string name="browser_privacy_trackers">Miền có dấu hiệu theo dõi</string>
+    <string name="browser_privacy_no_trackers">Không có tracker phổ biến nào được nhận diện trên trang này.</string>
+    <string name="browser_privacy_note">Báo cáo được phân tích cục bộ từ yêu cầu mạng của tab hiện tại. PiperOS không gửi lịch sử duyệt web ra ngoài.</string>
+    <string name="browser_current_tab">Đang xem</string>
+    <string name="browser_home_tab">Trang chủ PiperOS</string>
     <string name="desktop_site">Trang web cho máy tính</string>
     <string name="browser_history">Lịch sử duyệt web</string>
     <string name="browser_downloads">Tệp đã tải xuống</string>

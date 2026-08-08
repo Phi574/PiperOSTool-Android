@@ -1,10 +1,7 @@
 package com.piperostool
 
 import android.content.Intent
-import android.os.Build
 import android.os.Bundle
-import android.view.WindowInsets
-import android.view.WindowManager
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
@@ -37,16 +34,6 @@ class LoginActivity : AppCompatActivity() {
 
         setContentView(R.layout.login_screen)
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            window.insetsController?.hide(WindowInsets.Type.statusBars())
-        } else {
-            @Suppress("DEPRECATION")
-            window.setFlags(
-                WindowManager.LayoutParams.FLAG_FULLSCREEN,
-                WindowManager.LayoutParams.FLAG_FULLSCREEN
-            )
-        }
-
         auth = Firebase.auth
         db = Firebase.firestore
 
@@ -71,6 +58,12 @@ class LoginActivity : AppCompatActivity() {
         tvGoToSignUp = findViewById(R.id.tvSignUp) // Cập nhật đúng ID nút Đăng ký
         tvForgotPassword = findViewById(R.id.tvForgotPassword)
         root = findViewById(R.id.loginRoot)
+        AuthScreenUi.apply(
+            this,
+            root,
+            findViewById(R.id.authClassicBackground),
+            findViewById(R.id.modernAuthOverlay)
+        )
         offlineState = findViewById(R.id.loginOfflineState)
         findViewById<TextView>(R.id.authVersion).text =
             getString(R.string.auth_version, AppVersion.name(this))

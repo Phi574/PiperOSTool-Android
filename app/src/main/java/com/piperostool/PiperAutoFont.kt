@@ -82,6 +82,11 @@ object PiperAutoFont {
         textView.setTag(R.id.piper_auto_font_signature, signature)
     }
 
+    fun apply(root: View) {
+        if (!::vt323.isInitialized) return
+        applyToTree(root)
+    }
+
     private fun customTypeface(context: Context, key: String): Typeface? {
         if (cachedCustomKey == key) return cachedCustomTypeface
         val loaded = PiperFontPreferences.customFontFile(context, key)?.let { file ->

@@ -17,6 +17,10 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.widget.NestedScrollView
 
 class PermissionManagerActivity : AppCompatActivity() {
 
@@ -26,11 +30,27 @@ class PermissionManagerActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_permission_manager)
 
+        val root = findViewById<NestedScrollView>(R.id.permissionRoot)
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        ViewCompat.setOnApplyWindowInsetsListener(root) { view, insets ->
+            val bars = insets.getInsets(
+                WindowInsetsCompat.Type.systemBars() or
+                    WindowInsetsCompat.Type.displayCutout()
+            )
+            view.setPadding(bars.left, bars.top, bars.right, bars.bottom)
+            insets
+        }
+        ViewCompat.requestApplyInsets(root)
+
         permissionContainer = findViewById(R.id.permission_list_container)
         findViewById<Button>(R.id.btnClose).setOnClickListener { finish() }
 
         loadAndDisplayPermissions()
         setupOptimizationButtons()
+        root.post {
+            root.requestFocus()
+            root.scrollTo(0, 0)
+        }
     }
 
     fun openSettingsForPermission(context: Context, permissionName: String) {
@@ -158,6 +178,10 @@ class PermissionManagerActivity : AppCompatActivity() {
             }
         }
         permissionContainer.addView(permissionView)
+        PiperAutoFont.apply(text)
+        if (PiperUiPreferences.isModern(this)) {
+            text.setTextColor(PiperModernUi.secondaryTextColor(this))
+        }
     }
 
     private fun setupOptimizationButtons() {

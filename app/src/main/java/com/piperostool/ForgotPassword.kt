@@ -1,9 +1,6 @@
 package com.piperostool
 
-import android.os.Build
 import android.os.Bundle
-import android.view.WindowInsets
-import android.view.WindowManager
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
@@ -30,17 +27,6 @@ class ForgotPassword : AppCompatActivity() {
         // 1. Phải vẽ giao diện ra trước
         setContentView(R.layout.activity_forgotpassword)
 
-        // 2. Ẩn Status Bar tạo hiệu ứng tràn viền LiquidGlass
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            window.insetsController?.hide(WindowInsets.Type.statusBars())
-        } else {
-            @Suppress("DEPRECATION")
-            window.setFlags(
-                WindowManager.LayoutParams.FLAG_FULLSCREEN,
-                WindowManager.LayoutParams.FLAG_FULLSCREEN
-            )
-        }
-
         // Khởi tạo Firebase Auth
         auth = Firebase.auth
 
@@ -54,7 +40,10 @@ class ForgotPassword : AppCompatActivity() {
         btnReset = findViewById(R.id.btnResetPassword)
         tvBackToLogin = findViewById(R.id.tvBackToLoginFromForgot)
         root = findViewById(R.id.forgotRoot)
+        AuthScreenUi.apply(this, root)
         offlineState = findViewById(R.id.forgotOfflineState)
+        findViewById<TextView>(R.id.forgotVersion).text =
+            getString(R.string.auth_version, AppVersion.name(this))
     }
 
     private fun setupListeners() {

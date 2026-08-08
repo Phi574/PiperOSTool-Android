@@ -717,6 +717,7 @@ class UniversalAppAdapter(
             holder.tvMeta.setTextColor(PiperModernUi.secondaryTextColor(holder.itemView.context))
             PiperModernUi.apply(holder.itemView)
         }
+        PiperAutoFont.apply(holder.itemView)
     }
 
     override fun getItemCount() = items.size
@@ -752,6 +753,7 @@ class ActivityAdapter(
         holder.tvFullName.text = actInfo.name
 
         holder.itemView.setOnClickListener { onActClick(actInfo) }
+        PiperAutoFont.apply(holder.itemView)
     }
 
     override fun getItemCount() = activities.size

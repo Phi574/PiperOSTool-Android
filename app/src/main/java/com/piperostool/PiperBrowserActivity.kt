@@ -1,22 +1,30 @@
 package com.piperostool
 
 import android.Manifest
+import android.animation.LayoutTransition
+import android.animation.ValueAnimator
 import android.app.DownloadManager
 import android.app.NotificationManager
 import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
 import android.content.res.Configuration
+import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.net.VpnService
 import android.os.Build
 import android.os.Bundle
+import android.os.SystemClock
 import android.provider.Settings
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.animation.AccelerateDecelerateInterpolator
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import android.webkit.CookieManager
@@ -32,10 +40,13 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.EditText
 import android.widget.FrameLayout
+import android.widget.GridLayout
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ProgressBar
+import android.widget.PopupWindow
+import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
@@ -60,7 +71,10 @@ import java.util.Date
 import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicInteger
+import kotlin.math.abs
 import kotlin.math.max
+import kotlin.math.min
 
 class PiperBrowserActivity : AppCompatActivity() {
     private data class BrowserTab(
@@ -69,7 +83,11 @@ class PiperBrowserActivity : AppCompatActivity() {
         var url: String,
         val webView: WebView,
         val incognito: Boolean,
-        val profileName: String?
+        val profileName: String?,
+        var thumbnail: Bitmap? = null,
+        val thirdPartyHosts: MutableSet<String> = ConcurrentHashMap.newKeySet(),
+        val trackerHosts: MutableSet<String> = ConcurrentHashMap.newKeySet(),
+        val requestCount: AtomicInteger = AtomicInteger()
     )
 
     private data class PendingDownload(
@@ -99,6 +117,10 @@ class PiperBrowserActivity : AppCompatActivity() {
     private lateinit var forwardButton: ImageButton
     private lateinit var reloadButton: ImageButton
     private lateinit var mediaDownloadButton: ImageButton
+    private lateinit var addressActionButton: ImageButton
+    private lateinit var bottomPanel: LinearLayout
+    private lateinit var addressRow: LinearLayout
+    private lateinit var browserToolbar: LinearLayout
     private lateinit var sessionStore: BrowserSessionStore
     private lateinit var extensionStore: BrowserExtensionStore
     private lateinit var privateBadge: TextView
@@ -114,6 +136,12 @@ class PiperBrowserActivity : AppCompatActivity() {
     private var browserCustomView: View? = null
     private var browserCustomViewCallback: WebChromeClient.CustomViewCallback? = null
     private var orientationBeforeCustomView = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+    private var browserChromeCompact = false
+    private var chromeAnimator: ValueAnimator? = null
+    private var chromeScrollDirection = 0
+    private var chromeScrollDistance = 0
+    private var chromeLastScrollAt = 0L
+    private var chromeScrollSuppressedUntil = 0L
 
     private inner class DownloadMetadataBridge(private val tabId: Long) {
         @JavascriptInterface
@@ -226,6 +254,8 @@ class PiperBrowserActivity : AppCompatActivity() {
         fileChooserCallback = null
         val privateProfiles = tabs.mapNotNull { it.profileName }
         tabs.forEach { tab ->
+            tab.thumbnail?.recycle()
+            tab.thumbnail = null
             tab.webView.stopLoading()
             tab.webView.webChromeClient = null
             tab.webView.webViewClient = WebViewClient()
@@ -251,6 +281,10 @@ class PiperBrowserActivity : AppCompatActivity() {
         reloadButton = findViewById(R.id.btnBrowserReload)
         mediaDownloadButton = findViewById(R.id.browserMediaDownload)
         privateBadge = findViewById(R.id.browserPrivateBadge)
+        addressActionButton = findViewById(R.id.btnAddressGo)
+        bottomPanel = findViewById(R.id.browserBottomPanel)
+        addressRow = findViewById(R.id.browserAddressRow)
+        browserToolbar = findViewById(R.id.browserToolbar)
     }
 
     private fun applyWindowInsets() {
@@ -272,8 +306,24 @@ class PiperBrowserActivity : AppCompatActivity() {
         findViewById<View>(R.id.btnHomeSearch).setOnClickListener {
             navigateFromInput(homeSearchInput)
         }
-        findViewById<View>(R.id.btnAddressGo).setOnClickListener {
-            navigateFromInput(addressInput)
+        addressActionButton.setOnClickListener {
+            if (activeTab()?.url == BrowserSessionStore.HOME_URL) {
+                setBrowserChromeCompact(false)
+                addressInput.requestFocus()
+                showKeyboard(addressInput)
+            } else {
+                showBrowserMenu()
+            }
+        }
+        addressInput.setOnFocusChangeListener { _, focused ->
+            val tab = activeTab() ?: return@setOnFocusChangeListener
+            if (focused) {
+                setBrowserChromeCompact(false)
+                addressInput.setText(if (tab.url == BrowserSessionStore.HOME_URL) "" else tab.url)
+                addressInput.setSelection(addressInput.text?.length ?: 0)
+            } else {
+                updateAddressDisplay(tab)
+            }
         }
         homeSearchInput.setOnEditorActionListener { _, actionId, _ ->
             if (actionId == EditorInfo.IME_ACTION_SEARCH) {
@@ -308,7 +358,6 @@ class PiperBrowserActivity : AppCompatActivity() {
             }
         }
         findViewById<View>(R.id.btnBrowserTabs).setOnClickListener { showTabsSheet() }
-        findViewById<View>(R.id.btnBrowserMenu).setOnClickListener { showBrowserMenu() }
         mediaDownloadButton.setOnClickListener {
             showMediaDownloadOptions(activeTabId)
         }
@@ -393,7 +442,55 @@ class PiperBrowserActivity : AppCompatActivity() {
             webViewClient = createWebViewClient()
             webChromeClient = createWebChromeClient()
             setDownloadListener(createDownloadListener(this))
+            setOnScrollChangeListener { _, _, scrollY, _, oldScrollY ->
+                handleBrowserScroll(this, scrollY, oldScrollY)
+            }
         }
+    }
+
+    private fun handleBrowserScroll(webView: WebView, scrollY: Int, oldScrollY: Int) {
+        if ((webView.tag as? Long) != activeTabId ||
+            activeTab()?.url == BrowserSessionStore.HOME_URL
+        ) {
+            return
+        }
+
+        val now = SystemClock.uptimeMillis()
+        if (now < chromeScrollSuppressedUntil) return
+
+        val delta = scrollY - oldScrollY
+        if (abs(delta) < dp(2)) return
+
+        val direction = if (delta > 0) SCROLL_DOWN else SCROLL_UP
+        if (direction != chromeScrollDirection || now - chromeLastScrollAt > SCROLL_SEQUENCE_TIMEOUT_MS) {
+            chromeScrollDirection = direction
+            chromeScrollDistance = 0
+        }
+        chromeLastScrollAt = now
+        chromeScrollDistance += abs(delta)
+
+        when {
+            direction == SCROLL_DOWN &&
+                !browserChromeCompact &&
+                scrollY >= dp(48) &&
+                chromeScrollDistance >= dp(40) -> {
+                resetBrowserScrollTracking()
+                setBrowserChromeCompact(true)
+            }
+
+            direction == SCROLL_UP &&
+                browserChromeCompact &&
+                chromeScrollDistance >= dp(56) -> {
+                resetBrowserScrollTracking()
+                setBrowserChromeCompact(false)
+            }
+        }
+    }
+
+    private fun resetBrowserScrollTracking() {
+        chromeScrollDirection = 0
+        chromeScrollDistance = 0
+        chromeLastScrollAt = 0L
     }
 
     private fun configureWebSettings(webView: WebView) {
@@ -450,14 +547,18 @@ class PiperBrowserActivity : AppCompatActivity() {
                 val tab = tabFor(view) ?: return
                 val currentUrl = url.orEmpty()
                 if (currentUrl == "about:blank" && tab.url == BrowserSessionStore.HOME_URL) return
+                tab.requestCount.set(0)
+                tab.thirdPartyHosts.clear()
+                tab.trackerHosts.clear()
                 mediaCandidates.remove(tab.id)
                 if (tab.id == activeTabId) updateMediaDownloadButton()
                 tab.url = currentUrl
                 if (tab.id == activeTabId) {
                     startPage.visibility = View.GONE
                     view.visibility = View.VISIBLE
-                    addressInput.setText(currentUrl)
+                    updateAddressDisplay(tab)
                     updateSecurityIcon(currentUrl)
+                    updateAddressAction(tab)
                 }
                 saveSession()
             }
@@ -478,6 +579,7 @@ class PiperBrowserActivity : AppCompatActivity() {
                 }
                 installDownloadMetadataCapture(view)
                 installMediaDiscovery(view)
+                captureTabThumbnail(tab)
                 if (tab.id == activeTabId) updateActiveTabUi()
                 saveSession()
             }
@@ -488,6 +590,7 @@ class PiperBrowserActivity : AppCompatActivity() {
             ): WebResourceResponse? {
                 val tabId = (view.tag as? Long) ?: return super.shouldInterceptRequest(view, request)
                 val url = request.url.toString()
+                tabs.firstOrNull { it.id == tabId }?.let { recordPrivacyRequest(it, request.url) }
                 mediaMimeTypeForUrl(url)?.let { mimeType ->
                     registerMediaCandidate(tabId, url, mimeType, null)
                 }
@@ -714,6 +817,7 @@ class PiperBrowserActivity : AppCompatActivity() {
 
     private fun showHome() {
         val tab = activeTab() ?: return
+        captureTabThumbnail(tab)
         mediaCandidates.remove(tab.id)
         tab.url = BrowserSessionStore.HOME_URL
         tab.title = BrowserSessionStore.DEFAULT_TAB_TITLE
@@ -743,6 +847,7 @@ class PiperBrowserActivity : AppCompatActivity() {
 
     private fun switchToTab(tabId: Long) {
         val selected = tabs.firstOrNull { it.id == tabId } ?: return
+        activeTab()?.takeUnless { it.id == selected.id }?.let(::captureTabThumbnail)
         activeTabId = selected.id
         tabs.forEach { it.webView.visibility = View.GONE }
         if (selected.url == BrowserSessionStore.HOME_URL) {
@@ -760,6 +865,8 @@ class PiperBrowserActivity : AppCompatActivity() {
         if (index == -1) return
 
         val removed = tabs.removeAt(index)
+        removed.thumbnail?.recycle()
+        removed.thumbnail = null
         mediaCandidates.remove(tabId)
         browserContent.removeView(removed.webView)
         removed.webView.destroy()
@@ -778,6 +885,7 @@ class PiperBrowserActivity : AppCompatActivity() {
 
     private fun updateActiveTabUi() {
         val tab = activeTab() ?: return
+        setBrowserChromeCompact(false, animated = false)
         pageTitle.text = tab.title
         privateBadge.visibility = if (tab.incognito) View.VISIBLE else View.GONE
         findViewById<TextView>(R.id.browserStorageNote).setText(
@@ -787,9 +895,8 @@ class PiperBrowserActivity : AppCompatActivity() {
                 R.string.browser_private_storage_note
             }
         )
-        addressInput.setText(
-            if (tab.url == BrowserSessionStore.HOME_URL) "" else tab.url
-        )
+        updateAddressDisplay(tab)
+        updateAddressAction(tab)
         updateSecurityIcon(tab.url)
         updateNavigationButtons()
         updateTabCount()
@@ -811,6 +918,146 @@ class PiperBrowserActivity : AppCompatActivity() {
 
     private fun updateTabCount() {
         tabCount.text = tabs.size.coerceAtMost(99).toString()
+    }
+
+    private fun updateAddressDisplay(tab: BrowserTab) {
+        val value = when {
+            tab.url == BrowserSessionStore.HOME_URL -> ""
+            addressInput.hasFocus() -> tab.url
+            else -> conciseAddress(tab.url)
+        }
+        if (addressInput.text?.toString() != value) addressInput.setText(value)
+    }
+
+    private fun updateAddressAction(tab: BrowserTab) {
+        val atHome = tab.url == BrowserSessionStore.HOME_URL
+        addressActionButton.setImageResource(
+            if (atHome) R.drawable.ic_browser_search else R.drawable.ic_browser_more
+        )
+        addressActionButton.contentDescription = getString(
+            if (atHome) R.string.search else R.string.more_options
+        )
+    }
+
+    private fun conciseAddress(url: String): String {
+        return runCatching {
+            Uri.parse(url).host
+                ?.removePrefix("www.")
+                ?.takeIf { it.isNotBlank() }
+                ?: url
+        }.getOrDefault(url)
+    }
+
+    private fun setBrowserChromeCompact(compact: Boolean, animated: Boolean = true) {
+        if (browserChromeCompact == compact && animated) return
+        browserChromeCompact = compact
+        resetBrowserScrollTracking()
+        chromeScrollSuppressedUntil = SystemClock.uptimeMillis() +
+            if (animated) CHROME_SCROLL_SUPPRESSION_MS else 100L
+        chromeAnimator?.cancel()
+
+        val toolbarParams = browserToolbar.layoutParams
+        val addressParams = addressRow.layoutParams
+        val currentToolbarHeight = when {
+            toolbarParams.height > 0 -> toolbarParams.height
+            browserToolbar.height > 0 -> browserToolbar.height
+            else -> 0
+        }
+        val currentAddressHeight = when {
+            addressParams.height > 0 -> addressParams.height
+            else -> dp(48)
+        }
+        val targetToolbarHeight = if (compact) 0 else dp(54)
+        val targetAddressHeight = if (compact) dp(40) else dp(48)
+
+        if (!compact) browserToolbar.visibility = View.VISIBLE
+        val applyProgress: (Float) -> Unit = { fraction ->
+            toolbarParams.height =
+                (currentToolbarHeight + (targetToolbarHeight - currentToolbarHeight) * fraction).toInt()
+            addressParams.height =
+                (currentAddressHeight + (targetAddressHeight - currentAddressHeight) * fraction).toInt()
+            browserToolbar.layoutParams = toolbarParams
+            addressRow.layoutParams = addressParams
+            browserToolbar.alpha = if (compact) 1f - fraction else fraction
+            bottomPanel.setPadding(
+                dp(10),
+                if (compact) dp(4) else dp(6),
+                dp(10),
+                if (compact) dp(4) else dp(6)
+            )
+        }
+
+        if (!animated) {
+            applyProgress(1f)
+            browserToolbar.visibility = if (compact) View.GONE else View.VISIBLE
+            activeTab()?.let(::updateAddressDisplay)
+            return
+        }
+
+        chromeAnimator = ValueAnimator.ofFloat(0f, 1f).apply {
+            duration = 190L
+            interpolator = AccelerateDecelerateInterpolator()
+            addUpdateListener { applyProgress(it.animatedValue as Float) }
+            addListener(object : android.animation.AnimatorListenerAdapter() {
+                private var cancelled = false
+
+                override fun onAnimationCancel(animation: android.animation.Animator) {
+                    cancelled = true
+                }
+
+                override fun onAnimationEnd(animation: android.animation.Animator) {
+                    if (cancelled || chromeAnimator !== animation) return
+                    browserToolbar.visibility = if (compact) View.GONE else View.VISIBLE
+                    activeTab()?.let(::updateAddressDisplay)
+                    chromeAnimator = null
+                }
+            })
+            start()
+        }
+    }
+
+    private fun captureTabThumbnail(tab: BrowserTab) {
+        if (tab.url == BrowserSessionStore.HOME_URL) return
+        val sourceWidth = tab.webView.width
+        val sourceHeight = tab.webView.height
+        if (sourceWidth <= 0 || sourceHeight <= 0) return
+        val targetWidth = min(dp(190), sourceWidth)
+        val targetHeight = min(dp(260), (sourceHeight * targetWidth.toFloat() / sourceWidth).toInt())
+        if (targetWidth <= 0 || targetHeight <= 0) return
+        val bitmap = runCatching {
+            Bitmap.createBitmap(targetWidth, targetHeight, Bitmap.Config.RGB_565).also { output ->
+                val canvas = Canvas(output)
+                canvas.drawColor(Color.WHITE)
+                canvas.scale(
+                    targetWidth.toFloat() / sourceWidth,
+                    targetHeight.toFloat() / sourceHeight
+                )
+                tab.webView.draw(canvas)
+            }
+        }.getOrNull() ?: return
+        tab.thumbnail?.takeUnless { it.isRecycled }?.recycle()
+        tab.thumbnail = bitmap
+    }
+
+    private fun recordPrivacyRequest(tab: BrowserTab, requestUri: Uri) {
+        val requestHost = requestUri.host?.lowercase(Locale.ROOT)?.removePrefix("www.") ?: return
+        tab.requestCount.incrementAndGet()
+        val pageHost = runCatching { Uri.parse(tab.url).host }
+            .getOrNull()
+            ?.lowercase(Locale.ROOT)
+            ?.removePrefix("www.")
+        if (!pageHost.isNullOrBlank() && !sameSite(pageHost, requestHost)) {
+            tab.thirdPartyHosts += requestHost
+        }
+        if (TRACKER_HOST_HINTS.any { hint -> requestHost == hint || requestHost.endsWith(".$hint") }) {
+            tab.trackerHosts += requestHost
+        }
+    }
+
+    private fun sameSite(first: String, second: String): Boolean {
+        if (first == second || first.endsWith(".$second") || second.endsWith(".$first")) return true
+        fun root(host: String): String = host.split('.').takeLast(2).joinToString(".")
+        return root(first) == root(second)
     }
 
     private fun activeTab(): BrowserTab? = tabs.firstOrNull { it.id == activeTabId }
@@ -843,24 +1090,59 @@ class PiperBrowserActivity : AppCompatActivity() {
     }
 
     private fun showBrowserMenu() {
-        val dialog = BottomSheetDialog(this)
-        val root = createSheetRoot().apply {
-            layoutParams = ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-            )
+        val tab = activeTab() ?: return
+        if (tab.url == BrowserSessionStore.HOME_URL) {
+            addressInput.requestFocus()
+            showKeyboard(addressInput)
+            return
         }
-        root.addView(createSheetHeader(getString(R.string.browser_options), null))
+        setBrowserChromeCompact(false)
 
         val content = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(12), 0, dp(12), dp(18))
+            setPadding(dp(10), 0, dp(10), dp(10))
+        }
+        val scroll = ScrollView(this).apply { addView(content) }
+        val root = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            background = popupSurfaceDrawable()
+            addView(createSheetHeader(getString(R.string.browser_options), null))
+            addView(
+                scroll,
+                LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    0,
+                    1f
+                )
+            )
+        }.also(PiperAutoFont::watch)
+        val popupWidth = min(dp(350), resources.displayMetrics.widthPixels - dp(24))
+        val popupHeight = min(dp(570), (resources.displayMetrics.heightPixels * 0.68f).toInt())
+        val popup = PopupWindow(root, popupWidth, popupHeight, true).apply {
+            isOutsideTouchable = true
+            elevation = dp(12).toFloat()
+            animationStyle = android.R.style.Animation_Dialog
+            setBackgroundDrawable(android.graphics.drawable.ColorDrawable(Color.TRANSPARENT))
         }
         val desktopSwitch = SwitchMaterial(this).apply {
             isChecked = sessionStore.isDesktopMode()
             buttonTintList = null
             setOnCheckedChangeListener { _, enabled -> setDesktopMode(enabled) }
         }
+        content.addView(
+            createMenuRow(
+                R.drawable.ic_browser_privacy,
+                getString(R.string.browser_privacy_report),
+                if (tab.trackerHosts.isEmpty()) {
+                    getString(R.string.browser_privacy_summary_safe)
+                } else {
+                    getString(R.string.browser_privacy_summary_warning, tab.trackerHosts.size)
+                }
+            ) {
+                popup.dismiss()
+                showPrivacyReport(tab)
+            }
+        )
         content.addView(
             createMenuRow(
                 R.drawable.browser,
@@ -876,7 +1158,7 @@ class PiperBrowserActivity : AppCompatActivity() {
                 R.drawable.ic_browser_reload,
                 getString(R.string.browser_history)
             ) {
-                dialog.dismiss()
+                popup.dismiss()
                 showHistorySheet()
             }
         )
@@ -885,7 +1167,7 @@ class PiperBrowserActivity : AppCompatActivity() {
                 R.drawable.ic_browser_download,
                 getString(R.string.browser_downloads)
             ) {
-                dialog.dismiss()
+                popup.dismiss()
                 openDownloads()
             }
         )
@@ -895,7 +1177,7 @@ class PiperBrowserActivity : AppCompatActivity() {
                 getString(R.string.browser_vpn),
                 selectedVpnLabel()
             ) {
-                dialog.dismiss()
+                popup.dismiss()
                 showVpnDialog()
             }
         )
@@ -909,7 +1191,7 @@ class PiperBrowserActivity : AppCompatActivity() {
                     extensionStore.load().size
                 )
             ) {
-                dialog.dismiss()
+                popup.dismiss()
                 showExtensionsSheet()
             }
         )
@@ -919,7 +1201,7 @@ class PiperBrowserActivity : AppCompatActivity() {
                 getString(R.string.browser_user_agent),
                 selectedUserAgent().label
             ) {
-                dialog.dismiss()
+                popup.dismiss()
                 showUserAgentDialog()
             }
         )
@@ -928,7 +1210,7 @@ class PiperBrowserActivity : AppCompatActivity() {
                 R.drawable.notification,
                 getString(R.string.browser_notifications)
             ) {
-                dialog.dismiss()
+                popup.dismiss()
                 requestAndOpenNotificationSettings()
             }
         )
@@ -937,14 +1219,158 @@ class PiperBrowserActivity : AppCompatActivity() {
                 R.drawable.browser,
                 getString(R.string.about_piperos_browser)
             ) {
-                dialog.dismiss()
+                popup.dismiss()
                 showAboutDialog()
             }
         )
-        root.addView(content)
+        PiperModernUi.apply(root)
+        popup.showAtLocation(
+            browserRoot,
+            Gravity.BOTTOM or Gravity.END,
+            dp(12),
+            bottomPanel.height + dp(10)
+        )
+    }
+
+    private fun popupSurfaceDrawable() = GradientDrawable().apply {
+        shape = GradientDrawable.RECTANGLE
+        setColor(PiperModernUi.surfaceColor(this@PiperBrowserActivity))
+        cornerRadius = dp(8).toFloat()
+        setStroke(dp(1), PiperModernUi.borderColor(this@PiperBrowserActivity))
+    }
+
+    private fun showPrivacyReport(tab: BrowserTab) {
+        val dialog = BottomSheetDialog(this)
+        val root = createSheetRoot()
+        root.addView(createSheetHeader(getString(R.string.browser_privacy_report), null))
+
+        val content = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(18), 0, dp(18), dp(24))
+        }
+        content.addView(LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(16), dp(16), dp(16), dp(16))
+            background = popupSurfaceDrawable()
+            addView(ImageView(this@PiperBrowserActivity).apply {
+                setImageResource(R.drawable.ic_browser_privacy)
+                imageTintList = android.content.res.ColorStateList.valueOf(
+                    if (tab.trackerHosts.isEmpty()) {
+                        PiperModernUi.accentColor(this@PiperBrowserActivity)
+                    } else {
+                        Color.rgb(235, 161, 65)
+                    }
+                )
+                setPadding(dp(5), dp(5), dp(5), dp(5))
+            }, LinearLayout.LayoutParams(dp(48), dp(48)).apply { marginEnd = dp(14) })
+            addView(LinearLayout(this@PiperBrowserActivity).apply {
+                orientation = LinearLayout.VERTICAL
+                addView(createSheetText(conciseAddress(tab.url), 17f, Color.WHITE).apply {
+                    setTypeface(typeface, Typeface.BOLD)
+                })
+                addView(createSheetText(
+                    if (tab.trackerHosts.isEmpty()) {
+                        getString(R.string.browser_privacy_summary_safe)
+                    } else {
+                        getString(R.string.browser_privacy_summary_warning, tab.trackerHosts.size)
+                    },
+                    12f,
+                    Color.parseColor("#AAFFFFFF")
+                ))
+            }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        }, LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT
+        ).apply { bottomMargin = dp(14) })
+
+        val metrics = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            addView(
+                privacyMetric(
+                    if (tab.url.startsWith("https://")) "HTTPS" else "HTTP",
+                    getString(R.string.browser_privacy_https)
+                ),
+                LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+            )
+            addView(
+                privacyMetric(
+                    tab.requestCount.get().toString(),
+                    getString(R.string.browser_privacy_requests, tab.requestCount.get())
+                ),
+                LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+            )
+            addView(
+                privacyMetric(
+                    tab.thirdPartyHosts.size.toString(),
+                    getString(R.string.browser_privacy_third_party, tab.thirdPartyHosts.size)
+                ),
+                LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+            )
+        }
+        content.addView(metrics)
+
+        content.addView(createSheetText(
+            getString(R.string.browser_privacy_trackers),
+            14f,
+            Color.WHITE
+        ).apply {
+            setTypeface(typeface, Typeface.BOLD)
+            setPadding(0, dp(22), 0, dp(10))
+        })
+        if (tab.trackerHosts.isEmpty()) {
+            content.addView(createSheetText(
+                getString(R.string.browser_privacy_no_trackers),
+                13f,
+                Color.parseColor("#AAFFFFFF")
+            ).apply {
+                maxLines = 3
+            })
+        } else {
+            tab.trackerHosts.sorted().forEach { host ->
+                content.addView(createSheetText(host, 13f, Color.WHITE).apply {
+                    setPadding(dp(10), dp(8), dp(10), dp(8))
+                    background = popupSurfaceDrawable()
+                }, LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                ).apply { bottomMargin = dp(6) })
+            }
+        }
+        content.addView(createSheetText(
+            getString(R.string.browser_privacy_note),
+            11f,
+            Color.parseColor("#86FFFFFF")
+        ).apply {
+            maxLines = 5
+            setPadding(0, dp(20), 0, 0)
+        })
+
+        val scroll = ScrollView(this).apply { addView(content) }
+        root.addView(scroll, LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            0,
+            1f
+        ))
         PiperModernUi.apply(root)
         dialog.setContentView(root)
         dialog.show()
+    }
+
+    private fun privacyMetric(value: String, label: String): View {
+        return LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            setPadding(dp(4), dp(10), dp(4), dp(10))
+            addView(createSheetText(value, 16f, Color.WHITE).apply {
+                gravity = Gravity.CENTER
+                setTypeface(typeface, Typeface.BOLD)
+            })
+            addView(createSheetText(label, 9f, Color.parseColor("#9AFFFFFF")).apply {
+                gravity = Gravity.CENTER
+                maxLines = 2
+            })
+        }
     }
 
     private fun createMenuRow(
@@ -1048,6 +1474,7 @@ class PiperBrowserActivity : AppCompatActivity() {
     }
 
     private fun showTabsSheet() {
+        activeTab()?.let(::captureTabThumbnail)
         val dialog = BottomSheetDialog(this)
         val root = createSheetRoot()
         root.addView(createSheetHeader(getString(R.string.open_tabs), null))
@@ -1076,15 +1503,17 @@ class PiperBrowserActivity : AppCompatActivity() {
         }
         root.addView(actions)
 
-        val scroll = android.widget.ScrollView(this)
-        val list = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(16), 0, dp(16), dp(20))
+        val scroll = ScrollView(this)
+        val grid = GridLayout(this).apply {
+            columnCount = if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) 3 else 2
+            alignmentMode = GridLayout.ALIGN_BOUNDS
+            setPadding(dp(12), 0, dp(12), dp(20))
+            layoutTransition = LayoutTransition().apply {
+                enableTransitionType(LayoutTransition.CHANGING)
+            }
         }
-        tabs.toList().forEach { tab ->
-            list.addView(createTabRow(tab, dialog))
-        }
-        scroll.addView(list)
+        populateTabsGrid(grid, dialog)
+        scroll.addView(grid)
         root.addView(
             scroll,
             LinearLayout.LayoutParams(
@@ -1098,76 +1527,139 @@ class PiperBrowserActivity : AppCompatActivity() {
         dialog.show()
     }
 
-    private fun createTabRow(tab: BrowserTab, dialog: BottomSheetDialog): View {
+    private fun populateTabsGrid(grid: GridLayout, dialog: BottomSheetDialog) {
+        grid.removeAllViews()
+        val columns = grid.columnCount
+        val available = resources.displayMetrics.widthPixels - dp(24) - dp(12 * (columns - 1))
+        val cardWidth = available / columns
+        tabs.toList().forEachIndexed { index, tab ->
+            val card = createTabCard(tab, dialog, grid)
+            grid.addView(card, GridLayout.LayoutParams().apply {
+                width = cardWidth
+                height = dp(if (columns == 2) 255 else 220)
+                setMargins(dp(4), dp(4), dp(4), dp(8))
+            })
+            card.alpha = 0f
+            card.scaleX = 0.96f
+            card.scaleY = 0.96f
+            card.animate()
+                .alpha(1f)
+                .scaleX(1f)
+                .scaleY(1f)
+                .setStartDelay((index * 35L).coerceAtMost(175L))
+                .setDuration(180L)
+                .start()
+        }
+    }
+
+    private fun createTabCard(
+        tab: BrowserTab,
+        dialog: BottomSheetDialog,
+        grid: GridLayout
+    ): View {
         return LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            minimumHeight = dp(72)
-            setPadding(dp(12), dp(8), dp(4), dp(8))
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(8), dp(7), dp(8), dp(8))
             isClickable = true
             isFocusable = true
-            background = ContextCompat.getDrawable(
-                this@PiperBrowserActivity,
-                R.drawable.bg_browser_surface
-            )
-
-            val texts = LinearLayout(this@PiperBrowserActivity).apply {
-                orientation = LinearLayout.VERTICAL
-                addView(
-                    createSheetText(
-                        if (tab.incognito) {
-                            getString(R.string.incognito_tab_title, tab.title)
-                        } else {
-                            tab.title
-                        },
-                        15f,
-                        if (tab.incognito) {
-                            ContextCompat.getColor(
-                                this@PiperBrowserActivity,
-                                R.color.green_neon
-                            )
-                        } else {
-                            Color.WHITE
-                        }
-                    )
-                )
-                addView(
-                    createSheetText(
-                        if (tab.url == BrowserSessionStore.HOME_URL) {
-                            getString(R.string.piperos_search)
-                        } else {
-                            tab.url
-                        },
-                        11f,
-                        Color.parseColor("#99FFFFFF")
-                    )
+            background = GradientDrawable().apply {
+                shape = GradientDrawable.RECTANGLE
+                setColor(PiperModernUi.surfaceColor(this@PiperBrowserActivity))
+                cornerRadius = dp(8).toFloat()
+                setStroke(
+                    dp(if (tab.id == activeTabId) 2 else 1),
+                    if (tab.id == activeTabId) {
+                        PiperModernUi.accentColor(this@PiperBrowserActivity)
+                    } else {
+                        PiperModernUi.borderColor(this@PiperBrowserActivity)
+                    }
                 )
             }
-            addView(
-                texts,
-                LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
-            )
 
-            addView(
-                createIconButton(R.drawable.ic_browser_close, R.string.close_tab).apply {
+            addView(LinearLayout(this@PiperBrowserActivity).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                addView(createSheetText(
+                    if (tab.incognito) getString(R.string.incognito_tab_title, tab.title) else tab.title,
+                    12f,
+                    Color.WHITE
+                ).apply {
+                    setTypeface(typeface, Typeface.BOLD)
+                }, LinearLayout.LayoutParams(0, dp(38), 1f))
+                addView(createIconButton(R.drawable.ic_browser_close, R.string.close_tab).apply {
+                    layoutParams = LinearLayout.LayoutParams(dp(36), dp(36))
+                    setPadding(dp(10), dp(10), dp(10), dp(10))
                     setOnClickListener {
-                        dialog.dismiss()
                         closeTab(tab.id)
-                        showTabsSheet()
+                        populateTabsGrid(grid, dialog)
                     }
+                })
+            })
+
+            addView(FrameLayout(this@PiperBrowserActivity).apply {
+                background = GradientDrawable().apply {
+                    val dark = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK ==
+                        Configuration.UI_MODE_NIGHT_YES
+                    setColor(if (dark) Color.rgb(14, 18, 22) else Color.WHITE)
+                    cornerRadius = dp(6).toFloat()
                 }
-            )
+                if (tab.thumbnail != null && tab.thumbnail?.isRecycled == false) {
+                    addView(ImageView(this@PiperBrowserActivity).apply {
+                        setImageBitmap(tab.thumbnail)
+                        scaleType = ImageView.ScaleType.CENTER_CROP
+                    }, FrameLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.MATCH_PARENT
+                    ))
+                } else {
+                    addView(ImageView(this@PiperBrowserActivity).apply {
+                        setImageResource(if (tab.url == BrowserSessionStore.HOME_URL) R.drawable.a3tn else R.drawable.browser)
+                        scaleType = ImageView.ScaleType.CENTER_INSIDE
+                        setPadding(dp(28), dp(28), dp(28), dp(28))
+                    }, FrameLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.MATCH_PARENT
+                    ))
+                }
+                if (tab.id == activeTabId) {
+                    addView(TextView(this@PiperBrowserActivity).apply {
+                        text = getString(R.string.browser_current_tab)
+                        textSize = 9f
+                        setTextColor(Color.WHITE)
+                        setTypeface(typeface, Typeface.BOLD)
+                        gravity = Gravity.CENTER
+                        background = GradientDrawable().apply {
+                            setColor(PiperModernUi.accentColor(this@PiperBrowserActivity))
+                            cornerRadius = dp(5).toFloat()
+                        }
+                        setPadding(dp(8), dp(3), dp(8), dp(3))
+                    }, FrameLayout.LayoutParams(
+                        ViewGroup.LayoutParams.WRAP_CONTENT,
+                        dp(24),
+                        Gravity.TOP or Gravity.START
+                    ).apply { setMargins(dp(7), dp(7), 0, 0) })
+                }
+            }, LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                0,
+                1f
+            ))
+
+            addView(createSheetText(
+                if (tab.url == BrowserSessionStore.HOME_URL) {
+                    getString(R.string.browser_home_tab)
+                } else {
+                    conciseAddress(tab.url)
+                },
+                10f,
+                Color.parseColor("#99FFFFFF")
+            ).apply {
+                setPadding(dp(2), dp(7), dp(2), 0)
+            })
             setOnClickListener {
                 dialog.dismiss()
                 switchToTab(tab.id)
             }
-
-            val params = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-            )
-            params.bottomMargin = dp(8)
-            layoutParams = params
         }
     }
 
@@ -1958,9 +2450,35 @@ class PiperBrowserActivity : AppCompatActivity() {
         private const val DOWNLOAD_BRIDGE_NAME = "PiperDownloadMetadata"
         private const val MAX_SUGGESTED_DOWNLOADS = 64
         private const val MAX_MEDIA_CANDIDATES = 24
+        private const val SCROLL_UP = -1
+        private const val SCROLL_DOWN = 1
+        private const val SCROLL_SEQUENCE_TIMEOUT_MS = 180L
+        private const val CHROME_SCROLL_SUPPRESSION_MS = 420L
         private const val DESKTOP_DEFAULT_USER_AGENT =
             "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 " +
                 "(KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36"
+        private val TRACKER_HOST_HINTS = setOf(
+            "doubleclick.net",
+            "google-analytics.com",
+            "googletagmanager.com",
+            "googlesyndication.com",
+            "adservice.google.com",
+            "connect.facebook.net",
+            "analytics.facebook.com",
+            "facebook.net",
+            "hotjar.com",
+            "clarity.ms",
+            "segment.io",
+            "segment.com",
+            "mixpanel.com",
+            "amplitude.com",
+            "appsflyer.com",
+            "branch.io",
+            "scorecardresearch.com",
+            "quantserve.com",
+            "taboola.com",
+            "outbrain.com"
+        )
 
     }
 }

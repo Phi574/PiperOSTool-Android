@@ -5,10 +5,10 @@
     android:id="@+id/signupRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/black"
-    android:fitsSystemWindows="true">
+    android:background="@color/black">
 
     <ImageView
+        android:id="@+id/authClassicBackground"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:contentDescription="@null"
@@ -171,7 +171,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="52dp"
                 android:layout_marginTop="12dp"
-                android:background="?attr/selectableItemBackground"
+                android:background="@drawable/bg_auth_panel"
                 android:gravity="center"
                 android:text="@string/auth_back_login"
                 android:textColor="#DFFFFFFF"

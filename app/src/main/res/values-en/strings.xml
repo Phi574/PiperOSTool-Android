@@ -243,6 +243,17 @@
     <string name="tabs">Tabs</string>
     <string name="more_options">More options</string>
     <string name="browser_options">Browser options</string>
+    <string name="browser_privacy_report">Privacy report</string>
+    <string name="browser_privacy_summary_safe">No common tracking signals detected</string>
+    <string name="browser_privacy_summary_warning">%1$d possible tracking domains detected</string>
+    <string name="browser_privacy_https">Encrypted connection</string>
+    <string name="browser_privacy_requests">%1$d network requests</string>
+    <string name="browser_privacy_third_party">%1$d third-party domains</string>
+    <string name="browser_privacy_trackers">Possible tracking domains</string>
+    <string name="browser_privacy_no_trackers">No common trackers were identified on this page.</string>
+    <string name="browser_privacy_note">This report is analyzed locally from the current tab\'s network requests. PiperOS does not send browsing history elsewhere.</string>
+    <string name="browser_current_tab">Current tab</string>
+    <string name="browser_home_tab">PiperOS home</string>
     <string name="desktop_site">Desktop site</string>
     <string name="browser_history">Browsing history</string>
     <string name="browser_downloads">Downloads</string>

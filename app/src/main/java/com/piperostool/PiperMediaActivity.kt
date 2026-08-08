@@ -1265,6 +1265,7 @@ class PiperMediaActivity : AppCompatActivity() {
                     .setTextColor(PiperModernUi.secondaryTextColor(this@PiperMediaActivity))
             }
             PiperModernUi.apply(view)
+            PiperAutoFont.apply(view)
             return view
         }
     }

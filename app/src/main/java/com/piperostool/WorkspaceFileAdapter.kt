@@ -61,6 +61,7 @@ class WorkspaceFileAdapter(
         }
         holder.itemView.setOnClickListener { onClick(entry) }
         holder.itemView.setOnLongClickListener { onLongClick(entry); true }
+        PiperAutoFont.apply(holder.itemView)
     }
 
     override fun getItemCount(): Int = entries.size

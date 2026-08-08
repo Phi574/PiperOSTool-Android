@@ -1,10 +1,7 @@
 package com.piperostool
 
 import android.content.Intent
-import android.os.Build
 import android.os.Bundle
-import android.view.WindowInsets
-import android.view.WindowManager
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
@@ -37,17 +34,6 @@ class SignupActivity : AppCompatActivity() {
         // 1. Phải vẽ giao diện ra trước
         setContentView(R.layout.activity_signup)
 
-        // 2. Ẩn Status Bar tạo hiệu ứng tràn viền
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            window.insetsController?.hide(WindowInsets.Type.statusBars())
-        } else {
-            @Suppress("DEPRECATION")
-            window.setFlags(
-                WindowManager.LayoutParams.FLAG_FULLSCREEN,
-                WindowManager.LayoutParams.FLAG_FULLSCREEN
-            )
-        }
-
         // Khởi tạo Firebase
         auth = Firebase.auth
         db = Firebase.firestore
@@ -65,6 +51,12 @@ class SignupActivity : AppCompatActivity() {
         btnRegister = findViewById(R.id.btnRegister)
         tvBackToLogin = findViewById(R.id.tvBackToLogin)
         root = findViewById(R.id.signupRoot)
+        AuthScreenUi.apply(
+            this,
+            root,
+            findViewById(R.id.authClassicBackground),
+            findViewById(R.id.modernAuthOverlay)
+        )
         offlineState = findViewById(R.id.signupOfflineState)
         findViewById<TextView>(R.id.signupVersion).text =
             getString(R.string.auth_version, AppVersion.name(this))

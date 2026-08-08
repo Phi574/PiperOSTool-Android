@@ -343,7 +343,7 @@ object PiperModernUi {
             name.contains("progress", true) || name == "terminalScroll"
 
     private fun isPageRoot(name: String): Boolean = name in setOf(
-        "homeRoot", "lockRoot", "loginRoot", "signupRoot", "forgotRoot", "welcomeRoot",
+        "homeRoot", "lockRoot", "loginRoot", "signupRoot", "forgotRoot", "welcomeRoot", "permissionRoot",
         "browserRoot", "mediaRoot", "mediaGalleryRoot", "fileManagerRoot", "filePreviewRoot",
         "fakeMapRoot", "terminalRoot", "apkEditorRoot", "textEditorRoot"
     )

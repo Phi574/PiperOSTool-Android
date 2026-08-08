@@ -2,8 +2,11 @@
 <androidx.core.widget.NestedScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/permissionRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:clipToPadding="false"
+    android:descendantFocusability="beforeDescendants"
     android:fillViewport="true">
 
     <LinearLayout
@@ -13,7 +16,7 @@
         android:background="@drawable/bg_glass_panel"
         android:backgroundTint="#2C2C2C"
         android:padding="20dp"
-        android:layout_margin="20dp">
+        android:layout_margin="16dp">
 
     <TextView
         android:layout_width="wrap_content"

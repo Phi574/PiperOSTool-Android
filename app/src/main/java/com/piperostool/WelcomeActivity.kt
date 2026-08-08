@@ -1,10 +1,7 @@
 package com.piperostool
 
 import android.content.Intent
-import android.os.Build
 import android.os.Bundle
-import android.view.WindowInsets
-import android.view.WindowManager
 import android.widget.Button
 import android.widget.TextView
 import android.view.View
@@ -27,17 +24,6 @@ class WelcomeActivity : AppCompatActivity() {
         // 1. Phải setContentView trước khi setInsets
         setContentView(R.layout.welcome)
 
-        // 2. Xóa thanh trạng thái (Status bar) để tràn viền LiquidGlass
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            window.insetsController?.hide(WindowInsets.Type.statusBars())
-        } else {
-            @Suppress("DEPRECATION")
-            window.setFlags(
-                WindowManager.LayoutParams.FLAG_FULLSCREEN,
-                WindowManager.LayoutParams.FLAG_FULLSCREEN
-            )
-        }
-
         // Khởi tạo Firebase Auth
         auth = Firebase.auth
 
@@ -52,6 +38,7 @@ class WelcomeActivity : AppCompatActivity() {
         btnLogin = findViewById(R.id.btnLogin)
         btnSignup = findViewById(R.id.btnSignup)
         root = findViewById(R.id.welcomeRoot)
+        AuthScreenUi.apply(this, root)
         offlineState = findViewById(R.id.welcomeOfflineState)
         findViewById<TextView>(R.id.welcomeVersion).text =
             getString(R.string.auth_version, AppVersion.name(this))
