@@ -358,4 +358,18 @@
     <string name="terminal_task_running">Đang chạy: %1$s</string>
     <string name="terminal_task_processing">Đang xử lý</string>
     <string name="terminal_confirmation_question">Lệnh đang chờ xác nhận</string>
+    <string name="terminal_runtime_versions_action">CHỌN PHIÊN BẢN</string>
+    <string name="terminal_runtime_catalog_loading">Đang tải danh sách runtime từ GitHub…</string>
+    <string name="terminal_runtime_catalog_empty">Chưa có bản runtime tương thích để tải.</string>
+    <string name="terminal_runtime_catalog_error_title">Không tải được danh sách runtime</string>
+    <string name="terminal_runtime_catalog_error">Hãy kiểm tra mạng rồi thử lại.\n\n%1$s</string>
+    <string name="terminal_runtime_choose_title">Chọn PiperOS Runtime</string>
+    <string name="terminal_runtime_choose_message">Chỉ các bản phát hành có manifest ký số và bootstrap hợp lệ mới xuất hiện.</string>
+    <string name="terminal_runtime_choose_action">TIẾP TỤC</string>
+    <string name="terminal_runtime_latest_badge">Mới nhất</string>
+    <string name="terminal_runtime_installed_badge">Đang cài</string>
+    <string name="terminal_runtime_downgrade_title">Hạ phiên bản runtime?</string>
+    <string name="terminal_runtime_downgrade_message">Bạn đang hạ từ %1$s xuống %2$s. Chọn BUG để giữ package và nguồn hiện tại nhưng chấp nhận nguy cơ xung đột. Chọn FIX để xóa sạch runtime, package và HOME rồi cài mới ổn định hơn.</string>
+    <string name="terminal_runtime_downgrade_keep">BUG · GIỮ DỮ LIỆU</string>
+    <string name="terminal_runtime_downgrade_clean">FIX · CÀI SẠCH</string>
 </resources>

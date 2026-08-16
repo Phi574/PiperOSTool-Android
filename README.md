@@ -12,7 +12,7 @@
   <a href="https://github.com/Phi574/PiperOSTool-Android/actions/workflows/android-ci.yml"><img alt="Android CI" src="https://github.com/Phi574/PiperOSTool-Android/actions/workflows/android-ci.yml/badge.svg"></a>
   <a href="https://github.com/Phi574/PiperOSTool-Android/blob/master/LICENSE"><img alt="GPLv3" src="https://img.shields.io/badge/license-GPLv3-blue.svg"></a>
   <img alt="Android 7+" src="https://img.shields.io/badge/Android-7%2B-3DDC84?logo=android&logoColor=white">
-  <img alt="Kotlin" src="https://img.shields.io/badge/Kotlin-2.0-7F52FF?logo=kotlin&logoColor=white">
+  <img alt="Kotlin 2.4.10" src="https://img.shields.io/badge/Kotlin-2.4.10-7F52FF?logo=kotlin&logoColor=white">
 </p>
 
 > PiperOS Tool đang ở giai đoạn beta. Một số tính năng cần quyền hệ thống
@@ -20,7 +20,7 @@
 
 ## Bản hiện tại
 
-`3.0.6.beta` sử dụng `minSdk 24`, `targetSdk 36` và tập trung vào:
+`3.0.8.beta` sử dụng `minSdk 24`, `targetSdk 36`, Kotlin `2.4.10` và tập trung vào:
 
 - **Giao diện thích ứng:** giao diện Modern tối giản là mặc định, giao diện Classic
   giữ nguyên trải nghiệm cũ. Người dùng có thể chọn sáng, tối hoặc theo hệ thống và
@@ -49,8 +49,10 @@
   nút thoát PiperOS trong toolbar dưới.
 - **PiperOS Media:** quét nhạc/video trên thiết bị, lọc theo nguồn, tìm kiếm,
   sắp xếp, hàng đợi riêng, phát nền, Picture-in-Picture và điều khiển media.
-- **PiperOS Terminal:** shell Android cục bộ nhiều phiên, lịch sử lệnh và
-  foreground service. Runtime Linux đầy đủ đang được phát triển riêng.
+- **PiperOS Terminal:** shell Android và Linux nhiều phiên, lịch sử lệnh,
+  foreground service và bàn phím terminal riêng. Trình chọn runtime đọc các
+  bản phát hành đã ký từ GitHub, hỗ trợ nâng cấp hoặc hạ cấp theo chế độ giữ
+  dữ liệu/cài sạch. Runtime mặc định hiện tại là `2.5.6-beta`.
 - **PiperOS Fake Map GPS:** mô phỏng vị trí cố định hoặc hành trình có tốc độ,
   phương tiện, dừng đỗ và lặp tuyến qua ứng dụng vị trí mô phỏng của Android.
   Hành trình hỗ trợ nhiều waypoint, tuyến gợi ý và marker GPS chuyển động trực tiếp.

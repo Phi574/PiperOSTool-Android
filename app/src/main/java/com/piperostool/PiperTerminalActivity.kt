@@ -21,6 +21,8 @@ import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.ProgressBar
+import android.widget.RadioButton
+import android.widget.RadioGroup
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
@@ -57,6 +59,7 @@ class PiperTerminalActivity : AppCompatActivity(), TerminalSessionManager.Listen
     private var activeSessionId = 0L
     private var runtimeReceiverRegistered = false
     private var removingRuntime = false
+    private var loadingRuntimeCatalog = false
     private var runtimeActionsExpanded = false
     private val runtimeStateReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -520,13 +523,13 @@ class PiperTerminalActivity : AppCompatActivity(), TerminalSessionManager.Listen
         val landscape =
             resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
         runtimeInstallButton.visibility =
-            if (!runtime.installed || runtime.updateAvailable) View.VISIBLE else View.GONE
-        runtimeInstallButton.setText(
-            if (runtime.updateAvailable) {
-                R.string.terminal_runtime_update_action
+            if (!runtime.installed || runtime.updateAvailable || runtimeActionsExpanded) {
+                View.VISIBLE
             } else {
-                R.string.terminal_runtime_install_action
+                View.GONE
             }
+        runtimeInstallButton.setText(
+            R.string.terminal_runtime_versions_action
         )
         runtimeRemoveButton.visibility = if (runtime.installed) View.VISIBLE else View.GONE
         val actionsNeeded =
@@ -548,15 +551,132 @@ class PiperTerminalActivity : AppCompatActivity(), TerminalSessionManager.Listen
             Toast.makeText(this, state.message, Toast.LENGTH_SHORT).show()
             return
         }
-        val runtime = TerminalRuntime.inspect(this)
-        if (runtime.installed && !runtime.updateAvailable) {
-            Toast.makeText(this, R.string.terminal_runtime_already_current, Toast.LENGTH_SHORT).show()
+        if (loadingRuntimeCatalog) {
+            Toast.makeText(this, R.string.terminal_runtime_catalog_loading, Toast.LENGTH_SHORT).show()
             return
         }
+        loadingRuntimeCatalog = true
+        runtimeDetailView.setText(R.string.terminal_runtime_catalog_loading)
+        Thread({
+            val result = runCatching { TerminalRuntimeCatalog.fetch() }
+            mainHandler.post {
+                loadingRuntimeCatalog = false
+                renderRuntimeStatus()
+                result.onSuccess { releases ->
+                    if (releases.isEmpty()) {
+                        Toast.makeText(
+                            this,
+                            R.string.terminal_runtime_catalog_empty,
+                            Toast.LENGTH_LONG
+                        ).show()
+                    } else {
+                        showRuntimeVersionPicker(releases)
+                    }
+                }.onFailure { error ->
+                    PiperDialog.showMessage(
+                        this,
+                        getString(R.string.terminal_runtime_catalog_error_title),
+                        getString(
+                            R.string.terminal_runtime_catalog_error,
+                            error.message.orEmpty()
+                        )
+                    )
+                }
+            }
+        }, "PiperRuntimeCatalog").start()
+    }
+
+    private fun showRuntimeVersionPicker(releases: List<TerminalRuntimeCatalog.Release>) {
+        val runtime = TerminalRuntime.inspect(this)
+        val radioGroup = RadioGroup(this).apply {
+            orientation = RadioGroup.VERTICAL
+        }
+        releases.forEachIndexed { index, release ->
+            radioGroup.addView(RadioButton(this).apply {
+                id = View.generateViewId()
+                tag = release
+                val labels = buildList {
+                    if (index == 0) add(getString(R.string.terminal_runtime_latest_badge))
+                    if (release.version == runtime.installedVersion) {
+                        add(getString(R.string.terminal_runtime_installed_badge))
+                    }
+                }
+                text = buildString {
+                    append("PiperOS Runtime ").append(release.version)
+                    if (labels.isNotEmpty()) append("  ·  ").append(labels.joinToString(" · "))
+                    release.publishedAt.take(10).takeIf(String::isNotBlank)?.let {
+                        append("\n").append(it)
+                    }
+                }
+                textSize = 15f
+                setTextColor(PiperModernUi.textColor(this@PiperTerminalActivity))
+                setPadding(0, 8, 0, 8)
+                isChecked = release.version == runtime.installedVersion ||
+                    (runtime.installedVersion == null && index == 0)
+            })
+        }
+        if (radioGroup.checkedRadioButtonId == -1) {
+            (radioGroup.getChildAt(0) as? RadioButton)?.isChecked = true
+        }
+        val scroll = ScrollView(this).apply {
+            addView(radioGroup)
+        }
+        PiperDialog.showCustom(
+            context = this,
+            title = getString(R.string.terminal_runtime_choose_title),
+            message = getString(R.string.terminal_runtime_choose_message),
+            icon = R.drawable.ic_terminal,
+            content = scroll,
+            positiveLabel = getString(R.string.terminal_runtime_choose_action),
+            onPositive = {
+                val selected = radioGroup.findViewById<RadioButton>(
+                    radioGroup.checkedRadioButtonId
+                )?.tag as? TerminalRuntimeCatalog.Release
+                selected?.let(::confirmRuntimeSelection) != null
+            }
+        )
+    }
+
+    private fun confirmRuntimeSelection(release: TerminalRuntimeCatalog.Release) {
+        val installedVersion = TerminalRuntime.inspect(this).installedVersion
+        val downgrade = installedVersion != null &&
+            TerminalRuntime.compareVersions(release.version, installedVersion) < 0
+        if (!downgrade) {
+            startRuntimeInstall(release, TerminalRuntimeInstallService.InstallMode.NORMAL)
+            return
+        }
+        PiperDialog.showCustom(
+            context = this,
+            title = getString(R.string.terminal_runtime_downgrade_title),
+            message = getString(
+                R.string.terminal_runtime_downgrade_message,
+                installedVersion,
+                release.version
+            ),
+            positiveLabel = getString(R.string.terminal_runtime_downgrade_clean),
+            neutralLabel = getString(R.string.terminal_runtime_downgrade_keep),
+            destructive = true,
+            onPositive = {
+                startRuntimeInstall(release, TerminalRuntimeInstallService.InstallMode.CLEAN)
+                true
+            },
+            onNeutral = {
+                startRuntimeInstall(release, TerminalRuntimeInstallService.InstallMode.KEEP_DATA)
+            }
+        )
+    }
+
+    private fun startRuntimeInstall(
+        release: TerminalRuntimeCatalog.Release,
+        mode: TerminalRuntimeInstallService.InstallMode
+    ) {
         ContextCompat.startForegroundService(
             this,
             Intent(this, TerminalRuntimeInstallService::class.java)
                 .setAction(TerminalRuntimeInstallService.ACTION_INSTALL)
+                .putExtra(TerminalRuntimeInstallService.EXTRA_RELEASE_TAG, release.tag)
+                .putExtra(TerminalRuntimeInstallService.EXTRA_RUNTIME_VERSION, release.version)
+                .putExtra(TerminalRuntimeInstallService.EXTRA_INSTALL_MODE, mode.name)
         )
         mainHandler.postDelayed({ renderRuntimeStatus() }, 150)
     }

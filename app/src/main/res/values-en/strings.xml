@@ -356,4 +356,18 @@
     <string name="terminal_task_running">Running: %1$s</string>
     <string name="terminal_task_processing">Processing</string>
     <string name="terminal_confirmation_question">Command is waiting for confirmation</string>
+    <string name="terminal_runtime_versions_action">CHOOSE VERSION</string>
+    <string name="terminal_runtime_catalog_loading">Loading runtime releases from GitHub…</string>
+    <string name="terminal_runtime_catalog_empty">No compatible runtime release is available.</string>
+    <string name="terminal_runtime_catalog_error_title">Could not load runtimes</string>
+    <string name="terminal_runtime_catalog_error">Check your connection and try again.\n\n%1$s</string>
+    <string name="terminal_runtime_choose_title">Choose PiperOS Runtime</string>
+    <string name="terminal_runtime_choose_message">Only releases with a signed manifest and valid bootstrap assets are shown.</string>
+    <string name="terminal_runtime_choose_action">CONTINUE</string>
+    <string name="terminal_runtime_latest_badge">Latest</string>
+    <string name="terminal_runtime_installed_badge">Installed</string>
+    <string name="terminal_runtime_downgrade_title">Downgrade runtime?</string>
+    <string name="terminal_runtime_downgrade_message">You are downgrading from %1$s to %2$s. Choose BUG to retain current packages and sources while accepting possible conflicts. Choose FIX to remove the runtime, packages and HOME before a clean installation.</string>
+    <string name="terminal_runtime_downgrade_keep">BUG · KEEP DATA</string>
+    <string name="terminal_runtime_downgrade_clean">FIX · CLEAN INSTALL</string>
 </resources>

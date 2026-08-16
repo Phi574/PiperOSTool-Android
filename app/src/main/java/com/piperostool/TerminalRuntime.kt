@@ -31,7 +31,10 @@ object TerminalRuntime {
             get() = shellExecutable != null
 
         val updateAvailable: Boolean
-            get() = installed && installedVersion != RUNTIME_VERSION
+            get() = installed && (
+                installedVersion == null ||
+                    compareVersions(installedVersion, RUNTIME_VERSION) < 0
+                )
     }
 
     fun inspect(context: Context): Status {
@@ -62,6 +65,37 @@ object TerminalRuntime {
     fun writeInstalledVersion(prefix: File, version: String) {
         File(prefix, VERSION_FILE_NAME).writeText(version.trim() + "\n")
     }
+
+    fun manifestUrl(tag: String): String =
+        "$SOURCE_REPOSITORY_URL/releases/download/$tag/runtime-manifest.json"
+
+    fun manifestSignatureUrl(tag: String): String =
+        "$SOURCE_REPOSITORY_URL/releases/download/$tag/runtime-manifest.sig"
+
+    fun compareVersions(left: String, right: String): Int {
+        val leftParts = versionParts(left)
+        val rightParts = versionParts(right)
+        val size = maxOf(leftParts.size, rightParts.size)
+        repeat(size) { index ->
+            val leftPart = leftParts.getOrNull(index) ?: "0"
+            val rightPart = rightParts.getOrNull(index) ?: "0"
+            val comparison = when {
+                leftPart.all(Char::isDigit) && rightPart.all(Char::isDigit) ->
+                    leftPart.toLongOrNull().orEmptyCompare(rightPart.toLongOrNull())
+                leftPart.all(Char::isDigit) -> 1
+                rightPart.all(Char::isDigit) -> -1
+                else -> leftPart.compareTo(rightPart, ignoreCase = true)
+            }
+            if (comparison != 0) return comparison
+        }
+        return 0
+    }
+
+    private fun versionParts(version: String): List<String> =
+        Regex("[0-9]+|[A-Za-z]+").findAll(version).map { it.value }.toList()
+
+    private fun Long?.orEmptyCompare(other: Long?): Int =
+        (this ?: 0L).compareTo(other ?: 0L)
 
     fun repairPackageConfiguration(context: Context) {
         val prefix = File(context.filesDir, "usr")

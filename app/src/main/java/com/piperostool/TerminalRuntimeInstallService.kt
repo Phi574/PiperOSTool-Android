@@ -12,6 +12,7 @@ import android.os.IBinder
 import android.os.StatFs
 import android.os.SystemClock
 import android.system.Os
+import android.system.OsConstants
 import android.util.Base64
 import androidx.core.app.NotificationCompat
 import com.google.crypto.tink.subtle.Ed25519Verify
@@ -36,6 +37,9 @@ import java.util.zip.ZipInputStream
 class TerminalRuntimeInstallService : Service() {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var installJob: Job? = null
+    private var requestedTag = TerminalRuntime.RUNTIME_RELEASE_TAG
+    private var requestedVersion = TerminalRuntime.RUNTIME_VERSION
+    private var requestedMode = InstallMode.NORMAL
 
     override fun onCreate() {
         super.onCreate()
@@ -49,6 +53,16 @@ class TerminalRuntimeInstallService : Service() {
             return START_NOT_STICKY
         }
         if (!installing.compareAndSet(false, true)) return START_NOT_STICKY
+
+        requestedTag = intent?.getStringExtra(EXTRA_RELEASE_TAG)
+            ?.takeIf { it.matches(Regex("runtime-v[0-9][0-9A-Za-z._-]*")) }
+            ?: TerminalRuntime.RUNTIME_RELEASE_TAG
+        requestedVersion = intent?.getStringExtra(EXTRA_RUNTIME_VERSION)
+            ?.takeIf { requestedTag == "runtime-v$it" }
+            ?: requestedTag.removePrefix("runtime-v")
+        requestedMode = intent?.getStringExtra(EXTRA_INSTALL_MODE)
+            ?.let { runCatching { InstallMode.valueOf(it) }.getOrNull() }
+            ?: InstallMode.NORMAL
 
         cancelRequested.set(false)
         publish(State(Phase.PREPARING, 0, getString(R.string.terminal_runtime_preparing)))
@@ -101,6 +115,11 @@ class TerminalRuntimeInstallService : Service() {
         val activePrefix = File(filesDir, "usr")
         var activationStarted = false
 
+        if (requestedMode == InstallMode.CLEAN) {
+            TerminalSessionManager.closeAll()
+            TerminalRuntime.uninstall(this)
+        }
+
         workDirectory.deleteRecursively()
         stagingRoot.deleteRecursively()
         workDirectory.mkdirsOrThrow()
@@ -108,13 +127,19 @@ class TerminalRuntimeInstallService : Service() {
 
         try {
             publish(State(Phase.MANIFEST, 2, getString(R.string.terminal_runtime_checking)))
-            val manifestBytes = downloadBytes(TerminalRuntime.MANIFEST_URL, MAX_MANIFEST_BYTES)
+            val manifestBytes = downloadBytes(
+                TerminalRuntime.manifestUrl(requestedTag),
+                MAX_MANIFEST_BYTES
+            )
             val signatureBytes = downloadBytes(
-                TerminalRuntime.MANIFEST_SIGNATURE_URL,
+                TerminalRuntime.manifestSignatureUrl(requestedTag),
                 MAX_SIGNATURE_BYTES
             )
             verifyManifestSignature(manifestBytes, signatureBytes)
-            val selection = selectRuntime(JSONObject(String(manifestBytes, Charsets.UTF_8)))
+            val selection = selectRuntime(
+                JSONObject(String(manifestBytes, Charsets.UTF_8)),
+                requestedVersion
+            )
 
             val availableBytes = StatFs(filesDir.absolutePath).availableBytes
             val requiredBytes = selection.size * 8 + MIN_FREE_SPACE_BYTES
@@ -143,7 +168,7 @@ class TerminalRuntimeInstallService : Service() {
             publish(State(Phase.ACTIVATING, 94, getString(R.string.terminal_runtime_activating)))
             TerminalSessionManager.closeAll()
             activationStarted = true
-            activateRuntime(stagingPrefix, activePrefix, backupPrefix)
+            activateRuntime(stagingPrefix, activePrefix, backupPrefix, requestedMode)
             runSecondStage(activePrefix)
             provisionPackageRepository(activePrefix)
             backupPrefix.deleteRecursively()
@@ -257,7 +282,7 @@ class TerminalRuntimeInstallService : Service() {
             .verify(signature, manifest)
     }
 
-    private fun selectRuntime(manifest: JSONObject): RuntimeSelection {
+    private fun selectRuntime(manifest: JSONObject, expectedVersion: String): RuntimeSelection {
         require(manifest.optInt("schema") == 1) { "Unsupported runtime manifest schema" }
         require(manifest.optString("applicationId") == packageName) {
             "Runtime belongs to another application"
@@ -273,7 +298,7 @@ class TerminalRuntimeInstallService : Service() {
             "Runtime prefix path does not match this application"
         }
         val version = manifest.optString("runtimeVersion")
-        require(version == TerminalRuntime.RUNTIME_VERSION) { "Unexpected runtime version: $version" }
+        require(version == expectedVersion) { "Unexpected runtime version: $version" }
         val assets = manifest.getJSONObject("assets")
         val abi = Build.SUPPORTED_ABIS.firstOrNull { assets.has(it) }
             ?: error("This device ABI is not supported: ${Build.SUPPORTED_ABIS.joinToString()}")
@@ -462,16 +487,67 @@ class TerminalRuntimeInstallService : Service() {
         }
     }.getOrDefault(false)
 
-    private fun activateRuntime(stagingPrefix: File, activePrefix: File, backupPrefix: File) {
+    private fun activateRuntime(
+        stagingPrefix: File,
+        activePrefix: File,
+        backupPrefix: File,
+        mode: InstallMode
+    ) {
         backupPrefix.deleteRecursively()
         if (activePrefix.exists()) {
             require(activePrefix.renameTo(backupPrefix)) { "Cannot back up current runtime" }
+        }
+        if (mode == InstallMode.KEEP_DATA && backupPrefix.exists()) {
+            copyTree(backupPrefix, stagingPrefix, overwrite = false)
+            PRESERVED_RUNTIME_PATHS.forEach { relativePath ->
+                val source = File(backupPrefix, relativePath)
+                if (!source.exists() && !isSymbolicLink(source)) return@forEach
+                val destination = File(stagingPrefix, relativePath)
+                deleteTreeWithoutFollowingLinks(destination)
+                copyTree(source, destination, overwrite = true)
+            }
+            TerminalRuntime.writeInstalledVersion(stagingPrefix, requestedVersion)
         }
         if (!stagingPrefix.renameTo(activePrefix)) {
             if (backupPrefix.exists()) backupPrefix.renameTo(activePrefix)
             error("Cannot activate downloaded runtime")
         }
     }
+
+    private fun copyTree(source: File, destination: File, overwrite: Boolean) {
+        ensureNotCancelled()
+        if (isSymbolicLink(source)) {
+            if (destination.exists() || isSymbolicLink(destination)) {
+                if (!overwrite) return
+                deleteTreeWithoutFollowingLinks(destination)
+            }
+            destination.parentFile?.mkdirsOrThrow()
+            Os.symlink(Os.readlink(source.absolutePath), destination.absolutePath)
+            return
+        }
+        if (source.isDirectory) {
+            destination.mkdirsOrThrow()
+            source.listFiles()?.forEach { child ->
+                copyTree(child, File(destination, child.name), overwrite)
+            }
+            return
+        }
+        if (destination.exists() && !overwrite) return
+        destination.parentFile?.mkdirsOrThrow()
+        source.copyTo(destination, overwrite = true)
+    }
+
+    private fun deleteTreeWithoutFollowingLinks(file: File) {
+        if (!file.exists() && !isSymbolicLink(file)) return
+        if (file.isDirectory && !isSymbolicLink(file)) {
+            file.listFiles()?.forEach(::deleteTreeWithoutFollowingLinks)
+        }
+        check(file.delete() || !file.exists()) { "Cannot remove ${file.absolutePath}" }
+    }
+
+    private fun isSymbolicLink(file: File): Boolean = runCatching {
+        OsConstants.S_ISLNK(Os.lstat(file.absolutePath).st_mode)
+    }.getOrDefault(false)
 
     private fun rewriteBootstrapPaths(prefix: File) {
         val appDataDirectory = applicationInfo.dataDir
@@ -708,6 +784,12 @@ class TerminalRuntimeInstallService : Service() {
         CANCELLED
     }
 
+    enum class InstallMode {
+        NORMAL,
+        KEEP_DATA,
+        CLEAN
+    }
+
     private data class RuntimeSelection(
         val version: String,
         val abi: String,
@@ -723,6 +805,9 @@ class TerminalRuntimeInstallService : Service() {
         const val EXTRA_PHASE = "phase"
         const val EXTRA_PROGRESS = "progress"
         const val EXTRA_MESSAGE = "message"
+        const val EXTRA_RELEASE_TAG = "release_tag"
+        const val EXTRA_RUNTIME_VERSION = "runtime_version"
+        const val EXTRA_INSTALL_MODE = "install_mode"
 
         private const val CHANNEL_ID = "piperos_runtime_install"
         private const val NOTIFICATION_ID = 4520
@@ -746,6 +831,12 @@ class TerminalRuntimeInstallService : Service() {
         private const val SYMLINK_SEPARATOR = "\u2190"
         private const val LEGACY_TERMUX_DATA_DIR = "/data/data/com.termux"
         private const val LEGACY_TERMUX_USER_DATA_DIR = "/data/user/0/com.termux"
+        private val PRESERVED_RUNTIME_PATHS = listOf(
+            "var/lib/dpkg",
+            "var/lib/apt",
+            "etc/apt",
+            "etc/environment"
+        )
         private const val DIRECTORY_MODE = 448 // 0700
         private const val FILE_MODE = 448 // 0700
         private const val READ_ONLY_FILE_MODE = 384 // 0600
