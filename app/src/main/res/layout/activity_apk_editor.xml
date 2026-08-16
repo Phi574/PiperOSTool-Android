@@ -82,6 +82,7 @@
             <TextView android:id="@+id/btnApkDecode" style="@style/ApkEditorAction" android:text="GIẢI NÉN" />
             <TextView android:id="@+id/btnApkManifest" style="@style/ApkEditorAction" android:text="MANIFEST" />
             <TextView android:id="@+id/btnApkStrings" style="@style/ApkEditorAction" android:text="NGÔN NGỮ" />
+            <TextView android:id="@+id/btnApkIcon" style="@style/ApkEditorAction" android:text="ĐỔI ICON" />
             <TextView android:id="@+id/btnApkBuild" style="@style/ApkEditorPrimaryAction" android:text="XÂY DỰNG APK" />
         </LinearLayout>
     </HorizontalScrollView>

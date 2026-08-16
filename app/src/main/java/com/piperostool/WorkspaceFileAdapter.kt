@@ -31,7 +31,7 @@ class WorkspaceFileAdapter(
 
     override fun onBindViewHolder(holder: Holder, position: Int) {
         val entry = entries[position]
-        holder.name.text = entry.name
+        holder.name.text = if (entry.modified) "${entry.name}  •  ĐÃ SỬA" else entry.name
         holder.icon.contentDescription = entry.archivePath
         Glide.with(holder.icon).clear(holder.icon)
         holder.icon.setColorFilter(null)
@@ -54,11 +54,20 @@ class WorkspaceFileAdapter(
             ContextCompat.getColor(holder.itemView.context, if (selected) R.color.green_neon else android.R.color.darker_gray)
         )
         holder.meta.text = when {
+            entry.modified -> "Đã thay đổi • ${Formatter.formatShortFileSize(holder.itemView.context, entry.size)}"
             entry.isDirectory && entry.childCount > 0 -> "Thư mục • ${entry.childCount} mục"
             entry.isDirectory -> "Thư mục"
             entry.extractedFile != null -> "Đã chỉnh / giải nén • ${Formatter.formatShortFileSize(holder.itemView.context, entry.size)}"
             else -> "${fileType(entry.name)} • ${Formatter.formatShortFileSize(holder.itemView.context, entry.size)}"
         }
+        val normalTextColor = android.util.TypedValue().let { value ->
+            holder.itemView.context.theme.resolveAttribute(android.R.attr.textColorPrimary, value, true)
+            if (value.resourceId != 0) ContextCompat.getColor(holder.itemView.context, value.resourceId) else value.data
+        }
+        holder.name.setTextColor(
+            if (entry.modified) ContextCompat.getColor(holder.itemView.context, R.color.green_neon)
+            else normalTextColor
+        )
         holder.itemView.setOnClickListener { onClick(entry) }
         holder.itemView.setOnLongClickListener { onLongClick(entry); true }
         PiperAutoFont.apply(holder.itemView)

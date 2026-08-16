@@ -14,19 +14,30 @@ object TermuxProcessLauncher {
         prefixDirectory: File,
         homeDirectory: File
     ): ProcessBuilder {
-        val command = buildList {
+        return ProcessBuilder(buildCommand(executable, arguments))
+            .directory(workingDirectory)
+            .redirectErrorStream(true)
+            .apply {
+                environment().clear()
+                environment().putAll(buildEnvironment(context, prefixDirectory, homeDirectory))
+            }
+    }
+
+    fun buildCommand(executable: File, arguments: List<String>): List<String> = buildList {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 add(if (Process.is64Bit()) SYSTEM_LINKER_64 else SYSTEM_LINKER_32)
             }
             add(executable.absolutePath)
             addAll(arguments)
         }
+
+    fun buildEnvironment(
+        context: Context,
+        prefixDirectory: File,
+        homeDirectory: File
+    ): Map<String, String> {
         val tmpDirectory = File(prefixDirectory, "tmp").apply { mkdirs() }
-        return ProcessBuilder(command)
-            .directory(workingDirectory)
-            .redirectErrorStream(true)
-            .apply {
-                environment().apply {
+        return buildMap {
                     put("HOME", homeDirectory.absolutePath)
                     put("PREFIX", prefixDirectory.absolutePath)
                     put("TERMUX__PREFIX", prefixDirectory.absolutePath)
@@ -51,9 +62,13 @@ object TermuxProcessLauncher {
                         .takeIf(File::isFile)
                         ?.let { put("LD_PRELOAD", it.absolutePath) }
                     put("LANG", "C.UTF-8")
+                    put("LC_ALL", "C.UTF-8")
+                    put("COLORTERM", "truecolor")
                     put("TERM", "xterm-256color")
+                    put("SHELL", File(prefixDirectory, "bin/bash").absolutePath)
+                    put("PS1", "")
+                    put("PROMPT_COMMAND", "")
                 }
-            }
     }
 
     private const val SYSTEM_LINKER_32 = "/system/bin/linker"

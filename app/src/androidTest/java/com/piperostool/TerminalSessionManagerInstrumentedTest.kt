@@ -29,6 +29,15 @@ class TerminalSessionManagerInstrumentedTest {
         )
         waitUntil { TerminalSessionManager.listSessions().single().running }
 
+        assertTrue(
+            TerminalSessionManager.sendCommand(
+                session.id,
+                "test -t 0 && test -t 1 && test -t 2 && echo PIPER_PTY_OK"
+            )
+        )
+        waitForCommand(session.id)
+        assertTrue(TerminalSessionManager.output(session.id).contains("PIPER_PTY_OK"))
+
         assertTrue(TerminalSessionManager.sendCommand(session.id, "pwd"))
         waitForCommand(session.id)
         val homeOutput = TerminalSessionManager.output(session.id)
@@ -53,7 +62,10 @@ class TerminalSessionManagerInstrumentedTest {
         assertTrue(TerminalSessionManager.sendCommand(session.id, "false"))
         waitForCommand(session.id)
         assertTrue(TerminalSessionManager.output(session.id).contains("[exit 1]"))
-        assertTrue(TerminalSessionManager.output(session.id).trimEnd().endsWith("$"))
+        val visibleOutput = AnsiTerminalText.format(
+            TerminalSessionManager.output(session.id)
+        ).toString()
+        assertTrue(visibleOutput.trimEnd().endsWith("$"))
     }
 
     @Test

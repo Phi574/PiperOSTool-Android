@@ -458,17 +458,22 @@ class FakeMapActivity : AppCompatActivity() {
             val duration = route.distanceMeters / (speedKmh / 3.6)
             "Tuyến ${index + 1} • %.1f km • %s".format(route.distanceMeters / 1_000.0, formatDuration(duration))
         }.toTypedArray()
-        androidx.appcompat.app.AlertDialog.Builder(this)
-            .setTitle("Chọn tuyến đường")
-            .setSingleChoiceItems(labels, routes.indexOfFirst { it.points == routePoints }.coerceAtLeast(0)) { dialog, which ->
-                routePoints = routes[which].points
+        val selected = routes.indexOfFirst { it.points == routePoints }.coerceAtLeast(0)
+        PiperActionSheet.showSingleSelect(
+            context = this,
+            title = "Chọn tuyến đường",
+            choices = labels.mapIndexed { index, label ->
+                PiperSheetChoice(index.toString(), label, selected == index)
+            },
+            onSelect = { key ->
+                routePoints = routes[key.toInt()].points
                 redrawMap()
                 renderRouteInfo()
                 saveDraftIfReady()
-                dialog.dismiss()
-            }
-            .setNegativeButton("Hủy", null)
-            .show()
+            },
+            onRemove = {},
+            onAdd = {}
+        )
     }
 
     private fun redrawMap() {

@@ -223,11 +223,13 @@ class SettingFragment : Fragment() {
     }
 
     private fun showLogoutConfirmation() {
-        AlertDialog.Builder(requireContext())
-            .setTitle(R.string.auth_logout)
-            .setMessage(R.string.logout_confirmation)
-            .setNegativeButton(android.R.string.cancel, null)
-            .setPositiveButton(R.string.auth_logout) { _, _ ->
+        PiperDialog.showConfirm(
+            context = requireContext(),
+            title = getString(R.string.auth_logout),
+            message = getString(R.string.logout_confirmation),
+            positiveLabel = getString(R.string.auth_logout),
+            destructive = true
+        ) {
                 auth.signOut()
                 requireActivity()
                     .getSharedPreferences(LockScreenActivity.PREFS_NAME, Context.MODE_PRIVATE)
@@ -246,8 +248,7 @@ class SettingFragment : Fragment() {
                     }
                 )
                 requireActivity().finish()
-            }
-            .show()
+        }
     }
 
 
@@ -331,23 +332,24 @@ class SettingFragment : Fragment() {
     }
 
     private fun showUiStyleDialog() {
-        val values = arrayOf(
-            getString(R.string.settings_ui_modern),
-            getString(R.string.settings_ui_classic)
-        )
-        val current = if (PiperUiPreferences.style(requireContext()) == PiperUiStyle.MODERN) 0 else 1
-        AlertDialog.Builder(requireContext())
-            .setTitle(R.string.settings_ui_style)
-            .setSingleChoiceItems(values, current) { dialog, which ->
+        val current = PiperUiPreferences.style(requireContext())
+        PiperActionSheet.showSingleSelect(
+            context = requireContext(),
+            title = getString(R.string.settings_ui_style),
+            choices = listOf(
+                PiperSheetChoice("modern", getString(R.string.settings_ui_modern), current == PiperUiStyle.MODERN),
+                PiperSheetChoice("classic", getString(R.string.settings_ui_classic), current == PiperUiStyle.CLASSIC)
+            ),
+            onSelect = { key ->
                 PiperUiPreferences.setStyle(
                     requireContext(),
-                    if (which == 0) PiperUiStyle.MODERN else PiperUiStyle.CLASSIC
+                    if (key == "modern") PiperUiStyle.MODERN else PiperUiStyle.CLASSIC
                 )
-                dialog.dismiss()
                 requireActivity().recreate()
-            }
-            .setNegativeButton(android.R.string.cancel, null)
-            .show()
+            },
+            onRemove = {},
+            onAdd = {}
+        )
     }
 
     private fun showColorModeDialog() {
@@ -356,38 +358,40 @@ class SettingFragment : Fragment() {
             PiperColorMode.LIGHT,
             PiperColorMode.DARK
         )
-        val values = arrayOf(
-            getString(R.string.settings_color_system),
-            getString(R.string.settings_color_light),
-            getString(R.string.settings_color_dark)
-        )
-        val current = modes.indexOf(PiperUiPreferences.colorMode(requireContext()))
-        AlertDialog.Builder(requireContext())
-            .setTitle(R.string.settings_color_mode)
-            .setSingleChoiceItems(values, current) { dialog, which ->
-                PiperUiPreferences.setColorMode(requireContext(), modes[which])
-                dialog.dismiss()
+        val current = PiperUiPreferences.colorMode(requireContext())
+        PiperActionSheet.showSingleSelect(
+            context = requireContext(),
+            title = getString(R.string.settings_color_mode),
+            choices = listOf(
+                PiperSheetChoice(PiperColorMode.SYSTEM.name, getString(R.string.settings_color_system), current == PiperColorMode.SYSTEM),
+                PiperSheetChoice(PiperColorMode.LIGHT.name, getString(R.string.settings_color_light), current == PiperColorMode.LIGHT),
+                PiperSheetChoice(PiperColorMode.DARK.name, getString(R.string.settings_color_dark), current == PiperColorMode.DARK)
+            ),
+            onSelect = { key ->
+                PiperUiPreferences.setColorMode(requireContext(), modes.first { it.name == key })
                 requireActivity().recreate()
-            }
-            .setNegativeButton(android.R.string.cancel, null)
-            .show()
+            },
+            onRemove = {},
+            onAdd = {}
+        )
     }
 
     private fun showLanguageDialog() {
-        val values = arrayOf(
-            getString(R.string.settings_language_vi),
-            getString(R.string.settings_language_en)
-        )
-        val current = if (PiperUiPreferences.language(requireContext()) == "en") 1 else 0
-        AlertDialog.Builder(requireContext())
-            .setTitle(R.string.settings_language)
-            .setSingleChoiceItems(values, current) { dialog, which ->
-                PiperUiPreferences.setLanguage(requireContext(), if (which == 1) "en" else "vi")
-                dialog.dismiss()
+        val current = PiperUiPreferences.language(requireContext())
+        PiperActionSheet.showSingleSelect(
+            context = requireContext(),
+            title = getString(R.string.settings_language),
+            choices = listOf(
+                PiperSheetChoice("vi", getString(R.string.settings_language_vi), current == "vi"),
+                PiperSheetChoice("en", getString(R.string.settings_language_en), current == "en")
+            ),
+            onSelect = { key ->
+                PiperUiPreferences.setLanguage(requireContext(), key)
                 requireActivity().recreate()
-            }
-            .setNegativeButton(android.R.string.cancel, null)
-            .show()
+            },
+            onRemove = {},
+            onAdd = {}
+        )
     }
 
     private fun showFontDialog() {

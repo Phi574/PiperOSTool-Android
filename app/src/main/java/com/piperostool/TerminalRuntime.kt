@@ -4,6 +4,7 @@ import android.content.Context
 import android.system.Os
 import android.system.OsConstants
 import java.io.File
+import java.io.FileOutputStream
 
 object TerminalRuntime {
     const val RUNTIME_VERSION = "2.5.5-beta"
@@ -11,7 +12,7 @@ object TerminalRuntime {
     const val SOURCE_REPOSITORY_URL =
         "https://github.com/Phi574/Piperos_termux"
     const val PACKAGE_REPOSITORY_URL =
-        "https://phi574.github.io/Piperos_termux"
+        "https://raw.githubusercontent.com/Phi574/Piperos_termux/gh-pages"
     const val PACKAGE_REPOSITORY_SUITE = "stable"
     const val PACKAGE_REPOSITORY_COMPONENT = "main"
     const val MANIFEST_URL =
@@ -60,6 +61,55 @@ object TerminalRuntime {
 
     fun writeInstalledVersion(prefix: File, version: String) {
         File(prefix, VERSION_FILE_NAME).writeText(version.trim() + "\n")
+    }
+
+    fun repairPackageConfiguration(context: Context) {
+        val prefix = File(context.filesDir, "usr")
+        if (!prefix.isDirectory) return
+        val sourceDirectory = File(prefix, "etc/apt/sources.list.d").apply { mkdirs() }
+        val source = File(sourceDirectory, "piperos.list")
+        File(prefix, "etc/apt/sources.list").delete()
+        sourceDirectory.listFiles()?.filter { it != source }?.forEach { it.delete() }
+
+        val keyring = File(prefix, "etc/apt/keyrings/piperos-archive-keyring.gpg")
+        keyring.parentFile?.mkdirs()
+        context.resources.openRawResource(R.raw.piperos_apt_repository_public).use { input ->
+            FileOutputStream(keyring).use { output -> input.copyTo(output) }
+        }
+        Os.chmod(keyring.absolutePath, 384)
+        source.writeText(
+            "deb [signed-by=${keyring.absolutePath}] $PACKAGE_REPOSITORY_URL " +
+                "$PACKAGE_REPOSITORY_SUITE $PACKAGE_REPOSITORY_COMPONENT\n"
+        )
+        Os.chmod(source.absolutePath, 384)
+
+        File(context.cacheDir, "apt/archives").listFiles()
+            ?.filter { it.extension == "deb" }
+            ?.forEach { it.delete() }
+        installPrefixGuard(context, prefix)
+    }
+
+    private fun installPrefixGuard(context: Context, prefix: File) {
+        val guard = File(prefix, "libexec/piperos/verify-package-prefix")
+        guard.parentFile?.mkdirs()
+        guard.writeText(
+            """#!/data/data/${context.packageName}/files/usr/bin/sh
+            |set -eu
+            |while IFS= read -r archive; do
+            |  [ -f "${'$'}archive" ] || continue
+            |  if dpkg-deb --fsys-tarfile "${'$'}archive" 2>/dev/null | tar -tf - 2>/dev/null | grep -q '/data/data/com.termux'; then
+            |    echo "PiperOS blocked an incompatible com.termux package: ${'$'}archive" >&2
+            |    echo "Use packages built for ${context.packageName}." >&2
+            |    exit 100
+            |  fi
+            |done
+            |""".trimMargin()
+        )
+        Os.chmod(guard.absolutePath, 448)
+        File(prefix, "etc/apt/apt.conf.d/99piperos-prefix-guard").apply {
+            parentFile?.mkdirs()
+            writeText("DPkg::Pre-Install-Pkgs { \"${guard.absolutePath}\"; };\n")
+        }
     }
 
     fun uninstall(context: Context) {

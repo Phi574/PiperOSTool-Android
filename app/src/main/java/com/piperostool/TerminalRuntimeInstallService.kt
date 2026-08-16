@@ -392,6 +392,11 @@ class TerminalRuntimeInstallService : Service() {
 
     private fun provisionPackageRepository(prefix: File) {
         val source = File(prefix, "etc/apt/sources.list.d/piperos.list")
+        File(prefix, "etc/apt/sources.list").delete()
+        File(prefix, "etc/apt/sources.list.d").apply {
+            mkdirsOrThrow()
+            listFiles()?.filter { it != source }?.forEach { it.delete() }
+        }
         if (!isPackageRepositoryAvailable()) {
             source.delete()
             return
@@ -404,6 +409,12 @@ class TerminalRuntimeInstallService : Service() {
         }
         Os.chmod(keyring.absolutePath, READ_ONLY_FILE_MODE)
 
+        // Packages built for com.termux cannot be mixed with the PiperOS prefix.
+        // Remove bootstrap mirror definitions before enabling the pinned PiperOS repo.
+        File(cacheDir, "apt/archives").listFiles()
+            ?.filter { it.extension == "deb" }
+            ?.forEach { it.delete() }
+
         source.parentFile?.mkdirsOrThrow()
         source.writeText(
             "deb [signed-by=${keyring.absolutePath}] " +
@@ -412,6 +423,31 @@ class TerminalRuntimeInstallService : Service() {
                 "${TerminalRuntime.PACKAGE_REPOSITORY_COMPONENT}\n"
         )
         Os.chmod(source.absolutePath, READ_ONLY_FILE_MODE)
+        installPackagePrefixGuard(prefix)
+    }
+
+    private fun installPackagePrefixGuard(prefix: File) {
+        val guard = File(prefix, "libexec/piperos/verify-package-prefix").apply {
+            parentFile?.mkdirsOrThrow()
+            writeText(
+                """#!/data/data/$packageName/files/usr/bin/sh
+                |set -eu
+                |while IFS= read -r archive; do
+                |  [ -f "${'$'}archive" ] || continue
+                |  if dpkg-deb --fsys-tarfile "${'$'}archive" 2>/dev/null | tar -tf - 2>/dev/null | grep -q '/data/data/com.termux'; then
+                |    echo "PiperOS: blocked an incompatible com.termux package: ${'$'}archive" >&2
+                |    echo "Use the PiperOS package repository or rebuild the package for $packageName." >&2
+                |    exit 100
+                |  fi
+                |done
+                |""".trimMargin()
+            )
+        }
+        Os.chmod(guard.absolutePath, FILE_MODE)
+        File(prefix, "etc/apt/apt.conf.d/99piperos-prefix-guard").apply {
+            parentFile?.mkdirsOrThrow()
+            writeText("DPkg::Pre-Install-Pkgs { \"${guard.absolutePath}\"; };\n")
+        }
     }
 
     private fun isPackageRepositoryAvailable(): Boolean = runCatching {

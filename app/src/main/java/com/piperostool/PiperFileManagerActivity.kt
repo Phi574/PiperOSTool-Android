@@ -6,9 +6,11 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.app.Dialog
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
+import android.provider.DocumentsContract
 import android.provider.Settings
 import android.text.Editable
 import android.text.TextWatcher
@@ -19,8 +21,10 @@ import android.widget.LinearLayout
 import android.widget.Spinner
 import android.widget.ArrayAdapter
 import android.widget.ImageView
+import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -57,10 +61,29 @@ class PiperFileManagerActivity : AppCompatActivity() {
     private lateinit var selectionBar: View
     private lateinit var selectionCount: TextView
     private var receiverRegistered = false
+    private var operationDialog: Dialog? = null
+    private var operationProgress: ProgressBar? = null
+    private var operationPercent: TextView? = null
+    private var operationDetail: TextView? = null
+    private var pendingDestinationInput: EditText? = null
+
+    private val destinationPicker = registerForActivityResult(
+        ActivityResultContracts.OpenDocumentTree()
+    ) { uri ->
+        uri ?: return@registerForActivityResult
+        resolveTreePath(uri)?.let { pendingDestinationInput?.setText(it) }
+            ?: Toast.makeText(this, "Không thể dùng đường dẫn thư mục này", Toast.LENGTH_SHORT).show()
+    }
 
     private val operationReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action == FileOperationService.ACTION_PROGRESS) {
+                updateOperationProgress(intent)
+                return
+            }
             val message = intent?.getStringExtra(FileOperationService.EXTRA_MESSAGE).orEmpty()
+            operationDialog?.dismiss()
+            operationDialog = null
             if (message.isNotBlank()) Toast.makeText(this@PiperFileManagerActivity, message, Toast.LENGTH_LONG).show()
             render()
         }
@@ -89,7 +112,10 @@ class PiperFileManagerActivity : AppCompatActivity() {
             ContextCompat.registerReceiver(
                 this,
                 operationReceiver,
-                IntentFilter(FileOperationService.ACTION_FINISHED),
+                IntentFilter().apply {
+                    addAction(FileOperationService.ACTION_PROGRESS)
+                    addAction(FileOperationService.ACTION_FINISHED)
+                },
                 ContextCompat.RECEIVER_NOT_EXPORTED
             )
             receiverRegistered = true
@@ -183,7 +209,14 @@ class PiperFileManagerActivity : AppCompatActivity() {
         findViewById<View>(R.id.fileCompressSelected).setOnClickListener {
             selectedFiles().takeIf { it.isNotEmpty() }?.let(::showCompressDialog)
         }
+        findViewById<View>(R.id.fileCopySelected).setOnClickListener {
+            showTransferDestination(FileOperationService.ACTION_COPY)
+        }
+        findViewById<View>(R.id.fileMoveSelected).setOnClickListener {
+            showTransferDestination(FileOperationService.ACTION_MOVE)
+        }
         findViewById<View>(R.id.fileBackupSelected).setOnClickListener { backupSelected() }
+        findViewById<View>(R.id.fileDeleteSelected).setOnClickListener { confirmDeleteSelected() }
         search.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(value: Editable?) = applySearch(value?.toString().orEmpty())
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
@@ -193,19 +226,20 @@ class PiperFileManagerActivity : AppCompatActivity() {
 
     private fun ensureStorageAccess() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && !Environment.isExternalStorageManager()) {
-            AlertDialog.Builder(this)
-                .setTitle("Cho phép quản lý tệp")
-                .setMessage("PiperOS File Manager cần quyền truy cập tất cả tệp để duyệt, nén và giải nén thư mục bạn chọn.")
-                .setNegativeButton("Để sau", null)
-                .setPositiveButton("Mở cài đặt") { _, _ ->
+            PiperDialog.showConfirm(
+                context = this,
+                title = "Cho phép quản lý tệp",
+                message = "PiperOS File Manager cần quyền truy cập tất cả tệp để duyệt, nén và giải nén thư mục bạn chọn.",
+                positiveLabel = "Mở cài đặt",
+                negativeLabel = "Để sau"
+            ) {
                     startActivity(
                         Intent(
                             Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
                             Uri.parse("package:$packageName")
                         )
                     )
-                }
-                .show()
+            }
         }
     }
 
@@ -248,12 +282,119 @@ class PiperFileManagerActivity : AppCompatActivity() {
     private fun backupSelected() {
         val files = selectedFiles()
         if (files.isEmpty()) return
-        val backupRoot = File(
+        val suggested = File(
             Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
             "PiperOS_Backups/${System.currentTimeMillis()}"
         )
-        startBatchFileOperation(FileOperationService.ACTION_BACKUP, files, backupRoot)
-        clearSelection()
+        val (destinationRow, destination) = destinationField(suggested.absolutePath)
+        PiperDialog.showCustom(
+            context = this,
+            title = "Chọn nơi sao lưu",
+            message = "Nhập đường dẫn hoặc bấm Tìm để chọn thư mục đích.",
+            icon = R.drawable.ic_file_backup,
+            content = destinationRow,
+            positiveLabel = "Sao lưu",
+            onPositive = {
+                val target = File(destination.text.toString().trim())
+                if (!validateDestination(target)) false else {
+                    startBatchFileOperation(FileOperationService.ACTION_BACKUP, files, target)
+                    clearSelection()
+                    true
+                }
+            }
+        )
+    }
+
+    private fun showTransferDestination(action: String, sourceFiles: List<File> = selectedFiles()) {
+        val files = sourceFiles
+        if (files.isEmpty()) return
+        val (destinationRow, destination) = destinationField(currentDirectory.absolutePath)
+        val moving = action == FileOperationService.ACTION_MOVE
+        PiperDialog.showCustom(
+            context = this,
+            title = if (moving) "Di chuyển đến" else "Sao chép đến",
+            message = "Nhập đường dẫn hoặc bấm Tìm để chọn thư mục đích.",
+            icon = if (moving) R.drawable.ic_file_move else R.drawable.ic_file_copy,
+            content = destinationRow,
+            positiveLabel = if (moving) "Di chuyển" else "Sao chép",
+            onPositive = {
+                val target = File(destination.text.toString().trim())
+                if (!validateDestination(target)) false else {
+                    startBatchFileOperation(action, files, target)
+                    clearSelection()
+                    true
+                }
+            }
+        )
+    }
+
+    private fun destinationField(initialPath: String): Pair<View, EditText> {
+        val input = EditText(this).apply {
+            setText(initialPath)
+            hint = "Đường dẫn thư mục đích"
+            isSingleLine = true
+        }
+        val row = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = android.view.Gravity.CENTER_VERTICAL
+            addView(input, LinearLayout.LayoutParams(0, dp(52), 1f))
+            addView(com.google.android.material.button.MaterialButton(this@PiperFileManagerActivity).apply {
+                text = "Tìm"
+                isAllCaps = false
+                cornerRadius = dp(8)
+                setOnClickListener {
+                    pendingDestinationInput = input
+                    destinationPicker.launch(null)
+                }
+            }, LinearLayout.LayoutParams(dp(84), dp(52)).apply { marginStart = dp(8) })
+        }
+        return row to input
+    }
+
+    private fun validateDestination(target: File): Boolean {
+        if (target.path.isBlank()) {
+            Toast.makeText(this, "Hãy chọn đường dẫn đích", Toast.LENGTH_SHORT).show()
+            return false
+        }
+        val ready = target.isDirectory || target.mkdirs()
+        if (!ready || !target.canWrite()) {
+            Toast.makeText(this, "Không thể ghi vào thư mục đích", Toast.LENGTH_SHORT).show()
+            return false
+        }
+        return true
+    }
+
+    private fun resolveTreePath(uri: Uri): String? = runCatching {
+        val documentId = DocumentsContract.getTreeDocumentId(uri)
+        val volume = documentId.substringBefore(':')
+        val relative = documentId.substringAfter(':', "")
+        when {
+            volume.equals("primary", true) -> File(
+                Environment.getExternalStorageDirectory(),
+                relative
+            ).absolutePath
+            volume.isNotBlank() -> File("/storage/$volume", relative).absolutePath
+            else -> null
+        }
+    }.getOrNull()
+
+    private fun confirmDeleteSelected() {
+        val files = selectedFiles()
+        if (files.isEmpty()) return
+        PiperDialog.showConfirm(
+            context = this,
+            title = "Xóa ${files.size} mục đã chọn?",
+            message = "Tệp và thư mục sẽ bị xóa khỏi thiết bị. Thao tác này không thể hoàn tác.",
+            positiveLabel = "Xóa",
+            destructive = true
+        ) {
+            startBatchFileOperation(
+                FileOperationService.ACTION_DELETE,
+                files,
+                currentDirectory
+            )
+            clearSelection()
+        }
     }
 
     private fun listDirectory(directory: File): List<ApkWorkspaceEntry> =
@@ -351,11 +492,10 @@ class PiperFileManagerActivity : AppCompatActivity() {
                     .onFailure { Toast.makeText(this, "Archive lỗi: ${it.message}", Toast.LENGTH_LONG).show() }
             }
             FileArchiveFormat.detect(file.name) != null -> showExtractDialog(file)
-            isText(file) -> startActivity(
+            else -> startActivity(
                 Intent(this, TextEditorActivity::class.java)
                     .putExtra(TextEditorActivity.EXTRA_FILE_PATH, file.absolutePath)
             )
-            else -> openExternal(file)
         }
     }
 
@@ -372,38 +512,36 @@ class PiperFileManagerActivity : AppCompatActivity() {
 
     private fun showEntryActions(entry: ApkWorkspaceEntry) {
         if (archiveFile != null) {
-            AlertDialog.Builder(this)
-                .setTitle(entry.name)
-                .setItems(arrayOf("Mở", "Giải nén mục này")) { _, index ->
-                    if (index == 0) openEntry(entry) else extractArchiveEntry(entry)
-                }.show()
+            PiperActionSheet.show(this, entry.name, listOf(
+                PiperSheetAction("Mở", icon = R.drawable.ic_file_document) { openEntry(entry) },
+                PiperSheetAction("Giải nén mục này", icon = R.drawable.ic_file_archive) { extractArchiveEntry(entry) }
+            ))
             return
         }
         val file = File(entry.archivePath)
         val actions = buildList {
-            add("Mở")
-            add("Đổi tên")
-            add("Nén / mã hóa")
-            if (FileArchiveFormat.detect(file.name) != null) add("Giải nén tại đây")
-            add("Xóa")
+            add(PiperSheetAction("Mở", icon = R.drawable.ic_file_document) { openEntry(entry) })
+            add(PiperSheetAction("Đổi tên", icon = R.drawable.ic_file_rename) { rename(file) })
+            add(PiperSheetAction("Sao chép đến...", icon = R.drawable.ic_file_copy) {
+                showTransferDestination(FileOperationService.ACTION_COPY, listOf(file))
+            })
+            add(PiperSheetAction("Di chuyển đến...", icon = R.drawable.ic_file_move) {
+                showTransferDestination(FileOperationService.ACTION_MOVE, listOf(file))
+            })
+            add(PiperSheetAction("Nén / mã hóa", icon = R.drawable.ic_file_archive) { showCompressDialog(file) })
+            if (FileArchiveFormat.detect(file.name) != null) {
+                add(PiperSheetAction("Giải nén tại đây", icon = R.drawable.ic_file_archive) { showExtractDialog(file) })
+            }
+            add(PiperSheetAction("Xóa", icon = R.drawable.ic_file_delete) { confirmDelete(file) })
         }
-        AlertDialog.Builder(this).setTitle(file.name)
-            .setItems(actions.toTypedArray()) { _, index ->
-                when (actions[index]) {
-                    "Mở" -> openEntry(entry)
-                    "Đổi tên" -> rename(file)
-                    "Nén / mã hóa" -> showCompressDialog(file)
-                    "Giải nén tại đây" -> showExtractDialog(file)
-                    "Xóa" -> confirmDelete(file)
-                }
-            }.show()
+        PiperActionSheet.show(this, file.name, actions)
     }
 
     private fun showManagerActions() {
         val archive = archiveFile
         val actions = if (archive != null) {
             listOf(
-                PiperSheetAction("Giải nén toàn bộ", archive.name, R.drawable.backup) {
+                PiperSheetAction("Giải nén toàn bộ", archive.name, R.drawable.ic_file_archive) {
                     showExtractDialog(archive)
                 },
                 PiperSheetAction("Đóng tệp nén", "Quay lại thư mục", R.drawable.ic_browser_close) {
@@ -414,6 +552,7 @@ class PiperFileManagerActivity : AppCompatActivity() {
         } else {
             listOf(
                 PiperSheetAction("Tạo thư mục", null, R.drawable.ic_browser_add, ::createFolder),
+                PiperSheetAction("Tạo tệp văn bản", null, R.drawable.ic_file_document, ::createTextFile),
                 PiperSheetAction("Sắp xếp theo tên", "A đến Z", R.drawable.ic_file_document) {
                     adapter.submit(allEntries.sortedBy { it.name.lowercase() })
                 },
@@ -428,63 +567,74 @@ class PiperFileManagerActivity : AppCompatActivity() {
         PiperActionSheet.show(this, "Công cụ tệp", actions)
     }
 
-    private fun showManagerActionsLegacy() {
-        val archive = archiveFile
-        val options = if (archive != null) {
-            arrayOf("Giải nén toàn bộ", "Đóng archive")
-        } else {
-            arrayOf("Tạo thư mục", "Sắp xếp theo tên", "Sắp xếp theo kích thước")
-        }
-        AlertDialog.Builder(this).setTitle("Công cụ tệp")
-            .setItems(options) { _, which ->
-                if (archive != null) {
-                    if (which == 0) showExtractDialog(archive) else {
-                        archiveFile = null
-                        render()
-                    }
-                } else when (which) {
-                    0 -> createFolder()
-                    1 -> adapter.submit(allEntries.sortedBy { it.name.lowercase() })
-                    2 -> adapter.submit(allEntries.sortedByDescending { it.size })
-                }
-            }.show()
-    }
-
     private fun createFolder() {
         val input = EditText(this).apply { hint = "Tên thư mục" }
-        AlertDialog.Builder(this).setTitle("Tạo thư mục").setView(input)
-            .setNegativeButton("Hủy", null)
-            .setPositiveButton("Tạo") { _, _ ->
+        PiperDialog.showCustom(
+            context = this,
+            title = "Tạo thư mục",
+            content = input,
+            positiveLabel = "Tạo",
+            onPositive = {
                 val target = File(currentDirectory, input.text.toString().trim())
-                if (target.name.isNotEmpty() && target.mkdir()) render()
-                else Toast.makeText(this, "Không thể tạo thư mục", Toast.LENGTH_SHORT).show()
-            }.show()
+                val success = target.name.isNotEmpty() && target.mkdir()
+                if (success) render() else Toast.makeText(this, "Không thể tạo thư mục", Toast.LENGTH_SHORT).show()
+                success
+            }
+        )
+    }
+
+    private fun createTextFile() {
+        val input = EditText(this).apply { hint = "Tên tệp, ví dụ notes.txt" }
+        PiperDialog.showCustom(
+            context = this,
+            title = "Tạo tệp mới",
+            content = input,
+            positiveLabel = "Tạo",
+            onPositive = {
+                val name = input.text.toString().trim()
+                val target = File(currentDirectory, name)
+                val success = name.isNotEmpty() && !target.exists() && runCatching {
+                    target.parentFile?.mkdirs()
+                    target.createNewFile()
+                }.getOrDefault(false)
+                if (success) {
+                    render()
+                    startActivity(
+                        Intent(this, TextEditorActivity::class.java)
+                            .putExtra(TextEditorActivity.EXTRA_FILE_PATH, target.absolutePath)
+                    )
+                } else Toast.makeText(this, "Không thể tạo tệp", Toast.LENGTH_SHORT).show()
+                success
+            }
+        )
     }
 
     private fun rename(file: File) {
         val input = EditText(this).apply { setText(file.name); selectAll() }
-        AlertDialog.Builder(this).setTitle("Đổi tên").setView(input)
-            .setNegativeButton("Hủy", null)
-            .setPositiveButton("Lưu") { _, _ ->
+        PiperDialog.showCustom(
+            context = this,
+            title = "Đổi tên",
+            content = input,
+            positiveLabel = "Lưu",
+            onPositive = {
                 val target = File(file.parentFile, input.text.toString().trim())
-                if (target.name.isNotEmpty() && file.renameTo(target)) render()
-                else Toast.makeText(this, "Không thể đổi tên", Toast.LENGTH_SHORT).show()
-            }.show()
+                val success = target.name.isNotEmpty() && file.renameTo(target)
+                if (success) render() else Toast.makeText(this, "Không thể đổi tên", Toast.LENGTH_SHORT).show()
+                success
+            }
+        )
     }
 
     private fun confirmDelete(file: File) {
-        AlertDialog.Builder(this).setTitle("Xóa ${file.name}?")
-            .setMessage("Thao tác này không thể hoàn tác.")
-            .setNegativeButton("Hủy", null)
-            .setPositiveButton("Xóa") { _, _ ->
-                lifecycleScope.launch(Dispatchers.IO) {
-                    val success = file.deleteRecursively()
-                    withContext(Dispatchers.Main) {
-                        if (!success) Toast.makeText(this@PiperFileManagerActivity, "Xóa thất bại", Toast.LENGTH_SHORT).show()
-                        render()
-                    }
-                }
-            }.show()
+        PiperDialog.showConfirm(
+            context = this,
+            title = "Xóa ${file.name}?",
+            message = "Tệp hoặc thư mục sẽ bị xóa khỏi thiết bị. Thao tác này không thể hoàn tác.",
+            positiveLabel = "Xóa",
+            destructive = true
+        ) {
+            startBatchFileOperation(FileOperationService.ACTION_DELETE, listOf(file), file.parentFile ?: currentDirectory)
+        }
     }
 
     private fun showCompressDialog(file: File) = showCompressDialog(listOf(file))
@@ -498,6 +648,9 @@ class PiperFileManagerActivity : AppCompatActivity() {
             setText(file.nameWithoutExtension)
             selectAll()
         }
+        val (destinationRow, destinationInput) = destinationField(
+            (file.parentFile ?: currentDirectory).absolutePath
+        )
         val formatSpinner = Spinner(this).apply {
             adapter = ArrayAdapter(
                 this@PiperFileManagerActivity,
@@ -530,6 +683,11 @@ class PiperFileManagerActivity : AppCompatActivity() {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(20), dp(8), dp(20), 0)
             addView(nameInput)
+            addView(TextView(this@PiperFileManagerActivity).apply {
+                text = "Thư mục lưu"
+                setTextColor(PiperModernUi.secondaryTextColor(this@PiperFileManagerActivity))
+            })
+            addView(destinationRow)
             addView(TextView(this@PiperFileManagerActivity).apply { text = "Định dạng"; setTextColor(0xBFFFFFFF.toInt()) })
             addView(formatSpinner)
             addView(TextView(this@PiperFileManagerActivity).apply { text = "Mức nén"; setTextColor(0xBFFFFFFF.toInt()) })
@@ -537,41 +695,48 @@ class PiperFileManagerActivity : AppCompatActivity() {
             addView(passwordEnabled)
             addView(passwordInput)
         }
-        AlertDialog.Builder(this)
-            .setTitle("Tạo archive")
-            .setView(panel)
-            .setNegativeButton("Hủy", null)
-            .setPositiveButton("Bắt đầu") { _, _ ->
+        PiperDialog.showCustom(
+            context = this,
+            title = "Tạo tệp nén",
+            message = "Chọn định dạng, mức nén và bảo vệ bằng mật khẩu nếu cần.",
+            icon = R.drawable.ic_file_archive,
+            content = panel,
+            positiveLabel = "Bắt đầu",
+            onPositive = {
                 val format = formats[formatSpinner.selectedItemPosition]
                 val password = passwordInput.text.toString().takeIf { passwordEnabled.isChecked && it.isNotEmpty() }
                 if (passwordEnabled.isChecked && password == null) {
                     Toast.makeText(this, "Mật khẩu không được để trống", Toast.LENGTH_SHORT).show()
-                    return@setPositiveButton
-                }
-                val baseName = nameInput.text.toString().trim().ifEmpty { file.nameWithoutExtension }
-                val output = uniqueOutput(File(file.parentFile, baseName + format.extension))
-                if (files.size == 1) {
-                    startFileOperation(
-                        FileOperationService.ACTION_COMPRESS,
-                        file,
-                        output,
-                        format,
-                        presets[levelSpinner.selectedItemPosition],
-                        password
-                    )
+                    false
                 } else {
-                    startBatchFileOperation(
-                        FileOperationService.ACTION_COMPRESS,
-                        files,
-                        output,
-                        format,
-                        presets[levelSpinner.selectedItemPosition],
-                        password
-                    )
-                    clearSelection()
+                    val baseName = nameInput.text.toString().trim().ifEmpty { file.nameWithoutExtension }
+                    val destination = File(destinationInput.text.toString().trim())
+                    if (!validateDestination(destination)) return@showCustom false
+                    val output = uniqueOutput(File(destination, baseName + format.extension))
+                    if (files.size == 1) {
+                        startFileOperation(
+                            FileOperationService.ACTION_COMPRESS,
+                            file,
+                            output,
+                            format,
+                            presets[levelSpinner.selectedItemPosition],
+                            password
+                        )
+                    } else {
+                        startBatchFileOperation(
+                            FileOperationService.ACTION_COMPRESS,
+                            files,
+                            output,
+                            format,
+                            presets[levelSpinner.selectedItemPosition],
+                            password
+                        )
+                        clearSelection()
+                    }
+                    true
                 }
             }
-            .show()
+        )
     }
 
     private fun showExtractDialog(archive: File) {
@@ -579,12 +744,14 @@ class PiperFileManagerActivity : AppCompatActivity() {
             hint = "Mật khẩu nếu archive có mã hóa"
             inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
         }
-        AlertDialog.Builder(this)
-            .setTitle("Giải nén ${archive.name}")
-            .setMessage("Tác vụ tiếp tục khi tắt màn hình hoặc rời ứng dụng.")
-            .setView(password)
-            .setNegativeButton("Hủy", null)
-            .setPositiveButton("Giải nén") { _, _ ->
+        PiperDialog.showCustom(
+            context = this,
+            title = "Giải nén ${archive.name}",
+            message = "Tác vụ tiếp tục khi tắt màn hình hoặc rời ứng dụng.",
+            icon = R.drawable.ic_file_archive,
+            content = password,
+            positiveLabel = "Giải nén",
+            onPositive = {
                 val target = uniqueDirectory(File(archive.parentFile, archiveBaseName(archive.name)))
                 startFileOperation(
                     FileOperationService.ACTION_EXTRACT,
@@ -593,8 +760,9 @@ class PiperFileManagerActivity : AppCompatActivity() {
                     password = password.text.toString().takeIf(String::isNotEmpty)
                 )
                 archiveFile = null
+                true
             }
-            .show()
+        )
     }
 
     private fun startFileOperation(
@@ -616,8 +784,8 @@ class PiperFileManagerActivity : AppCompatActivity() {
             .putExtra(FileOperationService.EXTRA_PASSWORD, password)
         format?.let { intent.putExtra(FileOperationService.EXTRA_FORMAT, it.name) }
         preset?.let { intent.putExtra(FileOperationService.EXTRA_PRESET, it.name) }
+        showOperationDialog(action)
         ContextCompat.startForegroundService(this, intent)
-        Toast.makeText(this, "Tác vụ đang chạy nền", Toast.LENGTH_SHORT).show()
     }
 
     private fun startBatchFileOperation(
@@ -642,8 +810,85 @@ class PiperFileManagerActivity : AppCompatActivity() {
             .putExtra(FileOperationService.EXTRA_PASSWORD, password)
         format?.let { intent.putExtra(FileOperationService.EXTRA_FORMAT, it.name) }
         preset?.let { intent.putExtra(FileOperationService.EXTRA_PRESET, it.name) }
+        showOperationDialog(action)
         ContextCompat.startForegroundService(this, intent)
-        Toast.makeText(this, "Tác vụ đang chạy nền", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun showOperationDialog(action: String) {
+        operationDialog?.dismiss()
+        val progress = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply {
+            max = 100
+            isIndeterminate = true
+            progressTintList = android.content.res.ColorStateList.valueOf(PiperModernUi.accentColor(this@PiperFileManagerActivity))
+        }
+        val percent = TextView(this).apply {
+            text = "Đang chuẩn bị..."
+            textSize = 18f
+            setTextColor(PiperModernUi.textColor(this@PiperFileManagerActivity))
+            setTypeface(typeface, android.graphics.Typeface.BOLD)
+        }
+        val detail = TextView(this).apply {
+            text = operationLabel(action)
+            textSize = 12f
+            setTextColor(PiperModernUi.secondaryTextColor(this@PiperFileManagerActivity))
+        }
+        val panel = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            addView(percent)
+            addView(progress, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(10)).apply {
+                topMargin = dp(12)
+                bottomMargin = dp(10)
+            })
+            addView(detail)
+        }
+        operationProgress = progress
+        operationPercent = percent
+        operationDetail = detail
+        operationDialog = PiperDialog.showCustom(
+            context = this,
+            title = operationLabel(action),
+            message = "Bạn có thể để tác vụ chạy dưới nền hoặc hủy bất cứ lúc nào.",
+            icon = operationIcon(action),
+            content = panel,
+            positiveLabel = "Chạy dưới nền",
+            negativeLabel = "Hủy bỏ",
+            onPositive = { true },
+            onNegative = {
+                startService(Intent(this, FileOperationService::class.java).setAction(FileOperationService.ACTION_CANCEL))
+            }
+        ).also { it.setCanceledOnTouchOutside(false) }
+    }
+
+    private fun updateOperationProgress(intent: Intent) {
+        if (operationDialog == null && !isFinishing) {
+            showOperationDialog(intent.getStringExtra(FileOperationService.EXTRA_ACTION).orEmpty())
+        }
+        val total = intent.getIntExtra(FileOperationService.EXTRA_TOTAL, 0)
+        val completed = intent.getIntExtra(FileOperationService.EXTRA_COMPLETED, 0)
+        val percent = intent.getIntExtra(FileOperationService.EXTRA_PERCENT, 0).coerceIn(0, 100)
+        val current = intent.getStringExtra(FileOperationService.EXTRA_CURRENT_NAME).orEmpty()
+        operationProgress?.isIndeterminate = total <= 0
+        if (total > 0) operationProgress?.progress = percent
+        operationPercent?.text = if (total > 0) "$percent%" else "Đang chuẩn bị..."
+        operationDetail?.text = if (total > 0) "$completed/$total • $current" else current
+    }
+
+    private fun operationLabel(action: String): String = when (action) {
+        FileOperationService.ACTION_COMPRESS -> "Đang nén tệp"
+        FileOperationService.ACTION_EXTRACT -> "Đang giải nén"
+        FileOperationService.ACTION_BACKUP -> "Đang sao lưu"
+        FileOperationService.ACTION_DELETE -> "Đang xóa"
+        FileOperationService.ACTION_COPY -> "Đang sao chép"
+        FileOperationService.ACTION_MOVE -> "Đang di chuyển"
+        else -> "Đang xử lý tệp"
+    }
+
+    private fun operationIcon(action: String): Int = when (action) {
+        FileOperationService.ACTION_COMPRESS, FileOperationService.ACTION_EXTRACT -> R.drawable.ic_file_archive
+        FileOperationService.ACTION_BACKUP -> R.drawable.ic_file_backup
+        FileOperationService.ACTION_DELETE -> R.drawable.ic_file_delete
+        FileOperationService.ACTION_MOVE -> R.drawable.ic_file_move
+        else -> R.drawable.ic_file_copy
     }
 
     private fun uniqueOutput(requested: File): File {

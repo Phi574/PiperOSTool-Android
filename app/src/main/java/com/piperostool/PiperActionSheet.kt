@@ -45,6 +45,7 @@ object PiperActionSheet {
         }
         PiperModernUi.apply(content)
         dialog.setContentView(content)
+        styleBottomSheet(dialog, context)
         dialog.show()
     }
 
@@ -100,6 +101,7 @@ object PiperActionSheet {
         applyButton.backgroundTintList = ColorStateList.valueOf(PiperModernUi.accentColor(context))
         applyButton.setTextColor(Color.WHITE)
         dialog.setContentView(root)
+        styleBottomSheet(dialog, context)
         dialog.show()
     }
 
@@ -200,19 +202,7 @@ object PiperActionSheet {
         PiperModernUi.apply(root)
         PiperAutoFont.watch(root)
         dialog.setContentView(root)
-        dialog.setOnShowListener {
-            dialog.findViewById<View>(com.google.android.material.R.id.design_bottom_sheet)?.background =
-                GradientDrawable().apply {
-                    shape = GradientDrawable.RECTANGLE
-                    setColor(PiperModernUi.surfaceColor(context))
-                    cornerRadii = floatArrayOf(
-                        dp(context, 8).toFloat(), dp(context, 8).toFloat(),
-                        dp(context, 8).toFloat(), dp(context, 8).toFloat(),
-                        0f, 0f, 0f, 0f
-                    )
-                    setStroke(dp(context, 1), PiperModernUi.borderColor(context))
-                }
-        }
+        styleBottomSheet(dialog, context)
         dialog.show()
     }
 
@@ -254,6 +244,22 @@ object PiperActionSheet {
             PiperModernUi.secondaryTextColor(context)
         )
     )
+
+    private fun styleBottomSheet(dialog: BottomSheetDialog, context: Context) {
+        dialog.setOnShowListener {
+            dialog.findViewById<View>(com.google.android.material.R.id.design_bottom_sheet)?.background =
+                GradientDrawable().apply {
+                    shape = GradientDrawable.RECTANGLE
+                    setColor(PiperModernUi.surfaceColor(context))
+                    cornerRadii = floatArrayOf(
+                        dp(context, 8).toFloat(), dp(context, 8).toFloat(),
+                        dp(context, 8).toFloat(), dp(context, 8).toFloat(),
+                        0f, 0f, 0f, 0f
+                    )
+                    setStroke(dp(context, 1), PiperModernUi.borderColor(context))
+                }
+        }
+    }
 
     private fun titleView(context: Context, value: String) = TextView(context).apply {
         text = value

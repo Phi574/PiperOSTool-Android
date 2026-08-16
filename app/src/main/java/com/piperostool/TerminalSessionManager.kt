@@ -2,8 +2,6 @@ package com.piperostool
 
 import android.content.Context
 import java.io.File
-import java.io.InputStreamReader
-import java.io.OutputStreamWriter
 import java.util.concurrent.CopyOnWriteArraySet
 import java.util.concurrent.atomic.AtomicLong
 
@@ -136,6 +134,9 @@ object TerminalSessionManager {
         requestedMode: SessionMode
     ): TerminalSession {
         val runtime = TerminalRuntime.inspect(context)
+        if (runtime.installed) {
+            runCatching { TerminalRuntime.repairPackageConfiguration(context) }
+        }
         val mode = if (requestedMode == SessionMode.LINUX && runtime.installed) {
             SessionMode.LINUX
         } else {
@@ -216,8 +217,7 @@ object TerminalSessionManager {
     ) {
         private val output = StringBuilder()
         private val outputLock = Any()
-        private var process: Process? = null
-        private var writer: OutputStreamWriter? = null
+        private var process: PtyProcess? = null
         private val parserBuffer = StringBuilder()
 
         @Volatile
@@ -252,46 +252,38 @@ object TerminalSessionManager {
                 }
             }
             runCatching {
-                val builder = if (shellExecutable != null) {
-                    TermuxProcessLauncher.create(
-                        context = context,
-                        executable = shellExecutable,
-                        arguments = emptyList(),
-                        workingDirectory = homeDirectory,
-                        prefixDirectory = prefixDirectory,
-                        homeDirectory = homeDirectory
+                val command: List<String>
+                val environment: Map<String, String>
+                if (shellExecutable != null) {
+                    command = TermuxProcessLauncher.buildCommand(
+                        shellExecutable,
+                        listOf("--noprofile", "--norc", "-i")
+                    )
+                    environment = TermuxProcessLauncher.buildEnvironment(
+                        context,
+                        prefixDirectory,
+                        homeDirectory
                     )
                 } else {
-                    ProcessBuilder("/system/bin/sh")
-                        .directory(homeDirectory)
-                        .redirectErrorStream(true)
-                        .apply {
-                            environment().apply {
-                                put("HOME", homeDirectory.absolutePath)
-                                put("TERM", "xterm-256color")
-                                put(
-                                    "TMPDIR",
-                                    homeDirectory.parentFile?.resolve("tmp")?.apply {
-                                        mkdirs()
-                                    }?.absolutePath ?: homeDirectory.absolutePath
-                                )
-                                put("PATH", "/system/bin:/system/xbin:/vendor/bin")
-                            }
-                        }
+                    command = listOf("/system/bin/sh")
+                    environment = mapOf(
+                        "HOME" to homeDirectory.absolutePath,
+                        "TERM" to "xterm-256color",
+                        "COLORTERM" to "truecolor",
+                        "TMPDIR" to (homeDirectory.parentFile?.resolve("tmp")?.apply {
+                            mkdirs()
+                        }?.absolutePath ?: homeDirectory.absolutePath),
+                        "PATH" to "/system/bin:/system/xbin:/vendor/bin"
+                    )
                 }
-                process = builder.start()
-                writer = OutputStreamWriter(process!!.outputStream)
+                process = PtyProcess.start(command, environment, homeDirectory)
                 append(welcomeText)
                 appendPrompt()
                 Thread({
                     try {
-                        InputStreamReader(process!!.inputStream).use { reader ->
-                            val buffer = CharArray(2048)
-                            while (!closed) {
-                                val count = reader.read(buffer)
-                                if (count < 0) break
-                                appendProcessOutput(String(buffer, 0, count))
-                            }
+                        while (!closed) {
+                            val text = process?.read() ?: break
+                            appendProcessOutput(text)
                         }
                     } catch (_: Exception) {
                         if (!closed) append("\nKhông thể đọc đầu ra của shell.\n")
@@ -317,16 +309,12 @@ object TerminalSessionManager {
             lastExitCode = null
             append("$command\n")
             return runCatching {
-                writer?.apply {
-                    write(
+                process?.write(
                         "{ $command; }; __piper_exit=${'$'}?; " +
                             "__piper_pwd=\"${'$'}(pwd -P 2>/dev/null || pwd)\"; " +
                             "printf '\\035PIPER_DONE:%s:%s\\036' " +
                             "\"${'$'}__piper_exit\" \"${'$'}__piper_pwd\"\n"
-                    )
-                    flush()
-                }
-                true
+                    ) == true
             }.getOrDefault(false)
         }
 
@@ -336,11 +324,7 @@ object TerminalSessionManager {
                 awaitingConfirmation = false
             }
             return runCatching {
-                writer?.apply {
-                    write(value)
-                    flush()
-                }
-                true
+                process?.write(value) == true
             }.getOrDefault(false)
         }
 
@@ -356,10 +340,8 @@ object TerminalSessionManager {
 
         fun close() {
             closed = true
-            runCatching { writer?.close() }
-            process?.destroy()
+            runCatching { process?.close() }
             process = null
-            writer = null
         }
 
         fun toInfo(): SessionInfo = SessionInfo(
@@ -379,7 +361,7 @@ object TerminalSessionManager {
         )
 
         private fun appendProcessOutput(text: String) {
-            parserBuffer.append(text.replace("\r\n", "\n").replace('\r', '\n'))
+            parserBuffer.append(text.replace("\r\n", "\n"))
             while (true) {
                 val match = DONE_REGEX.find(parserBuffer)
                 if (match == null) {
@@ -414,7 +396,7 @@ object TerminalSessionManager {
                 awaitingConfirmation = true
             }
 
-            if (visibleText.isNotEmpty()) append(visibleText)
+            if (visibleText.isNotEmpty()) appendTerminalText(visibleText)
         }
 
         private fun finishCommand(exitCode: Int?, directory: String) {
@@ -478,18 +460,34 @@ object TerminalSessionManager {
         }
 
         private fun isProcessRunning(): Boolean {
-            val activeProcess = process ?: return false
-            return try {
-                activeProcess.exitValue()
-                false
-            } catch (_: IllegalThreadStateException) {
-                true
-            }
+            return process?.isAlive() == true
         }
 
         private fun append(text: String) {
             synchronized(outputLock) {
                 output.append(text)
+                if (output.length > MAX_OUTPUT_CHARS) {
+                    output.delete(0, output.length - TRIMMED_OUTPUT_CHARS)
+                }
+            }
+            onOutput()
+        }
+
+        private fun appendTerminalText(text: String) {
+            synchronized(outputLock) {
+                text.forEach { character ->
+                    when (character) {
+                        '\r' -> {
+                            val lineStart = output.lastIndexOf('\n').let { it + 1 }
+                            if (lineStart < output.length) output.delete(lineStart, output.length)
+                        }
+                        '\b' -> {
+                            val lineStart = output.lastIndexOf('\n').let { it + 1 }
+                            if (output.length > lineStart) output.deleteCharAt(output.lastIndex)
+                        }
+                        else -> output.append(character)
+                    }
+                }
                 if (output.length > MAX_OUTPUT_CHARS) {
                     output.delete(0, output.length - TRIMMED_OUTPUT_CHARS)
                 }

@@ -1456,21 +1456,24 @@ class PiperBrowserActivity : AppCompatActivity() {
 
     private fun showUserAgentDialog() {
         val options = BrowserSessionStore.userAgents()
-        val checked = options.indexOfFirst { it.id == sessionStore.selectedUserAgentId() }
-            .coerceAtLeast(0)
-        AlertDialog.Builder(this)
-            .setTitle(R.string.browser_user_agent)
-            .setSingleChoiceItems(options.map { it.label }.toTypedArray(), checked) { dialog, which ->
-                sessionStore.setSelectedUserAgent(options[which].id)
+        val selected = sessionStore.selectedUserAgentId()
+        PiperActionSheet.showSingleSelect(
+            context = this,
+            title = getString(R.string.browser_user_agent),
+            choices = options.map { option ->
+                PiperSheetChoice(option.id, option.label, option.id == selected)
+            },
+            onSelect = { key ->
+                sessionStore.setSelectedUserAgent(key)
                 tabs.forEach { configureWebSettings(it.webView) }
                 activeTab()
                     ?.takeIf { it.url != BrowserSessionStore.HOME_URL }
                     ?.webView
                     ?.reload()
-                dialog.dismiss()
-            }
-            .setNegativeButton(android.R.string.cancel, null)
-            .show()
+            },
+            onRemove = {},
+            onAdd = {}
+        )
     }
 
     private fun showTabsSheet() {
@@ -1839,11 +1842,11 @@ class PiperBrowserActivity : AppCompatActivity() {
 
     private fun addIncognitoTab() {
         if (!supportsIncognitoProfiles()) {
-            AlertDialog.Builder(this)
-                .setTitle(R.string.incognito_unavailable_title)
-                .setMessage(R.string.incognito_unavailable_message)
-                .setPositiveButton(android.R.string.ok, null)
-                .show()
+            PiperDialog.showMessage(
+                this,
+                getString(R.string.incognito_unavailable_title),
+                getString(R.string.incognito_unavailable_message)
+            )
             return
         }
         addTab(
@@ -2076,11 +2079,12 @@ class PiperBrowserActivity : AppCompatActivity() {
     }
 
     private fun showExtensionImportConfirmation(uri: Uri) {
-        AlertDialog.Builder(this)
-            .setTitle(R.string.import_browser_extension)
-            .setMessage(R.string.extension_security_warning)
-            .setNegativeButton(android.R.string.cancel, null)
-            .setPositiveButton(R.string.import_action) { _, _ ->
+        PiperDialog.showConfirm(
+            context = this,
+            title = getString(R.string.import_browser_extension),
+            message = getString(R.string.extension_security_warning),
+            positiveLabel = getString(R.string.import_action)
+        ) {
                 runCatching { extensionStore.import(uri) }
                     .onSuccess {
                         Toast.makeText(
@@ -2091,14 +2095,13 @@ class PiperBrowserActivity : AppCompatActivity() {
                         showExtensionsSheet()
                     }
                     .onFailure {
-                        AlertDialog.Builder(this)
-                            .setTitle(R.string.extension_import_failed)
-                            .setMessage(it.message ?: getString(R.string.invalid_extension_file))
-                            .setPositiveButton(android.R.string.ok, null)
-                            .show()
+                        PiperDialog.showMessage(
+                            this,
+                            getString(R.string.extension_import_failed),
+                            it.message ?: getString(R.string.invalid_extension_file)
+                        )
                     }
-            }
-            .show()
+        }
     }
 
     private fun showExtensionsSheet() {
@@ -2410,12 +2413,12 @@ class PiperBrowserActivity : AppCompatActivity() {
             liveUpdateStatus,
             selectedUserAgent().label
         )
-        AlertDialog.Builder(this)
-            .setIcon(R.drawable.a3tn)
-            .setTitle(R.string.about_piperos_browser)
-            .setMessage(message)
-            .setPositiveButton(android.R.string.ok, null)
-            .show()
+        PiperDialog.showMessage(
+            context = this,
+            title = getString(R.string.about_piperos_browser),
+            message = message,
+            icon = R.drawable.a3tn
+        )
     }
 
     private fun openExternalUri(uri: Uri): Boolean {

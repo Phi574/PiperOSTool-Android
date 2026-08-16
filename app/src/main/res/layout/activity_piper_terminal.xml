@@ -245,7 +245,7 @@
             android:layout_height="wrap_content"
             android:fontFamily="monospace"
             android:lineSpacingExtra="2dp"
-            android:textColor="#D9FCE5"
+            android:textColor="#FFF7F7F8"
             android:textIsSelectable="true"
             android:textSize="13sp" />
     </ScrollView>

@@ -274,10 +274,13 @@ object PiperModernUi {
             }
             is ImageButton -> {
                 view.setBackgroundColor(Color.TRANSPARENT)
-                view.imageTintList = if (name in setOf("btnExitBrowser")) {
-                    null
-                } else {
-                    android.content.res.ColorStateList.valueOf(palette.secondaryText)
+                view.imageTintList = when (name) {
+                    "btnExitBrowser" -> null
+                    "fileCopySelected", "fileMoveSelected", "fileCompressSelected", "fileBackupSelected" ->
+                        android.content.res.ColorStateList.valueOf(palette.accent)
+                    "fileDeleteSelected" ->
+                        android.content.res.ColorStateList.valueOf(Color.rgb(220, 78, 85))
+                    else -> android.content.res.ColorStateList.valueOf(palette.secondaryText)
                 }
             }
             is ImageView -> {

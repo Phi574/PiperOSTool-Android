@@ -27,6 +27,15 @@ class PiperApkBuilder(private val context: Context) {
             workspace.outputDirectory,
             "${workspace.root.name.substringAfter('-')}-piper-edited.apk"
         )
+        if (workspace.hasDecodedProject) {
+            onProgress(ApkWorkspaceProgress("Đang biên dịch resources và Manifest", 10, 100, started))
+            ReAndroidApkEngine.build(workspace.decodedDirectory, unsigned)
+            onProgress(ApkWorkspaceProgress("Đang ký APK", 92, 100, started))
+            sign(unsigned, signed)
+            unsigned.delete()
+            onProgress(ApkWorkspaceProgress("Hoàn tất", 100, 100, started))
+            return signed
+        }
         val replacements = workspace.filesDirectory.walkTopDown()
             .filter { it.isFile }
             .associateBy { it.relativeTo(workspace.filesDirectory).invariantSeparatorsPath }

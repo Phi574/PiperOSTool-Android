@@ -14,10 +14,13 @@ android {
         applicationId = "com.piper.os.tool"
         minSdk = 24
         targetSdk = 36
-        versionCode = 26
-        versionName = "3.0.6.beta"
+        versionCode = 28
+        versionName = "3.0.8.beta"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        ndk {
+            abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64")
+        }
     }
 
 
@@ -37,9 +40,18 @@ android {
     kotlinOptions {
         jvmTarget = "11"
     }
+    externalNativeBuild {
+        ndkBuild {
+            path = file("src/main/jni/Android.mk")
+        }
+    }
 }
 
 dependencies {
+    implementation(files("libs/reandroid-apkeditor-1.4.9.jar"))
+    implementation(files("libs/reandroid-arsclib.jar"))
+    implementation(files("libs/reandroid-smali.jar"))
+    implementation(files("libs/reandroid-jcommand.jar"))
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(platform("com.google.firebase:firebase-bom:33.7.0"))

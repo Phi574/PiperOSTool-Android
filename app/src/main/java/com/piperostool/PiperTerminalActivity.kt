@@ -109,7 +109,7 @@ class PiperTerminalActivity : AppCompatActivity(), TerminalSessionManager.Listen
         commandInput.setTag(R.id.piper_auto_font_ignore, true)
         if (PiperUiPreferences.isModern(this)) {
             outputScroll.setBackgroundResource(R.drawable.bg_terminal_screen)
-            outputView.setTextColor(Color.rgb(232, 255, 240))
+            outputView.setTextColor(Color.rgb(247, 247, 248))
         }
 
         loadHistory()
@@ -289,7 +289,11 @@ class PiperTerminalActivity : AppCompatActivity(), TerminalSessionManager.Listen
         val session = TerminalSessionManager.listSessions()
             .firstOrNull { it.id == activeSessionId }
         if (session?.busy == true) {
-            Toast.makeText(this, R.string.terminal_session_busy, Toast.LENGTH_SHORT).show()
+            if (TerminalSessionManager.sendRaw(activeSessionId, "$command\n")) {
+                rememberCommand(command)
+                commandInput.text?.clear()
+                historyIndex = commandHistory.size
+            }
             return
         }
 
@@ -409,19 +413,16 @@ class PiperTerminalActivity : AppCompatActivity(), TerminalSessionManager.Listen
     }
 
     private fun renderOutput() {
-        val plainOutput = ANSI_ESCAPE.replace(
-            TerminalSessionManager.output(activeSessionId),
-            ""
-        )
-        outputView.text = styleTerminalOutput(plainOutput)
+        outputView.text = styleTerminalOutput(TerminalSessionManager.output(activeSessionId))
         renderSessionState()
         outputScroll.post { outputScroll.fullScroll(View.FOCUS_DOWN) }
     }
 
     private fun styleTerminalOutput(output: String): CharSequence {
-        val styled = SpannableStringBuilder(output)
+        val styled = AnsiTerminalText.format(output)
+        val visibleOutput = styled.toString()
         var offset = 0
-        output.split('\n').forEach { line ->
+        visibleOutput.split('\n').forEach { line ->
             val color = when {
                 line.startsWith("piper:") -> 0xFF8DFFB0.toInt()
                 line.startsWith("android:") -> 0xFF8AD6FF.toInt()
@@ -429,7 +430,6 @@ class PiperTerminalActivity : AppCompatActivity(), TerminalSessionManager.Listen
                     line.contains("error", true) ||
                     line.contains("failed", true) ||
                     line.contains("not found", true) -> 0xFFFB7185.toInt()
-                line.contains("%") -> 0xFF8AD6FF.toInt()
                 else -> null
             }
             if (color != null && line.isNotEmpty()) {
@@ -570,14 +570,14 @@ class PiperTerminalActivity : AppCompatActivity(), TerminalSessionManager.Listen
             ).show()
             return
         }
-        AlertDialog.Builder(this)
-            .setTitle(R.string.terminal_runtime_remove_title)
-            .setMessage(R.string.terminal_runtime_remove_message)
-            .setNegativeButton(android.R.string.cancel, null)
-            .setPositiveButton(R.string.terminal_runtime_remove_action) { _, _ ->
-                removeRuntime()
-            }
-            .show()
+        PiperDialog.showConfirm(
+            context = this,
+            title = getString(R.string.terminal_runtime_remove_title),
+            message = getString(R.string.terminal_runtime_remove_message),
+            positiveLabel = getString(R.string.terminal_runtime_remove_action),
+            destructive = true,
+            onConfirm = ::removeRuntime
+        )
     }
 
     private fun removeRuntime() {
@@ -680,6 +680,5 @@ class PiperTerminalActivity : AppCompatActivity(), TerminalSessionManager.Listen
         private const val MAX_HISTORY = 100
         private const val MAX_SESSIONS = 6
         private const val OUTPUT_REFRESH_DELAY_MS = 45L
-        private val ANSI_ESCAPE = Regex("\\u001B\\[[;?0-9]*[ -/]*[@-~]")
     }
 }

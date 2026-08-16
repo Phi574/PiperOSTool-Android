@@ -232,14 +232,19 @@ class AppsFragment : Fragment() {
 
     private fun showSortOptions() {
         val options = arrayOf("Tên A-Z", "Dung lượng lớn nhất", "Cập nhật gần nhất")
-        AlertDialog.Builder(requireContext())
-            .setTitle("Sắp xếp ứng dụng")
-            .setSingleChoiceItems(options, sortMode.ordinal) { dialog, which ->
-                sortMode = AppSortMode.entries[which]
+        PiperActionSheet.showSingleSelect(
+            context = requireContext(),
+            title = "Sắp xếp ứng dụng",
+            choices = options.mapIndexed { index, label ->
+                PiperSheetChoice(index.toString(), label, sortMode.ordinal == index)
+            },
+            onSelect = { key ->
+                sortMode = AppSortMode.entries[key.toInt()]
                 applyFilters()
-                dialog.dismiss()
-            }
-            .show()
+            },
+            onRemove = {},
+            onAdd = {}
+        )
     }
 
     private fun loadApps() {

@@ -26,7 +26,8 @@ data class ApkWorkspaceEntry(
     val isDirectory: Boolean,
     val size: Long,
     val extractedFile: File?,
-    val childCount: Int = 0
+    val childCount: Int = 0,
+    val modified: Boolean = false
 )
 
 enum class ApkDecodeScope(val label: String) {
@@ -42,10 +43,17 @@ class ApkWorkspace private constructor(
     val sourceApk: File
 ) {
     val filesDirectory = File(root, "files")
+    val decodedDirectory = File(root, "decoded")
     val outputDirectory = File(root, "output")
     private val previewDirectory = File(root, "previews")
+    private val decodedModeFile = File(root, "decoded-mode.txt")
+    val hasDecodedProject: Boolean
+        get() = File(decodedDirectory, "AndroidManifest.xml").isFile
+    val hasDecodedSmali: Boolean
+        get() = decodedModeFile.readText().trim() == "full"
 
     fun list(prefix: String): List<ApkWorkspaceEntry> {
+        if (hasDecodedProject) return listDecoded(prefix)
         val normalized = prefix.trim('/').let { if (it.isEmpty()) "" else "$it/" }
         val children = linkedMapOf<String, ApkWorkspaceEntry>()
         ZipFile(sourceApk).use { zip ->
@@ -58,13 +66,15 @@ class ApkWorkspace private constructor(
                 val isDirectory = remainder.contains('/') || entry.isDirectory
                 val exact = if (isDirectory) null else entry
                 val existing = children[first]
+                val extractedFile = File(filesDirectory, childPath).takeIf { it.exists() }
                 children[first] = ApkWorkspaceEntry(
                     name = first,
                     archivePath = childPath,
                     isDirectory = isDirectory,
                     size = exact?.size ?: 0L,
-                    extractedFile = File(filesDirectory, childPath).takeIf { it.exists() },
-                    childCount = if (isDirectory) (existing?.childCount ?: 0) + 1 else 0
+                    extractedFile = extractedFile,
+                    childCount = if (isDirectory) (existing?.childCount ?: 0) + 1 else 0,
+                    modified = extractedFile?.isFile == true && EditorHistoryStore.isApkModified(extractedFile)
                 )
             }
         }
@@ -75,7 +85,8 @@ class ApkWorkspace private constructor(
                 isDirectory = file.isDirectory,
                 size = if (file.isFile) file.length() else 0L,
                 extractedFile = file,
-                childCount = if (file.isDirectory) file.list()?.size ?: 0 else 0
+                childCount = if (file.isDirectory) file.list()?.size ?: 0 else 0,
+                modified = file.isFile && EditorHistoryStore.isApkModified(file)
             )
         }
         return children.values.sortedWith(
@@ -85,6 +96,11 @@ class ApkWorkspace private constructor(
     }
 
     fun extractEntry(path: String): File {
+        if (hasDecodedProject) {
+            val decoded = safeDecoded(path)
+            check(decoded.isFile) { "$path không phải là tệp trong project" }
+            return decoded
+        }
         val output = safeOutput(path)
         if (output.isFile) return output
         ZipFile(sourceApk).use { zip ->
@@ -99,6 +115,11 @@ class ApkWorkspace private constructor(
     }
 
     fun previewFile(path: String): File {
+        if (hasDecodedProject) {
+            val decoded = safeDecoded(path)
+            check(decoded.isFile) { "$path không phải là tệp trong project" }
+            return decoded
+        }
         val edited = File(filesDirectory, path)
         if (edited.isFile) return edited
         val output = File(previewDirectory, path)
@@ -125,6 +146,9 @@ class ApkWorkspace private constructor(
         }
         val normalized = paths.map { it.trim('/') }.filter { it.isNotEmpty() }.distinct()
         require(normalized.isNotEmpty()) { "Chưa chọn tệp hoặc thư mục" }
+        if (hasDecodedProject) {
+            return exportDecodedSelection(normalized, destination, context, onProgress)
+        }
         val started = SystemClock.elapsedRealtime()
         val exportedFiles = linkedMapOf<String, File>()
         val directorySelections = linkedSetOf<String>()
@@ -224,16 +248,101 @@ class ApkWorkspace private constructor(
         }
     }
 
-    fun extractedTextFiles(): List<File> = filesDirectory.walkTopDown()
+    fun decodeFullProject(
+        decodeSmali: Boolean,
+        onProgress: (ApkWorkspaceProgress) -> Unit
+    ): Int {
+        val started = SystemClock.elapsedRealtime()
+        onProgress(ApkWorkspaceProgress("Đang giải mã Manifest và resources", 8, 100, started))
+        ReAndroidApkEngine.decode(sourceApk, decodedDirectory, decodeSmali)
+        decodedModeFile.writeText(if (decodeSmali) "full" else "resources")
+        val files = decodedDirectory.walkTopDown().count { it.isFile }
+        val phase = if (decodeSmali) {
+            "Project XML và smali đã sẵn sàng"
+        } else {
+            "Project resources đã sẵn sàng"
+        }
+        onProgress(ApkWorkspaceProgress(phase, 100, 100, started))
+        return files
+    }
+
+    fun extractedTextFiles(): List<File> = activeFilesDirectory().walkTopDown()
         .filter { it.isFile && it.extension.lowercase() in TEXT_EXTENSIONS }
         .toList()
 
-    fun stringsFiles(): List<File> = filesDirectory.walkTopDown()
+    fun stringsFiles(): List<File> = activeFilesDirectory().walkTopDown()
         .filter {
             it.isFile && it.name == "strings.xml" &&
                 it.parentFile?.name?.startsWith("values") == true
         }
         .toList()
+
+    private fun activeFilesDirectory(): File = if (hasDecodedProject) decodedDirectory else filesDirectory
+
+    private fun listDecoded(prefix: String): List<ApkWorkspaceEntry> {
+        val normalized = prefix.trim('/')
+        val directory = if (normalized.isEmpty()) decodedDirectory else safeDecoded(normalized)
+        if (!directory.isDirectory) return emptyList()
+        return directory.listFiles().orEmpty().map { file ->
+            val path = file.relativeTo(decodedDirectory).invariantSeparatorsPath
+            ApkWorkspaceEntry(
+                name = file.name,
+                archivePath = path,
+                isDirectory = file.isDirectory,
+                size = if (file.isFile) file.length() else 0L,
+                extractedFile = file,
+                childCount = if (file.isDirectory) file.list()?.size ?: 0 else 0,
+                modified = file.isFile && EditorHistoryStore.isApkModified(file)
+            )
+        }.sortedWith(
+            compareByDescending<ApkWorkspaceEntry> { it.isDirectory }
+                .thenBy { it.name.lowercase() }
+        )
+    }
+
+    private fun exportDecodedSelection(
+        paths: List<String>,
+        destination: DocumentFile,
+        context: Context,
+        onProgress: (ApkWorkspaceProgress) -> Unit
+    ): Int {
+        val started = SystemClock.elapsedRealtime()
+        val files = linkedMapOf<String, File>()
+        val directories = linkedSetOf<String>()
+        paths.forEach { path ->
+            val source = safeDecoded(path)
+            when {
+                source.isFile -> files[path] = source
+                source.isDirectory -> {
+                    directories += path
+                    source.walkTopDown().filter { it.isFile }.forEach { file ->
+                        files[file.relativeTo(decodedDirectory).invariantSeparatorsPath] = file
+                    }
+                }
+            }
+        }
+        val topFolders = directories.associateWith {
+            createUniqueDirectory(destination, it.substringAfterLast('/'))
+        }
+        files.entries.forEachIndexed { index, (path, source) ->
+            val owner = directories.firstOrNull { path == it || path.startsWith("$it/") }
+            val rootDocument = owner?.let(topFolders::get) ?: destination
+            val relative = owner?.let { path.removePrefix("$it/") } ?: source.name
+            writeDocumentFile(context, requireNotNull(rootDocument), relative, source)
+            onProgress(ApkWorkspaceProgress("Đang backup $path", index + 1, files.size, started))
+        }
+        return files.size
+    }
+
+    private fun safeDecoded(path: String): File {
+        val output = File(decodedDirectory, path)
+        val rootPath = decodedDirectory.canonicalPath + File.separator
+        check(
+            output.canonicalPath == decodedDirectory.canonicalPath ||
+                output.canonicalPath.startsWith(rootPath)
+        ) { "Đường dẫn project không an toàn" }
+        return output
+    }
 
     private fun safeOutput(path: String): File {
         val output = File(filesDirectory, path)

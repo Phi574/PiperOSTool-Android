@@ -60,6 +60,12 @@ class ApkEditorActivity : AppCompatActivity() {
     private var currentEntries = emptyList<ApkWorkspaceEntry>()
     private var pendingBackupPaths = emptyList<String>()
 
+    private val iconPicker = registerForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri ->
+        uri?.let(::replaceAppIcon)
+    }
+
     private val backupDestination = registerForActivityResult(
         ActivityResultContracts.OpenDocumentTree()
     ) { uri ->
@@ -154,6 +160,7 @@ class ApkEditorActivity : AppCompatActivity() {
         findViewById<View>(R.id.btnApkDecode).setOnClickListener { showDecodeOptions() }
         findViewById<View>(R.id.btnApkManifest).setOnClickListener { openManifestReport() }
         findViewById<View>(R.id.btnApkStrings).setOnClickListener { openStrings() }
+        findViewById<View>(R.id.btnApkIcon).setOnClickListener { chooseAppIcon() }
         findViewById<View>(R.id.btnApkBuild).setOnClickListener { buildApk() }
         findViewById<View>(R.id.btnApkSelect).setOnClickListener { enterSelectionMode() }
         findViewById<View>(R.id.btnApkSelectionCancel).setOnClickListener { leaveSelectionMode() }
@@ -200,7 +207,8 @@ class ApkEditorActivity : AppCompatActivity() {
     private fun renderFiles() {
         currentEntries = workspace?.list(currentPrefix).orEmpty()
         applyFileFilter(search.text?.toString().orEmpty())
-        breadcrumb.text = if (currentPrefix.isEmpty()) "APK /" else "APK / $currentPrefix"
+        val rootLabel = if (workspace?.hasDecodedProject == true) "PROJECT" else "APK"
+        breadcrumb.text = if (currentPrefix.isEmpty()) "$rootLabel /" else "$rootLabel / $currentPrefix"
         fileCount.text = "${currentEntries.count { it.isDirectory }} thư mục • " +
             "${currentEntries.count { !it.isDirectory }} tệp"
     }
@@ -308,8 +316,8 @@ class ApkEditorActivity : AppCompatActivity() {
             withContext(Dispatchers.Main) {
                 renderFiles()
                 startActivity(
-                    Intent(this@ApkEditorActivity, PiperFilePreviewActivity::class.java)
-                        .putExtra(PiperFilePreviewActivity.EXTRA_FILE_PATH, file.absolutePath)
+                    Intent(this@ApkEditorActivity, TextEditorActivity::class.java)
+                        .putExtra(TextEditorActivity.EXTRA_FILE_PATH, file.absolutePath)
                 )
             }
         }
@@ -317,13 +325,72 @@ class ApkEditorActivity : AppCompatActivity() {
 
     private fun showDecodeOptions() {
         val options = ApkDecodeScope.entries.toTypedArray()
-        AlertDialog.Builder(this)
-            .setTitle("Phạm vi giải nén")
-            .setItems(options.map { it.label }.toTypedArray()) { _, which ->
-                decode(options[which])
+        PiperActionSheet.show(
+            this,
+            "Mở cấu trúc APK",
+            listOf(
+                PiperSheetAction(
+                    label = "PROJECT NGÔN NGỮ & GIAO DIỆN",
+                    subtitle = "Nhanh hơn: Manifest, resources, chuỗi và icon; giữ nguyên DEX",
+                    icon = R.drawable.ic_file_archive
+                ) { confirmProjectDecode(decodeSmali = false) },
+                PiperSheetAction(
+                    label = "PROJECT ĐẦY ĐỦ + SMALI",
+                    subtitle = "Sửa logic ứng dụng; cần nhiều thời gian, RAM và dung lượng",
+                    icon = R.drawable.ic_file_document
+                ) { confirmProjectDecode(decodeSmali = true) }
+            ) + options.map { option ->
+                PiperSheetAction(option.label, icon = R.drawable.ic_file_archive) {
+                    decode(option)
+                }
             }
-            .setNegativeButton("Hủy", null)
-            .show()
+        )
+    }
+
+    private fun confirmProjectDecode(
+        decodeSmali: Boolean,
+        onReady: (() -> Unit)? = null
+    ) {
+        val current = workspace ?: return
+        if (current.hasDecodedProject && (!decodeSmali || current.hasDecodedSmali)) {
+            onReady?.invoke()
+            return
+        }
+        val details = if (decodeSmali) {
+            "PiperOS sẽ giải mã resources.arsc, Binary XML và toàn bộ DEX thành smali. " +
+                "Project lớn có thể cần vài GB dung lượng và mất nhiều phút."
+        } else {
+            "PiperOS sẽ giải mã resources.arsc và Binary XML để sửa ngôn ngữ, Manifest, " +
+                "giao diện và icon; mã DEX được giữ nguyên để tiết kiệm thời gian."
+        }
+        PiperDialog.showConfirm(
+            context = this,
+            title = "Giải mã thành project chỉnh sửa?",
+            message =
+                "$details Chỉ chỉnh sửa ứng dụng bạn có quyền sử dụng. " +
+                    "Giải mã lại sẽ thay thế project đang có.",
+            positiveLabel = "Giải mã"
+        ) {
+            decodeProject(decodeSmali, onReady)
+        }
+    }
+
+    private fun decodeProject(decodeSmali: Boolean, onReady: (() -> Unit)? = null) {
+        runBusy("Đang tạo project APK") {
+            val count = workspace!!.decodeFullProject(decodeSmali) { progress ->
+                runOnUiThread { showProgress(progress) }
+            }
+            withContext(Dispatchers.Main) {
+                currentPrefix = ""
+                renderFiles()
+                Toast.makeText(
+                    this@ApkEditorActivity,
+                    "Đã giải mã $count tệp. Mọi chỉnh sửa sẽ được đóng gói vào APK mới.",
+                    Toast.LENGTH_LONG
+                ).show()
+                onReady?.let { callback -> root.postDelayed(callback, 150L) }
+            }
+        }
     }
 
     private fun decode(scope: ApkDecodeScope) {
@@ -340,6 +407,16 @@ class ApkEditorActivity : AppCompatActivity() {
 
     private fun openManifestReport() {
         val workspace = workspace ?: return
+        if (workspace.hasDecodedProject) {
+            startActivity(
+                Intent(this, TextEditorActivity::class.java)
+                    .putExtra(
+                        TextEditorActivity.EXTRA_FILE_PATH,
+                        File(workspace.decodedDirectory, "AndroidManifest.xml").absolutePath
+                    )
+            )
+            return
+        }
         runBusy("Đang đọc Manifest") {
             val report = createManifestReport(workspace)
             withContext(Dispatchers.Main) {
@@ -387,49 +464,108 @@ class ApkEditorActivity : AppCompatActivity() {
 
     private fun openStrings() {
         val workspace = workspace ?: return
+        if (!workspace.hasDecodedProject) {
+            confirmProjectDecode(decodeSmali = false) { openStrings() }
+            return
+        }
         runBusy("Đang tìm strings.xml") {
-            if (workspace.stringsFiles().isEmpty()) {
-                workspace.decode(ApkDecodeScope.RESOURCES) { progress ->
-                    runOnUiThread { showProgress(progress) }
-                }
-            }
             val strings = workspace.stringsFiles()
             withContext(Dispatchers.Main) {
                 if (strings.isEmpty()) {
-                    AlertDialog.Builder(this@ApkEditorActivity)
-                        .setTitle("String resources đã biên dịch")
-                        .setMessage(
-                            "APK này lưu chuỗi trong resources.arsc và Binary XML. " +
-                                "Chế độ ZIP an toàn không thể sửa chuỗi đó mà không có apktool/aapt2. " +
-                                "Các APK hoặc project có strings.xml dạng văn bản vẫn chỉnh sửa trực tiếp được."
-                        )
-                        .setPositiveButton("Đã hiểu", null)
-                        .show()
+                    PiperDialog.showMessage(
+                        context = this@ApkEditorActivity,
+                        title = "Không tìm thấy strings.xml",
+                        message = "Project đã giải mã nhưng APK này không khai báo chuỗi trong res/values/strings.xml.",
+                        positiveLabel = "Đã hiểu"
+                    )
                 } else {
-                    AlertDialog.Builder(this@ApkEditorActivity)
-                        .setTitle("Ngôn ngữ (${strings.size})")
-                        .setItems(strings.map { it.parentFile?.name + "/" + it.name }.toTypedArray()) { _, index ->
+                    val actions = strings.map { file ->
+                        val count = runCatching {
+                            Regex("<string(?:\\s|>)").findAll(file.readText()).count()
+                        }.getOrDefault(0)
+                        PiperSheetAction(
+                            label = file.parentFile?.name + "/" + file.name,
+                            subtitle = "$count chuỗi${if (EditorHistoryStore.isApkModified(file)) " • Đã sửa" else ""}",
+                            icon = R.drawable.ic_file_document
+                        ) {
                             startActivity(
                                 Intent(this@ApkEditorActivity, TextEditorActivity::class.java)
-                                    .putExtra(TextEditorActivity.EXTRA_FILE_PATH, strings[index].absolutePath)
+                                    .putExtra(TextEditorActivity.EXTRA_FILE_PATH, file.absolutePath)
                             )
                         }
-                        .show()
+                    }.toMutableList()
+                    strings.firstOrNull { it.parentFile?.name == "values" }?.let { source ->
+                        actions.add(
+                            0,
+                            PiperSheetAction(
+                                label = "Tạo bản dịch Tiếng Việt",
+                                subtitle = "Sao chép values/strings.xml sang values-vi để chỉnh sửa",
+                                icon = R.drawable.ic_file_copy
+                            ) { createVietnameseStrings(source) }
+                        )
+                    }
+                    PiperActionSheet.show(
+                        this@ApkEditorActivity,
+                        "Ngôn ngữ (${strings.size})",
+                        actions
+                    )
                 }
             }
         }
     }
 
+    private fun createVietnameseStrings(source: File) {
+        val target = File(source.parentFile?.parentFile, "values-vi/strings.xml")
+        if (!target.exists()) {
+            target.parentFile?.mkdirs()
+            source.copyTo(target)
+            EditorHistoryStore.markNewApkFile(target)
+        }
+        startActivity(
+            Intent(this, TextEditorActivity::class.java)
+                .putExtra(TextEditorActivity.EXTRA_FILE_PATH, target.absolutePath)
+        )
+    }
+
+    private fun chooseAppIcon() {
+        val current = workspace ?: return
+        if (!current.hasDecodedProject) {
+            confirmProjectDecode(decodeSmali = false) { iconPicker.launch("image/*") }
+            return
+        }
+        iconPicker.launch("image/*")
+    }
+
+    private fun replaceAppIcon(uri: Uri) {
+        val current = workspace ?: return
+        runBusy("Đang thay icon ứng dụng") {
+            ApkIconEditor.replace(this@ApkEditorActivity, current, uri)
+            withContext(Dispatchers.Main) {
+                renderFiles()
+                Toast.makeText(
+                    this@ApkEditorActivity,
+                    "Đã thay icon trong project. Hãy xây dựng APK để áp dụng.",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (::adapter.isInitialized && workspace != null && !busy) renderFiles()
+    }
+
     private fun buildApk() {
         val workspace = workspace ?: return
-        AlertDialog.Builder(this)
-            .setTitle("Xây dựng APK đã chỉnh sửa")
-            .setMessage(
+        PiperDialog.showConfirm(
+            context = this,
+            title = "Xây dựng APK đã chỉnh sửa",
+            message =
                 "APK đầu ra sẽ được ký bằng PiperOS Editor key. " +
-                    "Nó không thể cập nhật đè ứng dụng gốc có chữ ký khác."
-            )
-            .setNegativeButton("Hủy", null)
-            .setPositiveButton("Xây dựng") { _, _ ->
+                    "Nó không thể cập nhật đè ứng dụng gốc có chữ ký khác.",
+            positiveLabel = "Xây dựng"
+        ) {
                 runBusy("Chuẩn bị xây dựng") {
                     val output = PiperApkBuilder(this@ApkEditorActivity).build(workspace) { progress ->
                         runOnUiThread { showProgress(progress) }
@@ -437,18 +573,23 @@ class ApkEditorActivity : AppCompatActivity() {
                     val exported = exportToDownloads(output)
                     withContext(Dispatchers.Main) { showBuildResult(output, exported) }
                 }
-            }
-            .show()
+        }
     }
 
     private fun showBuildResult(output: File, exported: Uri?) {
-        AlertDialog.Builder(this)
-            .setTitle("Xây dựng hoàn tất")
-            .setMessage("APK đã ký: ${output.name}\nĐã lưu vào Download/PiperOS_APK_Editor")
-            .setNegativeButton("Đóng", null)
-            .setNeutralButton("Chia sẻ") { _, _ -> shareApk(output) }
-            .setPositiveButton("Cài đặt") { _, _ -> installApk(exported ?: fileUri(output)) }
-            .show()
+        PiperDialog.showCustom(
+            context = this,
+            title = "Xây dựng hoàn tất",
+            message = "APK đã ký: ${output.name}\nĐã lưu vào Download/PiperOS_APK_Editor",
+            positiveLabel = "Cài đặt",
+            negativeLabel = "Đóng",
+            neutralLabel = "Chia sẻ",
+            onPositive = {
+                installApk(exported ?: fileUri(output))
+                true
+            },
+            onNeutral = { shareApk(output) }
+        )
     }
 
     private fun exportToDownloads(file: File): Uri? {
