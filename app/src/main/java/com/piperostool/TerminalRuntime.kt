@@ -7,8 +7,8 @@ import java.io.File
 import java.io.FileOutputStream
 
 object TerminalRuntime {
-    const val RUNTIME_VERSION = "2.5.5-beta"
-    const val RUNTIME_RELEASE_TAG = "runtime-v2.5.5-beta"
+    const val RUNTIME_VERSION = "2.5.6-beta"
+    const val RUNTIME_RELEASE_TAG = "runtime-v2.5.6-beta"
     const val SOURCE_REPOSITORY_URL =
         "https://github.com/Phi574/Piperos_termux"
     const val PACKAGE_REPOSITORY_URL =
