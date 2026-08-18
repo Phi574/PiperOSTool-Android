@@ -3,7 +3,13 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
-    id("com.google.gms.google-services")
+}
+
+val googleServicesConfig = file("google-services.json")
+if (googleServicesConfig.isFile) {
+    apply(plugin = "com.google.gms.google-services")
+} else {
+    logger.warn("google-services.json is missing; Firebase integration is disabled for this build.")
 }
 
 android {

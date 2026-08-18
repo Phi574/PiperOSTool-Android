@@ -20,7 +20,7 @@
 
 ## Bản hiện tại
 
-`3.0.8.beta` sử dụng `minSdk 24`, `targetSdk 36`, Kotlin `2.4.10` và tập trung vào:
+`3.1.0.beta` sử dụng `minSdk 24`, `targetSdk 36`, Kotlin `2.4.10` và tập trung vào:
 
 - **Giao diện thích ứng:** giao diện Modern tối giản là mặc định, giao diện Classic
   giữ nguyên trải nghiệm cũ. Người dùng có thể chọn sáng, tối hoặc theo hệ thống và
@@ -44,9 +44,14 @@
 > đè lên ứng dụng gốc nếu chữ ký của ứng dụng gốc khác.
 
 - **PiperOS Browser:** nhiều tab, tab ẩn danh, khôi phục phiên, lịch sử theo
-  ngày, User-Agent tùy chỉnh, nhập phần mở rộng, tải file và phát video. Bản
-  2.6.5 bỏ thanh tiêu đề trên cùng, dùng lịch sử/tab cho thao tác Back và đặt
-  nút thoát PiperOS trong toolbar dưới.
+  ngày, User-Agent tùy chỉnh, nhập phần mở rộng, tải file và phát video. Thanh
+  điều hướng tự thu gọn theo cuộn trang, có trình chuyển tab trực quan, báo cáo
+  quyền riêng tư và nút thoát PiperOS trong toolbar dưới.
+- **Kho tài khoản Browser:** nhận diện biểu mẫu đăng nhập và chỉ lưu khi người
+  dùng đồng ý. Tên đăng nhập, mật khẩu và metadata website được mã hóa cục bộ
+  trước khi đồng bộ vào Firestore theo UID của tài khoản PiperOS. Màn hình quản
+  lý cho phép mở khóa bằng PIN, xem, sửa và xóa từng mục; PIN không được gửi
+  nguyên bản lên Firebase.
 - **PiperOS Media:** quét nhạc/video trên thiết bị, lọc theo nguồn, tìm kiếm,
   sắp xếp, hàng đợi riêng, phát nền, Picture-in-Picture và điều khiển media.
 - **PiperOS Terminal:** shell Android và Linux nhiều phiên, lịch sử lệnh,
@@ -126,8 +131,28 @@ APK debug được tạo tại:
 app/build/outputs/apk/debug/app-debug.apk
 ```
 
-`app/google-services.json` đang gắn với Firebase của dự án. Fork độc lập nên
-dùng Firebase project của riêng mình và thay file cấu hình tương ứng.
+`app/google-services.json` không nằm trong Git. Muốn bật đăng nhập và đồng bộ
+Firebase, tạo Firebase project riêng, tải file cấu hình Android rồi đặt tại:
+
+```text
+app/google-services.json
+```
+
+Gradle chỉ áp dụng Google Services plugin khi file này tồn tại. Vì vậy CI và
+fork công khai vẫn build được mà không làm lộ cấu hình Firebase; build không có
+file sẽ tắt phần tích hợp Firebase. Không commit file này hoặc service-account
+JSON lên repository.
+
+Rules mẫu cho Realtime Database và Cloud Firestore nằm trong
+`database.rules.json` và `firestore.rules`. Sau khi kiểm tra đúng project, triển
+khai bằng Firebase CLI:
+
+```powershell
+firebase deploy --only database,firestore:rules
+```
+
+Firestore Rules chỉ cho UID đang xác thực truy cập kho tài khoản của chính UID
+đó; các đường dẫn không khớp tiếp tục bị từ chối mặc định.
 
 ## Quyền và dữ liệu
 
