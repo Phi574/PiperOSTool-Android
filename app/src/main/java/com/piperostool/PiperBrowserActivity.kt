@@ -61,6 +61,7 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.webkit.ProfileStore
 import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
+import com.google.firebase.auth.FirebaseAuth
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.switchmaterial.SwitchMaterial
 import java.net.URLEncoder
@@ -142,6 +143,8 @@ class PiperBrowserActivity : AppCompatActivity() {
     private var chromeScrollDistance = 0
     private var chromeLastScrollAt = 0L
     private var chromeScrollSuppressedUntil = 0L
+    private var lastCredentialPromptKey: String? = null
+    private var lastCredentialPromptAt = 0L
 
     private inner class DownloadMetadataBridge(private val tabId: Long) {
         @JavascriptInterface
@@ -165,6 +168,39 @@ class PiperBrowserActivity : AppCompatActivity() {
             registerMediaCandidate(tabId, url, mimeType, title)
             runOnUiThread {
                 showMediaDownloadOptions(tabId, url)
+            }
+        }
+    }
+
+    private inner class CredentialCaptureBridge(private val tabId: Long) {
+        @JavascriptInterface
+        fun propose(origin: String?, pageTitle: String?, username: String?, password: String?) {
+            val secret = password?.takeIf { it.isNotEmpty() }?.take(4096) ?: return
+            val safeOrigin = origin?.take(500) ?: return
+            runOnUiThread {
+                val tab = tabs.firstOrNull { it.id == tabId } ?: return@runOnUiThread
+                if (tab.incognito || FirebaseAuth.getInstance().currentUser == null) return@runOnUiThread
+                val current = runCatching { Uri.parse(tab.url) }.getOrNull() ?: return@runOnUiThread
+                val submitted = runCatching { Uri.parse(safeOrigin) }.getOrNull() ?: return@runOnUiThread
+                if (current.scheme != "https" || submitted.scheme != "https" ||
+                    current.host.isNullOrBlank() || current.host != submitted.host
+                ) return@runOnUiThread
+
+                val account = username.orEmpty().trim().take(320)
+                val key = "${current.host}|$account|${secret.hashCode()}"
+                val now = SystemClock.uptimeMillis()
+                if (lastCredentialPromptKey == key && now - lastCredentialPromptAt < 15_000L) return@runOnUiThread
+                lastCredentialPromptKey = key
+                lastCredentialPromptAt = now
+                showSaveCredentialPrompt(
+                    PendingBrowserCredential(
+                        site = pageTitle?.trim()?.takeIf { it.isNotBlank() }?.take(160)
+                            ?: current.host.orEmpty(),
+                        origin = safeOrigin,
+                        username = account,
+                        password = secret
+                    )
+                )
             }
         }
     }
@@ -438,6 +474,7 @@ class PiperBrowserActivity : AppCompatActivity() {
             }
             setBackgroundColor(Color.WHITE)
             addJavascriptInterface(DownloadMetadataBridge(tabId), DOWNLOAD_BRIDGE_NAME)
+            addJavascriptInterface(CredentialCaptureBridge(tabId), CREDENTIAL_BRIDGE_NAME)
             configureWebSettings(this)
             webViewClient = createWebViewClient()
             webChromeClient = createWebChromeClient()
@@ -579,6 +616,9 @@ class PiperBrowserActivity : AppCompatActivity() {
                 }
                 installDownloadMetadataCapture(view)
                 installMediaDiscovery(view)
+                if (!tab.incognito && currentUrl.startsWith("https://")) {
+                    installCredentialCapture(view)
+                }
                 captureTabThumbnail(tab)
                 if (tab.id == activeTabId) updateActiveTabUi()
                 saveSession()
@@ -1169,6 +1209,20 @@ class PiperBrowserActivity : AppCompatActivity() {
             ) {
                 popup.dismiss()
                 openDownloads()
+            }
+        )
+        content.addView(
+            createMenuRow(
+                R.drawable.ic_browser_lock,
+                getString(R.string.browser_accounts_title),
+                if (FirebaseAuth.getInstance().currentUser == null) {
+                    getString(R.string.browser_accounts_sign_in_required)
+                } else {
+                    getString(R.string.browser_accounts_locked)
+                }
+            ) {
+                popup.dismiss()
+                openAccountManager()
             }
         )
         content.addView(
@@ -2359,6 +2413,66 @@ class PiperBrowserActivity : AppCompatActivity() {
             }
     }
 
+    private fun installCredentialCapture(webView: WebView) {
+        val script = """
+            (function() {
+              if (window.__piperosCredentialCaptureInstalled) return;
+              window.__piperosCredentialCaptureInstalled = true;
+              document.addEventListener('submit', function(event) {
+                try {
+                  var form = event.target;
+                  if (!form || !form.querySelector) return;
+                  var passwords = Array.prototype.slice.call(
+                    form.querySelectorAll('input[type="password"]')
+                  ).filter(function(input) { return input.value && !input.disabled; });
+                  if (!passwords.length) return;
+                  var password = passwords[passwords.length - 1].value;
+                  var username = form.querySelector(
+                    'input[autocomplete="username"],input[type="email"],input[name*="user" i],input[name*="email" i],input[type="text"]'
+                  );
+                  window.$CREDENTIAL_BRIDGE_NAME.propose(
+                    location.origin,
+                    document.title || location.hostname,
+                    username && username.value ? username.value : '',
+                    password
+                  );
+                } catch (_) {}
+              }, true);
+            })();
+        """.trimIndent()
+        webView.evaluateJavascript(script, null)
+    }
+
+    private fun showSaveCredentialPrompt(pending: PendingBrowserCredential) {
+        val userLabel = pending.username.ifBlank { getString(R.string.browser_account_no_username) }
+        PiperDialog.showConfirm(
+            context = this,
+            title = getString(R.string.browser_save_credential_title),
+            message = getString(
+                R.string.browser_save_credential_message,
+                userLabel,
+                runCatching { Uri.parse(pending.origin).host }.getOrNull() ?: pending.site
+            ),
+            positiveLabel = getString(R.string.browser_save_credential_action)
+        ) {
+            BrowserCredentialCaptureSession.pending = pending
+            openAccountManager()
+        }
+    }
+
+    private fun openAccountManager() {
+        if (FirebaseAuth.getInstance().currentUser == null) {
+            PiperDialog.showMessage(
+                this,
+                getString(R.string.browser_accounts_title),
+                getString(R.string.browser_accounts_sign_in_required),
+                R.drawable.ic_browser_lock
+            )
+            return
+        }
+        startActivity(Intent(this, BrowserAccountsActivity::class.java))
+    }
+
     private fun requestAndOpenNotificationSettings() {
         if (
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
@@ -2451,6 +2565,7 @@ class PiperBrowserActivity : AppCompatActivity() {
         private const val GOOGLE_SEARCH_URL = "https://www.google.com/search?q="
         private const val INCOGNITO_PROFILE_PREFIX = "piperos_incognito_"
         private const val DOWNLOAD_BRIDGE_NAME = "PiperDownloadMetadata"
+        private const val CREDENTIAL_BRIDGE_NAME = "PiperCredentialVault"
         private const val MAX_SUGGESTED_DOWNLOADS = 64
         private const val MAX_MEDIA_CANDIDATES = 24
         private const val SCROLL_UP = -1

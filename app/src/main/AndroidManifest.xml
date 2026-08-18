@@ -122,6 +122,11 @@
             android:theme="@style/Theme.PiperOSTool"
             android:windowSoftInputMode="adjustResize" />
         <activity
+            android:name=".BrowserAccountsActivity"
+            android:exported="false"
+            android:theme="@style/Theme.PiperOSTool"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
             android:name=".PiperMediaActivity"
             android:configChanges="keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
             android:exported="false"

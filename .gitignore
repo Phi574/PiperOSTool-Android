@@ -13,6 +13,12 @@
 captures/
 local.properties
 
+# Firebase client/service configuration stays local. Use documented templates
+# or CI secrets instead of committing project credentials.
+**/google-services.json
+**/service-account*.json
+**/firebase-admin*.json
+
 *.apk
 *.aab
 *.apks

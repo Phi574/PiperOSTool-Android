@@ -1,0 +1,50 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    match /users/{uid} {
+      allow read, create, update: if isOwner(uid);
+      allow delete: if false;
+
+      match /browserVault/{documentId} {
+        allow read, delete: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+          && documentId == 'config'
+          && request.resource.data.keys().hasOnly([
+            'version', 'kdf', 'iterations', 'salt', 'wrappedKey',
+            'pinLength', 'updatedAt'
+          ])
+          && request.resource.data.version == 1
+          && request.resource.data.kdf == 'PBKDF2-HMAC-SHA256'
+          && request.resource.data.iterations >= 600000
+          && request.resource.data.pinLength >= 4
+          && request.resource.data.pinLength <= 64
+          && request.resource.data.salt is string
+          && request.resource.data.salt.size() <= 128
+          && request.resource.data.wrappedKey is string
+          && request.resource.data.wrappedKey.size() <= 512;
+      }
+
+      match /browserVaultEntries/{entryId} {
+        allow read, delete: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+          && request.resource.data.keys().hasOnly([
+            'version', 'payload', 'createdAt', 'updatedAt'
+          ])
+          && request.resource.data.version == 1
+          && request.resource.data.payload is string
+          && request.resource.data.payload.size() <= 16384
+          && request.resource.data.createdAt is int
+          && request.resource.data.updatedAt is int;
+      }
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -6,11 +6,16 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.RadialGradient
 import android.graphics.Shader
+import android.util.AttributeSet
 import android.view.View
 import android.os.SystemClock
 
 /** A quiet, slowly moving color wash used behind the modern interface. */
-class PiperAmbientBackgroundView(context: Context) : View(context) {
+class PiperAmbientBackgroundView @JvmOverloads constructor(
+    context: Context,
+    attrs: AttributeSet? = null,
+    defStyleAttr: Int = 0
+) : View(context, attrs, defStyleAttr) {
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
     private var phase = 0f
     private var animationStart = 0L
