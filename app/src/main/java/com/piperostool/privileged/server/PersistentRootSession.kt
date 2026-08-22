@@ -17,7 +17,7 @@ internal class PersistentRootSession private constructor(
     private val lock = Any()
 
     fun execute(command: String, timeoutMillis: Long = 15_000L): ShellResult = synchronized(lock) {
-        check(process.isAlive) { "Root session is not running" }
+        check(isProcessRunning()) { "Root session is not running" }
         val marker = "__PPS_${UUID.randomUUID().toString().replace("-", "")}__"
         output.write("$command\n")
         output.write("printf '\\n$marker:%s\\n' \"\$?\"\n")
@@ -40,6 +40,13 @@ internal class PersistentRootSession private constructor(
             text.appendLine(line)
         }
         throw java.util.concurrent.TimeoutException("Root command timed out")
+    }
+
+    private fun isProcessRunning(): Boolean = try {
+        process.exitValue()
+        false
+    } catch (_: IllegalThreadStateException) {
+        true
     }
 
     override fun close() = synchronized(lock) {
