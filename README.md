@@ -20,7 +20,18 @@
 
 ## Bản hiện tại
 
-`3.1.0.beta` sử dụng `minSdk 24`, `targetSdk 36`, Kotlin `2.4.10` và tập trung vào:
+`3.1.1.beta` sử dụng `minSdk 24`, `targetSdk 36`, Kotlin `2.4.10` và tập trung vào:
+
+- **PiperOS Privileged Service (PPS):** tiến trình service riêng giao tiếp qua
+  AIDL/Binder, xác thực UID phía server, tự kết nối lại khi Binder chết và dùng
+  một phiên `su` duy trì cho backend ROOT. File Manager có mục **Truy cập chuyên
+  sâu** để xem trạng thái thật, capability, UID/PID, SELinux, uptime, log chẩn
+  đoán và bật riêng quyền đọc `Android/data`, `Android/obb`, thư mục hệ điều
+  hành hoặc tệp ẩn. Ghi vào vùng hệ thống luôn tắt mặc định và cần xác nhận rõ.
+
+  MVP hiện hỗ trợ backend thường và ROOT cho duyệt/stat/đọc cùng các thao tác
+  tệp cơ bản. Chế độ ADB/SHELL và Shizuku được hiển thị là chưa khả dụng thay vì
+  giả báo đã kết nối; chúng được dành cho pha PPS tiếp theo.
 
 - **Giao diện thích ứng:** giao diện Modern tối giản là mặc định, giao diện Classic
   giữ nguyên trải nghiệm cũ. Người dùng có thể chọn sáng, tối hoặc theo hệ thống và

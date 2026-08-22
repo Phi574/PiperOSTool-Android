@@ -63,5 +63,33 @@
     <FrameLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1">
         <androidx.recyclerview.widget.RecyclerView android:id="@+id/fileManagerFiles" android:layout_width="match_parent" android:layout_height="match_parent" android:clipToPadding="false" android:paddingBottom="12dp" />
         <TextView android:id="@+id/fileManagerEmpty" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="center" android:text="Không có tệp phù hợp" android:textColor="#7FFFFFFF" android:textSize="13sp" android:visibility="gone" />
+        <LinearLayout
+            android:id="@+id/fileManagerLoading"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:background="@drawable/bg_glass_panel"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="18dp"
+            android:paddingVertical="14dp"
+            android:visibility="gone">
+
+            <ProgressBar
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:indeterminate="true" />
+
+            <TextView
+                android:id="@+id/fileManagerLoadingText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:maxWidth="260dp"
+                android:maxLines="2"
+                android:text="Đang đọc thư mục..."
+                android:textColor="@color/white"
+                android:textSize="13sp" />
+        </LinearLayout>
     </FrameLayout>
 </LinearLayout>

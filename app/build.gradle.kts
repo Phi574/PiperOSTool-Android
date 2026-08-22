@@ -22,8 +22,8 @@ android {
         applicationId = "com.piper.os.tool"
         minSdk = 24
         targetSdk = 36
-        versionCode = 29
-        versionName = "3.1.0.beta"
+        versionCode = 30
+        versionName = "3.1.1.beta"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         ndk {
@@ -49,6 +49,9 @@ android {
         ndkBuild {
             path = file("src/main/jni/Android.mk")
         }
+    }
+    buildFeatures {
+        aidl = true
     }
 }
 
@@ -88,6 +91,9 @@ dependencies {
     implementation("org.apache.commons:commons-compress:1.28.0")
     implementation("org.tukaani:xz:1.12")
     implementation("com.github.luben:zstd-jni:1.5.7-10@aar")
+    implementation("com.github.MuntashirAkon:libadb-android:3.1.1")
+    implementation("com.github.MuntashirAkon:sun-security-android:1.1")
+    implementation("org.conscrypt:conscrypt-android:2.5.3")
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

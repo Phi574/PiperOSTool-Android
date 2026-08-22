@@ -4,6 +4,8 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <!-- Required so release builds appear in Developer Options > mock location app. -->
@@ -83,6 +85,15 @@
             android:stopWithTask="false" />
 
         <service
+            android:name=".privileged.server.PiperPrivilegedService"
+            android:exported="false"
+            android:process=":pps"
+            android:stopWithTask="false" />
+        <receiver
+            android:name=".privileged.adb.PiperAdbPairingReceiver"
+            android:exported="false" />
+
+        <service
             android:name=".PiperPlaybackService"
             android:exported="true"
             android:foregroundServiceType="mediaPlayback">
@@ -159,6 +170,11 @@
         <activity
             android:name=".PiperFileManagerActivity"
             android:configChanges="keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
+            android:exported="false"
+            android:theme="@style/Theme.PiperOSTool"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".privileged.ui.AdvancedAccessActivity"
             android:exported="false"
             android:theme="@style/Theme.PiperOSTool"
             android:windowSoftInputMode="adjustResize" />

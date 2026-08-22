@@ -37,8 +37,12 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.piperostool.privileged.PiperPrivilegedPreferences
+import com.piperostool.privileged.client.PiperPrivilegedClient
+import com.piperostool.privileged.ui.AdvancedAccessActivity
 import java.io.File
 import java.io.FileOutputStream
 import java.util.Locale
@@ -51,6 +55,8 @@ class PiperFileManagerActivity : AppCompatActivity() {
     private lateinit var pathView: TextView
     private lateinit var search: EditText
     private lateinit var empty: TextView
+    private lateinit var loading: View
+    private lateinit var loadingText: TextView
     private lateinit var adapter: FileManagerAdapter
     private var currentDirectory = Environment.getExternalStorageDirectory()
     private var archiveFile: File? = null
@@ -66,7 +72,9 @@ class PiperFileManagerActivity : AppCompatActivity() {
     private var operationPercent: TextView? = null
     private var operationDetail: TextView? = null
     private var pendingDestinationInput: EditText? = null
-
+    private lateinit var privilegedClient: PiperPrivilegedClient
+    private var renderGeneration = 0
+    private var directoryLoadJob: Job? = null
     private val destinationPicker = registerForActivityResult(
         ActivityResultContracts.OpenDocumentTree()
     ) { uri ->
@@ -85,7 +93,8 @@ class PiperFileManagerActivity : AppCompatActivity() {
             operationDialog?.dismiss()
             operationDialog = null
             if (message.isNotBlank()) Toast.makeText(this@PiperFileManagerActivity, message, Toast.LENGTH_LONG).show()
-            render()
+            invalidateDirectoryCache(currentDirectory)
+            render(forceRefresh = true)
         }
     }
 
@@ -93,6 +102,7 @@ class PiperFileManagerActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
         setContentView(R.layout.activity_piper_file_manager)
+        privilegedClient = PiperPrivilegedClient(this)
         bindViews()
         applyInsets()
         configureActions()
@@ -103,7 +113,7 @@ class PiperFileManagerActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        if (::adapter.isInitialized) render()
+        if (::adapter.isInitialized && allEntries.isEmpty() && directoryLoadJob?.isActive != true) render()
     }
 
     override fun onStart() {
@@ -130,6 +140,12 @@ class PiperFileManagerActivity : AppCompatActivity() {
         super.onStop()
     }
 
+    override fun onDestroy() {
+        directoryLoadJob?.cancel()
+        privilegedClient.close()
+        super.onDestroy()
+    }
+
     private fun configureBackNavigation() {
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
@@ -145,8 +161,7 @@ class PiperFileManagerActivity : AppCompatActivity() {
                     }
                     currentDirectory.parentFile != null &&
                         currentDirectory != Environment.getExternalStorageDirectory() -> {
-                        currentDirectory = currentDirectory.parentFile!!
-                        render()
+                        navigateTo(currentDirectory.parentFile!!)
                     }
                     else -> {
                         isEnabled = false
@@ -163,6 +178,8 @@ class PiperFileManagerActivity : AppCompatActivity() {
         pathView = findViewById(R.id.fileManagerPath)
         search = findViewById(R.id.fileManagerSearch)
         empty = findViewById(R.id.fileManagerEmpty)
+        loading = findViewById(R.id.fileManagerLoading)
+        loadingText = findViewById(R.id.fileManagerLoadingText)
         selectionBar = findViewById(R.id.fileSelectionBar)
         selectionCount = findViewById(R.id.fileSelectionCount)
         adapter = FileManagerAdapter(
@@ -195,10 +212,9 @@ class PiperFileManagerActivity : AppCompatActivity() {
         }
         findViewById<View>(R.id.btnFileManagerHome).setOnClickListener {
             archiveFile = null
-            currentDirectory = Environment.getExternalStorageDirectory()
-            render()
+            navigateTo(Environment.getExternalStorageDirectory())
         }
-        findViewById<View>(R.id.btnFileManagerRefresh).setOnClickListener { render() }
+        findViewById<View>(R.id.btnFileManagerRefresh).setOnClickListener { render(forceRefresh = true) }
         findViewById<View>(R.id.btnFileManagerMore).setOnClickListener { showManagerActions() }
         findViewById<View>(R.id.fileSelectionClose).setOnClickListener { clearSelection() }
         findViewById<View>(R.id.fileSelectAll).setOnClickListener {
@@ -243,12 +259,111 @@ class PiperFileManagerActivity : AppCompatActivity() {
         }
     }
 
-    private fun render() {
-        allEntries = archiveFile?.let(::listArchive) ?: listDirectory(currentDirectory)
-        pathView.text = archiveFile?.let {
-            "${it.name} / ${archivePrefix.ifEmpty { "" }}"
-        } ?: currentDirectory.absolutePath
-        applySearch(search.text?.toString().orEmpty())
+    private fun render(forceRefresh: Boolean = false) {
+        val archive = archiveFile
+        if (archive != null) {
+            directoryLoadJob?.cancel()
+            renderGeneration++
+            setDirectoryLoading(false)
+            pathView.text = "${archive.name} / ${archivePrefix.ifEmpty { "" }}"
+            allEntries = listArchive(archive)
+            applySearch(search.text?.toString().orEmpty())
+            return
+        }
+        loadDirectory(currentDirectory, commitNavigation = false, forceRefresh = forceRefresh)
+    }
+
+    private fun navigateTo(directory: File) {
+        archiveFile = null
+        archivePrefix = ""
+        clearSelection()
+        loadDirectory(directory, commitNavigation = true, forceRefresh = false)
+    }
+
+    private fun loadDirectory(directory: File, commitNavigation: Boolean, forceRefresh: Boolean) {
+        val requestedDirectory = runCatching { directory.canonicalFile }.getOrDefault(directory.absoluteFile)
+        val previousDirectory = currentDirectory
+        val cacheKey = directoryCacheKey(requestedDirectory)
+        val cached = synchronized(DIRECTORY_CACHE) { DIRECTORY_CACHE[cacheKey] }
+        val generation = ++renderGeneration
+        directoryLoadJob?.cancel()
+        pathView.text = requestedDirectory.absolutePath
+        if (cached != null && !forceRefresh) {
+            if (commitNavigation) currentDirectory = requestedDirectory
+            allEntries = cached
+            applySearch(search.text?.toString().orEmpty())
+            setDirectoryLoading(false)
+            return
+        } else {
+            setDirectoryLoading(true, requestedDirectory)
+        }
+        directoryLoadJob = lifecycleScope.launch {
+            val result = runCatching {
+                withContext(Dispatchers.IO) {
+                    val privileged = shouldUsePrivilegedBackend(requestedDirectory)
+                    val remote = if (privileged) {
+                        privilegedClient.list(
+                            requestedDirectory.absolutePath,
+                            PiperPrivilegedPreferences.showHidden(this@PiperFileManagerActivity)
+                        ) ?: error("PPS không thể đọc ${requestedDirectory.absolutePath}")
+                    } else null
+                    remote?.map { entry ->
+                        ApkWorkspaceEntry(
+                            name = entry.name,
+                            archivePath = entry.path,
+                            isDirectory = entry.directory,
+                            size = entry.size,
+                            extractedFile = File(entry.path)
+                        )
+                    } ?: listDirectory(requestedDirectory)
+                }
+            }
+            if (generation != renderGeneration || isDestroyed) return@launch
+            setDirectoryLoading(false)
+            result.onSuccess { entries ->
+                if (commitNavigation) currentDirectory = requestedDirectory
+                pathView.text = currentDirectory.absolutePath
+                synchronized(DIRECTORY_CACHE) {
+                    DIRECTORY_CACHE[cacheKey] = entries
+                }
+                allEntries = entries
+                applySearch(search.text?.toString().orEmpty())
+            }.onFailure { error ->
+                if (cached == null || forceRefresh) {
+                    currentDirectory = previousDirectory
+                    pathView.text = previousDirectory.absolutePath
+                    Toast.makeText(
+                        this@PiperFileManagerActivity,
+                        error.message ?: "Không thể đọc thư mục",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            }
+        }
+    }
+
+    private fun directoryCacheKey(directory: File): String = buildString {
+        append(directory.absolutePath)
+        append('|').append(PiperPrivilegedPreferences.showHidden(this@PiperFileManagerActivity))
+        append('|').append(shouldUsePrivilegedBackend(directory))
+    }
+
+    private fun invalidateDirectoryCache(directory: File) {
+        val path = directory.absolutePath.trimEnd('/')
+        synchronized(DIRECTORY_CACHE) {
+            DIRECTORY_CACHE.keys.removeAll { key ->
+                val cachedPath = key.substringBefore('|').trimEnd('/')
+                cachedPath == path || cachedPath.startsWith("$path/") || path.startsWith("$cachedPath/")
+            }
+        }
+    }
+
+    private fun setDirectoryLoading(visible: Boolean, directory: File? = null) {
+        loading.visibility = if (visible) View.VISIBLE else View.GONE
+        empty.visibility = View.GONE
+        if (visible && directory != null) {
+            loadingText.text = "Đang đọc ${directory.absolutePath}..."
+        }
     }
 
     private fun applySearch(query: String) {
@@ -406,22 +521,30 @@ class PiperFileManagerActivity : AppCompatActivity() {
                 size = if (file.isFile) file.length() else 0L,
                 extractedFile = file
             )
-        }?.sortedWith(compareByDescending<ApkWorkspaceEntry> { it.isDirectory }.thenBy { it.name.lowercase() })
+        }?.filter { PiperPrivilegedPreferences.showHidden(this) || !it.name.startsWith('.') }
+            ?.sortedWith(compareByDescending<ApkWorkspaceEntry> { it.isDirectory }.thenBy { it.name.lowercase() })
             ?: emptyList()
+
+    private fun shouldUsePrivilegedBackend(directory: File): Boolean {
+        if (directory.absolutePath == "/" && PiperPrivilegedPreferences.systemFiles(this)) return true
+        val restricted = directory.absolutePath.startsWith("/storage/emulated/0/Android/data") ||
+            directory.absolutePath.startsWith("/storage/emulated/0/Android/obb")
+        return restricted && PiperPrivilegedPreferences.androidRestricted(this)
+    }
 
     private fun loadSpecialIcon(entry: ApkWorkspaceEntry, target: ImageView) {
         val file = entry.extractedFile ?: return
         lifecycleScope.launch(Dispatchers.IO) {
             val icon = runCatching {
                 when {
-                    file.isFile && file.extension.equals("apk", true) -> {
+                    !entry.isDirectory && entry.name.endsWith(".apk", ignoreCase = true) -> {
                         packageManager.getPackageArchiveInfo(file.absolutePath, 0)?.applicationInfo?.let {
                             it.sourceDir = file.absolutePath
                             it.publicSourceDir = file.absolutePath
                             it.loadIcon(packageManager)
                         }
                     }
-                    file.isDirectory && file.parentFile?.name in setOf("data", "obb") &&
+                    entry.isDirectory && file.parentFile?.name in setOf("data", "obb") &&
                         file.parentFile?.parentFile?.name.equals("Android", true) ->
                         packageManager.getApplicationIcon(file.name)
                     else -> null
@@ -469,10 +592,10 @@ class PiperFileManagerActivity : AppCompatActivity() {
         }
         val file = File(entry.archivePath)
         when {
-            file.isDirectory -> {
-                currentDirectory = file
-                render()
+            entry.isDirectory -> {
+                navigateTo(file)
             }
+            shouldUsePrivilegedBackend(currentDirectory) && !file.canRead() -> openPrivilegedFile(entry)
             file.extension.equals("apk", true) -> startActivity(
                 Intent(this, ApkEditorActivity::class.java)
                     .putExtra(ApkEditorActivity.EXTRA_APK_PATH, file.absolutePath)
@@ -496,6 +619,29 @@ class PiperFileManagerActivity : AppCompatActivity() {
                 Intent(this, TextEditorActivity::class.java)
                     .putExtra(TextEditorActivity.EXTRA_FILE_PATH, file.absolutePath)
             )
+        }
+    }
+
+    private fun openPrivilegedFile(entry: ApkWorkspaceEntry) {
+        lifecycleScope.launch {
+            val output = withContext(Dispatchers.IO) {
+                privilegedClient.materializeReadOnly(
+                    entry.archivePath,
+                    File(cacheDir, "pps-preview/${System.nanoTime()}-${entry.name}")
+                )
+            }
+            if (output == null) {
+                Toast.makeText(this@PiperFileManagerActivity, "PPS không thể đọc tệp này", Toast.LENGTH_LONG).show()
+                return@launch
+            }
+            when {
+                ApkMediaTypes.isVisualMedia(output.name) -> startActivity(
+                    Intent(this@PiperFileManagerActivity, PiperFilePreviewActivity::class.java)
+                        .putExtra(PiperFilePreviewActivity.EXTRA_FILE_PATH, output.absolutePath)
+                )
+                isText(output) -> startActivity(Intent(this@PiperFileManagerActivity, TextEditorActivity::class.java).putExtra(TextEditorActivity.EXTRA_FILE_PATH, output.path))
+                else -> openExternal(output)
+            }
         }
     }
 
@@ -561,6 +707,16 @@ class PiperFileManagerActivity : AppCompatActivity() {
                 },
                 PiperSheetAction("Chọn nhiều", "Giữ một mục cũng có thể bắt đầu", R.drawable.check_circle) {
                     if (visibleEntries.isNotEmpty()) toggleSelection(visibleEntries.first())
+                },
+                PiperSheetAction("Truy cập chuyên sâu", "PPS · ROOT · Android/data · tệp ẩn", R.drawable.ic_terminal) {
+                    startActivity(Intent(this, AdvancedAccessActivity::class.java))
+                },
+                PiperSheetAction("Hệ điều hành", "Duyệt / ở chế độ chỉ đọc", R.drawable.ic_file_document) {
+                    if (!PiperPrivilegedPreferences.systemFiles(this)) {
+                        Toast.makeText(this, "Hãy bật Tệp tin hệ điều hành trong Truy cập chuyên sâu", Toast.LENGTH_LONG).show()
+                    } else {
+                        navigateTo(File("/"))
+                    }
                 }
             )
         }
@@ -1000,6 +1156,12 @@ class PiperFileManagerActivity : AppCompatActivity() {
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 
     companion object {
+        private const val MAX_DIRECTORY_CACHE_ENTRIES = 96
+        private val DIRECTORY_CACHE = object : LinkedHashMap<String, List<ApkWorkspaceEntry>>(48, 0.75f, true) {
+            override fun removeEldestEntry(
+                eldest: MutableMap.MutableEntry<String, List<ApkWorkspaceEntry>>?
+            ): Boolean = size > MAX_DIRECTORY_CACHE_ENTRIES
+        }
         private val TEXT_EXTENSIONS = setOf("txt", "xml", "json", "md", "html", "css", "js", "properties", "yml", "yaml", "log")
     }
 }

@@ -43,17 +43,20 @@ class FileManagerAdapter(
         val iconResource = iconFor(entry)
         holder.icon.setImageResource(iconResource)
         styleIcon(holder.icon, entry, iconResource)
-        if (file?.isFile == true && ApkMediaTypes.isVisualMedia(file.name)) {
+        val isVisualMedia = !entry.isDirectory && ApkMediaTypes.isVisualMedia(entry.name)
+        val isApk = !entry.isDirectory && entry.name.endsWith(".apk", ignoreCase = true)
+        val isAndroidPackageDirectory = entry.isDirectory && isAndroidPackageDirectory(entry.archivePath)
+        if (file != null && isVisualMedia) {
             holder.icon.setPadding(0, 0, 0, 0)
             holder.icon.scaleType = ImageView.ScaleType.FIT_CENTER
             Glide.with(holder.icon).load(file).dontAnimate().fitCenter().into(holder.icon)
-        } else if (file != null && (file.isDirectory || file.extension.equals("apk", true))) {
+        } else if (file != null && (isApk || isAndroidPackageDirectory)) {
             val specialInset = dp(holder.icon, 4)
             holder.icon.setPadding(specialInset, specialInset, specialInset, specialInset)
             onSpecialIcon(entry, holder.icon)
         }
         holder.meta.text = when {
-            entry.isDirectory -> directoryMeta(file)
+            entry.isDirectory -> if (entry.childCount > 0) "Thư mục • ${entry.childCount} mục" else "Thư mục"
             else -> "${fileType(entry.name)} • ${Formatter.formatShortFileSize(holder.itemView.context, entry.size)}"
         }
         holder.trailing.setImageResource(R.drawable.ic_chevron_right)
@@ -101,11 +104,6 @@ class FileManagerAdapter(
         notifyDataSetChanged()
     }
 
-    private fun directoryMeta(file: java.io.File?): String {
-        val count = file?.list()?.size
-        return if (count == null) "Thư mục" else "Thư mục • $count mục"
-    }
-
     private fun fileType(name: String): String = name.substringAfterLast('.', "Tệp").uppercase().ifBlank { "TỆP" }
 
     private fun iconFor(entry: ApkWorkspaceEntry): Int {
@@ -140,12 +138,9 @@ class FileManagerAdapter(
             cornerRadius = 8f * density
             setStroke(density.toInt().coerceAtLeast(1), PiperModernUi.borderColor(icon.context))
         }
-        val file = entry.extractedFile
-        val usesRealArtwork = file?.isFile == true &&
-            (ApkMediaTypes.isVisualMedia(file.name) || file.extension.equals("apk", true))
-        val usesInstalledAppIcon = file?.isDirectory == true &&
-            file.parentFile?.name in setOf("data", "obb") &&
-            file.parentFile?.parentFile?.name.equals("Android", true)
+        val usesRealArtwork = !entry.isDirectory &&
+            (ApkMediaTypes.isVisualMedia(entry.name) || entry.name.endsWith(".apk", ignoreCase = true))
+        val usesInstalledAppIcon = entry.isDirectory && isAndroidPackageDirectory(entry.archivePath)
         icon.imageTintList = if (usesRealArtwork || usesInstalledAppIcon) {
             null
         } else {
@@ -155,4 +150,10 @@ class FileManagerAdapter(
 
     private fun dp(view: View, value: Int): Int =
         (value * view.resources.displayMetrics.density).toInt()
+
+    private fun isAndroidPackageDirectory(path: String): Boolean {
+        val parent = java.io.File(path).parentFile ?: return false
+        return parent.name in setOf("data", "obb") &&
+            parent.parentFile?.name.equals("Android", ignoreCase = true)
+    }
 }
