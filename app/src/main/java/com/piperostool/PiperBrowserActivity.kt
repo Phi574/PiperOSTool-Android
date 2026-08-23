@@ -36,6 +36,7 @@ import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebSettings
+import android.webkit.WebStorage
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.EditText
@@ -53,6 +54,7 @@ import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
@@ -61,6 +63,7 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.webkit.ProfileStore
 import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
+import androidx.webkit.WebSettingsCompat
 import com.google.firebase.auth.FirebaseAuth
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.switchmaterial.SwitchMaterial
@@ -73,6 +76,8 @@ import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
+import org.json.JSONObject
+import org.json.JSONTokener
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
@@ -247,6 +252,7 @@ class PiperBrowserActivity : AppCompatActivity() {
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        applySavedBrowserTheme()
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
         window.statusBarColor = Color.TRANSPARENT
@@ -258,6 +264,7 @@ class PiperBrowserActivity : AppCompatActivity() {
         clearStaleIncognitoProfiles()
         systemUserAgent = WebSettings.getDefaultUserAgent(applicationContext)
         bindViews()
+        applyBrowserChromeTheme()
         applyWindowInsets()
         applyResponsiveLayout(resources.configuration)
         setupActions()
@@ -280,6 +287,10 @@ class PiperBrowserActivity : AppCompatActivity() {
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
         applyResponsiveLayout(newConfig)
+        if (sessionStore.browserThemeMode() == BrowserThemeMode.SYSTEM) {
+            tabs.forEach { configureWebSettings(it.webView) }
+            applyBrowserChromeTheme()
+        }
         activeTab()?.webView?.invalidate()
         browserCustomView?.invalidate()
     }
@@ -556,6 +567,13 @@ class PiperBrowserActivity : AppCompatActivity() {
                 safeBrowsingEnabled = true
             }
         }
+        if (WebViewFeature.isFeatureSupported(WebViewFeature.ALGORITHMIC_DARKENING)) {
+            WebSettingsCompat.setAlgorithmicDarkeningAllowed(
+                webView.settings,
+                isBrowserDarkTheme()
+            )
+        }
+        webView.post { applyWebContentTheme(webView) }
 
         CookieManager.getInstance().apply {
             setAcceptCookie(true)
@@ -611,6 +629,7 @@ class PiperBrowserActivity : AppCompatActivity() {
                     sessionStore.addHistory(tab.title, currentUrl)
                 }
                 CookieManager.getInstance().flush()
+                applyWebContentTheme(view)
                 if (!tab.incognito) {
                     injectExtensions(view, currentUrl)
                 }
@@ -840,7 +859,8 @@ class PiperBrowserActivity : AppCompatActivity() {
         if (!value.contains(" ") && (value.contains(".") || value.startsWith("localhost"))) {
             return "https://$value"
         }
-        return GOOGLE_SEARCH_URL + URLEncoder.encode(value, Charsets.UTF_8.name())
+        val query = URLEncoder.encode(value, Charsets.UTF_8.name())
+        return sessionStore.selectedSearchEngine().searchUrl(query)
     }
 
     private fun navigateTo(url: String) {
@@ -1181,6 +1201,36 @@ class PiperBrowserActivity : AppCompatActivity() {
             ) {
                 popup.dismiss()
                 showPrivacyReport(tab)
+            }
+        )
+        content.addView(
+            createMenuRow(
+                R.drawable.ic_browser_privacy,
+                getString(R.string.browser_theme),
+                browserThemeLabel(sessionStore.browserThemeMode())
+            ) {
+                popup.dismiss()
+                showBrowserThemeDialog()
+            }
+        )
+        content.addView(
+            createMenuRow(
+                R.drawable.ic_browser_search,
+                getString(R.string.browser_search_engine),
+                sessionStore.selectedSearchEngine().label
+            ) {
+                popup.dismiss()
+                showSearchEngineDialog()
+            }
+        )
+        content.addView(
+            createMenuRow(
+                R.drawable.ic_browser_lock,
+                getString(R.string.browser_site_data),
+                getString(R.string.browser_site_data_summary)
+            ) {
+                popup.dismiss()
+                showSiteDataManager()
             }
         )
         content.addView(
@@ -1530,6 +1580,443 @@ class PiperBrowserActivity : AppCompatActivity() {
         )
     }
 
+    private fun applySavedBrowserTheme() {
+        val mode = BrowserSessionStore(this).browserThemeMode()
+        delegate.localNightMode = when (mode) {
+            BrowserThemeMode.SYSTEM -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
+            BrowserThemeMode.LIGHT -> AppCompatDelegate.MODE_NIGHT_NO
+            BrowserThemeMode.DARK -> AppCompatDelegate.MODE_NIGHT_YES
+        }
+    }
+
+    private fun isBrowserDarkTheme(): Boolean = when (
+        if (::sessionStore.isInitialized) sessionStore.browserThemeMode()
+        else BrowserSessionStore(this).browserThemeMode()
+    ) {
+        BrowserThemeMode.DARK -> true
+        BrowserThemeMode.LIGHT -> false
+        BrowserThemeMode.SYSTEM ->
+            resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK ==
+                Configuration.UI_MODE_NIGHT_YES
+    }
+
+    private fun applyBrowserChromeTheme() {
+        val dark = isBrowserDarkTheme()
+        val background = if (dark) Color.rgb(14, 17, 22) else Color.rgb(246, 247, 249)
+        val surface = PiperModernUi.surfaceColor(this)
+        val text = PiperModernUi.textColor(this)
+        val secondary = PiperModernUi.secondaryTextColor(this)
+        val border = PiperModernUi.borderColor(this)
+        val accent = PiperModernUi.accentColor(this)
+
+        browserRoot.setBackgroundColor(background)
+        browserContent.setBackgroundColor(background)
+        startPage.setBackgroundColor(Color.TRANSPARENT)
+        bottomPanel.background = GradientDrawable().apply {
+            shape = GradientDrawable.RECTANGLE
+            setColor(surface)
+            setStroke(dp(1), border)
+        }
+
+        listOf(R.id.browserSearchBox, R.id.browserAddressRow).forEach { id ->
+            findViewById<View>(id).background = GradientDrawable().apply {
+                shape = GradientDrawable.RECTANGLE
+                cornerRadius = dp(8).toFloat()
+                setColor(surface)
+                setStroke(dp(1), border)
+            }
+        }
+
+        findViewById<TextView>(R.id.browserStartTitle).setTextColor(text)
+        findViewById<TextView>(R.id.browserStartSubtitle).setTextColor(secondary)
+        findViewById<TextView>(R.id.browserStorageNote).setTextColor(secondary)
+        homeSearchInput.setTextColor(text)
+        homeSearchInput.setHintTextColor(secondary)
+        addressInput.setTextColor(text)
+        addressInput.setHintTextColor(secondary)
+        pageTitle.setTextColor(text)
+        tabCount.setTextColor(surface)
+
+        val secondaryIcons = intArrayOf(
+            R.id.btnBrowserBack,
+            R.id.btnBrowserForward,
+            R.id.btnBrowserReload,
+            R.id.iconBrowserTabs,
+            R.id.btnAddressGo
+        )
+        secondaryIcons.forEach { id ->
+            findViewById<ImageView>(id).imageTintList =
+                android.content.res.ColorStateList.valueOf(secondary)
+        }
+        intArrayOf(
+            R.id.btnHomeSearch,
+            R.id.btnBrowserHome,
+            R.id.browserMediaDownload,
+            R.id.browserSecurityIcon
+        ).forEach { id ->
+            findViewById<ImageView>(id).imageTintList =
+                android.content.res.ColorStateList.valueOf(accent)
+        }
+
+        WindowInsetsControllerCompat(window, browserRoot).apply {
+            isAppearanceLightStatusBars = !dark
+            isAppearanceLightNavigationBars = !dark
+        }
+        tabs.forEach { applyWebContentTheme(it.webView) }
+        browserRoot.invalidate()
+    }
+
+    private fun applyWebContentTheme(webView: WebView) {
+        val dark = isBrowserDarkTheme()
+        val scheme = if (dark) "dark" else "light"
+        val canvas = if (dark) "#0e1116" else "#ffffff"
+        val script = """
+            (() => {
+              const root = document.documentElement;
+              if (!root) return;
+              root.style.colorScheme = '$scheme';
+              root.style.backgroundColor = '$canvas';
+              let meta = document.querySelector('meta[name="color-scheme"]');
+              if (!meta) {
+                meta = document.createElement('meta');
+                meta.name = 'color-scheme';
+                (document.head || root).appendChild(meta);
+              }
+              meta.content = '$scheme';
+              window.dispatchEvent(new CustomEvent('piperos-theme-change', {
+                detail: { theme: '$scheme' }
+              }));
+            })();
+        """.trimIndent()
+        webView.evaluateJavascript(script, null)
+        webView.setBackgroundColor(Color.parseColor(canvas))
+        webView.invalidate()
+    }
+
+    private fun browserThemeLabel(mode: BrowserThemeMode): String = when (mode) {
+        BrowserThemeMode.SYSTEM -> getString(R.string.browser_theme_system)
+        BrowserThemeMode.LIGHT -> getString(R.string.browser_theme_light)
+        BrowserThemeMode.DARK -> getString(R.string.browser_theme_dark)
+    }
+
+    private fun showBrowserThemeDialog() {
+        val current = sessionStore.browserThemeMode()
+        PiperActionSheet.showSingleSelect(
+            context = this,
+            title = getString(R.string.browser_theme),
+            choices = BrowserThemeMode.entries.map {
+                PiperSheetChoice(it.preferenceValue, browserThemeLabel(it), it == current)
+            },
+            onSelect = { value ->
+                val mode = BrowserThemeMode.fromPreference(value)
+                sessionStore.setBrowserThemeMode(mode)
+                delegate.localNightMode = when (mode) {
+                    BrowserThemeMode.SYSTEM -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
+                    BrowserThemeMode.LIGHT -> AppCompatDelegate.MODE_NIGHT_NO
+                    BrowserThemeMode.DARK -> AppCompatDelegate.MODE_NIGHT_YES
+                }
+                recreate()
+            },
+            onRemove = {},
+            onAdd = {}
+        )
+    }
+
+    private fun showSearchEngineDialog() {
+        val current = sessionStore.selectedSearchEngine()
+        PiperActionSheet.showSingleSelect(
+            context = this,
+            title = getString(R.string.browser_search_engine),
+            choices = BrowserSessionStore.searchEngines().map {
+                PiperSheetChoice(it.id, it.label, it.id == current.id)
+            },
+            onSelect = sessionStore::setSelectedSearchEngine,
+            onRemove = {},
+            onAdd = {}
+        )
+    }
+
+    private fun showSiteDataManager() {
+        val hosts = knownSiteHosts()
+        val actions = mutableListOf<PiperSheetAction>()
+        activeHttpHost()?.let { host ->
+            actions += PiperSheetAction(
+                label = getString(R.string.browser_cookie_add),
+                subtitle = host,
+                icon = R.drawable.ic_browser_add
+            ) { showCookieEditor(host, null, null) }
+        }
+        hosts.forEach { host ->
+            val cookies = cookiesForHost(host)
+            actions += PiperSheetAction(
+                label = host,
+                subtitle = resources.getQuantityString(
+                    R.plurals.browser_cookie_count,
+                    cookies.size,
+                    cookies.size
+                ),
+                icon = R.drawable.ic_browser_lock
+            ) { showSiteDataDetails(host) }
+        }
+        if (hosts.isNotEmpty()) {
+            actions += PiperSheetAction(
+                label = getString(R.string.browser_site_data_clear_all),
+                subtitle = getString(R.string.browser_site_data_clear_all_summary),
+                icon = R.drawable.ic_browser_close
+            ) { confirmClearAllSiteData() }
+        }
+        if (actions.isEmpty()) {
+            PiperDialog.showMessage(
+                this,
+                getString(R.string.browser_site_data),
+                getString(R.string.browser_site_data_empty)
+            )
+        } else {
+            PiperActionSheet.show(this, getString(R.string.browser_site_data), actions)
+        }
+    }
+
+    private fun showSiteDataDetails(host: String) {
+        val cookies = cookiesForHost(host)
+        val actions = mutableListOf<PiperSheetAction>()
+        tabs.firstOrNull { Uri.parse(it.url).host.equals(host, true) }?.let { tab ->
+            actions += PiperSheetAction(
+                label = getString(R.string.browser_tokens),
+                subtitle = getString(R.string.browser_tokens_summary),
+                icon = R.drawable.ic_browser_lock
+            ) { showTokenManager(host, tab.webView) }
+        }
+        actions += cookies.map { (name, value) ->
+            PiperSheetAction(
+                label = name,
+                subtitle = value.take(80),
+                icon = R.drawable.ic_browser_lock
+            ) { showCookieEditor(host, name, value) }
+        }
+        actions += PiperSheetAction(
+            label = getString(R.string.browser_cookie_add),
+            subtitle = host,
+            icon = R.drawable.ic_browser_add
+        ) { showCookieEditor(host, null, null) }
+        actions += PiperSheetAction(
+            label = getString(R.string.browser_site_data_clear_site),
+            subtitle = getString(R.string.browser_site_storage_protected),
+            icon = R.drawable.ic_browser_close
+        ) { confirmClearSiteData(host) }
+        PiperActionSheet.show(this, host, actions)
+    }
+
+    private fun showTokenManager(host: String, webView: WebView) {
+        val script = """
+            (() => JSON.stringify({
+              local: Object.fromEntries(Object.keys(localStorage).map(k => [k, localStorage.getItem(k)])),
+              session: Object.fromEntries(Object.keys(sessionStorage).map(k => [k, sessionStorage.getItem(k)]))
+            }))()
+        """.trimIndent()
+        webView.evaluateJavascript(script) { encoded ->
+            val payload = runCatching { JSONTokener(encoded).nextValue() as? String }
+                .getOrNull()?.let { runCatching { JSONObject(it) }.getOrNull() }
+            val actions = mutableListOf<PiperSheetAction>()
+            actions += PiperSheetAction(
+                label = getString(R.string.browser_token_add),
+                subtitle = host,
+                icon = R.drawable.ic_browser_add
+            ) { showTokenEditor(webView, "local", null, null) }
+            listOf("local", "session").forEach { scope ->
+                val values = payload?.optJSONObject(scope) ?: JSONObject()
+                values.keys().forEach { key ->
+                    val value = values.optString(key)
+                    actions += PiperSheetAction(
+                        label = "[$scope] $key",
+                        subtitle = value.take(80),
+                        icon = R.drawable.ic_browser_lock
+                    ) { showTokenEditor(webView, scope, key, value) }
+                }
+            }
+            PiperActionSheet.show(this, getString(R.string.browser_tokens), actions)
+        }
+    }
+
+    private fun showTokenEditor(
+        webView: WebView,
+        initialScope: String,
+        oldKey: String?,
+        oldValue: String?
+    ) {
+        val sessionSwitch = SwitchMaterial(this).apply {
+            text = getString(R.string.browser_token_session_only)
+            isChecked = initialScope == "session"
+            isEnabled = oldKey == null
+        }
+        val fields = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            addView(EditText(this@PiperBrowserActivity).apply {
+                tag = "token_key"
+                hint = getString(R.string.browser_token_key)
+                setText(oldKey.orEmpty())
+                isEnabled = oldKey == null
+                setSingleLine(true)
+            })
+            addView(EditText(this@PiperBrowserActivity).apply {
+                tag = "token_value"
+                hint = getString(R.string.browser_token_value)
+                setText(oldValue.orEmpty())
+                maxLines = 5
+            })
+            addView(sessionSwitch)
+        }
+        PiperModernUi.apply(fields)
+        PiperDialog.showCustom(
+            context = this,
+            title = if (oldKey == null) getString(R.string.browser_token_add)
+            else getString(R.string.browser_token_edit),
+            content = fields,
+            positiveLabel = getString(R.string.browser_cookie_save),
+            neutralLabel = oldKey?.let { getString(R.string.browser_token_delete) },
+            onPositive = {
+                val key = fields.findViewWithTag<EditText>("token_key").text.toString().trim()
+                val value = fields.findViewWithTag<EditText>("token_value").text.toString()
+                if (key.isBlank()) {
+                    Toast.makeText(this, R.string.browser_token_invalid_key, Toast.LENGTH_SHORT).show()
+                    false
+                } else {
+                    val storage = if (sessionSwitch.isChecked) "sessionStorage" else "localStorage"
+                    webView.evaluateJavascript(
+                        "$storage.setItem(${JSONObject.quote(key)}, ${JSONObject.quote(value)})",
+                        null
+                    )
+                    true
+                }
+            },
+            onNeutral = {
+                oldKey?.let {
+                    val storage = if (initialScope == "session") "sessionStorage" else "localStorage"
+                    webView.evaluateJavascript("$storage.removeItem(${JSONObject.quote(it)})", null)
+                }
+            }
+        )
+    }
+
+    private fun showCookieEditor(host: String, oldName: String?, oldValue: String?) {
+        val fields = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            addView(EditText(this@PiperBrowserActivity).apply {
+                id = View.generateViewId()
+                tag = "cookie_name"
+                hint = getString(R.string.browser_cookie_name)
+                setText(oldName.orEmpty())
+                isEnabled = oldName == null
+                setSingleLine(true)
+            })
+            addView(EditText(this@PiperBrowserActivity).apply {
+                id = View.generateViewId()
+                tag = "cookie_value"
+                hint = getString(R.string.browser_cookie_value)
+                setText(oldValue.orEmpty())
+                setSingleLine(false)
+                maxLines = 4
+            })
+        }
+        PiperModernUi.apply(fields)
+        PiperDialog.showCustom(
+            context = this,
+            title = if (oldName == null) getString(R.string.browser_cookie_add)
+            else getString(R.string.browser_cookie_edit),
+            message = host,
+            content = fields,
+            positiveLabel = getString(R.string.browser_cookie_save),
+            neutralLabel = oldName?.let { getString(R.string.browser_cookie_delete) },
+            onPositive = {
+                val name = fields.findViewWithTag<EditText>("cookie_name").text.toString().trim()
+                val value = fields.findViewWithTag<EditText>("cookie_value").text.toString()
+                if (name.isBlank() || name.any { it == ';' || it == '=' || it.isWhitespace() }) {
+                    Toast.makeText(this, R.string.browser_cookie_invalid_name, Toast.LENGTH_SHORT).show()
+                    false
+                } else {
+                    CookieManager.getInstance().setCookie(
+                        "https://$host/",
+                        "$name=$value; Path=/; Secure; SameSite=Lax"
+                    )
+                    CookieManager.getInstance().flush()
+                    true
+                }
+            },
+            onNeutral = { oldName?.let { deleteCookie(host, it) } }
+        )
+    }
+
+    private fun confirmClearSiteData(host: String) {
+        PiperDialog.showConfirm(
+            this,
+            getString(R.string.browser_site_data_clear_site),
+            getString(R.string.browser_site_data_clear_site_confirm, host),
+            getString(R.string.browser_delete),
+            destructive = true
+        ) { clearSiteData(host) }
+    }
+
+    private fun confirmClearAllSiteData() {
+        PiperDialog.showConfirm(
+            this,
+            getString(R.string.browser_site_data_clear_all),
+            getString(R.string.browser_site_data_clear_all_confirm),
+            getString(R.string.browser_delete),
+            destructive = true
+        ) {
+            CookieManager.getInstance().removeAllCookies(null)
+            CookieManager.getInstance().flush()
+            WebStorage.getInstance().deleteAllData()
+            tabs.forEach { clearPageStorage(it.webView) }
+        }
+    }
+
+    private fun clearSiteData(host: String) {
+        cookiesForHost(host).keys.forEach { deleteCookie(host, it) }
+        WebStorage.getInstance().deleteOrigin("https://$host")
+        WebStorage.getInstance().deleteOrigin("http://$host")
+        tabs.filter { Uri.parse(it.url).host.equals(host, true) }
+            .forEach { clearPageStorage(it.webView) }
+    }
+
+    private fun deleteCookie(host: String, name: String) {
+        val manager = CookieManager.getInstance()
+        listOf("https", "http").forEach { scheme ->
+            manager.setCookie(
+                "$scheme://$host/",
+                "$name=; Path=/; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT"
+            )
+        }
+        manager.flush()
+    }
+
+    private fun clearPageStorage(webView: WebView) {
+        webView.evaluateJavascript(
+            "try{localStorage.clear();sessionStorage.clear();" +
+                "indexedDB.databases().then(d=>d.forEach(x=>indexedDB.deleteDatabase(x.name)));}catch(e){}",
+            null
+        )
+    }
+
+    private fun knownSiteHosts(): List<String> = buildSet {
+        tabs.mapNotNullTo(this) { Uri.parse(it.url).host?.lowercase() }
+        sessionStore.loadHistory().mapNotNullTo(this) { Uri.parse(it.url).host?.lowercase() }
+    }.sorted()
+
+    private fun activeHttpHost(): String? = activeTab()?.url?.let { url ->
+        Uri.parse(url).takeIf { it.scheme == "http" || it.scheme == "https" }?.host
+    }
+
+    private fun cookiesForHost(host: String): LinkedHashMap<String, String> {
+        val header = CookieManager.getInstance().getCookie("https://$host/")
+            ?: CookieManager.getInstance().getCookie("http://$host/")
+            ?: return linkedMapOf()
+        return header.split(';').mapNotNull { part ->
+            val separator = part.indexOf('=')
+            if (separator <= 0) null else part.substring(0, separator).trim() to
+                part.substring(separator + 1).trim()
+        }.toMap(LinkedHashMap())
+    }
+
     private fun showTabsSheet() {
         activeTab()?.let(::captureTabThumbnail)
         val dialog = BottomSheetDialog(this)
@@ -1814,7 +2301,7 @@ class PiperBrowserActivity : AppCompatActivity() {
     private fun createSheetRoot(): LinearLayout {
         return LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setBackgroundColor(Color.parseColor("#FF11161B"))
+            setBackgroundColor(PiperModernUi.surfaceColor(this@PiperBrowserActivity))
             layoutParams = ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 (resources.displayMetrics.heightPixels * 0.78f).toInt()

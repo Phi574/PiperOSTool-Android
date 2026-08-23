@@ -1,10 +1,13 @@
 package com.piperostool
 
 import android.content.Context
+import android.content.Intent
 import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.Rect
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.View
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -14,6 +17,7 @@ import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import com.google.firebase.auth.FirebaseAuth
 
 class HomeActivity : AppCompatActivity() {
 
@@ -32,6 +36,14 @@ class HomeActivity : AppCompatActivity() {
     private var isNavHiddenByKeyboard = false
 
     private lateinit var backToast: Toast
+    private val sessionHandler = Handler(Looper.getMainLooper())
+    private var checkingSession = false
+    private val sessionCheck = object : Runnable {
+        override fun run() {
+            verifyAccountSession()
+            sessionHandler.postDelayed(this, SESSION_CHECK_INTERVAL_MS)
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -52,6 +64,39 @@ class HomeActivity : AppCompatActivity() {
         super.onResume()
 
         updateTabUI(currentTab)
+    }
+
+    override fun onStart() {
+        super.onStart()
+        sessionHandler.removeCallbacks(sessionCheck)
+        sessionHandler.post(sessionCheck)
+    }
+
+    override fun onStop() {
+        sessionHandler.removeCallbacks(sessionCheck)
+        super.onStop()
+    }
+
+    private fun verifyAccountSession() {
+        if (checkingSession) return
+        checkingSession = true
+        AccountSessionGuard.verify(this) { state ->
+            checkingSession = false
+            when (state) {
+                AccountSessionState.Valid, AccountSessionState.Offline -> Unit
+                is AccountSessionState.Disabled -> {
+                    sessionHandler.removeCallbacks(sessionCheck)
+                    startActivity(DisabledAccountActivity.createIntent(this, state))
+                }
+                is AccountSessionState.Expired -> {
+                    FirebaseAuth.getInstance().signOut()
+                    startActivity(Intent(this, LoginActivity::class.java).apply {
+                        putExtra(SplashScreenActivity.EXTRA_SESSION_EXPIRED, true)
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    })
+                }
+            }
+        }
     }
 
     private fun applyCustomBackground() {
@@ -266,5 +311,9 @@ class HomeActivity : AppCompatActivity() {
                 .start()
             isNavHidden = false
         }
+    }
+
+    companion object {
+        private const val SESSION_CHECK_INTERVAL_MS = 45_000L
     }
 }

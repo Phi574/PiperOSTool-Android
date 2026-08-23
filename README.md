@@ -20,7 +20,15 @@
 
 ## Bản hiện tại
 
-`3.1.1.beta` sử dụng `minSdk 24`, `targetSdk 36`, Kotlin `2.4.10` và tập trung vào:
+`3.1.5.beta` sử dụng `minSdk 24`, `targetSdk 36`, Kotlin `2.4.10` và tập trung vào:
+
+- Browser theme sáng/tối/theo hệ thống, nhiều công cụ tìm kiếm và quản lý Cookie/Token theo website.
+- APK Editor giảm tải bộ nhớ khi giải nén, tách luồng chỉnh tài nguyên và smali, đồng thời báo tiến trình trung thực.
+- Kiểm tra phiên Firebase liên tục và màn hình kháng nghị cho tài khoản bị vô hiệu hóa.
+
+Trạng thái quản trị tài khoản được đặt tại `users/{uid}/accountStatus` trong Realtime Database,
+với các trường `enabled`, `status`, `disabledAt` và `reason`. Client chỉ có quyền đọc trạng thái
+của chính mình; `database.rules.json` chặn client tự thay đổi trạng thái này.
 
 - **PiperOS Privileged Service (PPS):** tiến trình service riêng giao tiếp qua
   AIDL/Binder, xác thực UID phía server, tự kết nối lại khi Binder chết và dùng

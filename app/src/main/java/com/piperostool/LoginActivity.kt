@@ -40,6 +40,9 @@ class LoginActivity : AppCompatActivity() {
         initViews()
         setupListeners()
         NetworkAccess.observe(this, this) { updateNetworkUi(it) }
+        if (intent.getBooleanExtra(SplashScreenActivity.EXTRA_SESSION_EXPIRED, false)) {
+            Toast.makeText(this, R.string.account_session_expired, Toast.LENGTH_LONG).show()
+        }
     }
 
     public override fun onStart() {
@@ -127,16 +130,35 @@ class LoginActivity : AppCompatActivity() {
                 if (task.isSuccessful) {
                     val userId = auth.currentUser?.uid
                     if (userId != null) {
-
-                        checkSecurityAndProceed(userId)
+                        AccountSessionGuard.verify(this) { state ->
+                            when (state) {
+                                AccountSessionState.Valid, AccountSessionState.Offline ->
+                                    checkSecurityAndProceed(userId)
+                                is AccountSessionState.Disabled -> {
+                                    startActivity(DisabledAccountActivity.createIntent(this, state))
+                                }
+                                is AccountSessionState.Expired -> {
+                                    auth.signOut()
+                                    resetLoginButton()
+                                    Toast.makeText(this, R.string.account_session_expired, Toast.LENGTH_LONG).show()
+                                }
+                            }
+                        }
                     } else {
-                        finishLoginProcess()
+                        resetLoginButton()
                     }
                 } else {
-                    btnLogin.isEnabled = true
-                    btnLogin.text = getString(R.string.auth_login_action)
-                    btnLogin.alpha = 1.0f
-                    Toast.makeText(this, "Kiểm tra lại thông tin: ${task.exception?.message}", Toast.LENGTH_LONG).show()
+                    val disabled = AccountSessionGuard.disabledFromAuthFailure(
+                        this,
+                        task.exception,
+                        email
+                    )
+                    if (disabled != null) {
+                        startActivity(DisabledAccountActivity.createIntent(this, disabled))
+                    } else {
+                        resetLoginButton()
+                        Toast.makeText(this, "Kiểm tra lại thông tin: ${task.exception?.message}", Toast.LENGTH_LONG).show()
+                    }
                 }
             }
     }
@@ -192,10 +214,14 @@ class LoginActivity : AppCompatActivity() {
     }
 
     private fun finishLoginProcess() {
-        btnLogin.isEnabled = true
-        btnLogin.text = "INITIALIZE"
-        btnLogin.alpha = 1.0f
+        resetLoginButton()
         startActivity(Intent(this, HomeActivity::class.java))
         finish()
+    }
+
+    private fun resetLoginButton() {
+        btnLogin.isEnabled = true
+        btnLogin.text = getString(R.string.auth_login_action)
+        btnLogin.alpha = 1.0f
     }
 }

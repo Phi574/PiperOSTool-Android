@@ -1,9 +1,107 @@
 {
   "rules": {
-    "users": {
+    "admin_config": {
+      "key_admin": {
+        ".read": true,
+        ".write": false
+      },
+      "notification": {
+        ".read": "auth != null",
+        ".write": "auth != null && root.child('users').child(auth.uid).child('isAdmin').val() === true",
+        "$noteId": {
+          ".read": "auth != null",
+          ".write": "auth != null && root.child('users').child(auth.uid).child('isAdmin').val() === true"
+        }
+      }
+    },
+    "notification": {
+      ".read": "auth != null",
+      "$noteId": {
+        ".read": "auth != null",
+        ".write": "auth != null && root.child('users').child(auth.uid).child('isAdmin').val() === true"
+      }
+    },
+    "changeRequests": {
+      ".read": "auth != null && root.child('users').child(auth.uid).child('isAdmin').val() === true",
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
-        ".write": "auth != null && auth.uid === $uid"
+        ".write": "auth != null && (auth.uid === $uid || root.child('users').child(auth.uid).child('isAdmin').val() === true)"
+      }
+    },
+    "verificationRequests": {
+      ".read": "auth != null && root.child('users').child(auth.uid).child('isAdmin').val() === true",
+      "$uid": {
+        ".write": "auth != null && (auth.uid === $uid || root.child('users').child(auth.uid).child('isAdmin').val() === true)"
+      }
+    },
+    "users": {
+      ".read": "auth != null && root.child('users').child(auth.uid).child('isAdmin').val() === true",
+      "$uid": {
+        ".read": "auth != null && (auth.uid === $uid || root.child('users').child(auth.uid).child('isAdmin').val() === true)",
+        "$child": {
+          ".write": "auth != null && (auth.uid === $uid || root.child('users').child(auth.uid).child('isAdmin').val() === true) && $child !== 'accountStatus' && $child !== 'isAdmin' && $child !== 'role' && $child !== 'suspensionReason' && $child !== 'disabledReason' && $child !== 'lockedReason' && $child !== 'lockType' && $child !== 'verificationStatus' && $child !== 'identityVerification'"
+        },
+        "accountStatus": {
+          ".write": "auth != null && root.child('users').child(auth.uid).child('isAdmin').val() === true"
+        },
+        "isAdmin": {
+          ".write": "auth != null && root.child('users').child(auth.uid).child('isAdmin').val() === true",
+          ".validate": "newData.isBoolean()"
+        },
+        "role": {
+          ".write": "auth != null && root.child('users').child(auth.uid).child('isAdmin').val() === true",
+          ".validate": "newData.isString()"
+        },
+        "status": {
+          ".validate": "newData.isString() && (newData.val() === 'active' || newData.val() === 'locked' || newData.val() === 'disabled' || newData.val() === 'suspension' || newData.val() === 'appeal' || newData.val() === 'unlock' || newData.val() === 'unlocked')"
+        },
+        "suspensionReason": {
+          ".write": "auth != null && root.child('users').child(auth.uid).child('isAdmin').val() === true",
+          ".validate": "newData.isString() || newData.val() === null"
+        },
+        "disabledReason": {
+          ".write": "auth != null && root.child('users').child(auth.uid).child('isAdmin').val() === true",
+          ".validate": "newData.isString() || newData.val() === null"
+        },
+        "lockedReason": {
+          ".write": "auth != null && root.child('users').child(auth.uid).child('isAdmin').val() === true",
+          ".validate": "newData.isString() || newData.val() === null"
+        },
+        "lockType": {
+          ".write": "auth != null && root.child('users').child(auth.uid).child('isAdmin').val() === true",
+          ".validate": "(newData.isString() && (newData.val() === 'unusual_activity' || newData.val() === 'policy_violation')) || newData.val() === null"
+        },
+        "fullName": { ".validate": "newData.isString() || newData.val() === null" },
+        "firstName": { ".validate": "newData.isString() || newData.val() === null" },
+        "lastName": { ".validate": "newData.isString() || newData.val() === null" },
+        "middleName": { ".validate": "newData.isString() || newData.val() === null" },
+        "name": { ".validate": "newData.isString() || newData.val() === null" },
+        "dateOfBirth": { ".validate": "newData.isString() || newData.val() === null" },
+        "gender": { ".validate": "newData.isString() || newData.val() === null" },
+        "phoneNumber": { ".validate": "newData.isString() || newData.val() === null" },
+        "facebookLink": { ".validate": "newData.isString() || newData.val() === null" },
+        "unlockedAt": { ".validate": "newData.isNumber() || newData.val() === null" },
+        "verificationStatus": {
+          ".write": "auth != null && root.child('users').child(auth.uid).child('isAdmin').val() === true",
+          ".validate": "newData.isString() || newData.val() === null"
+        },
+        "identityVerification": {
+          ".read": "auth != null && (auth.uid === $uid || root.child('users').child(auth.uid).child('isAdmin').val() === true)",
+          ".write": "auth != null && ((auth.uid === $uid && (!data.exists() || data.child('verifyStatus').val() === 'no')) || root.child('users').child(auth.uid).child('isAdmin').val() === true)",
+          ".validate": "newData.hasChildren(['documentId', 'documentFullName', 'documentDateOfBirth', 'documentIssueDate', 'verifyStatus', 'submittedAt']) && newData.child('documentId').isString() && newData.child('documentFullName').isString() && newData.child('documentDateOfBirth').isString() && newData.child('documentIssueDate').isString() && newData.child('verifyStatus').isString() && (newData.child('verifyStatus').val() === 'review' || newData.child('verifyStatus').val() === 'yes' || newData.child('verifyStatus').val() === 'no') && newData.child('submittedAt').isNumber()"
+        }
+      }
+    },
+    "appeals": {
+      ".read": "auth != null && root.child('users').child(auth.uid).child('isAdmin').val() === true",
+      "$userId": {
+        ".read": "auth != null && (auth.uid === $userId || root.child('users').child(auth.uid).child('isAdmin').val() === true)",
+        ".write": "auth != null && (auth.uid === $userId || root.child('users').child(auth.uid).child('isAdmin').val() === true)",
+        "$appealId": {
+          ".read": "auth != null && (auth.uid === $userId || root.child('users').child(auth.uid).child('isAdmin').val() === true)",
+          ".write": "auth != null && ((auth.uid === $userId && (!data.exists() || data.child('status').val() === 'pending')) || root.child('users').child(auth.uid).child('isAdmin').val() === true)",
+          ".validate": "newData.hasChildren(['appealId', 'userId', 'userEmail', 'contactEmail', 'appealReason', 'isConfirmedTruth', 'timestamp', 'status'])"
+        }
       }
     },
     ".read": false,

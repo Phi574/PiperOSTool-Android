@@ -414,14 +414,12 @@ object PiperModernUi {
 
     private fun palette(context: Context): Palette = if (isDark(context)) darkPalette else lightPalette
 
+    // AppCompat resolves both the global preference and any Activity-local override
+    // into the effective configuration. Reading that result keeps every custom
+    // surface in sync with the resources actually shown on screen.
     private fun isDark(context: Context): Boolean =
-        when (PiperUiPreferences.colorMode(context)) {
-            PiperColorMode.DARK -> true
-            PiperColorMode.LIGHT -> false
-            PiperColorMode.SYSTEM ->
-                context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK ==
-                    Configuration.UI_MODE_NIGHT_YES
-        }
+        context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK ==
+            Configuration.UI_MODE_NIGHT_YES
 
     private val lightPalette = Palette(
         background = Color.rgb(248, 248, 246),

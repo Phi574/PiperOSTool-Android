@@ -28,10 +28,27 @@ class WelcomeActivity : AppCompatActivity() {
         auth = Firebase.auth
 
         // 3. Tự động chuyển hướng nếu User đã đăng nhập trước đó
-        if (auth.currentUser != null) {
-            startActivity(Intent(this, HomeActivity::class.java))
+        AccountSessionGuard.cachedDisabled(this)?.let { disabled ->
+            startActivity(DisabledAccountActivity.createIntent(this, disabled))
             finish()
-            return // Dừng hàm onCreate lại ở đây
+            return
+        }
+        if (auth.currentUser != null) {
+            AccountSessionGuard.verify(this) { state ->
+                when (state) {
+                    AccountSessionState.Valid, AccountSessionState.Offline -> {
+                        startActivity(Intent(this, HomeActivity::class.java))
+                        finish()
+                    }
+                    is AccountSessionState.Disabled ->
+                        startActivity(DisabledAccountActivity.createIntent(this, state))
+                    is AccountSessionState.Expired -> {
+                        auth.signOut()
+                        recreate()
+                    }
+                }
+            }
+            return
         }
 
         // 4. Khai báo nút

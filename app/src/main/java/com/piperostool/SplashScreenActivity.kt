@@ -108,10 +108,30 @@ class SplashScreenActivity : AppCompatActivity() {
     private fun checkNavigation() {
         val currentUser = FirebaseAuth.getInstance().currentUser
         if (currentUser == null) {
+            AccountSessionGuard.cachedDisabled(this)?.let { disabled ->
+                navigateTo(DisabledAccountActivity.createIntent(this, disabled))
+                return
+            }
             // 1. Chưa đăng nhập -> Vào Welcome
             navigateTo(WelcomeActivity::class.java)
             return
         }
+
+        AccountSessionGuard.verify(this) { state ->
+            when (state) {
+                AccountSessionState.Valid, AccountSessionState.Offline ->
+                    continueSecurityNavigation(currentUser.uid)
+                is AccountSessionState.Disabled ->
+                    navigateTo(DisabledAccountActivity.createIntent(this, state))
+                is AccountSessionState.Expired -> {
+                    FirebaseAuth.getInstance().signOut()
+                    navigateTo(Intent(this, LoginActivity::class.java).putExtra(EXTRA_SESSION_EXPIRED, true))
+                }
+            }
+        }
+    }
+
+    private fun continueSecurityNavigation(userId: String) {
 
         // 2. Đã đăng nhập -> Kiểm tra các lớp bảo mật
         val prefs = getSharedPreferences("PiperPrefs", Context.MODE_PRIVATE)
@@ -135,7 +155,6 @@ class SplashScreenActivity : AppCompatActivity() {
         }
 
         val database = FirebaseDatabase.getInstance()
-        val userId = currentUser.uid
         val myRef = database.getReference("users/$userId/security/password")
 
         myRef.addListenerForSingleValueEvent(object : ValueEventListener {
@@ -167,6 +186,10 @@ class SplashScreenActivity : AppCompatActivity() {
                 navigateTo(HomeActivity::class.java)
             }
         })
+    }
+
+    companion object {
+        const val EXTRA_SESSION_EXPIRED = "session_expired"
     }
 
     // --- LOGIC BIOMETRIC (VÂN TAY) ---

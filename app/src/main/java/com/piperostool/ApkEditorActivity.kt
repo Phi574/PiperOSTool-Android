@@ -1,7 +1,9 @@
 package com.piperostool
 
 import android.content.ContentValues
+import android.content.res.ColorStateList
 import android.content.Intent
+import android.graphics.drawable.GradientDrawable
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
@@ -135,6 +137,16 @@ class ApkEditorActivity : AppCompatActivity() {
         fileCount = findViewById(R.id.apkEditorFileCount)
         selectionBar = findViewById(R.id.apkEditorSelectionBar)
         selectionCount = findViewById(R.id.apkEditorSelectionCount)
+        val accent = PiperModernUi.accentColor(this)
+        progressPanel.background = GradientDrawable().apply {
+            setColor(PiperModernUi.surfaceColor(this@ApkEditorActivity))
+            setStroke(resources.displayMetrics.density.toInt().coerceAtLeast(1), PiperModernUi.borderColor(this@ApkEditorActivity))
+            cornerRadius = 8f * resources.displayMetrics.density
+        }
+        progressDetail.setTextColor(PiperModernUi.secondaryTextColor(this))
+        progressPercent.setTextColor(accent)
+        progressBar.progressTintList = ColorStateList.valueOf(accent)
+        progressBar.indeterminateTintList = ColorStateList.valueOf(accent)
         adapter = WorkspaceFileAdapter(::handleEntryClick, ::toggleSelection, ::loadThumbnail)
         findViewById<RecyclerView>(R.id.apkEditorFiles).apply {
             layoutManager = LinearLayoutManager(this@ApkEditorActivity)
@@ -324,7 +336,6 @@ class ApkEditorActivity : AppCompatActivity() {
     }
 
     private fun showDecodeOptions() {
-        val options = ApkDecodeScope.entries.toTypedArray()
         PiperActionSheet.show(
             this,
             "Mở cấu trúc APK",
@@ -339,10 +350,32 @@ class ApkEditorActivity : AppCompatActivity() {
                     subtitle = "Sửa logic ứng dụng; cần nhiều thời gian, RAM và dung lượng",
                     icon = R.drawable.ic_file_document
                 ) { confirmProjectDecode(decodeSmali = true) }
-            ) + options.map { option ->
-                PiperSheetAction(option.label, icon = R.drawable.ic_file_archive) {
-                    decode(option)
-                }
+            ) + listOf(
+                PiperSheetAction(
+                    label = "MỞ NHANH TỆP GỐC",
+                    subtitle = "Chọn Manifest, tài nguyên, DEX, thư viện native hoặc toàn bộ ZIP",
+                    icon = R.drawable.ic_file_archive
+                ) { showRawDecodeScopes() }
+            )
+        )
+    }
+
+    private fun showRawDecodeScopes() {
+        PiperActionSheet.show(
+            this,
+            "Phạm vi tệp gốc",
+            ApkDecodeScope.entries.map { option ->
+                PiperSheetAction(
+                    label = option.label,
+                    subtitle = when (option) {
+                        ApkDecodeScope.MANIFEST -> "Xem AndroidManifest.xml nhị phân"
+                        ApkDecodeScope.RESOURCES -> "Ảnh, XML, assets và resources.arsc"
+                        ApkDecodeScope.DEX -> "Các tệp classes*.dex chưa chuyển thành smali"
+                        ApkDecodeScope.NATIVE -> "Thư viện .so theo từng ABI"
+                        ApkDecodeScope.ALL -> "Giải nén ZIP nguyên bản, không giải mã tài nguyên"
+                    },
+                    icon = R.drawable.ic_file_archive
+                ) { decode(option) }
             }
         )
     }
@@ -377,7 +410,7 @@ class ApkEditorActivity : AppCompatActivity() {
 
     private fun decodeProject(decodeSmali: Boolean, onReady: (() -> Unit)? = null) {
         runBusy("Đang tạo project APK") {
-            val count = workspace!!.decodeFullProject(decodeSmali) { progress ->
+            workspace!!.decodeFullProject(decodeSmali) { progress ->
                 runOnUiThread { showProgress(progress) }
             }
             withContext(Dispatchers.Main) {
@@ -385,7 +418,7 @@ class ApkEditorActivity : AppCompatActivity() {
                 renderFiles()
                 Toast.makeText(
                     this@ApkEditorActivity,
-                    "Đã giải mã $count tệp. Mọi chỉnh sửa sẽ được đóng gói vào APK mới.",
+                    "Project đã sẵn sàng. Mọi chỉnh sửa sẽ được đóng gói vào APK mới.",
                     Toast.LENGTH_LONG
                 ).show()
                 onReady?.let { callback -> root.postDelayed(callback, 150L) }
@@ -481,7 +514,11 @@ class ApkEditorActivity : AppCompatActivity() {
                 } else {
                     val actions = strings.map { file ->
                         val count = runCatching {
-                            Regex("<string(?:\\s|>)").findAll(file.readText()).count()
+                            file.bufferedReader().useLines { lines ->
+                                lines.sumOf { line ->
+                                    Regex("<string(?:\\s|>)").findAll(line).count()
+                                }
+                            }
                         }.getOrDefault(0)
                         PiperSheetAction(
                             label = file.parentFile?.name + "/" + file.name,
@@ -681,16 +718,19 @@ class ApkEditorActivity : AppCompatActivity() {
 
     private fun showProgress(progress: ApkWorkspaceProgress) {
         progressPanel.visibility = View.VISIBLE
-        progressBar.isIndeterminate = false
-        progressBar.progress = progress.percent
-        progressPercent.text = "${progress.percent}%"
+        progressBar.isIndeterminate = progress.total <= 0
+        if (progress.total > 0) progressBar.progress = progress.percent
+        progressPercent.text = if (progress.total > 0) "${progress.percent}%" else "…"
         progressDetail.text = buildString {
             append(progress.phase)
+            if (progress.total > 0) {
+                append(" • ")
+                append(progress.completed)
+                append('/')
+                append(progress.total)
+                append(" tệp")
+            }
             append(" • ")
-            append(progress.completed)
-            append('/')
-            append(progress.total)
-            append(" tệp • ")
             append(String.format(Locale.US, "%.1fs", progress.elapsedMillis / 1000.0))
         }
     }

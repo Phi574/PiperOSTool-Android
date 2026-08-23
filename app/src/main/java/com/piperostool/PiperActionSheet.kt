@@ -37,12 +37,28 @@ object PiperActionSheet {
         val dialog = BottomSheetDialog(context)
         val content = sheetRoot(context)
         content.addView(titleView(context, title))
+        val list = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+        }
         actions.forEach { action ->
-            content.addView(actionRow(context, action) {
+            list.addView(actionRow(context, action) {
                 dialog.dismiss()
                 action.onClick()
             })
         }
+        content.addView(
+            ScrollView(context).apply {
+                isFillViewport = false
+                isVerticalScrollBarEnabled = true
+                overScrollMode = View.OVER_SCROLL_IF_CONTENT_SCROLLS
+                addView(list)
+            },
+            LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                0,
+                1f
+            )
+        )
         PiperModernUi.apply(content)
         dialog.setContentView(content)
         styleBottomSheet(dialog, context)

@@ -122,13 +122,14 @@
         </activity>
 
         <activity android:name=".LoginActivity" android:exported="false" android:theme="@style/Theme.PiperOSTool.AppCompat.NoActionBar" />
+        <activity android:name=".DisabledAccountActivity" android:exported="false" android:theme="@style/Theme.PiperOSTool.AppCompat.NoActionBar" />
         <activity android:name=".SignupActivity" android:exported="false" android:theme="@style/Theme.PiperOSTool.AppCompat.NoActionBar" />
         <activity android:name=".ForgotPassword" android:exported="false" android:theme="@style/Theme.PiperOSTool.AppCompat.NoActionBar" />
 
         <activity android:name=".HomeActivity" android:exported="false" android:launchMode="singleTask" android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".PiperBrowserActivity"
-            android:configChanges="keyboard|keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
+            android:configChanges="keyboard|keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize"
             android:exported="false"
             android:theme="@style/Theme.PiperOSTool"
             android:windowSoftInputMode="adjustResize" />

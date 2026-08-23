@@ -22,6 +22,25 @@ data class BrowserUserAgent(
     val value: String?
 )
 
+enum class BrowserThemeMode(val preferenceValue: String) {
+    SYSTEM("system"),
+    LIGHT("light"),
+    DARK("dark");
+
+    companion object {
+        fun fromPreference(value: String?): BrowserThemeMode =
+            entries.firstOrNull { it.preferenceValue == value } ?: SYSTEM
+    }
+}
+
+data class BrowserSearchEngine(
+    val id: String,
+    val label: String,
+    val queryUrl: String
+) {
+    fun searchUrl(encodedQuery: String): String = queryUrl.replace("%s", encodedQuery)
+}
+
 class BrowserSessionStore(context: Context) {
     private val preferences =
         context.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE)
@@ -126,6 +145,24 @@ class BrowserSessionStore(context: Context) {
         }.apply()
     }
 
+    fun browserThemeMode(): BrowserThemeMode = BrowserThemeMode.fromPreference(
+        preferences.getString(KEY_BROWSER_THEME, BrowserThemeMode.SYSTEM.preferenceValue)
+    )
+
+    fun setBrowserThemeMode(mode: BrowserThemeMode) {
+        preferences.edit().putString(KEY_BROWSER_THEME, mode.preferenceValue).apply()
+    }
+
+    fun selectedSearchEngine(): BrowserSearchEngine {
+        val selectedId = preferences.getString(KEY_SEARCH_ENGINE, SEARCH_ENGINE_GOOGLE)
+        return searchEngines().firstOrNull { it.id == selectedId } ?: searchEngines().first()
+    }
+
+    fun setSelectedSearchEngine(id: String) {
+        val safeId = searchEngines().firstOrNull { it.id == id }?.id ?: SEARCH_ENGINE_GOOGLE
+        preferences.edit().putString(KEY_SEARCH_ENGINE, safeId).apply()
+    }
+
     private fun saveHistory(entries: List<BrowserHistoryEntry>) {
         val json = JSONArray()
         entries.forEach { entry ->
@@ -151,7 +188,23 @@ class BrowserSessionStore(context: Context) {
         private const val KEY_DESKTOP_MODE = "desktop_mode"
         private const val KEY_USER_AGENT = "user_agent"
         private const val KEY_VPN_PACKAGE = "vpn_package"
+        private const val KEY_BROWSER_THEME = "browser_theme"
+        private const val KEY_SEARCH_ENGINE = "search_engine"
         private const val MAX_HISTORY_ITEMS = 250
+        private const val SEARCH_ENGINE_GOOGLE = "google"
+
+        fun searchEngines(): List<BrowserSearchEngine> = listOf(
+            BrowserSearchEngine(SEARCH_ENGINE_GOOGLE, "Google", "https://www.google.com/search?q=%s"),
+            BrowserSearchEngine("bing", "Microsoft Bing", "https://www.bing.com/search?q=%s"),
+            BrowserSearchEngine("duckduckgo", "DuckDuckGo", "https://duckduckgo.com/?q=%s"),
+            BrowserSearchEngine("brave", "Brave Search", "https://search.brave.com/search?q=%s"),
+            BrowserSearchEngine("yahoo", "Yahoo", "https://search.yahoo.com/search?p=%s"),
+            BrowserSearchEngine("ecosia", "Ecosia", "https://www.ecosia.org/search?q=%s"),
+            BrowserSearchEngine("startpage", "Startpage", "https://www.startpage.com/sp/search?query=%s"),
+            BrowserSearchEngine("qwant", "Qwant", "https://www.qwant.com/?q=%s"),
+            BrowserSearchEngine("yandex", "Yandex", "https://yandex.com/search/?text=%s"),
+            BrowserSearchEngine("baidu", "Baidu", "https://www.baidu.com/s?wd=%s")
+        )
 
         fun userAgents(): List<BrowserUserAgent> = listOf(
             BrowserUserAgent(USER_AGENT_DEFAULT, "Mặc định của thiết bị", null),

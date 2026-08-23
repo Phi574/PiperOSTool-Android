@@ -50,7 +50,7 @@ class ApkWorkspace private constructor(
     val hasDecodedProject: Boolean
         get() = File(decodedDirectory, "AndroidManifest.xml").isFile
     val hasDecodedSmali: Boolean
-        get() = decodedModeFile.readText().trim() == "full"
+        get() = decodedModeFile.takeIf { it.isFile }?.readText()?.trim() == "full"
 
     fun list(prefix: String): List<ApkWorkspaceEntry> {
         if (hasDecodedProject) return listDecoded(prefix)
@@ -225,57 +225,64 @@ class ApkWorkspace private constructor(
     ): Int {
         val started = SystemClock.elapsedRealtime()
         ZipFile(sourceApk).use { zip ->
-            val entries = zip.entries().asSequence()
+            val total = zip.entries().asSequence()
                 .filterNot { it.isDirectory }
                 .filter { matches(scope, it.name) }
-                .toList()
-            entries.forEachIndexed { index, entry ->
+                .count()
+            var completed = 0
+            zip.entries().asSequence()
+                .filterNot { it.isDirectory }
+                .filter { matches(scope, it.name) }
+                .forEach { entry ->
                 val output = safeOutput(entry.name)
                 output.parentFile?.mkdirs()
                 zip.getInputStream(entry).use { input ->
                     FileOutputStream(output).use(input::copyTo)
                 }
+                completed++
                 onProgress(
                     ApkWorkspaceProgress(
                         phase = "Đang giải nén ${entry.name}",
-                        completed = index + 1,
-                        total = entries.size,
+                        completed = completed,
+                        total = total,
                         startedElapsed = started
                     )
                 )
             }
-            return entries.size
+            return completed
         }
     }
 
     fun decodeFullProject(
         decodeSmali: Boolean,
         onProgress: (ApkWorkspaceProgress) -> Unit
-    ): Int {
+    ) {
         val started = SystemClock.elapsedRealtime()
-        onProgress(ApkWorkspaceProgress("Đang giải mã Manifest và resources", 8, 100, started))
+        onProgress(ApkWorkspaceProgress("Đang giải mã Manifest và resources", 0, 0, started))
         ReAndroidApkEngine.decode(sourceApk, decodedDirectory, decodeSmali)
         decodedModeFile.writeText(if (decodeSmali) "full" else "resources")
-        val files = decodedDirectory.walkTopDown().count { it.isFile }
         val phase = if (decodeSmali) {
             "Project XML và smali đã sẵn sàng"
         } else {
             "Project resources đã sẵn sàng"
         }
         onProgress(ApkWorkspaceProgress(phase, 100, 100, started))
-        return files
     }
 
     fun extractedTextFiles(): List<File> = activeFilesDirectory().walkTopDown()
         .filter { it.isFile && it.extension.lowercase() in TEXT_EXTENSIONS }
         .toList()
 
-    fun stringsFiles(): List<File> = activeFilesDirectory().walkTopDown()
-        .filter {
-            it.isFile && it.name == "strings.xml" &&
-                it.parentFile?.name?.startsWith("values") == true
-        }
-        .toList()
+    fun stringsFiles(): List<File> {
+        val resources = File(activeFilesDirectory(), "res")
+        return resources.listFiles().orEmpty()
+            .asSequence()
+            .filter { it.isDirectory && it.name.startsWith("values") }
+            .map { File(it, "strings.xml") }
+            .filter(File::isFile)
+            .sortedBy { it.parentFile?.name.orEmpty() }
+            .toList()
+    }
 
     private fun activeFilesDirectory(): File = if (hasDecodedProject) decodedDirectory else filesDirectory
 

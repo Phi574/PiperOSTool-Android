@@ -22,8 +22,8 @@ android {
         applicationId = "com.piper.os.tool"
         minSdk = 24
         targetSdk = 36
-        versionCode = 30
-        versionName = "3.1.1.beta"
+        versionCode = 31
+        versionName = "3.1.5.beta"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         ndk {
