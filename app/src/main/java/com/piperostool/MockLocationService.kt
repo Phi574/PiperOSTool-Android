@@ -346,7 +346,7 @@ class MockLocationService : Service() {
                     runCatching { locationManager.setTestProviderLocation(provider, location) }
                 }
         }
-        if (fusedMockReady) {
+        if (fusedMockReady && hasFineLocationPermission()) {
             val fusedLocation = createMockLocation(
                 provider = LocationManager.FUSED_PROVIDER,
                 point = point,
@@ -355,8 +355,12 @@ class MockLocationService : Service() {
                 wallClockMillis = wallClockMillis,
                 elapsedNanos = elapsedNanos
             )
-            fusedLocationClient.setMockLocation(fusedLocation)
-                .addOnFailureListener { fusedMockReady = false }
+            try {
+                fusedLocationClient.setMockLocation(fusedLocation)
+                    .addOnFailureListener { fusedMockReady = false }
+            } catch (_: SecurityException) {
+                fusedMockReady = false
+            }
         }
     }
 
@@ -394,22 +398,36 @@ class MockLocationService : Service() {
 
     private fun enableFusedMockMode() {
         fusedMockReady = false
-        fusedLocationClient.setMockMode(true)
-            .addOnSuccessListener {
-                fusedMockReady = true
-                val current = lastPoint ?: scenario?.points?.firstOrNull()
-                if (current != null) {
-                    worker.post { publishMockLocation(current, 0f, lastBearing) }
+        if (!hasFineLocationPermission()) return
+        try {
+            fusedLocationClient.setMockMode(true)
+                .addOnSuccessListener {
+                    fusedMockReady = true
+                    val current = lastPoint ?: scenario?.points?.firstOrNull()
+                    if (current != null) {
+                        worker.post { publishMockLocation(current, 0f, lastBearing) }
+                    }
                 }
-            }
-            .addOnFailureListener { fusedMockReady = false }
+                .addOnFailureListener { fusedMockReady = false }
+        } catch (_: SecurityException) {
+            fusedMockReady = false
+        }
     }
 
     private fun disableFusedMockMode() {
         if (!::fusedLocationClient.isInitialized) return
         fusedMockReady = false
-        runCatching { fusedLocationClient.setMockMode(false) }
+        if (!hasFineLocationPermission()) return
+        try {
+            fusedLocationClient.setMockMode(false)
+        } catch (_: SecurityException) {
+            // Permission may be revoked while the foreground service is active.
+        }
     }
+
+    private fun hasFineLocationPermission(): Boolean =
+        ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) ==
+            PackageManager.PERMISSION_GRANTED
 
     private fun removeMockProviders() {
         activeMockProviders.toList().forEach { provider ->

@@ -148,7 +148,11 @@ object AccountDataScope {
     private fun moveLegacyTree(source: File, target: File) {
         if (!source.exists()) return
         if (!target.exists() && source.renameTo(target)) return
-        val symbolicLink = java.nio.file.Files.isSymbolicLink(source.toPath())
+        // java.nio.file.Files requires API 26. Canonical/absolute comparison
+        // detects links while keeping account migration compatible with API 24.
+        val symbolicLink = runCatching {
+            source.canonicalFile != source.absoluteFile
+        }.getOrDefault(true)
         if (source.isDirectory && !symbolicLink) {
             target.mkdirs()
             source.listFiles()?.forEach { child ->
