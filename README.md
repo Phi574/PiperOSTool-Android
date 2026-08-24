@@ -105,6 +105,7 @@ của chính mình; `database.rules.json` chặn client tự thay đổi trạng
 | Thành phần | Repository | Vai trò |
 | --- | --- | --- |
 | Android app | **PiperOSTool-Android** | Giao diện, Browser, Media, Device tools và terminal service |
+| Windows companion | [PiperOSTool-PC](https://github.com/Phi574/PiperOSTool-PC) | PiperOS View Remote trên PC, USB ADB/Type-C và AirPlay receiver |
 | Linux runtime | [Piperos_termux](https://github.com/Phi574/Piperos_termux) | Bootstrap, package build và runtime `$PREFIX` cho ba ABI |
 
 ```mermaid
@@ -127,6 +128,8 @@ flowchart LR
     S --> U["ZIP, JAR, XAPK & APKS"]
     V --> W["LAN, QR & 6-digit code"]
     V --> X["AirPlay / RAOP receiver"]
+    V --> Y["PiperOS Tool PC"]
+    Y --> Z["Windows EXE / MSI / USB ADB"]
 
     B --> K["Notifications"]
     C --> K
