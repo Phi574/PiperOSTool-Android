@@ -230,14 +230,16 @@ class SettingFragment : Fragment() {
             positiveLabel = getString(R.string.auth_logout),
             destructive = true
         ) {
-                auth.signOut()
-                startActivity(
-                    Intent(requireContext(), LoginActivity::class.java).apply {
-                        flags =
-                            Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                    }
-                )
-                requireActivity().finish()
+                DeviceSessionManager.endCurrentSession(requireContext()) {
+                    auth.signOut()
+                    startActivity(
+                        Intent(requireContext(), LoginActivity::class.java).apply {
+                            flags =
+                                Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                        }
+                    )
+                    requireActivity().finish()
+                }
         }
     }
 

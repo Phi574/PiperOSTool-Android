@@ -9,6 +9,7 @@ import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
+import com.google.firebase.firestore.ListenerRegistration
 
 sealed interface AccountSessionState {
     data object Valid : AccountSessionState
@@ -71,15 +72,35 @@ object AccountSessionGuard {
             }
         }
         reference.addValueEventListener(listener)
-        return Observation(reference, listener)
+        val observation = Observation(reference, listener)
+        DeviceSessionManager.ensureCurrentSession(context) { revoked ->
+            if (revoked) callback(AccountSessionState.Expired("Device session revoked"))
+            observation.add(DeviceSessionManager.observeRevocation(context) { isRevoked ->
+                if (isRevoked) callback(AccountSessionState.Expired("Device session revoked"))
+            })
+        }
+        return observation
     }
 
     class Observation internal constructor(
         private val reference: DatabaseReference,
         private val listener: ValueEventListener
     ) {
+        private val firestoreListeners = mutableListOf<ListenerRegistration>()
+        private var closed = false
+
+        @Synchronized
+        internal fun add(registration: ListenerRegistration?) {
+            if (registration == null) return
+            if (closed) registration.remove() else firestoreListeners += registration
+        }
+
+        @Synchronized
         fun close() {
+            closed = true
             reference.removeEventListener(listener)
+            firestoreListeners.forEach { it.remove() }
+            firestoreListeners.clear()
         }
     }
 
@@ -98,7 +119,13 @@ object AccountSessionGuard {
             user.getIdToken(false).addOnCompleteListener { token ->
                 if (token.isSuccessful) {
                     clearCachedDisabled(context)
-                    callback(AccountSessionState.Valid)
+                    DeviceSessionManager.ensureCurrentSession(context) { revoked ->
+                        if (revoked) {
+                            callback(AccountSessionState.Expired("Device session revoked"))
+                        } else {
+                            callback(AccountSessionState.Valid)
+                        }
+                    }
                 } else {
                     callback(classifyFailure(context, token.exception, email))
                 }

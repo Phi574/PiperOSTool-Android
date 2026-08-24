@@ -41,6 +41,79 @@ service cloud.firestore {
           && request.resource.data.createdAt is int
           && request.resource.data.updatedAt is int;
       }
+
+      match /accountProfile/{documentId} {
+        allow read: if isOwner(uid);
+        allow create: if isOwner(uid)
+          && documentId == 'main'
+          && !exists(/databases/$(database)/documents/users/$(uid)/accountProfile/main)
+          && request.resource.data.keys().hasOnly([
+            'uid', 'fullName', 'dateOfBirth', 'gender', 'phoneNumber',
+            'email', 'locked', 'createdAt'
+          ])
+          && request.resource.data.uid == uid
+          && request.resource.data.fullName is string
+          && request.resource.data.fullName.size() >= 2
+          && request.resource.data.fullName.size() <= 120
+          && request.resource.data.dateOfBirth is string
+          && request.resource.data.dateOfBirth.size() == 10
+          && request.resource.data.gender in ['male', 'female', 'other', 'prefer_not_to_say']
+          && request.resource.data.phoneNumber is string
+          && request.resource.data.phoneNumber.size() >= 7
+          && request.resource.data.phoneNumber.size() <= 24
+          && request.resource.data.email is string
+          && request.resource.data.email == request.auth.token.email
+          && request.resource.data.locked == true
+          && request.resource.data.createdAt is int;
+        allow update, delete: if false;
+      }
+
+      match /profileChangeRequests/{requestId} {
+        allow read: if isOwner(uid);
+        allow create: if isOwner(uid)
+          && request.resource.data.keys().hasOnly([
+            'requestId', 'uid', 'email', 'reason', 'status', 'createdAt'
+          ])
+          && request.resource.data.requestId == requestId
+          && request.resource.data.uid == uid
+          && request.resource.data.email is string
+          && request.resource.data.reason is string
+          && request.resource.data.reason.size() >= 10
+          && request.resource.data.reason.size() <= 4000
+          && request.resource.data.status == 'pending'
+          && request.resource.data.createdAt is int;
+        allow update, delete: if false;
+      }
+
+      match /deviceSessions/{sessionId} {
+        allow read: if isOwner(uid);
+        allow create: if isOwner(uid)
+          && request.resource.data.sessionId == sessionId
+          && request.resource.data.keys().hasOnly([
+            'sessionId', 'deviceId', 'deviceName', 'manufacturer', 'model',
+            'androidVersion', 'sdk', 'abis', 'appVersion', 'updatedAt',
+            'loginAt', 'lastSeenAt', 'active', 'revoked', 'status',
+            'locationLat', 'locationLon'
+          ])
+          && request.resource.data.deviceId is string
+          && request.resource.data.deviceName is string
+          && request.resource.data.loginAt is int
+          && request.resource.data.lastSeenAt is int
+          && request.resource.data.active == true
+          && request.resource.data.revoked == false
+          && request.resource.data.status == 'active';
+        allow update: if isOwner(uid)
+          && request.resource.data.sessionId == resource.data.sessionId
+          && request.resource.data.deviceId == resource.data.deviceId
+          && (resource.data.revoked != true || request.resource.data.revoked == true)
+          && request.resource.data.keys().hasOnly([
+            'sessionId', 'deviceId', 'deviceName', 'manufacturer', 'model',
+            'androidVersion', 'sdk', 'abis', 'appVersion', 'updatedAt',
+            'loginAt', 'lastSeenAt', 'active', 'revoked', 'status',
+            'locationLat', 'locationLon', 'signedOutAt', 'revokedAt', 'revokedBy'
+          ]);
+        allow delete: if false;
+      }
     }
 
     match /{document=**} {

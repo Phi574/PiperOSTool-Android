@@ -131,17 +131,19 @@ class LoginActivity : AppCompatActivity() {
                     AccountSessionGuard.clearCachedDisabled(this)
                     val userId = auth.currentUser?.uid
                     if (userId != null) {
-                        AccountSessionGuard.verify(this) { state ->
-                            when (state) {
-                                AccountSessionState.Valid, AccountSessionState.Offline ->
-                                    checkSecurityAndProceed(userId)
-                                is AccountSessionState.Disabled -> {
-                                    startActivity(DisabledAccountActivity.createIntent(this, state))
-                                }
-                                is AccountSessionState.Expired -> {
-                                    auth.signOut()
-                                    resetLoginButton()
-                                    Toast.makeText(this, R.string.account_session_expired, Toast.LENGTH_LONG).show()
+                        DeviceSessionManager.startNewSession(this) {
+                            AccountSessionGuard.verify(this) { state ->
+                                when (state) {
+                                    AccountSessionState.Valid, AccountSessionState.Offline ->
+                                        checkSecurityAndProceed(userId)
+                                    is AccountSessionState.Disabled -> {
+                                        startActivity(DisabledAccountActivity.createIntent(this, state))
+                                    }
+                                    is AccountSessionState.Expired -> {
+                                        auth.signOut()
+                                        resetLoginButton()
+                                        Toast.makeText(this, R.string.account_session_expired, Toast.LENGTH_LONG).show()
+                                    }
                                 }
                             }
                         }

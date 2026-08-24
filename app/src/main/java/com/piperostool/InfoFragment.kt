@@ -5,6 +5,7 @@ import android.app.ActivityManager
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.ApplicationInfo
 import android.media.MediaCodecList
@@ -46,6 +47,19 @@ class InfoFragment : Fragment() {
         val sections = createSections(requireContext())
         view.findViewById<TextView>(R.id.tvInfoHeadline).text =
             "PiperOS Tool ${AppVersion.name(requireContext())}"
+        val actions = view.findViewById<LinearLayout>(R.id.infoAccountActions)
+        addAction(
+            actions,
+            R.drawable.details,
+            getString(R.string.info_account_profile),
+            getString(R.string.info_account_profile_summary)
+        ) { startActivity(Intent(requireContext(), AccountProfileActivity::class.java)) }
+        addAction(
+            actions,
+            R.drawable.devices,
+            getString(R.string.info_device_sessions),
+            getString(R.string.info_device_sessions_summary)
+        ) { startActivity(Intent(requireContext(), DeviceSessionsActivity::class.java)) }
         val container = view.findViewById<LinearLayout>(R.id.infoSections)
         sections.forEachIndexed { index, section ->
             addSection(container, section, expanded = index == 0)
@@ -53,6 +67,25 @@ class InfoFragment : Fragment() {
         view.findViewById<View>(R.id.btnCopyAllInfo).setOnClickListener {
             copyAllInformation(sections)
         }
+    }
+
+    private fun addAction(
+        container: LinearLayout,
+        icon: Int,
+        title: String,
+        summary: String,
+        action: () -> Unit
+    ) {
+        val item = layoutInflater.inflate(R.layout.item_info_action, container, false)
+        item.findViewById<ImageView>(R.id.ivInfoActionIcon).apply {
+            setImageResource(icon)
+            setColorFilter(PiperModernUi.accentColor(requireContext()))
+        }
+        item.findViewById<TextView>(R.id.tvInfoActionTitle).text = title
+        item.findViewById<TextView>(R.id.tvInfoActionSummary).text = summary
+        item.setOnClickListener { action() }
+        PiperModernUi.apply(item)
+        container.addView(item)
     }
 
     private fun addSection(

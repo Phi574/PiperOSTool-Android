@@ -146,12 +146,13 @@ class SignupActivity : AppCompatActivity() {
             .set(userMap)
             .addOnSuccessListener {
                 Toast.makeText(this, "Identity Created Successfully!", Toast.LENGTH_SHORT).show()
-                // Chuyển sang Home
-                val intent = Intent(this, HomeActivity::class.java)
-                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                startActivity(intent)
-                overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
-                finish()
+                DeviceSessionManager.startNewSession(this) {
+                    val intent = Intent(this, HomeActivity::class.java)
+                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    startActivity(intent)
+                    overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+                    finish()
+                }
             }
             .addOnFailureListener { e ->
                 Toast.makeText(this, "Lỗi lưu dữ liệu: ${e.message}", Toast.LENGTH_SHORT).show()
