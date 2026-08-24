@@ -1,5 +1,16 @@
 # Changelog
 
+## 3.2.3.beta
+
+- Added PiperOS View Remote for Android screen sharing and remote control on a
+  local network, with nearby discovery, QR pairing and six-digit pairing code.
+- Added sharing consent, selectable resolution/FPS, orientation-aware viewing,
+  full-screen playback and a clean disconnect flow.
+- Added Apple Screen Mirroring receiver for iPhone, iPad and macOS through
+  AirPlay/RAOP discovery. The receiver advertises through mDNS as
+  `PiperOS View Remote` and runs as an Android foreground service.
+- Added View Remote information to the Info section.
+
 ## 2.5.8.beta
 
 - Added PiperOS Fake Map GPS to the Beta page.

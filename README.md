@@ -20,7 +20,18 @@
 
 ## Bản hiện tại
 
-`3.1.8.beta` sử dụng `minSdk 24`, `targetSdk 36`, Kotlin `2.4.10` và tập trung vào:
+`3.2.3.beta` sử dụng `minSdk 24`, `targetSdk 36`, Kotlin `2.4.10` và tập trung vào:
+
+- **PiperOS View Remote:** chia sẻ màn hình Android trong mạng LAN, kết nối bằng
+  quét QR, mã 6 chữ số hoặc tìm thiết bị trong cùng mạng. Phiên chia sẻ cần được
+  xác nhận ở thiết bị phát; bên xem có thể chọn chất lượng/FPS và điều khiển qua
+  Accessibility Service đã được cấp phép.
+- **Chiếu màn hình Apple:** receiver AirPlay/RAOP cho iPhone, iPad và macOS.
+  Dịch vụ công bố `PiperOS View Remote` trên Wi-Fi bằng mDNS, phát video và âm
+  thanh độ trễ thấp, hỗ trợ cả màn hình dọc và ngang. Mã nguồn và ghi chú giấy
+  phép của receiver được lưu tại `third_party/airplay_receiver/`.
+- Trang Info bổ sung mục thông tin View Remote và thông tin tài khoản/thiết bị
+  đang đăng nhập phục vụ kiểm tra phiên đăng nhập.
 
 - Browser theme sáng/tối/theo hệ thống, nhiều công cụ tìm kiếm và quản lý Cookie/Token theo website.
 - APK Editor giảm tải bộ nhớ khi giải nén, tách luồng chỉnh tài nguyên và smali, đồng thời báo tiến trình trung thực.
@@ -107,12 +118,15 @@ flowchart LR
     A --> F["Info Center"]
     A --> G["Terminal UI / Service"]
     A --> S["PiperOS File Manager"]
+    A --> V["PiperOS View Remote"]
 
     B --> H["Downloads & WebView"]
     C --> I["Media3 & PiP"]
     E --> J["Android Mock Location"]
     D --> T["Extract, edit, align & sign APK"]
     S --> U["ZIP, JAR, XAPK & APKS"]
+    V --> W["LAN, QR & 6-digit code"]
+    V --> X["AirPlay / RAOP receiver"]
 
     B --> K["Notifications"]
     C --> K
