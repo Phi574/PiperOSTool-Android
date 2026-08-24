@@ -3,7 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginBottom="10dp"
-    android:background="@drawable/bg_settings_surface"
+    android:background="@drawable/bg_account_surface"
     android:orientation="horizontal"
     android:padding="16dp">
 
@@ -25,7 +25,7 @@
             android:id="@+id/tvSessionDeviceName"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textColor="@color/white"
+            android:textColor="@color/remote_text_primary"
             android:textSize="16sp"
             android:textStyle="bold" />
 
@@ -34,7 +34,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="3dp"
-            android:textColor="#8DFFB0"
+            android:textColor="@color/remote_accent"
             android:textSize="12sp"
             android:textStyle="bold" />
 
@@ -43,7 +43,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:textColor="#AFFFFFFF"
+            android:textColor="@color/remote_text_secondary"
             android:textSize="12sp" />
 
         <Button

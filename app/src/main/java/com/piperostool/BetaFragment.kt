@@ -44,5 +44,8 @@ class BetaFragment : Fragment() {
         view.findViewById<View>(R.id.featureFileManager).setOnClickListener {
             startActivity(Intent(requireContext(), PiperFileManagerActivity::class.java))
         }
+        view.findViewById<View>(R.id.featurePiperRemote).setOnClickListener {
+            startActivity(Intent(requireContext(), PiperRemoteActivity::class.java))
+        }
     }
 }

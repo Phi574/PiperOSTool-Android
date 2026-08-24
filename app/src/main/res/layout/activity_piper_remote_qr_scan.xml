@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#080B0E">
+
+    <com.journeyapps.barcodescanner.DecoratedBarcodeView
+        android:id="@+id/zxing_barcode_scanner"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:zxing_framing_rect_height="276dp"
+        app:zxing_framing_rect_width="276dp"
+        app:zxing_preview_scaling_strategy="centerCrop"
+        app:zxing_use_texture_view="true"
+        app:zxing_viewfinder_laser_visibility="false"
+        app:zxing_viewfinder_mask="#B8080B0E" />
+
+    <View
+        android:layout_width="276dp"
+        android:layout_height="276dp"
+        android:layout_gravity="center"
+        android:background="@drawable/bg_remote_qr_frame"
+        android:importantForAccessibility="no" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:background="#D9080B0E"
+        android:gravity="center"
+        android:paddingStart="24dp"
+        android:paddingTop="20dp"
+        android:paddingEnd="24dp"
+        android:paddingBottom="34dp"
+        android:text="@string/remote_scan_qr_prompt"
+        android:textColor="#FFFFFF"
+        android:textSize="15sp" />
+</FrameLayout>

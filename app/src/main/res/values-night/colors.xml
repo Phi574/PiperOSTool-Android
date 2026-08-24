@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="remote_page_background">#0F1215</color>
+    <color name="remote_surface">#171C20</color>
+    <color name="remote_text_primary">#F5F7F8</color>
+    <color name="remote_text_secondary">#B6BEC5</color>
+    <color name="remote_border">#3DFFFFFF</color>
+    <color name="remote_accent">#75F7AD</color>
+</resources>

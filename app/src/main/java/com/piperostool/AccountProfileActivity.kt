@@ -46,8 +46,8 @@ class AccountProfileActivity : AppCompatActivity() {
         request = findViewById(R.id.btnRequestProfileChange)
         status = findViewById(R.id.tvProfileStatus)
         gender.adapter = ArrayAdapter.createFromResource(
-            this, R.array.profile_gender_labels, android.R.layout.simple_spinner_dropdown_item
-        )
+            this, R.array.profile_gender_labels, R.layout.item_account_spinner
+        ).also { it.setDropDownViewResource(R.layout.item_account_spinner) }
         uid.setText(auth.currentUser?.uid.orEmpty())
         email.setText(auth.currentUser?.email.orEmpty())
         email.isEnabled = false

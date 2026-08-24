@@ -314,6 +314,26 @@ class InfoFragment : Fragment() {
                 )
             ),
             InfoSection(
+                title = "INFO PIPEROS VIEW REMOTE",
+                summary = when {
+                    PiperRemoteShareService.currentSession != null -> "Đang chia sẻ màn hình"
+                    else -> "Sẵn sàng kết nối trong mạng nội bộ"
+                },
+                icon = R.drawable.ic_remote_view,
+                color = color("#34D399"),
+                rows = listOf(
+                    InfoRow("Phiên bản giao thức", "Piper Remote 2"),
+                    InfoRow("Phương thức", "Wi-Fi nội bộ, QR và mã 6 số"),
+                    InfoRow("Xác nhận kết nối", "Bắt buộc phía thiết bị chia sẻ cho phép"),
+                    InfoRow("Độ phân giải", "480p / 720p / 1080p / gốc toàn màn hình"),
+                    InfoRow("Tốc độ khung hình", "24 / 30 / 60 / tối đa theo thiết bị"),
+                    InfoRow("Điều khiển cảm ứng", if (PiperRemoteAccessibilityService.isRunning()) "Đã bật" else "Chưa bật"),
+                    InfoRow("Chế độ xem", "Toàn màn hình, giữ đúng tỷ lệ"),
+                    InfoRow("Truyền dữ liệu", "Trực tiếp giữa hai thiết bị trong LAN"),
+                    InfoRow("Chạy nền khi chia sẻ", "MediaProjection foreground service")
+                )
+            ),
+            InfoSection(
                 title = "INFO FAKE MAP GPS",
                 summary = fakeMapSummary(mockState, mockScenario, mockAppSelected),
                 icon = R.drawable.ic_location_pin,
