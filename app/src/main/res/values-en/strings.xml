@@ -602,6 +602,7 @@
     <string name="remote_method_lan_share">Visible to devices on the same Wi‑Fi</string>
     <string name="remote_method_qr_share">Create a private connection QR code</string>
     <string name="remote_method_code_share">Create a 6-digit connection code</string>
+    <string name="remote_method_usb_share">Share through USB cable (ADB)</string>
     <string name="remote_qr_code">PiperOS View Remote connection QR code</string>
     <string name="remote_enable_control">Enable remote control</string>
     <string name="remote_control_enabled">Remote control is enabled</string>
@@ -621,6 +622,7 @@
     <string name="remote_invalid_qr">This is not a valid PiperOS View Remote code.</string>
     <string name="remote_lan_visible">Device is visible on the network at %1$s</string>
     <string name="remote_qr_ready">Scan this code with PiperOS View Remote on the other device.</string>
+    <string name="remote_usb_ready">Ready over USB. On the PC, choose USB Type-C and select Connect USB.</string>
     <string name="remote_code_ready">Enter this code on the other device. It expires when sharing stops.</string>
     <string name="remote_share_protected">The session only runs while its sharing notification is visible. Enable remote control to accept touch gestures.</string>
     <string name="remote_scanning_lan">Scanning devices on this network…</string>

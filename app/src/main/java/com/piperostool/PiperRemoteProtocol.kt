@@ -8,7 +8,7 @@ import java.net.Inet4Address
 import java.net.NetworkInterface
 import java.security.SecureRandom
 
-enum class PiperRemoteMethod { LAN, QR, CODE }
+enum class PiperRemoteMethod { LAN, QR, CODE, USB }
 
 data class PiperRemoteEndpoint(
     val name: String,
@@ -48,6 +48,8 @@ object PiperRemoteProtocol {
     const val PACKET_HOME: Byte = 4
     const val PACKET_AUDIO_CONFIG: Byte = 5
     const val PACKET_AUDIO: Byte = 6
+    const val USB_PORT = 39211
+    const val USB_CREDENTIAL = "piperos-usb-adb-v1"
 
     fun randomCode(): String = SecureRandom().nextInt(1_000_000).toString().padStart(6, '0')
 

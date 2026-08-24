@@ -164,6 +164,7 @@ class PiperRemoteActivity : AppCompatActivity(), PiperRemoteClient.Listener {
         findViewById<View>(R.id.cardShareLan).setOnClickListener { requestShare(PiperRemoteMethod.LAN) }
         findViewById<View>(R.id.cardShareQr).setOnClickListener { requestShare(PiperRemoteMethod.QR) }
         findViewById<View>(R.id.cardShareCode).setOnClickListener { requestShare(PiperRemoteMethod.CODE) }
+        findViewById<View>(R.id.cardShareUsb).setOnClickListener { requestShare(PiperRemoteMethod.USB) }
         findViewById<View>(R.id.cardAppleMirror).setOnClickListener {
             startActivity(Intent(this, PiperAppleMirrorActivity::class.java))
         }
@@ -233,6 +234,7 @@ class PiperRemoteActivity : AppCompatActivity(), PiperRemoteClient.Listener {
             PiperRemoteMethod.LAN -> getString(R.string.remote_lan_visible, session.host)
             PiperRemoteMethod.QR -> getString(R.string.remote_qr_ready)
             PiperRemoteMethod.CODE -> getString(R.string.remote_code_ready)
+            PiperRemoteMethod.USB -> getString(R.string.remote_usb_ready)
         }
         showStatus(getString(R.string.remote_share_protected))
     }

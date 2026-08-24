@@ -281,6 +281,30 @@
                         app:drawableTint="@color/remote_accent" />
                 </com.google.android.material.card.MaterialCardView>
 
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardShareUsb"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?attr/selectableItemBackground"
+                    app:cardCornerRadius="8dp"
+                    app:cardElevation="0dp"
+                    app:strokeWidth="1dp">
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:drawableStart="@drawable/ic_remote_view"
+                        android:drawablePadding="14dp"
+                        android:padding="18dp"
+                        android:text="@string/remote_method_usb_share"
+                        android:textColor="@color/remote_text_primary"
+                        android:textSize="15sp"
+                        android:textStyle="bold"
+                        app:drawableTint="@color/remote_accent" />
+                </com.google.android.material.card.MaterialCardView>
+
                 <LinearLayout
                     android:id="@+id/remoteShareCredentialPanel"
                     android:layout_width="match_parent"

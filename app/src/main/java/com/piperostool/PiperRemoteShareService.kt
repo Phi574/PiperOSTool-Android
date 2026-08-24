@@ -132,7 +132,10 @@ class PiperRemoteShareService : Service() {
 
     private fun startSession(resultCode: Int, data: Intent, method: PiperRemoteMethod) {
         if (!running.compareAndSet(false, true)) return
-        val server = ServerSocket(0).also { serverSocket = it }
+        // USB is exposed only through `adb forward`, so it has a fixed local
+        // device port and never participates in Wi-Fi discovery.
+        val server = ServerSocket(if (method == PiperRemoteMethod.USB) PiperRemoteProtocol.USB_PORT else 0)
+            .also { serverSocket = it }
         val session = PiperRemoteSession(
             method = method,
             port = server.localPort,
@@ -170,7 +173,9 @@ class PiperRemoteShareService : Service() {
             null,
             handler
         )
-        discovery = PiperRemoteDiscoveryResponder({ currentSession }, PiperRemoteProtocol.deviceName(this)).also { it.start() }
+        if (method != PiperRemoteMethod.USB) {
+            discovery = PiperRemoteDiscoveryResponder({ currentSession }, PiperRemoteProtocol.deviceName(this)).also { it.start() }
+        }
         Thread({ acceptClients(server, session) }, "PiperRemoteServer").start()
         publishState(session, null)
     }
@@ -208,6 +213,7 @@ class PiperRemoteShareService : Service() {
                 PiperRemoteMethod.LAN -> credential == session.sessionId
                 PiperRemoteMethod.QR -> credential == session.token
                 PiperRemoteMethod.CODE -> credential == session.code
+                PiperRemoteMethod.USB -> credential == PiperRemoteProtocol.USB_CREDENTIAL
             }
             val allowed = credentialsValid && awaitApproval(
                 requesterName.ifBlank { getString(R.string.remote_unknown_device) },

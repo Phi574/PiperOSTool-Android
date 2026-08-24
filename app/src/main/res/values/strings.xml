@@ -604,6 +604,7 @@
     <string name="remote_method_lan_share">Hiện với thiết bị dùng chung Wi‑Fi</string>
     <string name="remote_method_qr_share">Tạo mã QR kết nối riêng</string>
     <string name="remote_method_code_share">Tạo mã kết nối 6 số</string>
+    <string name="remote_method_usb_share">Chia sẻ qua cáp USB (ADB)</string>
     <string name="remote_qr_code">Mã QR kết nối PiperOS View Remote</string>
     <string name="remote_enable_control">Bật quyền điều khiển</string>
     <string name="remote_control_enabled">Quyền điều khiển đã bật</string>
@@ -623,6 +624,7 @@
     <string name="remote_invalid_qr">Đây không phải mã PiperOS View Remote hợp lệ.</string>
     <string name="remote_lan_visible">Thiết bị đang hiện trong mạng tại %1$s</string>
     <string name="remote_qr_ready">Quét mã này bằng PiperOS View Remote trên thiết bị còn lại.</string>
+    <string name="remote_usb_ready">Đã sẵn sàng qua cáp USB. Trên PC, chọn USB Type-C rồi bấm Kết nối USB.</string>
     <string name="remote_code_ready">Nhập mã trên thiết bị còn lại. Mã hết hiệu lực khi dừng chia sẻ.</string>
     <string name="remote_share_protected">Phiên chỉ hoạt động khi thông báo chia sẻ đang hiển thị. Hãy bật quyền điều khiển nếu muốn nhận thao tác chạm.</string>
     <string name="remote_scanning_lan">Đang quét thiết bị trong mạng…</string>
