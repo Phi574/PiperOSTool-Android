@@ -115,7 +115,7 @@ class PiperMediaActivity : AppCompatActivity() {
     private var searchWasVisibleBeforeFullscreen = false
 
     private val preferences by lazy {
-        getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        AccountDataScope.preferences(this, PREFS_NAME)
     }
 
     private val discAnimator by lazy {

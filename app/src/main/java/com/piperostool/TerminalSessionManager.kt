@@ -144,9 +144,9 @@ object TerminalSessionManager {
         }
         val linuxMode = mode == SessionMode.LINUX
         val home = if (linuxMode) {
-            runtime.homeDirectory
+            AccountDataScope.directory(context, "terminal/home")
         } else {
-            File(context.filesDir, "terminal/home")
+            AccountDataScope.directory(context, "android-shell/home")
         }
 
         return TerminalSession(

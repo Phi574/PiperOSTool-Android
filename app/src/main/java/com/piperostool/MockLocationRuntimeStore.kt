@@ -65,5 +65,11 @@ object MockLocationRuntimeStore {
     }
 
     private fun preferences(context: Context) =
-        context.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE)
+        AccountDataScope.preferences(context, PREFERENCES)
+
+    fun clearRawAccount(context: Context, previousAccount: String?) {
+        if (previousAccount == null) return
+        val name = "PiperAccount_${previousAccount}_$PREFERENCES"
+        context.getSharedPreferences(name, Context.MODE_PRIVATE).edit().clear().apply()
+    }
 }

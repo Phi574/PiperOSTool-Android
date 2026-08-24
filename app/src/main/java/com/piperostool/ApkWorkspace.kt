@@ -444,7 +444,7 @@ class ApkWorkspace private constructor(
             label: String,
             copySource: (File) -> Unit
         ): ApkWorkspace {
-            val base = File(context.getExternalFilesDir(null), "APKEditor")
+            val base = AccountDataScope.externalDirectory(context, "APKEditor")
             base.mkdirs()
             val safeLabel = label.replace(Regex("[^A-Za-z0-9._-]"), "_").take(48)
             val root = File(base, "${System.currentTimeMillis()}-$safeLabel").apply { mkdirs() }

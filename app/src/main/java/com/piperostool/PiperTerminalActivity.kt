@@ -770,7 +770,7 @@ class PiperTerminalActivity : AppCompatActivity(), TerminalSessionManager.Listen
     }
 
     private fun loadHistory() {
-        val encoded = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val encoded = AccountDataScope.preferences(this, PREFS_NAME)
             .getString(KEY_HISTORY, null) ?: return
         runCatching {
             val values = JSONArray(encoded)
@@ -784,7 +784,7 @@ class PiperTerminalActivity : AppCompatActivity(), TerminalSessionManager.Listen
     private fun saveHistory() {
         val values = JSONArray()
         commandHistory.forEach(values::put)
-        getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        AccountDataScope.preferences(this, PREFS_NAME)
             .edit()
             .putString(KEY_HISTORY, values.toString())
             .apply()

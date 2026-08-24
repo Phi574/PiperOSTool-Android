@@ -128,6 +128,7 @@ class LoginActivity : AppCompatActivity() {
         auth.signInWithEmailAndPassword(email, password)
             .addOnCompleteListener(this) { task ->
                 if (task.isSuccessful) {
+                    AccountSessionGuard.clearCachedDisabled(this)
                     val userId = auth.currentUser?.uid
                     if (userId != null) {
                         AccountSessionGuard.verify(this) { state ->

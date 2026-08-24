@@ -22,8 +22,8 @@ android {
         applicationId = "com.piper.os.tool"
         minSdk = 24
         targetSdk = 36
-        versionCode = 31
-        versionName = "3.1.5.beta"
+        versionCode = 34
+        versionName = "3.1.8.beta"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         ndk {
@@ -79,6 +79,7 @@ dependencies {
     implementation("androidx.biometric:biometric:1.1.0")
     implementation("androidx.webkit:webkit:1.14.0")
     implementation("com.google.firebase:firebase-database")
+    implementation("com.google.android.gms:play-services-location:21.4.0")
     implementation(libs.glide)
     implementation(libs.media3.exoplayer)
     implementation(libs.media3.ui)

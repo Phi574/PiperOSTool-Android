@@ -78,6 +78,13 @@
             android:text="@string/account_send_appeal" />
 
         <Button
+            android:id="@+id/btnRecheckAccount"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginTop="10dp"
+            android:text="@string/account_recheck" />
+
+        <Button
             android:id="@+id/btnDisabledSignOut"
             android:layout_width="match_parent"
             android:layout_height="56dp"

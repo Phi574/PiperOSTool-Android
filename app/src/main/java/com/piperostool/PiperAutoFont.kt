@@ -3,6 +3,7 @@ package com.piperostool
 import android.app.Activity
 import android.app.Application
 import android.content.Context
+import android.content.Intent
 import android.content.res.Configuration
 import android.graphics.Typeface
 import android.os.Bundle
@@ -18,6 +19,7 @@ import android.widget.TextView
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.widget.TextViewCompat
 import androidx.core.widget.doAfterTextChanged
+import com.google.firebase.auth.FirebaseAuth
 import java.util.ArrayDeque
 import java.lang.ref.WeakReference
 
@@ -203,11 +205,21 @@ object PiperAutoFont {
 class PiperOsApplication : Application(), Application.ActivityLifecycleCallbacks {
     private var resumedActivity = WeakReference<Activity>(null)
     private var lastNightMode = Configuration.UI_MODE_NIGHT_UNDEFINED
+    private var accountObservation: AccountSessionGuard.Observation? = null
+    private var observedAccountUid: String? = null
+    private var latestAccountState: AccountSessionState? = null
+    private var routingAccountState = false
+    private val accountScopeListener = FirebaseAuth.AuthStateListener { auth ->
+        AccountDataScope.activate(this, auth.currentUser?.uid)
+        syncAccountObservation()
+    }
 
     override fun onCreate() {
         super.onCreate()
         PiperUiPreferences.initialize(this)
         PiperAutoFont.initialize(this)
+        AccountDataScope.activate(this, FirebaseAuth.getInstance().currentUser?.uid)
+        FirebaseAuth.getInstance().addAuthStateListener(accountScopeListener)
         lastNightMode = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
         registerActivityLifecycleCallbacks(this)
     }
@@ -235,6 +247,13 @@ class PiperOsApplication : Application(), Application.ActivityLifecycleCallbacks
         resumedActivity = WeakReference(activity)
         PiperAutoFont.watch(activity.window.decorView)
         PiperModernUi.watch(activity)
+        routingAccountState = false
+        syncAccountObservation()
+        latestAccountState?.let { routeAccountState(activity, it) }
+        AccountSessionGuard.verify(activity) { state ->
+            latestAccountState = state
+            resumedActivity.get()?.let { routeAccountState(it, state) }
+        }
     }
 
     override fun onActivityStarted(activity: Activity) = Unit
@@ -244,4 +263,50 @@ class PiperOsApplication : Application(), Application.ActivityLifecycleCallbacks
     override fun onActivityStopped(activity: Activity) = Unit
     override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) = Unit
     override fun onActivityDestroyed(activity: Activity) = Unit
+
+    private fun syncAccountObservation() {
+        val currentUid = FirebaseAuth.getInstance().currentUser?.uid
+        AccountDataScope.activate(this, currentUid)
+        if (currentUid == observedAccountUid && accountObservation != null) return
+        accountObservation?.close()
+        accountObservation = null
+        latestAccountState = null
+        observedAccountUid = currentUid
+        if (currentUid == null) {
+            latestAccountState = AccountSessionGuard.cachedDisabled(this)
+            return
+        }
+        accountObservation = AccountSessionGuard.observe(this) { state ->
+            latestAccountState = state
+            resumedActivity.get()?.let { routeAccountState(it, state) }
+        }
+    }
+
+    private fun routeAccountState(activity: Activity, state: AccountSessionState) {
+        if (activity.isFinishing || activity.isDestroyed || routingAccountState) return
+        when (state) {
+            is AccountSessionState.Disabled -> {
+                if (activity is DisabledAccountActivity) return
+                routingAccountState = true
+                activity.startActivity(
+                    DisabledAccountActivity.createIntent(activity, state)
+                )
+            }
+            is AccountSessionState.Expired -> {
+                if (
+                    activity is LoginActivity ||
+                    activity is WelcomeActivity ||
+                    activity is SplashScreenActivity ||
+                    activity is DisabledAccountActivity
+                ) return
+                routingAccountState = true
+                FirebaseAuth.getInstance().signOut()
+                activity.startActivity(Intent(activity, LoginActivity::class.java).apply {
+                    putExtra(SplashScreenActivity.EXTRA_SESSION_EXPIRED, true)
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                })
+            }
+            AccountSessionState.Valid, AccountSessionState.Offline -> Unit
+        }
+    }
 }

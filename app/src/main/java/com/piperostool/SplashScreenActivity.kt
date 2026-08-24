@@ -59,7 +59,7 @@ class SplashScreenActivity : AppCompatActivity() {
     // HÀM ÁP DỤNG HÌNH NỀN TÙY CHỈNH
     // ==========================================================
     private fun applyCustomBackground() {
-        val prefs = getSharedPreferences("PiperPrefs", Context.MODE_PRIVATE)
+        val prefs = AccountDataScope.preferences(this, "PiperPrefs")
         val hasCustomBg = prefs.getBoolean("has_custom_bg", false)
 
         // Lấy trực tiếp lớp gốc ngoài cùng của màn hình
@@ -68,7 +68,7 @@ class SplashScreenActivity : AppCompatActivity() {
         if (hasCustomBg) {
             try {
                 // Đọc file ảnh custom_bg.jpg từ bộ nhớ kín của app
-                val file = java.io.File(filesDir, "custom_bg.jpg")
+                val file = AccountDataScope.file(this, "appearance", "custom_bg.jpg")
                 if (file.exists()) {
                     val drawable = android.graphics.drawable.Drawable.createFromPath(file.absolutePath)
                     bgView.background = drawable
@@ -134,14 +134,11 @@ class SplashScreenActivity : AppCompatActivity() {
     private fun continueSecurityNavigation(userId: String) {
 
         // 2. Đã đăng nhập -> Kiểm tra các lớp bảo mật
-        val prefs = getSharedPreferences("PiperPrefs", Context.MODE_PRIVATE)
+        val prefs = AccountDataScope.preferences(this, "PiperPrefs")
         val isFingerprintEnabled = prefs.getBoolean("fingerprint_enabled", false)
 
         if (!NetworkAccess.isOnline(this)) {
-            val lockPrefs = getSharedPreferences(
-                LockScreenActivity.PREFS_NAME,
-                Context.MODE_PRIVATE
-            )
+            val lockPrefs = AccountDataScope.preferences(this, LockScreenActivity.PREFS_NAME)
             when {
                 lockPrefs.getString(LockScreenActivity.KEY_CACHED_PASS, null) != null -> {
                     val intent = Intent(this, LockScreenActivity::class.java)

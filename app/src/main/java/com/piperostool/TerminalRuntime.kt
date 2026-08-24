@@ -46,11 +46,7 @@ object TerminalRuntime {
 
         return Status(
             prefixDirectory = prefix,
-            homeDirectory = if (shell != null) {
-                File(context.filesDir, "home")
-            } else {
-                File(context.filesDir, "terminal/home")
-            },
+            homeDirectory = AccountDataScope.directory(context, "terminal/home"),
             shellExecutable = shell,
             installedVersion = runCatching {
                 File(prefix, VERSION_FILE_NAME)

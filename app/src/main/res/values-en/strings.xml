@@ -512,6 +512,8 @@
     <string name="account_appeal_required">Please enter your appeal reason</string>
     <string name="account_appeal_no_email_app">No email app was found. Please send the appeal manually to %1$s.</string>
     <string name="account_send_appeal">Send appeal</string>
+    <string name="account_recheck">Check account again</string>
+    <string name="account_checking_status">Checking…</string>
     <string name="account_sign_out">Sign out</string>
     <string name="account_session_expired">Your session expired or the password changed. Please sign in again.</string>
     <string name="account_appeal_subject">PiperOS account appeal: %1$s</string>

@@ -50,5 +50,5 @@ object MockRouteStore {
     }
 
     private fun preferences(context: Context) =
-        context.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE)
+        AccountDataScope.preferences(context, PREFERENCES)
 }

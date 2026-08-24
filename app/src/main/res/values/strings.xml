@@ -514,6 +514,8 @@
     <string name="account_appeal_required">Vui lòng nhập lý do kháng nghị</string>
     <string name="account_appeal_no_email_app">Không tìm thấy ứng dụng email. Hãy gửi kháng nghị thủ công tới %1$s.</string>
     <string name="account_send_appeal">Gửi kháng nghị</string>
+    <string name="account_recheck">Kiểm tra lại tài khoản</string>
+    <string name="account_checking_status">Đang kiểm tra…</string>
     <string name="account_sign_out">Đăng xuất</string>
     <string name="account_session_expired">Phiên đăng nhập đã hết hạn hoặc mật khẩu đã thay đổi. Vui lòng đăng nhập lại.</string>
     <string name="account_appeal_subject">Kháng nghị tài khoản PiperOS: %1$s</string>

@@ -43,7 +43,7 @@ data class BrowserSearchEngine(
 
 class BrowserSessionStore(context: Context) {
     private val preferences =
-        context.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE)
+        AccountDataScope.preferences(context, PREFERENCES_NAME)
 
     fun saveTabs(tabs: List<BrowserSavedTab>, activeTabId: Long) {
         val json = JSONArray()

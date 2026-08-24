@@ -20,11 +20,15 @@
 
 ## Bản hiện tại
 
-`3.1.5.beta` sử dụng `minSdk 24`, `targetSdk 36`, Kotlin `2.4.10` và tập trung vào:
+`3.1.8.beta` sử dụng `minSdk 24`, `targetSdk 36`, Kotlin `2.4.10` và tập trung vào:
 
 - Browser theme sáng/tối/theo hệ thống, nhiều công cụ tìm kiếm và quản lý Cookie/Token theo website.
 - APK Editor giảm tải bộ nhớ khi giải nén, tách luồng chỉnh tài nguyên và smali, đồng thời báo tiến trình trung thực.
 - Kiểm tra phiên Firebase liên tục và màn hình kháng nghị cho tài khoản bị vô hiệu hóa.
+- Fake Map GPS phát đồng thời qua Android GPS/Network và Google Fused Location, kèm tốc độ, hướng và timestamp ổn định cho ứng dụng giao thông.
+- Theo dõi trạng thái tài khoản Firebase thời gian thực và tự khôi phục màn hình chính ngay khi tài khoản được kích hoạt lại.
+- Tách phiên, cài đặt, lịch sử, terminal, media, mock GPS và workspace APK theo Firebase UID; dữ liệu cục bộ nhạy cảm được mã hóa AES-256-GCM bằng khóa Android Keystore riêng cho từng tài khoản.
+- PiperOS Browser dùng WebView profile riêng theo UID để cookie, token, WebStorage và phiên đăng nhập của tài khoản A không xuất hiện trong tài khoản B.
 
 Trạng thái quản trị tài khoản được đặt tại `users/{uid}/accountStatus` trong Realtime Database,
 với các trường `enabled`, `status`, `disabledAt` và `reason`. Client chỉ có quyền đọc trạng thái

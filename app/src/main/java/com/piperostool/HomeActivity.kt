@@ -38,6 +38,9 @@ class HomeActivity : AppCompatActivity() {
     private lateinit var backToast: Toast
     private val sessionHandler = Handler(Looper.getMainLooper())
     private var checkingSession = false
+    private var sessionChecksActive = false
+    private var sessionCheckGeneration = 0
+    private var leavingForAccountState = false
     private val sessionCheck = object : Runnable {
         override fun run() {
             verifyAccountSession()
@@ -68,39 +71,55 @@ class HomeActivity : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
+        sessionChecksActive = true
+        sessionCheckGeneration++
+        leavingForAccountState = false
         sessionHandler.removeCallbacks(sessionCheck)
         sessionHandler.post(sessionCheck)
     }
 
     override fun onStop() {
+        sessionChecksActive = false
+        sessionCheckGeneration++
         sessionHandler.removeCallbacks(sessionCheck)
         super.onStop()
     }
 
     private fun verifyAccountSession() {
-        if (checkingSession) return
+        if (checkingSession || !sessionChecksActive) return
+        val generation = sessionCheckGeneration
         checkingSession = true
         AccountSessionGuard.verify(this) { state ->
             checkingSession = false
-            when (state) {
-                AccountSessionState.Valid, AccountSessionState.Offline -> Unit
-                is AccountSessionState.Disabled -> {
-                    sessionHandler.removeCallbacks(sessionCheck)
-                    startActivity(DisabledAccountActivity.createIntent(this, state))
-                }
-                is AccountSessionState.Expired -> {
-                    FirebaseAuth.getInstance().signOut()
-                    startActivity(Intent(this, LoginActivity::class.java).apply {
-                        putExtra(SplashScreenActivity.EXTRA_SESSION_EXPIRED, true)
-                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                    })
-                }
+            if (!sessionChecksActive || generation != sessionCheckGeneration) {
+                return@verify
+            }
+            handleAccountState(state)
+        }
+    }
+
+    private fun handleAccountState(state: AccountSessionState) {
+        if (leavingForAccountState) return
+        when (state) {
+            AccountSessionState.Valid, AccountSessionState.Offline -> Unit
+            is AccountSessionState.Disabled -> {
+                leavingForAccountState = true
+                sessionHandler.removeCallbacks(sessionCheck)
+                startActivity(DisabledAccountActivity.createIntent(this, state))
+            }
+            is AccountSessionState.Expired -> {
+                leavingForAccountState = true
+                FirebaseAuth.getInstance().signOut()
+                startActivity(Intent(this, LoginActivity::class.java).apply {
+                    putExtra(SplashScreenActivity.EXTRA_SESSION_EXPIRED, true)
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                })
             }
         }
     }
 
     private fun applyCustomBackground() {
-        val prefs = getSharedPreferences("PiperPrefs", Context.MODE_PRIVATE)
+        val prefs = AccountDataScope.preferences(this, "PiperPrefs")
         val hasCustomBg = prefs.getBoolean("has_custom_bg", false)
         val bgView = findViewById<ImageView>(R.id.homeBackground)
 
@@ -113,7 +132,7 @@ class HomeActivity : AppCompatActivity() {
 
         if (hasCustomBg) {
             try {
-                val file = java.io.File(filesDir, "custom_bg.jpg")
+                val file = AccountDataScope.file(this, "appearance", "custom_bg.jpg")
                 if (file.exists()) {
                     val drawable = android.graphics.drawable.Drawable.createFromPath(file.absolutePath)
                     bgView.setImageDrawable(drawable)
@@ -247,7 +266,7 @@ class HomeActivity : AppCompatActivity() {
     }
 
     private fun updateTabUI(selectedIndex: Int) {
-        val prefs = getSharedPreferences("PiperPrefs", Context.MODE_PRIVATE)
+        val prefs = AccountDataScope.preferences(this, "PiperPrefs")
         val theme = prefs.getString("app_theme", "system")
 
         val activeColorCode = if (PiperUiPreferences.isModern(this)) {
@@ -314,6 +333,6 @@ class HomeActivity : AppCompatActivity() {
     }
 
     companion object {
-        private const val SESSION_CHECK_INTERVAL_MS = 45_000L
+        private const val SESSION_CHECK_INTERVAL_MS = 10_000L
     }
 }

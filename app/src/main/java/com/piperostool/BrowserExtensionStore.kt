@@ -19,7 +19,7 @@ data class BrowserExtension(
 
 class BrowserExtensionStore(private val context: Context) {
     private val preferences =
-        context.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE)
+        AccountDataScope.preferences(context, PREFERENCES_NAME)
 
     fun load(): List<BrowserExtension> {
         val source = preferences.getString(KEY_EXTENSIONS, null) ?: return emptyList()

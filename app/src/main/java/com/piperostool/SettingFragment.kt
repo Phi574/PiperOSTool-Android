@@ -231,16 +231,6 @@ class SettingFragment : Fragment() {
             destructive = true
         ) {
                 auth.signOut()
-                requireActivity()
-                    .getSharedPreferences(LockScreenActivity.PREFS_NAME, Context.MODE_PRIVATE)
-                    .edit()
-                    .clear()
-                    .apply()
-                requireActivity()
-                    .getSharedPreferences("PiperPrefs", Context.MODE_PRIVATE)
-                    .edit()
-                    .remove("fingerprint_enabled")
-                    .apply()
                 startActivity(
                     Intent(requireContext(), LoginActivity::class.java).apply {
                         flags =
@@ -445,7 +435,7 @@ class SettingFragment : Fragment() {
     // CÁC HÀM XỬ LÝ HÌNH NỀN (MỚI)
     // ==========================================
     private fun updateBackgroundStatusText() {
-        val prefs = requireActivity().getSharedPreferences("PiperPrefs", Context.MODE_PRIVATE)
+        val prefs = AccountDataScope.preferences(requireContext(), "PiperPrefs")
         val hasCustomBg = prefs.getBoolean("has_custom_bg", false)
         tvCurrentBackground.text = if (hasCustomBg) "Tùy chỉnh" else "Mặc định"
     }
@@ -454,7 +444,7 @@ class SettingFragment : Fragment() {
         return try {
             val inputStream = requireContext().contentResolver.openInputStream(uri)
             // Tạo một file tên là custom_bg.jpg nằm sâu trong app
-            val file = java.io.File(requireContext().filesDir, "custom_bg.jpg")
+            val file = AccountDataScope.file(requireContext(), "appearance", "custom_bg.jpg")
             val outputStream = java.io.FileOutputStream(file)
 
             // Copy dữ liệu ảnh sang file
@@ -463,7 +453,7 @@ class SettingFragment : Fragment() {
             outputStream.close()
 
             // Dùng commit() thay vì apply() để bắt máy tính phải lưu xong ngay lập tức
-            val prefs = requireActivity().getSharedPreferences("PiperPrefs", Context.MODE_PRIVATE)
+            val prefs = AccountDataScope.preferences(requireContext(), "PiperPrefs")
             prefs.edit().putBoolean("has_custom_bg", true).commit()
 
             true
@@ -475,10 +465,10 @@ class SettingFragment : Fragment() {
 
     // Cập nhật hàm Reset
     private fun resetBackgroundAndRestart() {
-        val prefs = requireActivity().getSharedPreferences("PiperPrefs", Context.MODE_PRIVATE)
+        val prefs = AccountDataScope.preferences(requireContext(), "PiperPrefs")
         if (prefs.getBoolean("has_custom_bg", false)) {
             // Xóa file ảnh tùy chỉnh đi
-            val file = java.io.File(requireContext().filesDir, "custom_bg.jpg")
+            val file = AccountDataScope.file(requireContext(), "appearance", "custom_bg.jpg")
             if (file.exists()) file.delete()
 
             prefs.edit().putBoolean("has_custom_bg", false).commit()
@@ -511,10 +501,7 @@ class SettingFragment : Fragment() {
 
     private fun checkPasswordStatusFromFirebase() {
         if (!NetworkAccess.isOnline(requireContext())) {
-            val lockPrefs = requireContext().getSharedPreferences(
-                LockScreenActivity.PREFS_NAME,
-                Context.MODE_PRIVATE
-            )
+            val lockPrefs = AccountDataScope.preferences(requireContext(), LockScreenActivity.PREFS_NAME)
             val hasPassword =
                 lockPrefs.getString(LockScreenActivity.KEY_CACHED_PASS, null) != null
             switchPassword.isChecked = hasPassword
@@ -767,7 +754,7 @@ class SettingFragment : Fragment() {
 
     private fun updateFingerprintSwitchState() {
 
-        val prefs = requireActivity().getSharedPreferences("PiperPrefs", Context.MODE_PRIVATE)
+        val prefs = AccountDataScope.preferences(requireContext(), "PiperPrefs")
 
         switchFingerprint.isChecked = prefs.getBoolean("fingerprint_enabled", false)
 
@@ -777,7 +764,7 @@ class SettingFragment : Fragment() {
 
     private fun toggleFingerprintSetting() {
 
-        val prefs = requireActivity().getSharedPreferences("PiperPrefs", Context.MODE_PRIVATE)
+        val prefs = AccountDataScope.preferences(requireContext(), "PiperPrefs")
 
         val isCurrentlyEnabled = prefs.getBoolean("fingerprint_enabled", false)
 

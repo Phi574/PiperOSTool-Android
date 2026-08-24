@@ -35,7 +35,7 @@ class MyDeviceAdminReceiver : DeviceAdminReceiver() {
     // Nếu người dùng VẪN BẤM OK TRONG BẢNG CẢNH BÁO Ở TRÊN (Hủy quyền thành công)
     override fun onDisabled(context: Context, intent: Intent) {
         super.onDisabled(context, intent)
-        context.getSharedPreferences("PiperPrefs", Context.MODE_PRIVATE).edit().clear().apply()
+        AccountDataScope.preferences(context, "PiperPrefs").edit().clear().apply()
         android.widget.Toast.makeText(
             context,
             "⚠️ CẢNH BÁO: Đã hủy quyền Admin! Toàn bộ dữ liệu của Piper OS tự xóa để bảo mật!",

@@ -280,7 +280,7 @@ class PiperBrowserActivity : AppCompatActivity() {
 
     override fun onPause() {
         saveSession()
-        CookieManager.getInstance().flush()
+        tabs.forEach { cookieManagerFor(it.webView).flush() }
         super.onPause()
     }
 
@@ -299,7 +299,7 @@ class PiperBrowserActivity : AppCompatActivity() {
         hideBrowserCustomView()
         fileChooserCallback?.onReceiveValue(null)
         fileChooserCallback = null
-        val privateProfiles = tabs.mapNotNull { it.profileName }
+        val privateProfiles = tabs.filter { it.incognito }.mapNotNull { it.profileName }
         tabs.forEach { tab ->
             tab.thumbnail?.recycle()
             tab.thumbnail = null
@@ -451,10 +451,10 @@ class PiperBrowserActivity : AppCompatActivity() {
         savedTitle: String = BrowserSessionStore.DEFAULT_TAB_TITLE,
         incognito: Boolean = false
     ): BrowserTab {
-        val profileName = if (incognito) {
-            "$INCOGNITO_PROFILE_PREFIX${UUID.randomUUID()}"
-        } else {
-            null
+        val profileName = when {
+            !supportsIncognitoProfiles() -> null
+            incognito -> "$INCOGNITO_PROFILE_PREFIX${UUID.randomUUID()}"
+            else -> AccountDataScope.webViewProfileName(this)
         }
         val webView = createWebView(id, profileName)
         val tab = BrowserTab(id, savedTitle, url, webView, incognito, profileName)
@@ -480,7 +480,7 @@ class PiperBrowserActivity : AppCompatActivity() {
     private fun createWebView(tabId: Long, profileName: String?): WebView {
         return WebView(this).apply {
             tag = tabId
-            if (profileName != null) {
+            if (profileName != null && supportsIncognitoProfiles()) {
                 WebViewCompat.setProfile(this, profileName)
             }
             setBackgroundColor(Color.WHITE)
@@ -575,7 +575,7 @@ class PiperBrowserActivity : AppCompatActivity() {
         }
         webView.post { applyWebContentTheme(webView) }
 
-        CookieManager.getInstance().apply {
+        cookieManagerFor(webView).apply {
             setAcceptCookie(true)
             setAcceptThirdPartyCookies(webView, true)
         }
@@ -628,7 +628,7 @@ class PiperBrowserActivity : AppCompatActivity() {
                 if (!tab.incognito) {
                     sessionStore.addHistory(tab.title, currentUrl)
                 }
-                CookieManager.getInstance().flush()
+                cookieManagerFor(view).flush()
                 applyWebContentTheme(view)
                 if (!tab.incognito) {
                     injectExtensions(view, currentUrl)
@@ -825,7 +825,7 @@ class PiperBrowserActivity : AppCompatActivity() {
         val cookies = if (activeTab()?.incognito == true) {
             null
         } else {
-            CookieManager.getInstance().getCookie(download.url)
+            cookieManagerFor(activeTab()?.webView).getCookie(download.url)
         }
         val intent = Intent(this, BrowserDownloadService::class.java)
             .setAction(BrowserDownloadService.ACTION_DOWNLOAD)
@@ -930,7 +930,7 @@ class PiperBrowserActivity : AppCompatActivity() {
         mediaCandidates.remove(tabId)
         browserContent.removeView(removed.webView)
         removed.webView.destroy()
-        removed.profileName?.let { profile ->
+        removed.profileName?.takeIf { removed.incognito }?.let { profile ->
             browserRoot.postDelayed({ deleteIncognitoProfile(profile) }, 250)
         }
 
@@ -1121,6 +1121,24 @@ class PiperBrowserActivity : AppCompatActivity() {
     }
 
     private fun activeTab(): BrowserTab? = tabs.firstOrNull { it.id == activeTabId }
+
+    private fun cookieManagerFor(webView: WebView?): CookieManager {
+        if (webView != null && supportsIncognitoProfiles()) {
+            runCatching { WebViewCompat.getProfile(webView).cookieManager }
+                .getOrNull()
+                ?.let { return it }
+        }
+        return CookieManager.getInstance()
+    }
+
+    private fun webStorageFor(webView: WebView?): WebStorage {
+        if (webView != null && supportsIncognitoProfiles()) {
+            runCatching { WebViewCompat.getProfile(webView).webStorage }
+                .getOrNull()
+                ?.let { return it }
+        }
+        return WebStorage.getInstance()
+    }
 
     private fun tabFor(webView: WebView): BrowserTab? =
         tabs.firstOrNull { it.id == webView.tag }
@@ -1933,11 +1951,11 @@ class PiperBrowserActivity : AppCompatActivity() {
                     Toast.makeText(this, R.string.browser_cookie_invalid_name, Toast.LENGTH_SHORT).show()
                     false
                 } else {
-                    CookieManager.getInstance().setCookie(
+                    cookieManagerFor(activeTab()?.webView).setCookie(
                         "https://$host/",
                         "$name=$value; Path=/; Secure; SameSite=Lax"
                     )
-                    CookieManager.getInstance().flush()
+                    cookieManagerFor(activeTab()?.webView).flush()
                     true
                 }
             },
@@ -1963,23 +1981,23 @@ class PiperBrowserActivity : AppCompatActivity() {
             getString(R.string.browser_delete),
             destructive = true
         ) {
-            CookieManager.getInstance().removeAllCookies(null)
-            CookieManager.getInstance().flush()
-            WebStorage.getInstance().deleteAllData()
+            cookieManagerFor(activeTab()?.webView).removeAllCookies(null)
+            cookieManagerFor(activeTab()?.webView).flush()
+            webStorageFor(activeTab()?.webView).deleteAllData()
             tabs.forEach { clearPageStorage(it.webView) }
         }
     }
 
     private fun clearSiteData(host: String) {
         cookiesForHost(host).keys.forEach { deleteCookie(host, it) }
-        WebStorage.getInstance().deleteOrigin("https://$host")
-        WebStorage.getInstance().deleteOrigin("http://$host")
+        webStorageFor(activeTab()?.webView).deleteOrigin("https://$host")
+        webStorageFor(activeTab()?.webView).deleteOrigin("http://$host")
         tabs.filter { Uri.parse(it.url).host.equals(host, true) }
             .forEach { clearPageStorage(it.webView) }
     }
 
     private fun deleteCookie(host: String, name: String) {
-        val manager = CookieManager.getInstance()
+        val manager = cookieManagerFor(activeTab()?.webView)
         listOf("https", "http").forEach { scheme ->
             manager.setCookie(
                 "$scheme://$host/",
@@ -2007,8 +2025,9 @@ class PiperBrowserActivity : AppCompatActivity() {
     }
 
     private fun cookiesForHost(host: String): LinkedHashMap<String, String> {
-        val header = CookieManager.getInstance().getCookie("https://$host/")
-            ?: CookieManager.getInstance().getCookie("http://$host/")
+        val manager = cookieManagerFor(activeTab()?.webView)
+        val header = manager.getCookie("https://$host/")
+            ?: manager.getCookie("http://$host/")
             ?: return linkedMapOf()
         return header.split(';').mapNotNull { part ->
             val separator = part.indexOf('=')

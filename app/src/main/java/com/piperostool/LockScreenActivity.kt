@@ -168,7 +168,7 @@ class LockScreenActivity : AppCompatActivity() {
     // HÀM ÁP DỤNG HÌNH NỀN TÙY CHỈNH
     // ==========================================================
     private fun applyCustomBackground() {
-        val prefs = getSharedPreferences("PiperPrefs", Context.MODE_PRIVATE)
+        val prefs = AccountDataScope.preferences(this, "PiperPrefs")
         val hasCustomBg = prefs.getBoolean("has_custom_bg", false)
 
         // Lấy trực tiếp lớp gốc ngoài cùng của màn hình (chính là thẻ ConstraintLayout)
@@ -177,7 +177,7 @@ class LockScreenActivity : AppCompatActivity() {
         if (hasCustomBg) {
             try {
                 // Đọc file ảnh custom_bg.jpg từ bộ nhớ kín của app
-                val file = java.io.File(filesDir, "custom_bg.jpg")
+                val file = AccountDataScope.file(this, "appearance", "custom_bg.jpg")
                 if (file.exists()) {
                     val drawable = android.graphics.drawable.Drawable.createFromPath(file.absolutePath)
                     bgView.background = drawable
@@ -227,7 +227,7 @@ class LockScreenActivity : AppCompatActivity() {
 
     // --- LOGIC CẤM NHẬP (BAN) ---
     private fun checkBanStatus(): Boolean {
-        val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val prefs = AccountDataScope.preferences(this, PREFS_NAME)
         banEndTime = prefs.getLong(KEY_BAN_TIME, 0)
         failedAttempts = prefs.getInt(KEY_FAILED_COUNT, 0)
 
@@ -261,7 +261,7 @@ class LockScreenActivity : AppCompatActivity() {
                 tvSubTitle.setTextColor(ContextCompat.getColor(this@LockScreenActivity, R.color.white))
                 setInputsEnabled(true)
 
-                val prefsApp = getSharedPreferences("PiperPrefs", Context.MODE_PRIVATE)
+                val prefsApp = AccountDataScope.preferences(this@LockScreenActivity, "PiperPrefs")
                 if (prefsApp.getBoolean("fingerprint_enabled", false)) {
                     layoutFingerprint.visibility = View.VISIBLE
                     biometricPrompt.authenticate(promptInfo)
@@ -278,7 +278,7 @@ class LockScreenActivity : AppCompatActivity() {
 
     private fun registerFailedAttempt() {
         failedAttempts++
-        val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val prefs = AccountDataScope.preferences(this, PREFS_NAME)
         prefs.edit().putInt(KEY_FAILED_COUNT, failedAttempts).apply()
 
         if (failedAttempts >= 5) {
@@ -294,7 +294,7 @@ class LockScreenActivity : AppCompatActivity() {
     private fun resetFailedAttempts() {
         failedAttempts = 0
         banEndTime = 0
-        val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val prefs = AccountDataScope.preferences(this, PREFS_NAME)
         prefs.edit().remove(KEY_FAILED_COUNT).remove(KEY_BAN_TIME).apply()
     }
 
@@ -329,7 +329,7 @@ class LockScreenActivity : AppCompatActivity() {
     }
 
     private fun cacheSecurity(password: String?, type: String?) {
-        getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        AccountDataScope.preferences(this, PREFS_NAME)
             .edit()
             .putBoolean(KEY_CACHE_READY, true)
             .apply {
@@ -345,7 +345,7 @@ class LockScreenActivity : AppCompatActivity() {
     }
 
     private fun loadCachedSecurity() {
-        val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val prefs = AccountDataScope.preferences(this, PREFS_NAME)
         if (!prefs.getBoolean(KEY_CACHE_READY, false)) {
             tvTitle.text = getString(R.string.lock_connection_required)
             tvSubTitle.text = getString(R.string.lock_no_offline_data)
@@ -455,7 +455,7 @@ class LockScreenActivity : AppCompatActivity() {
         updateUiForType(currentSavedType ?: "custom")
 
         if (!checkBanStatus()) {
-            val prefs = getSharedPreferences("PiperPrefs", Context.MODE_PRIVATE)
+            val prefs = AccountDataScope.preferences(this, "PiperPrefs")
             if (prefs.getBoolean("fingerprint_enabled", false)) {
                 layoutFingerprint.visibility = View.VISIBLE
                 biometricPrompt.authenticate(promptInfo)
@@ -572,7 +572,7 @@ class LockScreenActivity : AppCompatActivity() {
             NetworkAccess.showOffline(root)
             return
         }
-        val prefs = getSharedPreferences("PiperPrefs", Context.MODE_PRIVATE)
+        val prefs = AccountDataScope.preferences(this, "PiperPrefs")
         val isFingerprintEnabled = prefs.getBoolean("fingerprint_enabled", false)
 
         if (!isFingerprintEnabled) {

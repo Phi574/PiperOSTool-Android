@@ -5,7 +5,10 @@ import com.google.firebase.FirebaseNetworkException
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthException
 import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
 
 sealed interface AccountSessionState {
     data object Valid : AccountSessionState
@@ -20,15 +23,11 @@ sealed interface AccountSessionState {
 
 object AccountSessionGuard {
     fun verify(context: Context, callback: (AccountSessionState) -> Unit) {
-        cachedDisabled(context)?.let {
-            callback(it)
-            return
-        }
         val auth = FirebaseAuth.getInstance()
         val user = auth.currentUser
-            ?: return callback(AccountSessionState.Expired())
+            ?: return callback(cachedDisabled(context) ?: AccountSessionState.Expired())
         if (!NetworkAccess.isOnline(context)) {
-            return callback(AccountSessionState.Offline)
+            return callback(cachedDisabled(context) ?: AccountSessionState.Offline)
         }
 
         FirebaseDatabase.getInstance()
@@ -49,19 +48,54 @@ object AccountSessionGuard {
             }
     }
 
+    fun observe(context: Context, callback: (AccountSessionState) -> Unit): Observation? {
+        val user = FirebaseAuth.getInstance().currentUser
+            ?: run {
+                callback(cachedDisabled(context) ?: AccountSessionState.Expired())
+                return null
+            }
+        val reference = FirebaseDatabase.getInstance().getReference("users/${user.uid}")
+        val listener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val disabled = disabledState(snapshot, user.email)
+                if (disabled != null) {
+                    rememberDisabled(context, disabled)
+                    callback(disabled)
+                } else {
+                    verifyAuthToken(context, user.email, callback)
+                }
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                verifyAuthToken(context, user.email, callback)
+            }
+        }
+        reference.addValueEventListener(listener)
+        return Observation(reference, listener)
+    }
+
+    class Observation internal constructor(
+        private val reference: DatabaseReference,
+        private val listener: ValueEventListener
+    ) {
+        fun close() {
+            reference.removeEventListener(listener)
+        }
+    }
+
     private fun verifyAuthToken(
         context: Context,
         email: String?,
         callback: (AccountSessionState) -> Unit
     ) {
         val user = FirebaseAuth.getInstance().currentUser
-            ?: return callback(AccountSessionState.Expired())
+            ?: return callback(cachedDisabled(context) ?: AccountSessionState.Expired())
         user.reload().addOnCompleteListener { reload ->
             if (!reload.isSuccessful) {
                 callback(classifyFailure(context, reload.exception, email))
                 return@addOnCompleteListener
             }
-            user.getIdToken(true).addOnCompleteListener { token ->
+            user.getIdToken(false).addOnCompleteListener { token ->
                 if (token.isSuccessful) {
                     clearCachedDisabled(context)
                     callback(AccountSessionState.Valid)

@@ -161,7 +161,7 @@ object EditorHistoryStore {
         val digest = MessageDigest.getInstance("SHA-256")
             .digest(file.absolutePath.toByteArray())
             .joinToString("") { "%02x".format(it) }
-        return File(context.filesDir, "editor_history/$digest.bin")
+        return File(AccountDataScope.directory(context, "editor_history"), "$digest.bin")
     }
 
     private fun markApkChange(file: File) {

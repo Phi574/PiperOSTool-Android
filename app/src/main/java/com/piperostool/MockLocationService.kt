@@ -24,6 +24,8 @@ import android.os.SystemClock
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.IconCompat
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationServices
 import kotlin.math.roundToInt
 import kotlin.random.Random
 
@@ -38,6 +40,7 @@ class MockLocationService : Service() {
     )
 
     private lateinit var locationManager: LocationManager
+    private lateinit var fusedLocationClient: FusedLocationProviderClient
     private lateinit var workerThread: HandlerThread
     private lateinit var worker: Handler
     private var scenario: MockScenario? = null
@@ -55,6 +58,9 @@ class MockLocationService : Service() {
     private var nextNaturalStopElapsed = Long.MAX_VALUE
     private var dwellUntilElapsed = 0L
     private var lastPoint: RoutePoint? = null
+    private var lastBearing = 0f
+    private var fusedMockReady = false
+    private var lastLocationElapsedNanos = 0L
 
     private val ticker = object : Runnable {
         override fun run() {
@@ -66,6 +72,7 @@ class MockLocationService : Service() {
     override fun onCreate() {
         super.onCreate()
         locationManager = getSystemService(LocationManager::class.java)
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
         workerThread = HandlerThread("PiperMockLocation", Process.THREAD_PRIORITY_BACKGROUND)
         workerThread.start()
         worker = Handler(workerThread.looper)
@@ -110,6 +117,7 @@ class MockLocationService : Service() {
 
     override fun onDestroy() {
         worker.removeCallbacksAndMessages(null)
+        disableFusedMockMode()
         if (providersReady) removeMockProviders()
         releaseWakeLock()
         workerThread.quitSafely()
@@ -156,6 +164,7 @@ class MockLocationService : Service() {
                 fail(getString(R.string.fake_map_provider_error))
                 return
             }
+        enableFusedMockMode()
 
         scenario = loaded
         progressor = RouteProgressor(loaded.points)
@@ -241,10 +250,11 @@ class MockLocationService : Service() {
         }
 
         lastPoint = position.point
+        lastBearing = position.bearing
         val speed = if (arrived || active.mode == MockScenarioMode.FIXED) {
             0f
         } else {
-            (active.speedKmh / 3.6).toFloat()
+            ((active.speedKmh / 3.6) * naturalSpeedVariance()).toFloat()
         }
         publishMockLocation(position.point, speed, position.bearing)
         val progress = if (route.totalDistanceMeters > 0.0) {
@@ -269,7 +279,7 @@ class MockLocationService : Service() {
 
     private fun publishLastPoint(speedMetersPerSecond: Float) {
         val point = lastPoint ?: scenario?.points?.firstOrNull() ?: return
-        publishMockLocation(point, speedMetersPerSecond, 0f)
+        publishMockLocation(point, speedMetersPerSecond, lastBearing)
         publishState()
     }
 
@@ -319,28 +329,86 @@ class MockLocationService : Service() {
         speedMetersPerSecond: Float,
         bearing: Float
     ) {
+        val wallClockMillis = System.currentTimeMillis()
+        val elapsedNanos = nextElapsedRealtimeNanos()
         activeMockProviders.toList().forEach { provider ->
-            val location = Location(provider).apply {
-                latitude = point.latitude
-                longitude = point.longitude
-                altitude = 0.0
-                accuracy = Random.nextDouble(3.0, 7.0).toFloat()
-                speed = speedMetersPerSecond
-                this.bearing = bearing
-                time = System.currentTimeMillis()
-                elapsedRealtimeNanos = SystemClock.elapsedRealtimeNanos()
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    verticalAccuracyMeters = 4f
-                    speedAccuracyMetersPerSecond = 0.5f
-                    bearingAccuracyDegrees = 3f
-                }
-            }
+            val location = createMockLocation(
+                provider = provider,
+                point = point,
+                speedMetersPerSecond = speedMetersPerSecond,
+                bearing = bearing,
+                wallClockMillis = wallClockMillis,
+                elapsedNanos = elapsedNanos
+            )
             runCatching { locationManager.setTestProviderLocation(provider, location) }
                 .onFailure {
                     runCatching { restoreProvider(provider) }
                     runCatching { locationManager.setTestProviderLocation(provider, location) }
                 }
         }
+        if (fusedMockReady) {
+            val fusedLocation = createMockLocation(
+                provider = LocationManager.FUSED_PROVIDER,
+                point = point,
+                speedMetersPerSecond = speedMetersPerSecond,
+                bearing = bearing,
+                wallClockMillis = wallClockMillis,
+                elapsedNanos = elapsedNanos
+            )
+            fusedLocationClient.setMockLocation(fusedLocation)
+                .addOnFailureListener { fusedMockReady = false }
+        }
+    }
+
+    private fun createMockLocation(
+        provider: String,
+        point: RoutePoint,
+        speedMetersPerSecond: Float,
+        bearing: Float,
+        wallClockMillis: Long,
+        elapsedNanos: Long
+    ): Location = Location(provider).apply {
+        latitude = point.latitude
+        longitude = point.longitude
+        altitude = 8.0
+        accuracy = if (provider == LocationManager.NETWORK_PROVIDER) 12f else 3.5f
+        speed = speedMetersPerSecond.coerceAtLeast(0f)
+        this.bearing = ((bearing % 360f) + 360f) % 360f
+        time = wallClockMillis
+        elapsedRealtimeNanos = elapsedNanos
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            verticalAccuracyMeters = 4f
+            speedAccuracyMetersPerSecond = 0.25f
+            bearingAccuracyDegrees = 2f
+        }
+    }
+
+    private fun nextElapsedRealtimeNanos(): Long {
+        val current = SystemClock.elapsedRealtimeNanos()
+        val monotonic = maxOf(current, lastLocationElapsedNanos + 1L)
+        lastLocationElapsedNanos = monotonic
+        return monotonic
+    }
+
+    private fun naturalSpeedVariance(): Double = Random.nextDouble(0.985, 1.016)
+
+    private fun enableFusedMockMode() {
+        fusedMockReady = false
+        fusedLocationClient.setMockMode(true)
+            .addOnSuccessListener {
+                fusedMockReady = true
+                val current = lastPoint ?: scenario?.points?.firstOrNull()
+                if (current != null) {
+                    worker.post { publishMockLocation(current, 0f, lastBearing) }
+                }
+            }
+            .addOnFailureListener { fusedMockReady = false }
+    }
+
+    private fun disableFusedMockMode() {
+        if (!::fusedLocationClient.isInitialized) return
+        fusedMockReady = false
+        runCatching { fusedLocationClient.setMockMode(false) }
     }
 
     private fun removeMockProviders() {
@@ -353,6 +421,7 @@ class MockLocationService : Service() {
 
     private fun stopMocking() {
         MockLocationRuntimeStore.clear(this)
+        disableFusedMockMode()
         releaseWakeLock()
         snapshot = State()
         sendStateBroadcast()
@@ -362,6 +431,7 @@ class MockLocationService : Service() {
 
     private fun fail(message: String) {
         MockLocationRuntimeStore.clear(this)
+        disableFusedMockMode()
         releaseWakeLock()
         snapshot = State(error = message)
         sendStateBroadcast()

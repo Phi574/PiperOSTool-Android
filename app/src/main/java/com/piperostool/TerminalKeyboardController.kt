@@ -30,7 +30,7 @@ class TerminalKeyboardController(
     private val onPageScroll: (Int) -> Unit,
     private val onRawInput: (String) -> Unit
 ) {
-    private val preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    private val preferences = AccountDataScope.preferences(context, PREFS_NAME)
     private val clipboardManager =
         context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
     private val clipboardHistory = mutableListOf<String>()
