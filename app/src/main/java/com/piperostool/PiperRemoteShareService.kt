@@ -38,6 +38,7 @@ import java.io.DataInputStream
 import java.io.DataOutputStream
 import java.net.ServerSocket
 import java.net.Socket
+import java.net.InetSocketAddress
 import java.util.UUID
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -117,12 +118,18 @@ class PiperRemoteShareService : Service() {
         val method = runCatching {
             PiperRemoteMethod.valueOf(intent?.getStringExtra(EXTRA_METHOD).orEmpty())
         }.getOrDefault(PiperRemoteMethod.LAN)
+        val pcInvite = intent?.let {
+            val host = it.getStringExtra(EXTRA_PC_PAIR_HOST).orEmpty()
+            val port = it.getIntExtra(EXTRA_PC_PAIR_PORT, -1)
+            val token = it.getStringExtra(EXTRA_PC_PAIR_TOKEN).orEmpty()
+            if (host.isNotBlank() && port in 1..65535 && token.isNotBlank()) PiperRemotePcInvite(host, port, token) else null
+        }
         if (resultCode != Activity.RESULT_OK || projectionData == null) {
             stopSelf()
             return START_NOT_STICKY
         }
         startForegroundNow()
-        runCatching { startSession(resultCode, projectionData, method) }
+        runCatching { startSession(resultCode, projectionData, method, pcInvite) }
             .onFailure {
                 publishState(null, it.message ?: getString(R.string.remote_share_failed))
                 stopSelf()
@@ -130,7 +137,7 @@ class PiperRemoteShareService : Service() {
         return START_NOT_STICKY
     }
 
-    private fun startSession(resultCode: Int, data: Intent, method: PiperRemoteMethod) {
+    private fun startSession(resultCode: Int, data: Intent, method: PiperRemoteMethod, pcInvite: PiperRemotePcInvite?) {
         if (!running.compareAndSet(false, true)) return
         // USB is exposed only through `adb forward`, so it has a fixed local
         // device port and never participates in Wi-Fi discovery.
@@ -178,6 +185,22 @@ class PiperRemoteShareService : Service() {
         }
         Thread({ acceptClients(server, session) }, "PiperRemoteServer").start()
         publishState(session, null)
+        if (pcInvite != null) notifyPairedPc(pcInvite, session)
+    }
+
+    private fun notifyPairedPc(invite: PiperRemotePcInvite, session: PiperRemoteSession) {
+        Thread({
+            val delivered = runCatching {
+                Socket().use { socket ->
+                    socket.connect(InetSocketAddress(invite.host, invite.port), 5_000)
+                    socket.getOutputStream().bufferedWriter().use { writer ->
+                        writer.write("PIPER_REMOTE_PC_PAIR|${invite.token}|${session.port}|${session.token}|QR\\n")
+                        writer.flush()
+                    }
+                }
+            }.isSuccess
+            if (!delivered) publishState(session, getString(R.string.remote_pc_pair_failed))
+        }, "PiperRemotePcPair").start()
     }
 
     private fun acceptClients(server: ServerSocket, session: PiperRemoteSession) {
@@ -596,6 +619,9 @@ class PiperRemoteShareService : Service() {
         const val EXTRA_METHOD = "method"
         const val EXTRA_ERROR = "error"
         const val EXTRA_REQUEST_ID = "request_id"
+        const val EXTRA_PC_PAIR_HOST = "pc_pair_host"
+        const val EXTRA_PC_PAIR_PORT = "pc_pair_port"
+        const val EXTRA_PC_PAIR_TOKEN = "pc_pair_token"
         private const val CHANNEL_ID = "piper_remote_share"
         private const val NOTIFICATION_ID = 8120
         @Volatile var currentSession: PiperRemoteSession? = null

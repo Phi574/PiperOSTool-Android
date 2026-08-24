@@ -61,6 +61,7 @@ class PiperRemoteActivity : AppCompatActivity(), PiperRemoteClient.Listener {
     private lateinit var enableControl: MaterialButton
     private val io = Executors.newCachedThreadPool()
     private var pendingMethod = PiperRemoteMethod.LAN
+    private var pendingPcInvite: PiperRemotePcInvite? = null
     private var receiverRegistered = false
     private var connected = false
     private var shownRequestId: String? = null
@@ -82,7 +83,11 @@ class PiperRemoteActivity : AppCompatActivity(), PiperRemoteClient.Listener {
             .putExtra(PiperRemoteShareService.EXTRA_RESULT_CODE, result.resultCode)
             .putExtra(PiperRemoteShareService.EXTRA_RESULT_DATA, data)
             .putExtra(PiperRemoteShareService.EXTRA_METHOD, pendingMethod.name)
+            .putExtra(PiperRemoteShareService.EXTRA_PC_PAIR_HOST, pendingPcInvite?.host)
+            .putExtra(PiperRemoteShareService.EXTRA_PC_PAIR_PORT, pendingPcInvite?.port ?: -1)
+            .putExtra(PiperRemoteShareService.EXTRA_PC_PAIR_TOKEN, pendingPcInvite?.token)
         ContextCompat.startForegroundService(this, service)
+        pendingPcInvite = null
         showStatus(getString(R.string.remote_starting_share))
     }
 
@@ -92,6 +97,17 @@ class PiperRemoteActivity : AppCompatActivity(), PiperRemoteClient.Listener {
             if (result.contents != null) showStatus(getString(R.string.remote_invalid_qr))
         } else {
             connect(endpoint)
+        }
+    }
+
+    private val pcQrLauncher = registerForActivityResult(ScanContract()) { result ->
+        val invite = result.contents?.let(::parsePcQrInvite)
+        if (invite == null) {
+            if (result.contents != null) showStatus(getString(R.string.remote_invalid_pc_qr))
+        } else {
+            pendingPcInvite = invite
+            showStatus(getString(R.string.remote_pc_qr_scanned))
+            requestShare(PiperRemoteMethod.QR)
         }
     }
 
@@ -162,7 +178,7 @@ class PiperRemoteActivity : AppCompatActivity(), PiperRemoteClient.Listener {
             if (isChecked) renderRole(checkedId == R.id.btnRoleShare)
         }
         findViewById<View>(R.id.cardShareLan).setOnClickListener { requestShare(PiperRemoteMethod.LAN) }
-        findViewById<View>(R.id.cardShareQr).setOnClickListener { requestShare(PiperRemoteMethod.QR) }
+        findViewById<View>(R.id.cardShareQr).setOnClickListener { chooseQrShare() }
         findViewById<View>(R.id.cardShareCode).setOnClickListener { requestShare(PiperRemoteMethod.CODE) }
         findViewById<View>(R.id.cardShareUsb).setOnClickListener { requestShare(PiperRemoteMethod.USB) }
         findViewById<View>(R.id.cardAppleMirror).setOnClickListener {
@@ -194,6 +210,30 @@ class PiperRemoteActivity : AppCompatActivity(), PiperRemoteClient.Listener {
         } else {
             launchProjection()
         }
+    }
+
+    private fun chooseQrShare() {
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.remote_qr_share_choice_title)
+            .setItems(arrayOf(
+                getString(R.string.remote_qr_share_other_device),
+                getString(R.string.remote_qr_share_pc)
+            )) { _, which ->
+                if (which == 0) {
+                    pendingPcInvite = null
+                    requestShare(PiperRemoteMethod.QR)
+                } else {
+                    pcQrLauncher.launch(
+                        ScanOptions()
+                            .setDesiredBarcodeFormats(ScanOptions.QR_CODE)
+                            .setPrompt(getString(R.string.remote_scan_pc_qr_prompt))
+                            .setBeepEnabled(false)
+                            .setCaptureActivity(PiperRemoteQrCaptureActivity::class.java)
+                            .setOrientationLocked(true)
+                    )
+                }
+            }
+            .show()
     }
 
     private fun launchProjection() {
@@ -367,6 +407,18 @@ class PiperRemoteActivity : AppCompatActivity(), PiperRemoteClient.Listener {
                 port = uri.getQueryParameter("port")?.toIntOrNull() ?: return null,
                 method = PiperRemoteMethod.QR,
                 credential = uri.getQueryParameter("token") ?: return null
+            )
+        }.getOrNull()
+    }
+
+    private fun parsePcQrInvite(value: String): PiperRemotePcInvite? {
+        return runCatching {
+            val uri = Uri.parse(value)
+            if (uri.scheme != "piperos" || uri.host != "remote-pc") return null
+            PiperRemotePcInvite(
+                host = uri.getQueryParameter("host")?.takeIf { it.isNotBlank() } ?: return null,
+                port = uri.getQueryParameter("port")?.toIntOrNull()?.takeIf { it in 1..65535 } ?: return null,
+                token = uri.getQueryParameter("token")?.takeIf { it.isNotBlank() } ?: return null
             )
         }.getOrNull()
     }

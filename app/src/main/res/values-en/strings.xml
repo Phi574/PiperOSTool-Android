@@ -600,7 +600,7 @@
     <string name="remote_private_lan_note">The connection is sent directly over your local network. No screen or control data passes through PiperOS servers.</string>
     <string name="remote_choose_share_method">Choose a sharing method</string>
     <string name="remote_method_lan_share">Visible to devices on the same Wi‑Fi</string>
-    <string name="remote_method_qr_share">Create a private connection QR code</string>
+    <string name="remote_method_qr_share">Create a QR code or scan a PC QR code for a private connection</string>
     <string name="remote_method_code_share">Create a 6-digit connection code</string>
     <string name="remote_method_usb_share">Share through USB cable (ADB)</string>
     <string name="remote_qr_code">PiperOS View Remote connection QR code</string>
@@ -611,6 +611,13 @@
     <string name="remote_scan_lan">Scan devices on this network</string>
     <string name="remote_scan_qr">Scan QR code</string>
     <string name="remote_scan_qr_prompt">Place the sharing device QR code inside the frame</string>
+    <string name="remote_qr_share_choice_title">Private QR connection</string>
+    <string name="remote_qr_share_other_device">Connect another device</string>
+    <string name="remote_qr_share_pc">Connect a PC</string>
+    <string name="remote_scan_pc_qr_prompt">Place the PiperOS Tool PC QR code inside the frame</string>
+    <string name="remote_invalid_pc_qr">This is not a valid PiperOS Tool PC connection QR code.</string>
+    <string name="remote_pc_qr_scanned">PC QR code scanned. Grant screen sharing permission to continue.</string>
+    <string name="remote_pc_pair_failed">Could not send the sharing session to the PC. Verify both devices are on the same Wi-Fi and scan again.</string>
     <string name="remote_code_hint">6-digit connection code</string>
     <string name="remote_connect_code">Connect with code</string>
     <string name="remote_projection_denied">Screen sharing permission was not granted.</string>

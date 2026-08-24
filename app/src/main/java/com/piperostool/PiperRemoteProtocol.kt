@@ -36,6 +36,12 @@ data class PiperRemoteSession(
         .toString()
 }
 
+data class PiperRemotePcInvite(
+    val host: String,
+    val port: Int,
+    val token: String
+)
+
 object PiperRemoteProtocol {
     const val MAGIC = "PIPER_REMOTE_2"
     const val DISCOVERY_PORT = 39776
