@@ -91,7 +91,8 @@ service cloud.firestore {
           && request.resource.data.sessionId == sessionId
           && request.resource.data.keys().hasOnly([
             'sessionId', 'deviceId', 'deviceName', 'manufacturer', 'model',
-            'androidVersion', 'sdk', 'abis', 'appVersion', 'updatedAt',
+            'androidVersion', 'sdk', 'abis', 'platform', 'windowsVersion',
+            'architecture', 'app', 'appVersion', 'updatedAt',
             'loginAt', 'lastSeenAt', 'active', 'revoked', 'status',
             'locationLat', 'locationLon'
           ])
@@ -108,7 +109,8 @@ service cloud.firestore {
           && (resource.data.revoked != true || request.resource.data.revoked == true)
           && request.resource.data.keys().hasOnly([
             'sessionId', 'deviceId', 'deviceName', 'manufacturer', 'model',
-            'androidVersion', 'sdk', 'abis', 'appVersion', 'updatedAt',
+            'androidVersion', 'sdk', 'abis', 'platform', 'windowsVersion',
+            'architecture', 'app', 'appVersion', 'updatedAt',
             'loginAt', 'lastSeenAt', 'active', 'revoked', 'status',
             'locationLat', 'locationLon', 'signedOutAt', 'revokedAt', 'revokedBy'
           ]);
