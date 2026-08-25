@@ -10,6 +10,16 @@ import java.security.SecureRandom
 
 enum class PiperRemoteMethod { LAN, QR, CODE, USB }
 
+enum class PiperRemoteStream(val wireValue: Int) {
+    JPEG(0),
+    H264(1),
+    HEVC(2);
+
+    companion object {
+        fun fromWire(value: Int): PiperRemoteStream = entries.firstOrNull { it.wireValue == value } ?: JPEG
+    }
+}
+
 data class PiperRemoteEndpoint(
     val name: String,
     val host: String,
@@ -44,6 +54,8 @@ data class PiperRemotePcInvite(
 
 object PiperRemoteProtocol {
     const val MAGIC = "PIPER_REMOTE_2"
+    const val MAGIC_V3 = "PIPER_REMOTE_3"
+    const val MAGIC_V4 = "PIPER_REMOTE_4"
     const val DISCOVERY_PORT = 39776
     const val DISCOVER = "PIPER_REMOTE_DISCOVER"
     const val CODE_LOOKUP = "PIPER_REMOTE_CODE|"
@@ -55,6 +67,8 @@ object PiperRemoteProtocol {
     const val PACKET_AUDIO_CONFIG: Byte = 5
     const val PACKET_AUDIO: Byte = 6
     const val PACKET_DEVICE_INFO: Byte = 7
+    const val PACKET_VIDEO_CONFIG: Byte = 8
+    const val PACKET_VIDEO_FRAME: Byte = 9
     const val USB_PORT = 39211
     const val USB_CREDENTIAL = "piperos-usb-adb-v1"
 

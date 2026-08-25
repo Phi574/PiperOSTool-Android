@@ -20,15 +20,20 @@
 
 ## Bản hiện tại
 
-`3.2.5.beta` sử dụng `minSdk 24`, `targetSdk 36`, Kotlin `2.4.10` và tập trung vào:
+`3.2.7.beta` sử dụng `minSdk 24`, `targetSdk 36`, Kotlin `2.4.10` và tập trung vào:
 
-- **PiperOS View Remote:** chia sẻ màn hình Android trong mạng LAN, kết nối bằng
+- **PiperOS View Remote:** ba pipeline truyền hình ảnh thật gồm JPEG tương thích,
+  MediaCodec H.264 phần cứng và MediaCodec HEVC phần cứng. Piper Remote 4 tự thương
+  lượng codec, tự hạ cấp khi thiết bị không hỗ trợ và dùng decoder phần cứng ở máy nhận.
+  Chia sẻ màn hình Android trong mạng LAN, kết nối bằng
   quét QR, mã 6 chữ số, QR PC hoặc tìm thiết bị trong cùng mạng. Khi chọn QR, người
   dùng có thể tạo mã cho thiết bị khác hoặc quét QR hiển thị trên PiperOS Tool PC.
   Luồng quét QR PC xác thực một lần theo mã phiên, sau đó cho phép chia sẻ màn hình
   ngay sau khi người dùng chấp thuận MediaProjection. Thiết bị khác vẫn phải xác nhận
   yêu cầu kết nối trên màn hình PiperOS. Bên xem có thể chọn chất lượng/FPS và điều
-  khiển qua Accessibility Service đã được cấp phép.
+  khiển qua Accessibility Service đã được cấp phép. Thanh trạng thái PC đo độ phân
+  giải frame đang render, FPS render thực, Mbps nhận thực và độ trễ từng frame; không
+  hiển thị lại thông số yêu cầu như thể đó là kết quả thực tế.
 - **Chiếu màn hình Apple:** receiver AirPlay/RAOP cho iPhone, iPad và macOS.
   Dịch vụ công bố `PiperOS View Remote` trên Wi-Fi bằng mDNS, phát video và âm
   thanh độ trễ thấp, hỗ trợ cả màn hình dọc và ngang. Mã nguồn và ghi chú giấy

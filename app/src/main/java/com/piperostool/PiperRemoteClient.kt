@@ -17,8 +17,10 @@ import java.util.concurrent.atomic.AtomicInteger
 
 class PiperRemoteClient(private val listener: Listener) {
     interface Listener {
-        fun onConnected(width: Int, height: Int)
+        fun onConnected(width: Int, height: Int, stream: PiperRemoteStream)
         fun onFrame(bitmap: Bitmap)
+        fun onVideoConfig(stream: PiperRemoteStream, width: Int, height: Int, fps: Int, codecData: ByteArray)
+        fun onVideoFrame(flags: Int, presentationTimeUs: Long, sentAtMs: Long, data: ByteArray)
         fun onError(message: String)
         fun onDisconnected()
     }
@@ -33,7 +35,8 @@ class PiperRemoteClient(private val listener: Listener) {
         endpoint: PiperRemoteEndpoint,
         requesterName: String,
         targetWidth: Int,
-        targetFps: Int
+        targetFps: Int,
+        stream: PiperRemoteStream
     ) {
         close(false)
         val generation = connectionGeneration.incrementAndGet()
@@ -54,22 +57,27 @@ class PiperRemoteClient(private val listener: Listener) {
                     if (connectionGeneration.get() == generation) output = it
                 }
                 synchronized(writer) {
-                    writer.writeUTF(PiperRemoteProtocol.MAGIC)
+                    writer.writeUTF(PiperRemoteProtocol.MAGIC_V4)
                     writer.writeUTF(endpoint.method.name)
                     writer.writeUTF(endpoint.credential)
                     writer.writeUTF(requesterName)
                     writer.writeInt(targetWidth)
                     writer.writeInt(targetFps)
+                    writer.writeInt(stream.wireValue)
                     writer.flush()
                 }
                 if (!input.readBoolean()) throw IllegalStateException(input.readUTF())
                 client.soTimeout = 0
-                listener.onConnected(input.readInt(), input.readInt())
+                val remoteWidth = input.readInt()
+                val remoteHeight = input.readInt()
+                val selectedStream = PiperRemoteStream.fromWire(input.readInt())
+                listener.onConnected(remoteWidth, remoteHeight, selectedStream)
                 while (running.get() && connectionGeneration.get() == generation) {
                     when (input.readByte()) {
                         PiperRemoteProtocol.PACKET_FRAME -> {
                             input.readInt()
                             input.readInt()
+                            input.readLong()
                             val size = input.readInt()
                             if (size <= 0 || size > 8_000_000) throw IllegalStateException("Invalid frame")
                             val bytes = ByteArray(size)
@@ -85,6 +93,27 @@ class PiperRemoteClient(private val listener: Listener) {
                             val bytes = ByteArray(size)
                             input.readFully(bytes)
                             audioTrack?.write(bytes, 0, bytes.size, AudioTrack.WRITE_BLOCKING)
+                        }
+                        PiperRemoteProtocol.PACKET_VIDEO_CONFIG -> {
+                            val configuredStream = PiperRemoteStream.fromWire(input.readInt())
+                            val width = input.readInt()
+                            val height = input.readInt()
+                            val fps = input.readInt()
+                            val size = input.readInt()
+                            if (size < 0 || size > 1_048_576) throw IllegalStateException("Invalid video config")
+                            val bytes = ByteArray(size)
+                            input.readFully(bytes)
+                            listener.onVideoConfig(configuredStream, width, height, fps, bytes)
+                        }
+                        PiperRemoteProtocol.PACKET_VIDEO_FRAME -> {
+                            val flags = input.readInt()
+                            val presentationTimeUs = input.readLong()
+                            val sentAtMs = input.readLong()
+                            val size = input.readInt()
+                            if (size <= 0 || size > 8_000_000) throw IllegalStateException("Invalid video frame")
+                            val bytes = ByteArray(size)
+                            input.readFully(bytes)
+                            listener.onVideoFrame(flags, presentationTimeUs, sentAtMs, bytes)
                         }
                     }
                 }

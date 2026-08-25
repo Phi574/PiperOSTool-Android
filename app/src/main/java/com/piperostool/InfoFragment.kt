@@ -322,7 +322,7 @@ class InfoFragment : Fragment() {
                 icon = R.drawable.ic_remote_view,
                 color = color("#34D399"),
                 rows = listOf(
-                    InfoRow("Phiên bản giao thức", "Piper Remote 2"),
+                    InfoRow("Phiên bản giao thức", "Piper Remote 3 · JPEG / H.264 / HEVC"),
                     InfoRow("Phương thức", "Wi-Fi nội bộ, QR và mã 6 số"),
                     InfoRow("Xác nhận kết nối", "Bắt buộc phía thiết bị chia sẻ cho phép"),
                     InfoRow("Độ phân giải", "480p / 720p / 1080p / gốc toàn màn hình"),

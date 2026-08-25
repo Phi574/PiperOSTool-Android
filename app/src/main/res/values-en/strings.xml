@@ -648,6 +648,14 @@
     <string name="remote_stream_quality">Streaming quality</string>
     <string name="remote_native_quality">Native</string>
     <string name="remote_max_fps">Max</string>
+    <string name="remote_stream_settings">Video pipeline</string>
+    <string name="remote_stream_settings_summary">Used for the next connection. Hardware codecs reduce latency and CPU load.</string>
+    <string name="remote_stream_jpeg">Compatibility (JPEG) · older devices</string>
+    <string name="remote_stream_h264">Hardware H.264 · recommended</string>
+    <string name="remote_stream_hevc">Hardware HEVC · high quality</string>
+    <string name="remote_stream_active">Actual active stream: %1$s</string>
+    <string name="remote_stream_fallback">This device does not support %1$s; using %2$s automatically.</string>
+    <string name="apply">Apply</string>
     <string name="remote_unknown_device">Unknown device</string>
     <string name="remote_connection_request">New connection request</string>
     <string name="remote_connection_request_from">%1$s wants to view and control your screen.</string>

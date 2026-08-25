@@ -69,6 +69,16 @@
         </LinearLayout>
 
         <ImageButton
+            android:id="@+id/btnRemoteStreamSettings"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/remote_stream_settings"
+            android:padding="12dp"
+            android:src="@drawable/ic_remote_settings"
+            app:tint="@color/remote_text_secondary" />
+
+        <ImageButton
             android:id="@+id/btnRemoteStopToolbar"
             android:layout_width="48dp"
             android:layout_height="48dp"
@@ -477,6 +487,12 @@
             android:id="@+id/remoteFrameView"
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
+
+        <SurfaceView
+            android:id="@+id/remoteVideoSurface"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone" />
 
         <TextView
             android:id="@+id/tvRemoteViewerHint"

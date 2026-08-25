@@ -650,6 +650,14 @@
     <string name="remote_stream_quality">Chất lượng nhận hình</string>
     <string name="remote_native_quality">Toàn màn</string>
     <string name="remote_max_fps">Tối đa</string>
+    <string name="remote_stream_settings">Chế độ truyền hình ảnh</string>
+    <string name="remote_stream_settings_summary">Áp dụng cho lần kết nối tiếp theo. Codec phần cứng giúp giảm độ trễ và tải CPU.</string>
+    <string name="remote_stream_jpeg">Tương thích (JPEG) · dùng cho thiết bị cũ</string>
+    <string name="remote_stream_h264">H.264 phần cứng · đề xuất</string>
+    <string name="remote_stream_hevc">HEVC phần cứng · chất lượng cao</string>
+    <string name="remote_stream_active">Luồng thực đang phát: %1$s</string>
+    <string name="remote_stream_fallback">Thiết bị không hỗ trợ %1$s; đang tự dùng %2$s.</string>
+    <string name="apply">Áp dụng</string>
     <string name="remote_unknown_device">Thiết bị không xác định</string>
     <string name="remote_connection_request">Yêu cầu kết nối mới</string>
     <string name="remote_connection_request_from">%1$s muốn xem và điều khiển màn hình của bạn.</string>

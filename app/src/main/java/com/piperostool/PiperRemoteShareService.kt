@@ -52,6 +52,7 @@ class PiperRemoteShareService : Service() {
     private var projection: MediaProjection? = null
     private var virtualDisplay: VirtualDisplay? = null
     private var imageReader: ImageReader? = null
+    private var videoEncoder: PiperRemoteVideoEncoder? = null
     private var imageThread: HandlerThread? = null
     private var audioRecord: AudioRecord? = null
     private var audioThread: Thread? = null
@@ -68,6 +69,9 @@ class PiperRemoteShareService : Service() {
     private var densityDpi = DisplayMetrics.DENSITY_DEFAULT
     private var targetFps = 30
     private var targetWidth = 720
+    private var targetStream = PiperRemoteStream.JPEG
+    @Volatile private var clientProtocolV4 = false
+    @Volatile private var latestVideoConfig: VideoConfig? = null
     private var lastFrameAt = 0L
     private var paddedBitmap: Bitmap? = null
     private var outputBitmap: Bitmap? = null
@@ -91,7 +95,7 @@ class PiperRemoteShareService : Service() {
             if (metrics.widthPixels == nativeWidth && metrics.heightPixels == nativeHeight) return
             nativeWidth = metrics.widthPixels
             nativeHeight = metrics.heightPixels
-            configureCapture(targetWidth, targetFps)
+            configureCapture(targetWidth, targetFps, targetStream)
         }
     }
 
@@ -230,10 +234,14 @@ class PiperRemoteShareService : Service() {
             val input = DataInputStream(BufferedInputStream(socket.getInputStream()))
             val output = DataOutputStream(BufferedOutputStream(socket.getOutputStream()))
             val magic = input.readUTF()
+            val protocolV4 = magic == PiperRemoteProtocol.MAGIC_V4
+            val protocolV3 = magic == PiperRemoteProtocol.MAGIC_V3 || protocolV4
             val method = runCatching { PiperRemoteMethod.valueOf(input.readUTF()) }.getOrNull()
             val credential = input.readUTF()
             val requesterName = input.readUTF().take(80)
-            val requestedWidth = input.readInt().let { if (it == 0) nativeWidth else it.coerceIn(480, 1080) }
+            val requestedWidth = input.readInt().let {
+                if (it == 0) maxOf(nativeWidth, nativeHeight) else it.coerceIn(640, 2560)
+            }
             val requestedFps = input.readInt().let {
                 when {
                     it == 0 -> maximumDeviceFps()
@@ -241,7 +249,8 @@ class PiperRemoteShareService : Service() {
                     else -> 30
                 }
             }
-            val credentialsValid = magic == PiperRemoteProtocol.MAGIC && method == session.method && when (method) {
+            val requestedStream = if (protocolV3) PiperRemoteStream.fromWire(input.readInt()) else PiperRemoteStream.JPEG
+            val credentialsValid = (magic == PiperRemoteProtocol.MAGIC || protocolV3) && method == session.method && when (method) {
                 PiperRemoteMethod.LAN -> credential == session.sessionId
                 PiperRemoteMethod.QR -> credential == session.token
                 PiperRemoteMethod.CODE -> credential == session.code
@@ -265,16 +274,32 @@ class PiperRemoteShareService : Service() {
                 output.flush()
                 return
             }
-            configureCapture(requestedWidth, requestedFps)
+            synchronized(this) {
+                clientSocket?.close()
+                clientOutput = null
+                clientSocket = null
+            }
+            val selection = selectSupportedCapture(requestedStream, requestedWidth, requestedFps)
+            val selectedStream = selection.stream
+            configureCapture(selection.targetEdge, selection.fps, selectedStream)
+            currentRequestedStream = requestedStream
+            currentStream = selectedStream
+            getSharedPreferences("piperos_remote", MODE_PRIVATE).edit()
+                .putInt("stream", selectedStream.wireValue)
+                .apply()
+            publishState(currentSession, null)
             output.writeInt(screenWidth)
             output.writeInt(screenHeight)
+            if (protocolV3) output.writeInt(selectedStream.wireValue)
             output.flush()
             writeDeviceInfo(output)
             synchronized(this) {
-                clientSocket?.close()
                 clientSocket = socket
                 clientOutput = output
+                clientProtocolV4 = protocolV4
             }
+            latestVideoConfig?.takeIf { selectedStream != PiperRemoteStream.JPEG }?.let { writeVideoConfig(output, it) }
+            videoEncoder?.requestKeyFrame()
             startAudioCapture(output)
             while (running.get() && !socket.isClosed) {
                 when (input.readByte()) {
@@ -311,6 +336,7 @@ class PiperRemoteShareService : Service() {
                 stopAudioCapture()
                 clientOutput = null
                 clientSocket = null
+                clientProtocolV4 = false
             }
             runCatching { socket.close() }
         }
@@ -357,6 +383,7 @@ class PiperRemoteShareService : Service() {
                 output.writeByte(PiperRemoteProtocol.PACKET_FRAME.toInt())
                 output.writeInt(frameWidth)
                 output.writeInt(frameHeight)
+                if (clientProtocolV4) output.writeLong(System.currentTimeMillis())
                 output.writeInt(jpeg.size)
                 output.write(jpeg)
                 output.flush()
@@ -366,6 +393,57 @@ class PiperRemoteShareService : Service() {
         } finally {
             frameBusy.set(false)
             image.close()
+        }
+    }
+
+    private fun selectSupportedCapture(
+        requested: PiperRemoteStream,
+        requestedEdge: Int,
+        requestedFps: Int
+    ): CaptureSelection {
+        if (requested == PiperRemoteStream.JPEG) {
+            return CaptureSelection(PiperRemoteStream.JPEG, requestedEdge, requestedFps.coerceAtMost(60))
+        }
+        val streams = if (requested == PiperRemoteStream.HEVC) {
+            listOf(PiperRemoteStream.HEVC, PiperRemoteStream.H264)
+        } else {
+            listOf(PiperRemoteStream.H264)
+        }
+        val edges = listOf(requestedEdge, minOf(requestedEdge, 1920), minOf(requestedEdge, 1280), 854)
+            .filter { it >= 640 }
+            .distinct()
+        val frameRates = listOf(requestedFps, minOf(requestedFps, 60), minOf(requestedFps, 30), 24)
+            .filter { it <= requestedFps }
+            .distinct()
+        streams.forEach { stream ->
+            edges.forEach { edge ->
+                configureDimensions(edge)
+                frameRates.forEach { candidateFps ->
+                    if (PiperRemoteVideoEncoder.isHardwareSupported(
+                            stream,
+                            screenWidth,
+                            screenHeight,
+                            candidateFps
+                        )
+                    ) {
+                        return CaptureSelection(stream, edge, candidateFps)
+                    }
+                }
+            }
+        }
+        return CaptureSelection(PiperRemoteStream.JPEG, requestedEdge, requestedFps.coerceAtMost(60))
+    }
+
+    private fun writeVideoConfig(output: DataOutputStream, config: VideoConfig) {
+        synchronized(output) {
+            output.writeByte(PiperRemoteProtocol.PACKET_VIDEO_CONFIG.toInt())
+            output.writeInt(config.stream.wireValue)
+            output.writeInt(config.width)
+            output.writeInt(config.height)
+            output.writeInt(config.fps)
+            output.writeInt(config.codecData.size)
+            output.write(config.codecData)
+            output.flush()
         }
     }
 
@@ -399,14 +477,14 @@ class PiperRemoteShareService : Service() {
             )
         }
         jpegStream.reset()
-        output.compress(Bitmap.CompressFormat.JPEG, if (targetFps >= 60) 50 else 58, jpegStream)
+        output.compress(Bitmap.CompressFormat.JPEG, if (targetFps >= 60) 78 else 86, jpegStream)
         return jpegStream.toByteArray()
     }
 
     private fun configureDimensions(targetWidth: Int) {
-        val scale = minOf(1f, targetWidth.toFloat() / nativeWidth)
-        screenWidth = (nativeWidth * scale).roundToInt().coerceAtLeast(2)
-        screenHeight = (nativeHeight * scale).roundToInt().coerceAtLeast(2)
+        val scale = minOf(1f, targetWidth.toFloat() / maxOf(nativeWidth, nativeHeight))
+        screenWidth = ((nativeWidth * scale).roundToInt().coerceAtLeast(2) / 2) * 2
+        screenHeight = ((nativeHeight * scale).roundToInt().coerceAtLeast(2) / 2) * 2
     }
 
     private fun maximumDeviceFps(): Int {
@@ -419,9 +497,10 @@ class PiperRemoteShareService : Service() {
         return refreshRate.coerceIn(24, 120)
     }
 
-    private fun configureCapture(width: Int, fps: Int) {
+    private fun configureCapture(width: Int, fps: Int, stream: PiperRemoteStream = targetStream) {
         targetWidth = width
         targetFps = fps
+        targetStream = stream
         lastFrameAt = 0L
         val oldWidth = screenWidth
         val oldHeight = screenHeight
@@ -433,11 +512,68 @@ class PiperRemoteShareService : Service() {
             outputBitmap = null
             jpegStream.reset()
         }
-        if (screenWidth == oldWidth && screenHeight == oldHeight) {
+        if (screenWidth == oldWidth && screenHeight == oldHeight &&
+            ((stream == PiperRemoteStream.JPEG && imageReader != null) ||
+                (stream != PiperRemoteStream.JPEG && videoEncoder?.stream == stream && videoEncoder?.fps == fps))
+        ) {
             imageReader?.acquireLatestImage()?.close()
             return
         }
         val handler = imageThread?.looper?.let(::Handler) ?: return
+        virtualDisplay?.surface = null
+        imageReader?.setOnImageAvailableListener(null, null)
+        imageReader?.close()
+        imageReader = null
+        videoEncoder?.close()
+        videoEncoder = null
+        latestVideoConfig = null
+        if (stream != PiperRemoteStream.JPEG) {
+            val encoder = PiperRemoteVideoEncoder(
+                stream = stream,
+                width = screenWidth,
+                height = screenHeight,
+                fps = fps,
+                bitrate = PiperRemoteVideoEncoder.recommendedBitrate(stream, screenWidth, screenHeight, fps),
+                listener = object : PiperRemoteVideoEncoder.Listener {
+                    override fun onVideoConfig(
+                        stream: PiperRemoteStream,
+                        width: Int,
+                        height: Int,
+                        fps: Int,
+                        codecData: ByteArray
+                    ) {
+                        val config = VideoConfig(stream, width, height, fps, codecData)
+                        latestVideoConfig = config
+                        clientOutput?.let { output -> runCatching { writeVideoConfig(output, config) } }
+                    }
+
+                    override fun onVideoFrame(flags: Int, presentationTimeUs: Long, data: ByteArray) {
+                        val output = clientOutput ?: return
+                        val annexB = PiperRemoteVideoEncoder.ensureAnnexB(data)
+                        runCatching {
+                            synchronized(output) {
+                                output.writeByte(PiperRemoteProtocol.PACKET_VIDEO_FRAME.toInt())
+                                output.writeInt(flags)
+                                output.writeLong(presentationTimeUs)
+                                if (clientProtocolV4) output.writeLong(System.currentTimeMillis())
+                                output.writeInt(annexB.size)
+                                output.write(annexB)
+                                output.flush()
+                            }
+                        }.onFailure { runCatching { clientSocket?.close() } }
+                    }
+
+                    override fun onVideoError(error: Throwable) {
+                        publishState(currentSession, "${stream.name}: ${error.message ?: "encoder error"}")
+                        runCatching { clientSocket?.close() }
+                    }
+                }
+            )
+            videoEncoder = encoder
+            virtualDisplay?.resize(screenWidth, screenHeight, densityDpi)
+            virtualDisplay?.surface = encoder.inputSurface
+            return
+        }
         val replacement = ImageReader.newInstance(
             screenWidth,
             screenHeight,
@@ -448,7 +584,6 @@ class PiperRemoteShareService : Service() {
         }
         val previous = imageReader
         imageReader = replacement
-        virtualDisplay?.surface = null
         virtualDisplay?.resize(screenWidth, screenHeight, densityDpi)
         virtualDisplay?.surface = replacement.surface
         previous?.setOnImageAvailableListener(null, null)
@@ -622,8 +757,12 @@ class PiperRemoteShareService : Service() {
         runCatching { serverSocket?.close() }
         runCatching { clientSocket?.close() }
         clientOutput = null
+        clientProtocolV4 = false
         runCatching { virtualDisplay?.release() }
         runCatching { imageReader?.close() }
+        runCatching { videoEncoder?.close() }
+        videoEncoder = null
+        latestVideoConfig = null
         paddedBitmap?.recycle()
         outputBitmap?.recycle()
         paddedBitmap = null
@@ -636,6 +775,8 @@ class PiperRemoteShareService : Service() {
         imageReader = null
         projection = null
         publishState(null, null)
+        currentRequestedStream = null
+        currentStream = null
         super.onDestroy()
     }
 
@@ -658,6 +799,10 @@ class PiperRemoteShareService : Service() {
             private set
         @Volatile var currentRequest: ConnectionRequest? = null
             private set
+        @Volatile var currentRequestedStream: PiperRemoteStream? = null
+            private set
+        @Volatile var currentStream: PiperRemoteStream? = null
+            private set
 
         fun stop(context: Context) {
             context.startService(Intent(context, PiperRemoteShareService::class.java).setAction(ACTION_STOP))
@@ -676,5 +821,19 @@ class PiperRemoteShareService : Service() {
         val request: ConnectionRequest,
         val latch: CountDownLatch,
         @Volatile var approved: Boolean? = null
+    )
+
+    private data class VideoConfig(
+        val stream: PiperRemoteStream,
+        val width: Int,
+        val height: Int,
+        val fps: Int,
+        val codecData: ByteArray
+    )
+
+    private data class CaptureSelection(
+        val stream: PiperRemoteStream,
+        val targetEdge: Int,
+        val fps: Int
     )
 }

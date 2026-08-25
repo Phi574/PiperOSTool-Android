@@ -16,9 +16,12 @@ import android.os.Bundle
 import android.content.pm.PackageManager
 import android.provider.Settings
 import android.view.View
+import android.view.SurfaceHolder
+import android.view.SurfaceView
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.RadioGroup
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
@@ -49,6 +52,7 @@ class PiperRemoteActivity : AppCompatActivity(), PiperRemoteClient.Listener {
     private lateinit var credentialPanel: View
     private lateinit var viewerPanel: View
     private lateinit var frameView: PiperRemoteFrameView
+    private lateinit var videoSurface: SurfaceView
     private lateinit var viewerHint: TextView
     private lateinit var status: TextView
     private lateinit var toolbarStatus: TextView
@@ -68,6 +72,9 @@ class PiperRemoteActivity : AppCompatActivity(), PiperRemoteClient.Listener {
     private val pendingFrame = AtomicReference<Bitmap?>(null)
     private val frameRenderScheduled = AtomicBoolean(false)
     private val client = PiperRemoteClient(this)
+    private val videoDecoder = PiperRemoteVideoDecoder()
+    private var activeStream = PiperRemoteStream.JPEG
+    private var pendingVideoConfig: VideoConfig? = null
 
     private val audioPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) {
         launchProjection()
@@ -142,6 +149,7 @@ class PiperRemoteActivity : AppCompatActivity(), PiperRemoteClient.Listener {
         credentialPanel = findViewById(R.id.remoteShareCredentialPanel)
         viewerPanel = findViewById(R.id.remoteViewerPanel)
         frameView = findViewById(R.id.remoteFrameView)
+        videoSurface = findViewById(R.id.remoteVideoSurface)
         viewerHint = findViewById(R.id.tvRemoteViewerHint)
         status = findViewById(R.id.tvRemoteStatus)
         toolbarStatus = findViewById(R.id.tvRemoteToolbarStatus)
@@ -152,6 +160,11 @@ class PiperRemoteActivity : AppCompatActivity(), PiperRemoteClient.Listener {
         codeInput = findViewById(R.id.etRemoteCode)
         stopToolbar = findViewById(R.id.btnRemoteStopToolbar)
         enableControl = findViewById(R.id.btnEnableRemoteControl)
+        videoSurface.holder.addCallback(object : SurfaceHolder.Callback {
+            override fun surfaceCreated(holder: SurfaceHolder) { startPendingDecoder() }
+            override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) = Unit
+            override fun surfaceDestroyed(holder: SurfaceHolder) { videoDecoder.stop() }
+        })
     }
 
     private fun applyInsets() {
@@ -170,6 +183,7 @@ class PiperRemoteActivity : AppCompatActivity(), PiperRemoteClient.Listener {
             if (connected) confirmDisconnect() else finish()
         }
         stopToolbar.setOnClickListener { stopEverything() }
+        findViewById<View>(R.id.btnRemoteStreamSettings).setOnClickListener { showStreamSettings() }
         findViewById<View>(R.id.btnStopRemoteShare).setOnClickListener { PiperRemoteShareService.stop(this) }
         enableControl.setOnClickListener {
             startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
@@ -198,6 +212,10 @@ class PiperRemoteActivity : AppCompatActivity(), PiperRemoteClient.Listener {
         findViewById<View>(R.id.btnConnectRemoteCode).setOnClickListener { resolveCode() }
         findViewById<View>(R.id.btnRemoteExitViewer).setOnClickListener { confirmDisconnect() }
         frameView.touchListener = client::sendTouch
+        videoSurface.setOnTouchListener { view, event ->
+            client.sendTouch(event.actionMasked, event.x / view.width.coerceAtLeast(1), event.y / view.height.coerceAtLeast(1))
+            true
+        }
     }
 
     private fun requestShare(method: PiperRemoteMethod) {
@@ -277,7 +295,25 @@ class PiperRemoteActivity : AppCompatActivity(), PiperRemoteClient.Listener {
             PiperRemoteMethod.CODE -> getString(R.string.remote_code_ready)
             PiperRemoteMethod.USB -> getString(R.string.remote_usb_ready)
         }
-        showStatus(getString(R.string.remote_share_protected))
+        val actualStream = PiperRemoteShareService.currentStream
+        val requestedStream = PiperRemoteShareService.currentRequestedStream
+        showStatus(
+            when {
+                actualStream == null -> getString(R.string.remote_share_protected)
+                requestedStream != null && requestedStream != actualStream -> getString(
+                    R.string.remote_stream_fallback,
+                    streamLabel(requestedStream),
+                    streamLabel(actualStream)
+                )
+                else -> getString(R.string.remote_stream_active, streamLabel(actualStream))
+            }
+        )
+    }
+
+    private fun streamLabel(stream: PiperRemoteStream): String = when (stream) {
+        PiperRemoteStream.JPEG -> "JPEG"
+        PiperRemoteStream.H264 -> "H.264"
+        PiperRemoteStream.HEVC -> "HEVC/H.265"
     }
 
     private fun renderPendingRequest() {
@@ -372,17 +408,44 @@ class PiperRemoteActivity : AppCompatActivity(), PiperRemoteClient.Listener {
             endpoint,
             PiperRemoteProtocol.deviceName(this),
             selectedResolution(),
-            selectedFps()
+            selectedFps(),
+            selectedStream()
         )
+    }
+
+    private fun selectedStream(): PiperRemoteStream {
+        val value = getSharedPreferences("piperos_remote", MODE_PRIVATE).getInt("stream", PiperRemoteStream.H264.wireValue)
+        return PiperRemoteStream.fromWire(value)
+    }
+
+    private fun showStreamSettings() {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_remote_stream_settings, null)
+        val group = dialogView.findViewById<RadioGroup>(R.id.remoteStreamRadioGroup)
+        group.check(when (selectedStream()) {
+            PiperRemoteStream.JPEG -> R.id.radioRemoteJpeg
+            PiperRemoteStream.H264 -> R.id.radioRemoteH264
+            PiperRemoteStream.HEVC -> R.id.radioRemoteHevc
+        })
+        val dialog = MaterialAlertDialogBuilder(this).setView(dialogView).create()
+        dialogView.findViewById<View>(R.id.btnApplyRemoteStream).setOnClickListener {
+            val stream = when (group.checkedRadioButtonId) {
+                R.id.radioRemoteJpeg -> PiperRemoteStream.JPEG
+                R.id.radioRemoteHevc -> PiperRemoteStream.HEVC
+                else -> PiperRemoteStream.H264
+            }
+            getSharedPreferences("piperos_remote", MODE_PRIVATE).edit().putInt("stream", stream.wireValue).apply()
+            dialog.dismiss()
+        }
+        dialog.show()
     }
 
     private fun selectedResolution(): Int = when (
         findViewById<MaterialButtonToggleGroup>(R.id.remoteResolutionGroup).checkedButtonId
     ) {
-        R.id.btnRemote480 -> 480
-        R.id.btnRemote1080 -> 1080
+        R.id.btnRemote480 -> 854
+        R.id.btnRemote1080 -> 1920
         R.id.btnRemoteNative -> 0
-        else -> 720
+        else -> 1280
     }
 
     private fun selectedFps(): Int = when (
@@ -440,14 +503,42 @@ class PiperRemoteActivity : AppCompatActivity(), PiperRemoteClient.Listener {
         renderShareState()
     }
 
-    override fun onConnected(width: Int, height: Int) = runOnUiThread {
+    override fun onConnected(width: Int, height: Int, stream: PiperRemoteStream) = runOnUiThread {
         connected = true
+        activeStream = stream
         enterViewer()
         viewerHint.visibility = View.VISIBLE
         showStatus(getString(R.string.remote_connected_resolution, width, height))
     }
 
+    override fun onVideoConfig(stream: PiperRemoteStream, width: Int, height: Int, fps: Int, codecData: ByteArray) = runOnUiThread {
+        pendingVideoConfig = VideoConfig(stream, width, height, fps, codecData)
+        activeStream = stream
+        videoSurface.visibility = View.VISIBLE
+        frameView.visibility = View.GONE
+        startPendingDecoder()
+    }
+
+    override fun onVideoFrame(flags: Int, presentationTimeUs: Long, sentAtMs: Long, data: ByteArray) {
+        videoDecoder.queue(data, presentationTimeUs, flags)
+        runOnUiThread { viewerHint.visibility = View.GONE }
+    }
+
+    private fun startPendingDecoder() {
+        val config = pendingVideoConfig ?: return
+        val surface = videoSurface.holder.surface
+        if (!surface.isValid) return
+        runCatching { videoDecoder.start(config.stream, config.width, config.height, config.codecData, surface) }
+            .onFailure { showStatus(getString(R.string.remote_error, it.message ?: "Decoder unavailable")) }
+    }
+
     override fun onFrame(bitmap: Bitmap) {
+        if (activeStream != PiperRemoteStream.JPEG) runOnUiThread {
+            activeStream = PiperRemoteStream.JPEG
+            videoDecoder.stop()
+            videoSurface.visibility = View.GONE
+            frameView.visibility = View.VISIBLE
+        }
         pendingFrame.getAndSet(bitmap)?.recycle()
         scheduleLatestFrame()
     }
@@ -478,6 +569,8 @@ class PiperRemoteActivity : AppCompatActivity(), PiperRemoteClient.Listener {
 
     private fun enterViewer() {
         frameView.clearFrame()
+        videoSurface.visibility = if (activeStream == PiperRemoteStream.JPEG) View.GONE else View.VISIBLE
+        frameView.visibility = if (activeStream == PiperRemoteStream.JPEG) View.VISIBLE else View.GONE
         findViewById<View>(R.id.remoteToolbar).visibility = View.GONE
         findViewById<View>(R.id.remoteScroll).visibility = View.GONE
         viewerPanel.visibility = View.VISIBLE
@@ -492,6 +585,8 @@ class PiperRemoteActivity : AppCompatActivity(), PiperRemoteClient.Listener {
     }
 
     private fun exitViewer() {
+        videoDecoder.stop()
+        pendingVideoConfig = null
         pendingFrame.getAndSet(null)?.recycle()
         frameView.clearFrame()
         viewerPanel.visibility = View.GONE
@@ -499,6 +594,14 @@ class PiperRemoteActivity : AppCompatActivity(), PiperRemoteClient.Listener {
         findViewById<View>(R.id.remoteScroll).visibility = View.VISIBLE
         WindowInsetsControllerCompat(window, window.decorView).show(WindowInsetsCompat.Type.systemBars())
     }
+
+    private data class VideoConfig(
+        val stream: PiperRemoteStream,
+        val width: Int,
+        val height: Int,
+        val fps: Int,
+        val codecData: ByteArray
+    )
 
     private fun confirmDisconnect() {
         MaterialAlertDialogBuilder(this)
