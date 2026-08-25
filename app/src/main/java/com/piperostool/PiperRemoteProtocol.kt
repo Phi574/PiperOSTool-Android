@@ -54,6 +54,7 @@ object PiperRemoteProtocol {
     const val PACKET_HOME: Byte = 4
     const val PACKET_AUDIO_CONFIG: Byte = 5
     const val PACKET_AUDIO: Byte = 6
+    const val PACKET_DEVICE_INFO: Byte = 7
     const val USB_PORT = 39211
     const val USB_CREDENTIAL = "piperos-usb-adb-v1"
 
@@ -66,6 +67,10 @@ object PiperRemoteProtocol {
 
     fun deviceName(context: Context): String =
         "${Build.MANUFACTURER} ${Build.MODEL}".trim().ifBlank { context.getString(R.string.piperos_remote) }
+
+    fun appVersion(context: Context): String = runCatching {
+        context.packageManager.getPackageInfo(context.packageName, 0).versionName
+    }.getOrNull().orEmpty().ifBlank { "unknown" }
 
     fun localIpv4(): String = runCatching {
         NetworkInterface.getNetworkInterfaces().toList()

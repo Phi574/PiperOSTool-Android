@@ -213,16 +213,17 @@ class PiperRemoteActivity : AppCompatActivity(), PiperRemoteClient.Listener {
     }
 
     private fun chooseQrShare() {
-        MaterialAlertDialogBuilder(this)
-            .setTitle(R.string.remote_qr_share_choice_title)
-            .setItems(arrayOf(
-                getString(R.string.remote_qr_share_other_device),
-                getString(R.string.remote_qr_share_pc)
-            )) { _, which ->
-                if (which == 0) {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_remote_qr_choice, null)
+        val dialog = MaterialAlertDialogBuilder(this)
+            .setView(dialogView)
+            .create()
+        dialogView.findViewById<View>(R.id.btnQrOtherDevice).setOnClickListener {
+            dialog.dismiss()
                     pendingPcInvite = null
                     requestShare(PiperRemoteMethod.QR)
-                } else {
+        }
+        dialogView.findViewById<View>(R.id.btnQrPc).setOnClickListener {
+            dialog.dismiss()
                     pcQrLauncher.launch(
                         ScanOptions()
                             .setDesiredBarcodeFormats(ScanOptions.QR_CODE)
@@ -231,9 +232,9 @@ class PiperRemoteActivity : AppCompatActivity(), PiperRemoteClient.Listener {
                             .setCaptureActivity(PiperRemoteQrCaptureActivity::class.java)
                             .setOrientationLocked(true)
                     )
-                }
-            }
-            .show()
+        }
+        dialogView.findViewById<View>(R.id.btnQrChoiceCancel).setOnClickListener { dialog.dismiss() }
+        dialog.show()
     }
 
     private fun launchProjection() {
@@ -286,21 +287,17 @@ class PiperRemoteActivity : AppCompatActivity(), PiperRemoteClient.Listener {
         }
         if (shownRequestId == request.id || isFinishing || isDestroyed) return
         shownRequestId = request.id
-        MaterialAlertDialogBuilder(this)
-            .setTitle(R.string.remote_connection_request)
-            .setMessage(
-                getString(
-                    R.string.remote_connection_request_detail,
-                    request.deviceName,
-                    request.address,
-                    request.targetWidth,
-                    request.targetFps
-                )
-            )
-            .setNegativeButton(R.string.remote_deny) { _, _ -> answerRequest(request.id, false) }
-            .setPositiveButton(R.string.remote_allow) { _, _ -> answerRequest(request.id, true) }
-            .setOnCancelListener { answerRequest(request.id, false) }
-            .show()
+        val dialogView = layoutInflater.inflate(R.layout.dialog_remote_connection_request, null)
+        dialogView.findViewById<TextView>(R.id.tvRemoteRequestDevice).text = request.deviceName
+        dialogView.findViewById<TextView>(R.id.tvRemoteRequestDetail).text = getString(
+            R.string.remote_connection_request_detail, request.deviceName, request.address,
+            request.targetWidth, request.targetFps
+        )
+        val dialog = MaterialAlertDialogBuilder(this).setView(dialogView).create()
+        dialogView.findViewById<View>(R.id.btnRemoteDeny).setOnClickListener { dialog.dismiss(); answerRequest(request.id, false) }
+        dialogView.findViewById<View>(R.id.btnRemoteAllow).setOnClickListener { dialog.dismiss(); answerRequest(request.id, true) }
+        dialog.setOnCancelListener { answerRequest(request.id, false) }
+        dialog.show()
     }
 
     private fun answerRequest(id: String, allow: Boolean) {

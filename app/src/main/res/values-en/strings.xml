@@ -612,6 +612,7 @@
     <string name="remote_scan_qr">Scan QR code</string>
     <string name="remote_scan_qr_prompt">Place the sharing device QR code inside the frame</string>
     <string name="remote_qr_share_choice_title">Private QR connection</string>
+    <string name="remote_qr_share_choice_summary">Choose the device that will receive your screen.</string>
     <string name="remote_qr_share_other_device">Connect another device</string>
     <string name="remote_qr_share_pc">Connect a PC</string>
     <string name="remote_scan_pc_qr_prompt">Place the PiperOS Tool PC QR code inside the frame</string>

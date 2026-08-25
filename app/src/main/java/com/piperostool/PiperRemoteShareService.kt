@@ -43,6 +43,7 @@ import java.util.UUID
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
+import org.json.JSONObject
 import kotlin.math.roundToInt
 
 class PiperRemoteShareService : Service() {
@@ -58,6 +59,8 @@ class PiperRemoteShareService : Service() {
     private var clientSocket: Socket? = null
     private var clientOutput: DataOutputStream? = null
     private var discovery: PiperRemoteDiscoveryResponder? = null
+    private var trustedPcHost: String? = null
+    private val trustedPcPending = AtomicBoolean(false)
     private var screenWidth = 1
     private var screenHeight = 1
     private var nativeWidth = 1
@@ -152,6 +155,10 @@ class PiperRemoteShareService : Service() {
             host = PiperRemoteProtocol.localIpv4()
         )
         currentSession = session
+        // Scanning a PC QR code and approving MediaProjection is an explicit user
+        // consent flow. Permit only that PC's first authenticated QR connection.
+        trustedPcHost = pcInvite?.host
+        trustedPcPending.set(pcInvite != null)
         val metrics = resources.displayMetrics
         nativeWidth = metrics.widthPixels.coerceAtLeast(2)
         nativeHeight = metrics.heightPixels.coerceAtLeast(2)
@@ -193,10 +200,12 @@ class PiperRemoteShareService : Service() {
             val delivered = runCatching {
                 Socket().use { socket ->
                     socket.connect(InetSocketAddress(invite.host, invite.port), 5_000)
-                    socket.getOutputStream().bufferedWriter().use { writer ->
-                        writer.write("PIPER_REMOTE_PC_PAIR|${invite.token}|${session.port}|${session.token}|QR\\n")
+                    socket.soTimeout = 5_000
+                    socket.getOutputStream().bufferedWriter().also { writer ->
+                        writer.write("PIPER_REMOTE_PC_PAIR|${invite.token}|${session.port}|${session.token}|QR\n")
                         writer.flush()
                     }
+                    check(socket.getInputStream().bufferedReader().readLine() == "OK")
                 }
             }.isSuccess
             if (!delivered) publishState(session, getString(R.string.remote_pc_pair_failed))
@@ -238,12 +247,15 @@ class PiperRemoteShareService : Service() {
                 PiperRemoteMethod.CODE -> credential == session.code
                 PiperRemoteMethod.USB -> credential == PiperRemoteProtocol.USB_CREDENTIAL
             }
-            val allowed = credentialsValid && awaitApproval(
+            val requesterAddress = socket.inetAddress?.hostAddress.orEmpty()
+            val trustedPc = credentialsValid && method == PiperRemoteMethod.QR &&
+                trustedPcPending.compareAndSet(true, false) && requesterAddress == trustedPcHost
+            val allowed = credentialsValid && (trustedPc || awaitApproval(
                 requesterName.ifBlank { getString(R.string.remote_unknown_device) },
-                socket.inetAddress?.hostAddress.orEmpty(),
+                requesterAddress,
                 requestedWidth,
                 requestedFps
-            )
+            ))
             output.writeBoolean(allowed)
             if (!allowed) {
                 output.writeUTF(
@@ -257,6 +269,7 @@ class PiperRemoteShareService : Service() {
             output.writeInt(screenWidth)
             output.writeInt(screenHeight)
             output.flush()
+            writeDeviceInfo(output)
             synchronized(this) {
                 clientSocket?.close()
                 clientSocket = socket
@@ -300,6 +313,23 @@ class PiperRemoteShareService : Service() {
                 clientSocket = null
             }
             runCatching { socket.close() }
+        }
+    }
+
+    private fun writeDeviceInfo(output: DataOutputStream) {
+        val bytes = JSONObject()
+            .put("name", PiperRemoteProtocol.deviceName(this))
+            .put("manufacturer", Build.MANUFACTURER)
+            .put("model", Build.MODEL)
+            .put("androidVersion", Build.VERSION.RELEASE)
+            .put("appVersion", PiperRemoteProtocol.appVersion(this))
+            .toString()
+            .toByteArray(Charsets.UTF_8)
+        synchronized(output) {
+            output.writeByte(PiperRemoteProtocol.PACKET_DEVICE_INFO.toInt())
+            output.writeInt(bytes.size)
+            output.write(bytes)
+            output.flush()
         }
     }
 

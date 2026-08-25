@@ -614,6 +614,7 @@
     <string name="remote_scan_qr">Quét mã QR</string>
     <string name="remote_scan_qr_prompt">Đưa mã QR của máy chia sẻ vào khung hình</string>
     <string name="remote_qr_share_choice_title">Kết nối riêng bằng QR</string>
+    <string name="remote_qr_share_choice_summary">Chọn loại thiết bị sẽ nhận màn hình của bạn.</string>
     <string name="remote_qr_share_other_device">Kết nối thiết bị khác</string>
     <string name="remote_qr_share_pc">Kết nối PC</string>
     <string name="remote_scan_pc_qr_prompt">Quét mã QR PiperOS Tool trên PC trong khung hình</string>
