@@ -8,7 +8,7 @@ espressoCore = "3.5.1"
 appcompat = "1.6.1"
 material = "1.13.0"
 glide = "4.16.0"
-media3 = "1.10.1"
+media3 = "1.11.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
