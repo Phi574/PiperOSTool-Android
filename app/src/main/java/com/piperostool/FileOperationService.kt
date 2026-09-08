@@ -318,7 +318,6 @@ class FileOperationService : Service() {
         ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
 
     private fun createChannel() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         getSystemService(NotificationManager::class.java).createNotificationChannel(
             NotificationChannel(CHANNEL_ID, "File Manager", NotificationManager.IMPORTANCE_LOW).apply {
                 description = "Tiến trình nén và giải nén tệp"

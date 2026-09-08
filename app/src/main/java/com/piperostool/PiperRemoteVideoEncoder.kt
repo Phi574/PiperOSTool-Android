@@ -54,9 +54,9 @@ class PiperRemoteVideoEncoder(
                     MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_VBR
                 }
             )
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) setInteger(MediaFormat.KEY_PRIORITY, 0)
+            setInteger(MediaFormat.KEY_PRIORITY, 0)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) setInteger(MediaFormat.KEY_LATENCY, 0)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) setInteger(MediaFormat.KEY_MAX_B_FRAMES, 0)
+            setInteger(MediaFormat.KEY_MAX_B_FRAMES, 0)
             codec.codecInfo.getCapabilitiesForType(mime).profileLevels
                 .filter { profile ->
                     profile.profile == when (stream) {
@@ -107,7 +107,7 @@ class PiperRemoteVideoEncoder(
     }
 
     fun requestKeyFrame() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT && !stopped.get()) {
+        if (!stopped.get()) {
             runCatching {
                 codec.setParameters(Bundle().apply { putInt(MediaCodec.PARAMETER_KEY_REQUEST_SYNC_FRAME, 0) })
             }
@@ -150,7 +150,7 @@ class PiperRemoteVideoEncoder(
                     capabilities.videoCapabilities?.areSizeAndRateSupported(width, height, fps.toDouble()) == true
             }.getOrDefault(false)
             return candidates.firstOrNull { info ->
-                supports(info) && (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q || info.isHardwareAccelerated)
+                supports(info) && info.isHardwareAccelerated
             }?.name ?: candidates.firstOrNull(::supports)?.name
         }
 

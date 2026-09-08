@@ -50,7 +50,7 @@ class AppsFragment : Fragment() {
     private lateinit var rvApps: RecyclerView
     private lateinit var progressBar: ProgressBar
     private lateinit var etSearchApp: EditText
-    private lateinit var btnRefreshApps: ImageView
+    private lateinit var btnRefreshApps: View
     private lateinit var btnOpenApkEditor: View
     private lateinit var btnSortApps: View
     private lateinit var tvAppsOverview: TextView
@@ -111,6 +111,19 @@ class AppsFragment : Fragment() {
         tabSystem = view.findViewById(R.id.tabSystem)
         tabDisabled = view.findViewById(R.id.tabDisabled)
 
+        // Keep the search glyph compact; the source asset has a large
+        // intrinsic size and otherwise renders as a white streak in EditText.
+        etSearchApp.compoundDrawablesRelative.firstOrNull()?.let { drawable ->
+            val size = (18 * resources.displayMetrics.density).toInt()
+            drawable.setBounds(0, 0, size, size)
+            etSearchApp.setCompoundDrawablesRelative(
+                drawable,
+                etSearchApp.compoundDrawablesRelative[1],
+                etSearchApp.compoundDrawablesRelative[2],
+                etSearchApp.compoundDrawablesRelative[3]
+            )
+        }
+
         rvApps.layoutManager = LinearLayoutManager(requireContext())
 
         universalAdapter = UniversalAppAdapter(
@@ -167,6 +180,10 @@ class AppsFragment : Fragment() {
         } else {
             loadApps()
         }
+
+        // Apply the selected surface style to the fragment immediately;
+        // RecyclerView items are styled again when they are rebound below.
+        PiperModernUi.apply(view)
     }
 
     private fun switchTab(tabIndex: Int) {
@@ -720,8 +737,8 @@ class UniversalAppAdapter(
         if (PiperUiPreferences.isModern(holder.itemView.context)) {
             holder.tvPackage.setTextColor(PiperModernUi.secondaryTextColor(holder.itemView.context))
             holder.tvMeta.setTextColor(PiperModernUi.secondaryTextColor(holder.itemView.context))
-            PiperModernUi.apply(holder.itemView)
         }
+        PiperModernUi.apply(holder.itemView)
         PiperAutoFont.apply(holder.itemView)
     }
 
@@ -758,6 +775,7 @@ class ActivityAdapter(
         holder.tvFullName.text = actInfo.name
 
         holder.itemView.setOnClickListener { onActClick(actInfo) }
+        PiperModernUi.apply(holder.itemView)
         PiperAutoFont.apply(holder.itemView)
     }
 

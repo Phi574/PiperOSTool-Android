@@ -1,6 +1,9 @@
 package com.piperostool
 
 import android.Manifest
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
+import android.animation.ValueAnimator
 import android.app.ActivityManager
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -14,6 +17,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.animation.DecelerateInterpolator
 import android.webkit.CookieManager
 import android.webkit.WebView
 import android.widget.ImageView
@@ -61,12 +65,13 @@ class InfoFragment : Fragment() {
             getString(R.string.info_device_sessions_summary)
         ) { startActivity(Intent(requireContext(), DeviceSessionsActivity::class.java)) }
         val container = view.findViewById<LinearLayout>(R.id.infoSections)
-        sections.forEachIndexed { index, section ->
-            addSection(container, section, expanded = index == 0)
+        sections.forEach { section ->
+            addSection(container, section, expanded = false)
         }
         view.findViewById<View>(R.id.btnCopyAllInfo).setOnClickListener {
             copyAllInformation(sections)
         }
+        PiperModernUi.apply(view)
     }
 
     private fun addAction(
@@ -125,13 +130,65 @@ class InfoFragment : Fragment() {
                 })
             }
         }
-        fun setExpanded(value: Boolean) {
-            rows.visibility = if (value) View.VISIBLE else View.GONE
-            chevron.rotation = if (value) 90f else 0f
+        fun setExpanded(value: Boolean, animate: Boolean) {
+            if (!animate) {
+                rows.visibility = if (value) View.VISIBLE else View.GONE
+                chevron.rotation = if (value) 90f else 0f
+                return
+            }
+            val startHeight = rows.height
+            if (value) {
+                rows.visibility = View.VISIBLE
+                rows.measure(
+                    View.MeasureSpec.makeMeasureSpec(rows.width, View.MeasureSpec.EXACTLY),
+                    View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+                )
+                val targetHeight = rows.measuredHeight
+                rows.layoutParams.height = 0
+                rows.alpha = 0.6f
+                rows.translationY = -dp(5).toFloat()
+                ValueAnimator.ofInt(0, targetHeight).apply {
+                    duration = 220L
+                    interpolator = DecelerateInterpolator()
+                    addUpdateListener { animator ->
+                        rows.layoutParams.height = animator.animatedValue as Int
+                        rows.requestLayout()
+                    }
+                    addListener(object : AnimatorListenerAdapter() {
+                        override fun onAnimationEnd(animation: Animator) {
+                            rows.layoutParams.height = ViewGroup.LayoutParams.WRAP_CONTENT
+                            rows.alpha = 1f
+                            rows.translationY = 0f
+                        }
+                    })
+                    start()
+                }
+            } else {
+                ValueAnimator.ofInt(startHeight, 0).apply {
+                    duration = 180L
+                    interpolator = DecelerateInterpolator()
+                    addUpdateListener { animator ->
+                        rows.layoutParams.height = animator.animatedValue as Int
+                        rows.requestLayout()
+                    }
+                    addListener(object : AnimatorListenerAdapter() {
+                        override fun onAnimationEnd(animation: Animator) {
+                            rows.visibility = View.GONE
+                            rows.layoutParams.height = ViewGroup.LayoutParams.WRAP_CONTENT
+                        }
+                    })
+                    start()
+                }
+            }
+            chevron.animate()
+                .rotation(if (value) 90f else 0f)
+                .setDuration(200L)
+                .setInterpolator(DecelerateInterpolator())
+                .start()
         }
-        setExpanded(expanded)
+        setExpanded(expanded, animate = false)
         item.findViewById<View>(R.id.infoSectionHeader).setOnClickListener {
-            setExpanded(rows.visibility != View.VISIBLE)
+            setExpanded(rows.visibility != View.VISIBLE, animate = true)
         }
         container.addView(item)
     }

@@ -44,7 +44,7 @@
     <string name="lock_no_offline_data">Thiết bị chưa có dữ liệu mã khóa đã đồng bộ. Hãy kết nối mạng một lần để xác minh an toàn.</string>
     <string name="settings_lock_offline">Mã khóa trực tuyến tạm ẩn khi offline</string>
     <string name="settings_ui_style">Kiểu giao diện</string>
-    <string name="settings_ui_classic">Cổ điển</string>
+    <string name="settings_ui_classic">Liquid Glass (Cổ điển)</string>
     <string name="settings_ui_modern">Hiện đại</string>
     <string name="settings_color_mode">Màu giao diện</string>
     <string name="settings_color_system">Theo hệ thống</string>
@@ -240,6 +240,20 @@
     <string name="more_options">Tùy chọn khác</string>
     <string name="browser_options">Tùy chọn trình duyệt</string>
     <string name="browser_privacy_report">Báo cáo quyền riêng tư</string>
+    <string name="browser_developer_tools">Công cụ nhà phát triển</string>
+    <string name="browser_developer_tools_summary">Xem DOM, mã HTML, tài nguyên và console JavaScript</string>
+    <string name="browser_devtools_dom">DOM / HTML</string>
+    <string name="browser_devtools_resources">Tài nguyên</string>
+    <string name="browser_devtools_info">Thông tin</string>
+    <string name="browser_devtools_console">Console</string>
+    <string name="browser_devtools_loading">Đang thu thập dữ liệu trang…</string>
+    <string name="browser_devtools_no_data">Chưa có dữ liệu</string>
+    <string name="browser_devtools_refresh">Tải lại dữ liệu</string>
+    <string name="browser_devtools_apply_html">Áp dụng HTML</string>
+    <string name="browser_devtools_run">Chạy</string>
+    <string name="browser_devtools_script_hint">Nhập JavaScript để chạy trên trang hiện tại…</string>
+    <string name="browser_devtools_preview_note">Thay đổi DOM chỉ là bản xem trước trong tab hiện tại và sẽ mất khi tải lại.</string>
+    <string name="browser_devtools_console_empty">Nhập JavaScript rồi bấm Chạy.</string>
     <string name="browser_privacy_summary_safe">Chưa phát hiện dấu hiệu theo dõi phổ biến</string>
     <string name="browser_privacy_summary_warning">Phát hiện %1$d miền có dấu hiệu theo dõi</string>
     <string name="browser_privacy_https">Kết nối được mã hóa</string>
@@ -686,4 +700,7 @@
     <string name="apple_mirror_error">Không thể khởi động receiver: %1$s</string>
     <string name="apple_mirror_stop_title">Dừng phản chiếu màn hình?</string>
     <string name="apple_mirror_stop_message">Kết nối Apple hiện tại sẽ bị ngắt và dịch vụ receiver sẽ dừng.</string>
+    <string name="sessions_delete_history">Xóa phiên khỏi lịch sử</string>
+    <string name="sessions_delete_message">Xóa phiên đã ngắt này khỏi danh sách thiết bị? Thiết bị đó vẫn bị ngắt phiên.</string>
+    <string name="sessions_delete_failed">Không thể xóa lịch sử phiên. Vui lòng thử lại.</string>
 </resources>

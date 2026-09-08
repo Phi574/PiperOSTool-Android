@@ -4,10 +4,8 @@ import android.app.DatePickerDialog
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
-import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.EditText
-import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -23,7 +21,8 @@ class AccountProfileActivity : AppCompatActivity() {
     private lateinit var uid: EditText
     private lateinit var fullName: EditText
     private lateinit var birthDate: EditText
-    private lateinit var gender: Spinner
+    private lateinit var gender: TextView
+    private var selectedGender = 0
     private lateinit var phone: EditText
     private lateinit var email: EditText
     private lateinit var save: Button
@@ -34,7 +33,16 @@ class AccountProfileActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_account_profile)
-        PiperModernUi.apply(findViewById(R.id.accountProfileRoot))
+        val background = findViewById<android.widget.ImageView>(R.id.homeBackground)
+        if (!PiperUiPreferences.isModern(this)) {
+            val prefs = AccountDataScope.preferences(this, "PiperPrefs")
+            if (prefs.getBoolean("has_custom_bg", false)) {
+                val file = AccountDataScope.file(this, "appearance", "custom_bg.jpg")
+                android.graphics.drawable.Drawable.createFromPath(file.absolutePath)?.let {
+                    background.setImageDrawable(it)
+                }
+            }
+        } else background.visibility = android.view.View.GONE
         findViewById<android.view.View>(R.id.btnProfileBack).setOnClickListener { finish() }
         uid = findViewById(R.id.etProfileUid)
         fullName = findViewById(R.id.etProfileName)
@@ -45,15 +53,20 @@ class AccountProfileActivity : AppCompatActivity() {
         save = findViewById(R.id.btnSaveProfile)
         request = findViewById(R.id.btnRequestProfileChange)
         status = findViewById(R.id.tvProfileStatus)
-        gender.adapter = ArrayAdapter.createFromResource(
-            this, R.array.profile_gender_labels, R.layout.item_account_spinner
-        ).also { it.setDropDownViewResource(R.layout.item_account_spinner) }
+        gender.text = resources.getStringArray(R.array.profile_gender_labels)[selectedGender]
+        val arrowSize = (20 * resources.displayMetrics.density).toInt()
+        getDrawable(R.drawable.ic_chevron_right)?.mutate()?.let {
+            it.setBounds(0, 0, arrowSize, arrowSize)
+            gender.setCompoundDrawablesRelative(null, null, it, null)
+        }
+        gender.setOnClickListener { if (!locked) pickGender() }
         uid.setText(auth.currentUser?.uid.orEmpty())
         email.setText(auth.currentUser?.email.orEmpty())
         email.isEnabled = false
         birthDate.setOnClickListener { if (!locked) pickBirthDate() }
         save.setOnClickListener { saveProfileOnce() }
         request.setOnClickListener { showChangeRequest() }
+        PiperModernUi.watch(this)
         loadProfile()
     }
 
@@ -73,7 +86,8 @@ class AccountProfileActivity : AppCompatActivity() {
                 phone.setText(doc.getString("phoneNumber").orEmpty())
                 email.setText(doc.getString("email") ?: user.email.orEmpty())
                 val code = doc.getString("gender").orEmpty()
-                gender.setSelection(resources.getStringArray(R.array.profile_gender_values).indexOf(code).coerceAtLeast(0))
+                selectedGender = resources.getStringArray(R.array.profile_gender_values).indexOf(code).coerceAtLeast(0)
+                gender.text = resources.getStringArray(R.array.profile_gender_labels)[selectedGender]
                 setLockedUi()
             } else {
                 db.collection("users").document(user.uid).get().addOnSuccessListener {
@@ -110,7 +124,7 @@ class AccountProfileActivity : AppCompatActivity() {
             "uid" to user.uid,
             "fullName" to name,
             "dateOfBirth" to dob,
-            "gender" to values[gender.selectedItemPosition],
+            "gender" to values[selectedGender],
             "phoneNumber" to number,
             "email" to (user.email ?: ""),
             "locked" to true,
@@ -133,6 +147,18 @@ class AccountProfileActivity : AppCompatActivity() {
 
     private fun pickBirthDate() {
         val calendar = Calendar.getInstance()
+        if (!PiperUiPreferences.isModern(this)) {
+            val picker = android.widget.DatePicker(this).apply {
+                maxDate = System.currentTimeMillis()
+                init(calendar.get(Calendar.YEAR) - 18, calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH), null)
+            }
+            PiperDialog.showCustom(this, getString(R.string.profile_birth_date), content = picker,
+                positiveLabel = getString(android.R.string.ok), onPositive = {
+                    birthDate.setText(String.format(Locale.US, "%04d-%02d-%02d", picker.year, picker.month + 1, picker.dayOfMonth))
+                    true
+                })
+            return
+        }
         DatePickerDialog(this, { _, year, month, day ->
             birthDate.setText(String.format(Locale.US, "%04d-%02d-%02d", year, month + 1, day))
         }, calendar.get(Calendar.YEAR) - 18, calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH)).apply {
@@ -162,6 +188,27 @@ class AccountProfileActivity : AppCompatActivity() {
                 }
             }
         )
+    }
+
+    private fun pickGender() {
+        val choices = android.widget.RadioGroup(this)
+        resources.getStringArray(R.array.profile_gender_labels).forEachIndexed { index, label ->
+            choices.addView(android.widget.RadioButton(this).apply {
+                id = android.view.View.generateViewId()
+                text = label
+                tag = index
+                minHeight = (48 * resources.displayMetrics.density).toInt()
+                isChecked = index == selectedGender
+            })
+        }
+        PiperDialog.showCustom(this, gender.text.toString(), content = choices,
+            positiveLabel = getString(android.R.string.ok), onPositive = {
+                choices.findViewById<android.widget.RadioButton>(choices.checkedRadioButtonId)?.let {
+                    selectedGender = it.tag as Int
+                    gender.text = it.text
+                }
+                true
+            })
     }
 
     private fun submitChangeRequest(reason: String) {

@@ -106,7 +106,18 @@ object PiperModernUi {
     )
 
     fun watch(activity: Activity) {
-        if (!PiperUiPreferences.isModern(activity)) return
+        if (activity is WelcomeActivity || activity is LoginActivity ||
+            activity is SignupActivity || activity is ForgotPassword
+        ) {
+            // AuthScreenUi owns these screens; do not let the generic modern
+            // pass replace their transparent LiquidGlass shell on resume.
+            PiperClassicGlassUi.watch(activity)
+            return
+        }
+        if (!PiperUiPreferences.isModern(activity)) {
+            PiperClassicGlassUi.watch(activity)
+            return
+        }
         val dark = isDark(activity)
         applyWindow(activity.window, dark)
         installAmbientBackground(activity, dark)
@@ -121,12 +132,14 @@ object PiperModernUi {
     }
 
     fun apply(root: View) {
-        if (PiperUiPreferences.isModern(root.context)) {
-            val colors = palette(root.context)
-            root.backgroundTintList = null
-            root.background = rounded(colors.surface, colors.border, 8f, root)
-            applyTree(root, colors)
+        if (!PiperUiPreferences.isModern(root.context)) {
+            PiperClassicGlassUi.apply(root)
+            return
         }
+        val colors = palette(root.context)
+        root.backgroundTintList = null
+        root.background = rounded(colors.surface, colors.border, 8f, root)
+        applyTree(root, colors)
     }
 
     private fun applyWindow(window: Window, dark: Boolean) {
@@ -380,15 +393,35 @@ object PiperModernUi {
         )
     }
 
-    fun textColor(context: Context): Int = palette(context).text
+    fun textColor(context: Context): Int = if (PiperUiPreferences.isModern(context)) {
+        palette(context).text
+    } else {
+        PiperClassicGlassUi.textColor(context)
+    }
 
-    fun secondaryTextColor(context: Context): Int = palette(context).secondaryText
+    fun secondaryTextColor(context: Context): Int = if (PiperUiPreferences.isModern(context)) {
+        palette(context).secondaryText
+    } else {
+        PiperClassicGlassUi.secondaryTextColor(context)
+    }
 
-    fun accentColor(context: Context): Int = palette(context).accent
+    fun accentColor(context: Context): Int = if (PiperUiPreferences.isModern(context)) {
+        palette(context).accent
+    } else {
+        PiperClassicGlassUi.accentColor(context)
+    }
 
-    fun surfaceColor(context: Context): Int = palette(context).surface
+    fun surfaceColor(context: Context): Int = if (PiperUiPreferences.isModern(context)) {
+        palette(context).surface
+    } else {
+        PiperClassicGlassUi.surfaceColor(context)
+    }
 
-    fun borderColor(context: Context): Int = palette(context).border
+    fun borderColor(context: Context): Int = if (PiperUiPreferences.isModern(context)) {
+        palette(context).border
+    } else {
+        PiperClassicGlassUi.borderColor(context)
+    }
 
     private fun isPrimaryAction(name: String): Boolean =
         name.contains("start", true) || name.contains("login", true) ||

@@ -44,7 +44,7 @@
     <string name="lock_no_offline_data">No synchronized lock data is available. Connect once to verify securely.</string>
     <string name="settings_lock_offline">Online lock settings are hidden while offline</string>
     <string name="settings_ui_style">Interface style</string>
-    <string name="settings_ui_classic">Classic</string>
+    <string name="settings_ui_classic">Liquid Glass (Classic)</string>
     <string name="settings_ui_modern">Modern</string>
     <string name="settings_color_mode">Color mode</string>
     <string name="settings_color_system">Follow system</string>
@@ -244,6 +244,20 @@
     <string name="more_options">More options</string>
     <string name="browser_options">Browser options</string>
     <string name="browser_privacy_report">Privacy report</string>
+    <string name="browser_developer_tools">Developer tools</string>
+    <string name="browser_developer_tools_summary">Inspect DOM, HTML, resources, and JavaScript console</string>
+    <string name="browser_devtools_dom">DOM / HTML</string>
+    <string name="browser_devtools_resources">Resources</string>
+    <string name="browser_devtools_info">Info</string>
+    <string name="browser_devtools_console">Console</string>
+    <string name="browser_devtools_loading">Collecting page data…</string>
+    <string name="browser_devtools_no_data">No data</string>
+    <string name="browser_devtools_refresh">Refresh data</string>
+    <string name="browser_devtools_apply_html">Apply HTML</string>
+    <string name="browser_devtools_run">Run</string>
+    <string name="browser_devtools_script_hint">Enter JavaScript to run on the current page…</string>
+    <string name="browser_devtools_preview_note">DOM changes are a preview in the current tab and are lost on reload.</string>
+    <string name="browser_devtools_console_empty">Enter JavaScript and tap Run.</string>
     <string name="browser_privacy_summary_safe">No common tracking signals detected</string>
     <string name="browser_privacy_summary_warning">%1$d possible tracking domains detected</string>
     <string name="browser_privacy_https">Encrypted connection</string>
@@ -684,4 +698,7 @@
     <string name="apple_mirror_error">Could not start receiver: %1$s</string>
     <string name="apple_mirror_stop_title">Stop screen mirroring?</string>
     <string name="apple_mirror_stop_message">The current Apple connection will end and the receiver service will stop.</string>
+    <string name="sessions_delete_history">Remove session from history</string>
+    <string name="sessions_delete_message">Remove this ended session from the device list? The device will remain signed out.</string>
+    <string name="sessions_delete_failed">Could not remove session history. Please try again.</string>
 </resources>

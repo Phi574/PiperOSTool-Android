@@ -28,7 +28,13 @@ class DeviceSessionsActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_device_sessions)
-        PiperModernUi.apply(findViewById(R.id.deviceSessionsRoot))
+        val background = findViewById<ImageView>(R.id.homeBackground)
+        if (PiperUiPreferences.isModern(this)) background.visibility = View.GONE
+        else if (AccountDataScope.preferences(this, "PiperPrefs").getBoolean("has_custom_bg", false)) {
+            val file = AccountDataScope.file(this, "appearance", "custom_bg.jpg")
+            android.graphics.drawable.Drawable.createFromPath(file.absolutePath)?.let { background.setImageDrawable(it) }
+        }
+        PiperModernUi.watch(this)
         findViewById<View>(R.id.btnSessionsBack).setOnClickListener { finish() }
         findViewById<Button>(R.id.btnChangeAccountPassword).setOnClickListener { showPasswordDialog() }
         list = findViewById(R.id.deviceSessionsList)
@@ -54,7 +60,7 @@ class DeviceSessionsActivity : AppCompatActivity() {
                     return@addSnapshotListener
                 }
                 list.removeAllViews()
-                val docs = snapshot?.documents.orEmpty()
+                val docs = snapshot?.documents.orEmpty().filter { it.getBoolean("historyHidden") != true }
                 empty.visibility = if (docs.isEmpty()) View.VISIBLE else View.GONE
                 docs.forEach { doc -> addSessionItem(doc.data.orEmpty(), doc.id, doc.id == current) }
             }
@@ -90,14 +96,15 @@ class DeviceSessionsActivity : AppCompatActivity() {
         item.findViewById<ImageView>(R.id.ivSessionDevice).imageTintList =
             ColorStateList.valueOf(if (active) PiperModernUi.accentColor(this) else PiperModernUi.secondaryTextColor(this))
         item.findViewById<Button>(R.id.btnRevokeSession).apply {
-            visibility = if (isCurrent || revoked) View.GONE else View.VISIBLE
+            visibility = if (isCurrent || !active) View.GONE else View.VISIBLE
             setOnClickListener {
                 PiperDialog.showConfirm(
                     this@DeviceSessionsActivity,
                     getString(R.string.sessions_revoke_title),
                     getString(R.string.sessions_revoke_message),
                     getString(R.string.sessions_revoke_action),
-                    destructive = true
+                    destructive = true,
+                    liquidGlass = true
                 ) {
                     val uid = auth.currentUser?.uid ?: return@showConfirm
                     DeviceSessionManager.revokeSession(
@@ -112,8 +119,25 @@ class DeviceSessionsActivity : AppCompatActivity() {
                 }
             }
         }
-        PiperModernUi.apply(item)
         list.addView(item)
+        PiperModernUi.apply(item)
+        item.findViewById<View>(R.id.btnDeleteSession).apply {
+            visibility = if (!isCurrent && (revoked || data["active"] == false)) View.VISIBLE else View.GONE
+            setOnClickListener {
+                PiperDialog.showConfirm(this@DeviceSessionsActivity,
+                    getString(R.string.sessions_delete_history),
+                    getString(R.string.sessions_delete_message),
+                    getString(R.string.sessions_delete_history), destructive = true, liquidGlass = true) {
+                    isEnabled = false
+                    DeviceSessionManager.removeEndedSession(this@DeviceSessionsActivity, sessionId) { success ->
+                        if (!isDestroyed && !isFinishing && !success) {
+                            isEnabled = true
+                            Toast.makeText(this@DeviceSessionsActivity, R.string.sessions_delete_failed, Toast.LENGTH_LONG).show()
+                        }
+                    }
+                }
+            }
+        }
     }
 
     private fun showPasswordDialog() {
@@ -137,6 +161,7 @@ class DeviceSessionsActivity : AppCompatActivity() {
         PiperDialog.showCustom(
             context = this,
             title = getString(R.string.sessions_change_password),
+            liquidGlass = true,
             message = getString(R.string.sessions_change_password_note),
             content = fields,
             positiveLabel = getString(R.string.sessions_update_password),

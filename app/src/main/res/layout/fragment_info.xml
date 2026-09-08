@@ -97,33 +97,41 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical" />
 
-            <LinearLayout
+            <com.google.android.material.card.MaterialCardView
                 android:id="@+id/btnCopyAllInfo"
                 android:layout_width="match_parent"
-                android:layout_height="50dp"
+                android:layout_height="56dp"
                 android:layout_marginTop="6dp"
-                android:background="@drawable/bg_device_copy"
                 android:clickable="true"
                 android:focusable="true"
-                android:gravity="center"
-                android:orientation="horizontal">
+                app:cardBackgroundColor="@android:color/transparent"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="0dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:orientation="horizontal">
 
                 <ImageView
                     android:layout_width="20dp"
                     android:layout_height="20dp"
                     android:contentDescription="@null"
                     android:src="@drawable/details"
-                    app:tint="#08110B" />
+                    app:tint="#C7D0D6" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="9dp"
                     android:text="SAO CHÉP TẤT CẢ"
-                    android:textColor="#08110B"
+                    android:textColor="#E7EDF1"
                     android:textSize="13sp"
                     android:textStyle="bold" />
-            </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -93,6 +93,7 @@ class PiperBrowserActivity : AppCompatActivity() {
         var thumbnail: Bitmap? = null,
         val thirdPartyHosts: MutableSet<String> = ConcurrentHashMap.newKeySet(),
         val trackerHosts: MutableSet<String> = ConcurrentHashMap.newKeySet(),
+        val resourceUrls: MutableSet<String> = ConcurrentHashMap.newKeySet(),
         val requestCount: AtomicInteger = AtomicInteger()
     )
 
@@ -604,6 +605,7 @@ class PiperBrowserActivity : AppCompatActivity() {
                 if (currentUrl == "about:blank" && tab.url == BrowserSessionStore.HOME_URL) return
                 tab.requestCount.set(0)
                 tab.thirdPartyHosts.clear()
+                tab.resourceUrls.clear()
                 tab.trackerHosts.clear()
                 mediaCandidates.remove(tab.id)
                 if (tab.id == activeTabId) updateMediaDownloadButton()
@@ -649,7 +651,10 @@ class PiperBrowserActivity : AppCompatActivity() {
             ): WebResourceResponse? {
                 val tabId = (view.tag as? Long) ?: return super.shouldInterceptRequest(view, request)
                 val url = request.url.toString()
-                tabs.firstOrNull { it.id == tabId }?.let { recordPrivacyRequest(it, request.url) }
+                tabs.firstOrNull { it.id == tabId }?.let {
+                    if (it.resourceUrls.size < MAX_RESOURCE_URLS) it.resourceUrls.add(url)
+                    recordPrivacyRequest(it, request.url)
+                }
                 mediaMimeTypeForUrl(url)?.let { mimeType ->
                     registerMediaCandidate(tabId, url, mimeType, null)
                 }
@@ -1223,6 +1228,16 @@ class PiperBrowserActivity : AppCompatActivity() {
         )
         content.addView(
             createMenuRow(
+                R.drawable.ic_browser_code,
+                getString(R.string.browser_developer_tools),
+                getString(R.string.browser_developer_tools_summary)
+            ) {
+                popup.dismiss()
+                openDeveloperTools(tab)
+            }
+        )
+        content.addView(
+            createMenuRow(
                 R.drawable.ic_browser_privacy,
                 getString(R.string.browser_theme),
                 browserThemeLabel(sessionStore.browserThemeMode())
@@ -1359,6 +1374,204 @@ class PiperBrowserActivity : AppCompatActivity() {
         setColor(PiperModernUi.surfaceColor(this@PiperBrowserActivity))
         cornerRadius = dp(8).toFloat()
         setStroke(dp(1), PiperModernUi.borderColor(this@PiperBrowserActivity))
+    }
+
+    private fun openDeveloperTools(tab: BrowserTab) {
+        val dialog = BottomSheetDialog(this)
+        val textColor = PiperModernUi.textColor(this)
+        val secondaryColor = PiperModernUi.secondaryTextColor(this)
+        val accentColor = PiperModernUi.accentColor(this)
+        val root = createSheetRoot().apply {
+            setPadding(dp(14), 0, dp(14), dp(12))
+        }
+        root.addView(createSheetHeader(getString(R.string.browser_developer_tools), null))
+        root.addView(TextView(this).apply {
+            text = "${tab.title}\n${conciseAddress(tab.url)}"
+            textSize = 12f
+            setTextColor(secondaryColor)
+            setPadding(dp(6), 0, dp(6), dp(10))
+            maxLines = 2
+            ellipsize = android.text.TextUtils.TruncateAt.END
+        })
+
+        val tabsRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setPadding(0, 0, 0, dp(8))
+        }
+        val contentHost = FrameLayout(this)
+        val scroll = ScrollView(this).apply {
+            isFillViewport = true
+            addView(contentHost)
+        }
+        root.addView(tabsRow)
+        root.addView(scroll, LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f
+        ))
+        dialog.setContentView(root)
+        dialog.setOnShowListener {
+            dialog.behavior.state = com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_EXPANDED
+        }
+
+        var editor: EditText? = null
+        lateinit var consoleInput: EditText
+        lateinit var consoleOutput: TextView
+        lateinit var showConsole: () -> Unit
+        var selectedMode = 0
+
+        fun codeEditor(value: String): EditText = EditText(this).apply {
+            setText(value)
+            setTextColor(textColor)
+            setHintTextColor(secondaryColor)
+            textSize = 12f
+            typeface = Typeface.MONOSPACE
+            gravity = Gravity.TOP or Gravity.START
+            minLines = 12
+            setPadding(dp(12), dp(12), dp(12), dp(12))
+            setTextIsSelectable(true)
+            background = popupSurfaceDrawable()
+            layoutParams = ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT
+            )
+        }
+
+        fun resultString(value: String?): String = runCatching {
+            (JSONTokener(value ?: "null").nextValue() as? String).orEmpty()
+        }.getOrDefault("")
+
+        fun showOutput(value: String) {
+            contentHost.removeAllViews()
+            val currentEditor = codeEditor(value.ifBlank { getString(R.string.browser_devtools_no_data) })
+            editor = currentEditor
+            contentHost.addView(currentEditor, FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, dp(420)
+            ))
+        }
+
+        fun evaluate(script: String, onResult: (String) -> Unit) {
+            contentHost.removeAllViews()
+            contentHost.addView(TextView(this).apply {
+                text = getString(R.string.browser_devtools_loading)
+                textSize = 14f
+                setTextColor(secondaryColor)
+                setPadding(dp(12), dp(18), dp(12), dp(18))
+            })
+            tab.webView.evaluateJavascript(script) { onResult(resultString(it)) }
+        }
+
+        fun renderMode(mode: Int) {
+            selectedMode = mode
+            for (index in 0 until tabsRow.childCount) {
+                val item = tabsRow.getChildAt(index) as TextView
+                item.setTextColor(if (index == mode) accentColor else secondaryColor)
+                item.setTypeface(item.typeface, if (index == mode) Typeface.BOLD else Typeface.NORMAL)
+            }
+            when (mode) {
+                0 -> evaluate("(function(){return document.documentElement.outerHTML || '';})()") { showOutput(it) }
+                1 -> showOutput(tab.resourceUrls.sorted().take(2000).joinToString("\n"))
+                2 -> evaluate(
+                    "(function(){return JSON.stringify({" +
+                        "url:location.href,title:document.title,readyState:document.readyState," +
+                        "viewport:innerWidth+'x'+innerHeight,links:document.links.length," +
+                        "images:document.images.length,scripts:document.scripts.length," +
+                        "styles:document.styleSheets.length,resources:performance.getEntriesByType('resource').length" +
+                        "});})()"
+                ) { value ->
+                    val json = runCatching { JSONObject(value) }.getOrNull()
+                    showOutput(json?.toString(2) ?: value)
+                }
+                else -> showConsole()
+            }
+        }
+
+        showConsole = {
+            contentHost.removeAllViews()
+            val consoleRoot = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(0, 0, 0, dp(10))
+            }
+            consoleInput = EditText(this).apply {
+                hint = getString(R.string.browser_devtools_script_hint)
+                setHintTextColor(secondaryColor)
+                setTextColor(textColor)
+                textSize = 13f
+                typeface = Typeface.MONOSPACE
+                gravity = Gravity.TOP or Gravity.START
+                minLines = 4
+                inputType = android.text.InputType.TYPE_CLASS_TEXT or
+                    android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE or
+                    android.text.InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
+                background = popupSurfaceDrawable()
+                setPadding(dp(12), dp(12), dp(12), dp(12))
+            }
+            val run = createSheetAction(getString(R.string.browser_devtools_run), false) {
+                val script = consoleInput.text.toString().trim()
+                if (script.isBlank()) return@createSheetAction
+                tab.webView.evaluateJavascript(script) { value ->
+                    consoleOutput.text = resultString(value).ifBlank { "undefined" }
+                }
+            }
+            consoleOutput = TextView(this).apply {
+                text = getString(R.string.browser_devtools_console_empty)
+                textSize = 12f
+                typeface = Typeface.MONOSPACE
+                setTextColor(secondaryColor)
+                setPadding(dp(12), dp(14), dp(12), dp(14))
+                background = popupSurfaceDrawable()
+            }
+            consoleRoot.addView(consoleInput, LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, dp(150)
+            ))
+            consoleRoot.addView(run, LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, dp(46)
+            ).apply { topMargin = dp(8) })
+            consoleRoot.addView(consoleOutput, LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply { topMargin = dp(8) })
+            contentHost.addView(consoleRoot)
+        }
+
+        listOf(
+            R.string.browser_devtools_dom,
+            R.string.browser_devtools_resources,
+            R.string.browser_devtools_info,
+            R.string.browser_devtools_console
+        ).forEachIndexed { index, labelRes ->
+            tabsRow.addView(TextView(this).apply {
+                text = getString(labelRes)
+                gravity = Gravity.CENTER
+                textSize = 12f
+                setPadding(dp(8), dp(8), dp(8), dp(8))
+                setOnClickListener { renderMode(index) }
+            }, LinearLayout.LayoutParams(0, dp(42), 1f))
+        }
+
+        val actions = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(0, dp(8), 0, 0)
+        }
+        val refresh = createSheetAction(getString(R.string.browser_devtools_refresh), false) {
+            renderMode(selectedMode)
+        }
+        val apply = createSheetAction(getString(R.string.browser_devtools_apply_html), false) {
+            if (editor != null && selectedMode == 0) {
+                val html = JSONObject.quote(editor?.text?.toString().orEmpty())
+                tab.webView.evaluateJavascript(
+                    "(function(){document.documentElement.innerHTML=$html;return 'OK';})()"
+                ) { Toast.makeText(this, resultString(it), Toast.LENGTH_SHORT).show() }
+            }
+        }
+        actions.addView(refresh, LinearLayout.LayoutParams(0, dp(46), 1f))
+        actions.addView(apply, LinearLayout.LayoutParams(0, dp(46), 1f))
+        root.addView(actions)
+        root.addView(TextView(this).apply {
+            text = getString(R.string.browser_devtools_preview_note)
+            textSize = 11f
+            setTextColor(secondaryColor)
+            setPadding(dp(6), dp(4), dp(6), 0)
+        })
+        renderMode(0)
+        dialog.show()
     }
 
     private fun showPrivacyReport(tab: BrowserTab) {
@@ -3074,6 +3287,7 @@ class PiperBrowserActivity : AppCompatActivity() {
         private const val CREDENTIAL_BRIDGE_NAME = "PiperCredentialVault"
         private const val MAX_SUGGESTED_DOWNLOADS = 64
         private const val MAX_MEDIA_CANDIDATES = 24
+        private const val MAX_RESOURCE_URLS = 4000
         private const val SCROLL_UP = -1
         private const val SCROLL_DOWN = 1
         private const val SCROLL_SEQUENCE_TIMEOUT_MS = 180L

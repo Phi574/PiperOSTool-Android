@@ -11,7 +11,7 @@
 <p align="center">
   <a href="https://github.com/Phi574/PiperOSTool-Android/actions/workflows/android-ci.yml"><img alt="Android CI" src="https://github.com/Phi574/PiperOSTool-Android/actions/workflows/android-ci.yml/badge.svg"></a>
   <a href="https://github.com/Phi574/PiperOSTool-Android/blob/master/LICENSE"><img alt="GPLv3" src="https://img.shields.io/badge/license-GPLv3-blue.svg"></a>
-  <img alt="Android 7+" src="https://img.shields.io/badge/Android-7%2B-3DDC84?logo=android&logoColor=white">
+  <img alt="Android 10+" src="https://img.shields.io/badge/Android-10%2B-3DDC84?logo=android&logoColor=white">
   <img alt="Kotlin 2.4.10" src="https://img.shields.io/badge/Kotlin-2.4.10-7F52FF?logo=kotlin&logoColor=white">
 </p>
 
@@ -20,7 +20,18 @@
 
 ## Bản hiện tại
 
-`3.2.7.beta` sử dụng `minSdk 24`, `targetSdk 36`, Kotlin `2.4.10` và tập trung vào:
+`3.3.6.Beta` (versionCode `45`) sử dụng `minSdk 29 (Android 10)`, `targetSdk 36`, Kotlin `2.4.10`.
+
+### Cải tiến mới trong 3.3.6.Beta
+
+- LiquidGlass cho Home, Beta, Ứng dụng, Cài đặt, Info, màn xác thực, Thông tin người dùng và Thiết bị đăng nhập; đồng bộ ảnh nền và kích thước icon quay về.
+- Hiệu ứng chuyển tab và mở/đóng mục Info; các mục thông tin không tự mở sẵn.
+- Sửa vòng lặp chuyển Đăng ký/Quên mật khẩu về Login do bộ kiểm tra phiên dùng chung.
+- Thêm xóa lịch sử từng phiên đã ngắt, có xác nhận và kiểm tra trạng thái trên Firestore. Giữ bản ghi thu hồi để thiết bị cũ không tự khôi phục phiên.
+- Ba hộp thoại ngắt thiết bị, đổi mật khẩu và xóa lịch sử dùng nền kính native, nút kính và vùng cuộn cho nội dung dài.
+- Rules Firestore hỗ trợ `historyHidden` cho phiên đã kết thúc; cần triển khai `firestore.rules` khi tự vận hành Firebase.
+
+### Các tính năng chính
 
 - **PiperOS View Remote:** ba pipeline truyền hình ảnh thật gồm JPEG tương thích,
   MediaCodec H.264 phần cứng và MediaCodec HEVC phần cứng. Piper Remote 4 tự thương
@@ -42,6 +53,18 @@
   đang đăng nhập phục vụ kiểm tra phiên đăng nhập.
 
 - Browser theme sáng/tối/theo hệ thống, nhiều công cụ tìm kiếm và quản lý Cookie/Token theo website.
+- PiperOS Browser có **Công cụ nhà phát triển** kiểu F12: đọc DOM/HTML của tab hiện tại,
+  liệt kê resource/network đã tải, xem thông tin trang và chạy JavaScript trên trang.
+  Có thể áp dụng chỉnh sửa HTML vào tab hiện tại để kiểm thử nhanh; thay đổi sẽ mất khi tải lại.
+- Giao diện **Liquid Glass (Cổ điển)** được xây dựng lại ở tầng theme dùng chung:
+  nền màu có chiều sâu, panel kính bán trong suốt, viền phản sáng, nút capsule,
+  input và thanh điều hướng kính; tự đổi tương phản cho chế độ sáng/tối và vẫn giữ
+  ảnh nền tùy chỉnh của người dùng.
+- Bề mặt Classic dùng module LiquidGlass View/XML được tích hợp trong repo:
+  kính lấy backdrop động, SDF refraction, chromatic dispersion, highlight theo cảm biến
+  và progressive blur ở mép menu cuộn. Android 13+ dùng AGSL lens pipeline; Android 10-12
+  tự dùng native fallback. Bản hiện tại ưu tiên chất lượng live đầy đủ; hồ sơ tối ưu máy yếu
+  sẽ được tách riêng ở bước tiếp theo.
 - APK Editor giảm tải bộ nhớ khi giải nén, tách luồng chỉnh tài nguyên và smali, đồng thời báo tiến trình trung thực.
 - Kiểm tra phiên Firebase liên tục và màn hình kháng nghị cho tài khoản bị vô hiệu hóa.
 - Fake Map GPS phát đồng thời qua Android GPS/Network và Google Fused Location, kèm tốc độ, hướng và timestamp ổn định cho ứng dụng giao thông.

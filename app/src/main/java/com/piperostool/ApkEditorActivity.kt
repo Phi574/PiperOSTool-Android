@@ -630,17 +630,6 @@ class ApkEditorActivity : AppCompatActivity() {
     }
 
     private fun exportToDownloads(file: File): Uri? {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-            return runCatching {
-                val directory = File(
-                    Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
-                    "PiperOS_APK_Editor"
-                ).apply { mkdirs() }
-                val target = File(directory, file.name)
-                file.copyTo(target, overwrite = true)
-                fileUri(target)
-            }.getOrNull()
-        }
         val values = ContentValues().apply {
             put(MediaStore.Downloads.DISPLAY_NAME, file.name)
             put(MediaStore.Downloads.MIME_TYPE, "application/vnd.android.package-archive")

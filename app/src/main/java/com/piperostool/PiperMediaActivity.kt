@@ -619,14 +619,7 @@ class PiperMediaActivity : AppCompatActivity() {
                 } else null
                 val uri = ContentUris.withAppendedId(collection, id)
                 val rawPath = if (pathColumn >= 0) it.getString(pathColumn).orEmpty() else ""
-                val relativePath = if (
-                    Build.VERSION.SDK_INT < Build.VERSION_CODES.Q &&
-                    rawPath.contains('/')
-                ) {
-                    rawPath.substringBeforeLast('/', "")
-                } else {
-                    rawPath.trim('/')
-                }
+                val relativePath = rawPath.trim('/')
                 val source = classifyMediaSource(relativePath)
                 val artworkUri = if (albumColumn >= 0) {
                     val albumId = it.getLong(albumColumn)
@@ -1106,7 +1099,6 @@ class PiperMediaActivity : AppCompatActivity() {
     }
 
     private fun updatePipParams(isVideo: Boolean) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val videoSize = controller?.videoSize
         val width = videoSize?.width?.takeIf { it > 0 } ?: 16
         val height = videoSize?.height?.takeIf { it > 0 } ?: 9
@@ -1128,7 +1120,7 @@ class PiperMediaActivity : AppCompatActivity() {
         val currentMediaId = activeController?.currentMediaItem?.mediaId
         val asset = currentMediaId?.let { id -> allMedia.find { it.id == id } }
         if (
-            Build.VERSION.SDK_INT in Build.VERSION_CODES.O until Build.VERSION_CODES.S &&
+            Build.VERSION.SDK_INT < Build.VERSION_CODES.S &&
             activeController?.isPlaying == true &&
             (currentMediaId?.startsWith("video:") == true || asset?.isVideo == true)
         ) {

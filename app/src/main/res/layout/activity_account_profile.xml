@@ -1,6 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+    <ImageView
+        android:id="@+id/homeBackground"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:src="@drawable/backgroud"
+        android:contentDescription="@null" />
+<androidx.core.widget.NestedScrollView
     android:id="@+id/accountProfileRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -25,6 +35,8 @@
                 android:id="@+id/btnProfileBack"
                 android:layout_width="48dp"
                 android:layout_height="48dp"
+                android:padding="12dp"
+                android:scaleType="fitCenter"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="@string/back"
                 android:src="@drawable/ic_browser_back"
@@ -54,11 +66,17 @@
             </LinearLayout>
         </LinearLayout>
 
-        <LinearLayout
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/profileGlassCard"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:background="@drawable/bg_account_surface"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="0dp"
+            app:cardBackgroundColor="@android:color/transparent">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:orientation="vertical"
             android:padding="16dp">
 
@@ -105,12 +123,16 @@
                 android:textColor="@color/remote_text_primary"
                 android:textColorHint="@color/remote_text_secondary" />
 
-            <Spinner
+            <TextView
                 android:id="@+id/spinnerProfileGender"
                 android:layout_width="match_parent"
                 android:layout_height="56dp"
                 android:layout_marginTop="8dp"
-                android:background="@drawable/bg_account_field" />
+                android:background="@drawable/bg_account_field"
+                android:gravity="center_vertical"
+                android:paddingHorizontal="14dp"
+                android:textSize="16sp"
+                android:focusable="true" />
 
             <EditText
                 android:id="@+id/etProfilePhone"
@@ -150,6 +172,7 @@
                 android:layout_marginTop="10dp"
                 android:text="@string/profile_change_request" />
         </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
 
         <TextView
             android:layout_width="match_parent"
@@ -161,3 +184,4 @@
             android:textSize="12sp" />
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>
+</FrameLayout>

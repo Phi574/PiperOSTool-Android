@@ -40,9 +40,8 @@ class LoginActivity : AppCompatActivity() {
         initViews()
         setupListeners()
         NetworkAccess.observe(this, this) { updateNetworkUi(it) }
-        if (intent.getBooleanExtra(SplashScreenActivity.EXTRA_SESSION_EXPIRED, false)) {
-            Toast.makeText(this, R.string.account_session_expired, Toast.LENGTH_LONG).show()
-        }
+        // Consume legacy session extras without showing a persistent Toast.
+        intent.removeExtra(SplashScreenActivity.EXTRA_SESSION_EXPIRED)
     }
 
     public override fun onStart() {
@@ -82,16 +81,14 @@ class LoginActivity : AppCompatActivity() {
         }
 
         tvGoToSignUp.setOnClickListener {
-            NetworkAccess.requireOnline(root) {
-                val intent = Intent(this, SignupActivity::class.java)
-                startActivity(intent)
-            }
+            // Navigation between auth forms must remain available even while
+            // connectivity is being checked. Only account operations require
+            // an online connection.
+            startActivity(Intent(this, SignupActivity::class.java))
         }
 
         tvForgotPassword.setOnClickListener {
-            NetworkAccess.requireOnline(root) {
-                startActivity(Intent(this, ForgotPassword::class.java))
-            }
+            startActivity(Intent(this, ForgotPassword::class.java))
         }
 
         // Xóa lỗi khi người dùng bấm vào ô nhập
@@ -142,7 +139,6 @@ class LoginActivity : AppCompatActivity() {
                                     is AccountSessionState.Expired -> {
                                         auth.signOut()
                                         resetLoginButton()
-                                        Toast.makeText(this, R.string.account_session_expired, Toast.LENGTH_LONG).show()
                                     }
                                 }
                             }
@@ -169,10 +165,13 @@ class LoginActivity : AppCompatActivity() {
     private fun updateNetworkUi(online: Boolean) {
         offlineState.visibility = if (online) View.GONE else View.VISIBLE
         btnLogin.visibility = if (online) View.VISIBLE else View.GONE
-        tvForgotPassword.visibility = if (online) View.VISIBLE else View.GONE
-        tvGoToSignUp.visibility = if (online) View.VISIBLE else View.GONE
+        // Form navigation must remain available while connectivity is being
+        // resolved, especially after Splash redirects an expired session.
+        tvForgotPassword.visibility = View.VISIBLE
+        tvGoToSignUp.visibility = View.VISIBLE
         if (!online) NetworkAccess.showOffline(root)
     }
+
 
     private fun checkSecurityAndProceed(userId: String) {
         val dbRef = com.google.firebase.database.FirebaseDatabase.getInstance().getReference("users/$userId/security/password")

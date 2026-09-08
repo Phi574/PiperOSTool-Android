@@ -296,13 +296,14 @@ class PiperOsApplication : Application(), Application.ActivityLifecycleCallbacks
                 if (
                     activity is LoginActivity ||
                     activity is WelcomeActivity ||
+                    activity is SignupActivity ||
+                    activity is ForgotPassword ||
                     activity is SplashScreenActivity ||
                     activity is DisabledAccountActivity
                 ) return
                 routingAccountState = true
                 FirebaseAuth.getInstance().signOut()
                 activity.startActivity(Intent(activity, LoginActivity::class.java).apply {
-                    putExtra(SplashScreenActivity.EXTRA_SESSION_EXPIRED, true)
                     flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                 })
             }

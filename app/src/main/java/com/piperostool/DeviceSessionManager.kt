@@ -155,6 +155,23 @@ object DeviceSessionManager {
             }
     }
 
+    fun removeEndedSession(context: Context, sessionId: String, onComplete: (Boolean) -> Unit) {
+        val user = FirebaseAuth.getInstance().currentUser ?: return onComplete(false)
+        if (sessionId == currentSessionId(context, user.uid)) return onComplete(false)
+        val ref = sessionDocument(user.uid, sessionId)
+        FirebaseFirestore.getInstance().runTransaction { transaction ->
+            val doc = transaction.get(ref)
+            check(doc.exists() && (doc.getBoolean("revoked") == true || doc.getBoolean("active") == false)) {
+                "Only ended sessions can be removed"
+            }
+            // Keep a revocation tombstone: a missing document is recreated by older clients.
+            transaction.update(ref, mapOf(
+                "historyHidden" to true, "active" to false, "revoked" to true,
+                "status" to "revoked"
+            ))
+        }.addOnCompleteListener { onComplete(it.isSuccessful) }
+    }
+
     private fun sessionDocument(uid: String, sessionId: String) =
         FirebaseFirestore.getInstance().collection("users").document(uid)
             .collection("deviceSessions").document(sessionId)

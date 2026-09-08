@@ -187,7 +187,6 @@ class PiperAppleMirrorService : Service(), RaopCallbackHandler, LogListener {
         .build()
 
     private fun createChannel() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         getSystemService(NotificationManager::class.java).createNotificationChannel(
             NotificationChannel(CHANNEL_ID, getString(R.string.apple_mirror_title), NotificationManager.IMPORTANCE_LOW)
         )

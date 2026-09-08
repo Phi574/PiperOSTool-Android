@@ -84,11 +84,19 @@
                 android:text="BẢO MẬT &amp; QUYỀN"
                 android:textColor="#8DFFB0" />
 
-            <LinearLayout
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/settingsSecuritySurface"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="@drawable/bg_settings_surface"
-                android:orientation="vertical">
+                app:cardBackgroundColor="@android:color/transparent"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="0dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
 
                 <LinearLayout
                     android:id="@+id/layoutDeviceAdmin"
@@ -112,7 +120,12 @@
 
                     <com.google.android.material.switchmaterial.SwitchMaterial
                         android:id="@+id/switchDeviceAdmin"
-                        style="@style/SettingsSwitch" />
+                        style="@style/SettingsSwitch"
+                        android:layout_width="54dp"
+                        android:layout_height="32dp"
+                        app:thumbTint="#8DFFB0"
+                        app:trackTint="#66FFFFFF"
+                        app:useMaterialThemeColors="false" />
                 </LinearLayout>
 
                 <View style="@style/SettingsDivider" />
@@ -138,7 +151,12 @@
 
                     <com.google.android.material.switchmaterial.SwitchMaterial
                         android:id="@+id/switchFingerprint"
-                        style="@style/SettingsSwitch" />
+                        style="@style/SettingsSwitch"
+                        android:layout_width="54dp"
+                        android:layout_height="32dp"
+                        app:thumbTint="#8DFFB0"
+                        app:trackTint="#66FFFFFF"
+                        app:useMaterialThemeColors="false" />
                 </LinearLayout>
 
                 <View style="@style/SettingsDivider" />
@@ -164,14 +182,19 @@
 
                     <com.google.android.material.switchmaterial.SwitchMaterial
                         android:id="@+id/switchPassword"
-                        style="@style/SettingsSwitch" />
+                        style="@style/SettingsSwitch"
+                        android:layout_width="54dp"
+                        android:layout_height="32dp"
+                        app:thumbTint="#8DFFB0"
+                        app:trackTint="#66FFFFFF"
+                        app:useMaterialThemeColors="false" />
                 </LinearLayout>
 
                 <View style="@style/SettingsDivider" />
 
                 <LinearLayout
                     android:id="@+id/btnChangeLock"
-                    style="@style/SettingsActionRow"
+                    style="@style/SettingsRow"
                     android:background="?attr/selectableItemBackground">
 
                     <ImageView
@@ -211,7 +234,8 @@
 
                     <ImageView style="@style/SettingsChevron" />
                 </LinearLayout>
-            </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
             <TextView
                 style="@style/SettingsSectionTitle"
@@ -219,11 +243,19 @@
                 android:text="GIAO DIỆN"
                 android:textColor="#7DD3FC" />
 
-            <LinearLayout
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/settingsAppearanceSurface"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="@drawable/bg_settings_surface"
-                android:orientation="vertical">
+                app:cardBackgroundColor="@android:color/transparent"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="0dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
 
                 <LinearLayout
                     android:id="@+id/layoutUiStyle"
@@ -248,7 +280,9 @@
                     <ImageView style="@style/SettingsChevron" />
                 </LinearLayout>
 
-                <View style="@style/SettingsDivider" />
+                <View
+                    android:id="@+id/layoutColorModeDivider"
+                    style="@style/SettingsDivider" />
 
                 <LinearLayout
                     android:id="@+id/layoutColorMode"
@@ -364,7 +398,8 @@
                         style="@style/SettingsActionTitle"
                         android:text="Khôi phục nền mặc định" />
                 </LinearLayout>
-            </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
             <TextView
                 style="@style/SettingsSectionTitle"
@@ -372,10 +407,24 @@
                 android:text="TÀI KHOẢN"
                 android:textColor="#FCA5A5" />
 
-            <LinearLayout
-                android:id="@+id/btnSettingLogout"
-                style="@style/SettingsRow"
-                android:background="@drawable/bg_settings_surface">
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/settingsAccountSurface"
+                app:bevelWidth="9dp"
+                app:cornerRadius="24dp"
+                app:dispersionStrength="0.07"
+                app:glassMaterial="clear"
+                app:refractionHeight="32dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardBackgroundColor="@android:color/transparent"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="0dp">
+
+                <LinearLayout
+                    android:id="@+id/btnSettingLogout"
+                    style="@style/SettingsRow"
+                    android:background="@android:color/transparent">
 
                 <ImageView
                     style="@style/SettingsRowIcon"
@@ -393,8 +442,9 @@
                         android:text="@string/auth_version_placeholder" />
                 </LinearLayout>
 
-                <ImageView style="@style/SettingsChevron" />
-            </LinearLayout>
+                    <ImageView style="@style/SettingsChevron" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
             <TextView
                 style="@style/SettingsSectionTitle"
@@ -402,11 +452,24 @@
                 android:text="@string/settings_project_section"
                 android:textColor="#86EFAC" />
 
-            <LinearLayout
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/settingsProjectSurface"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="@drawable/bg_settings_surface"
-                android:orientation="vertical">
+                app:bevelWidth="9dp"
+                app:cornerRadius="24dp"
+                app:dispersionStrength="0.07"
+                app:glassMaterial="clear"
+                app:refractionHeight="32dp"
+                app:cardBackgroundColor="@android:color/transparent"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="0dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
 
                 <LinearLayout
                     android:id="@+id/btnAndroidSource"
@@ -453,7 +516,8 @@
 
                     <ImageView style="@style/SettingsChevron" />
                 </LinearLayout>
-            </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
             <Space
                 android:layout_width="match_parent"

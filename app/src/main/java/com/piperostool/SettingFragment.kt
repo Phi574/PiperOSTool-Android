@@ -5,6 +5,7 @@ import android.app.admin.DevicePolicyManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -140,6 +141,7 @@ class SettingFragment : Fragment() {
 
         initViews(view)
         settingsRoot = view
+        clearLegacyRowSurfaces(view)
         view.findViewById<TextView>(R.id.tvSettingVersion).text =
             getString(R.string.auth_version, AppVersion.name(requireContext()))
         view.findViewById<View>(R.id.btnSettingLogout).setOnClickListener {
@@ -216,6 +218,8 @@ class SettingFragment : Fragment() {
 
         }
 
+        PiperModernUi.apply(view)
+
     }
 
     private fun openProjectUrl(url: String) {
@@ -244,6 +248,28 @@ class SettingFragment : Fragment() {
     }
 
 
+
+    private fun clearLegacyRowSurfaces(view: View) {
+        val rowIds = intArrayOf(
+            R.id.layoutDeviceAdmin,
+            R.id.layoutFingerprint,
+            R.id.layoutPasswordToggle,
+            R.id.btnChangeLock,
+            R.id.btnPermissions,
+            R.id.layoutUiStyle,
+            R.id.layoutColorMode,
+            R.id.layoutLanguage,
+            R.id.layoutFont,
+            R.id.layoutChangeBackground,
+            R.id.layoutResetBackground,
+            R.id.btnSettingLogout,
+            R.id.btnAndroidSource,
+            R.id.btnRuntimeSource
+        )
+        rowIds.forEach { id ->
+            view.findViewById<View>(id)?.setBackgroundColor(Color.TRANSPARENT)
+        }
+    }
 
     private fun initViews(view: View) {
 
@@ -299,8 +325,13 @@ class SettingFragment : Fragment() {
     }
 
     private fun updateAppearanceStatus() {
+        val modern = PiperUiPreferences.style(requireContext()) == PiperUiStyle.MODERN
+        view?.findViewById<View>(R.id.layoutColorMode)?.visibility =
+            if (modern) View.VISIBLE else View.GONE
+        view?.findViewById<View>(R.id.layoutColorModeDivider)?.visibility =
+            if (modern) View.VISIBLE else View.GONE
         tvUiStyleValue.setText(
-            if (PiperUiPreferences.style(requireContext()) == PiperUiStyle.MODERN) {
+            if (modern) {
                 R.string.settings_ui_modern
             } else {
                 R.string.settings_ui_classic

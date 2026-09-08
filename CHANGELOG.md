@@ -1,5 +1,16 @@
 # Changelog
 
+## 3.3.6.Beta
+
+- Raised versionCode to 45 and Android baseline to API 29.
+- Integrated the LiquidGlass module, bitmap icons and third-party notices.
+- Updated Home, Beta, Apps, Settings, Info and authentication surfaces, including tab transitions and collapsible Info sections.
+- Fixed the global session guard redirecting Signup and Forgot Password to Login.
+- Added LiquidGlass account profile and device session screens with bounded back icons.
+- Added removal of ended sessions from history using a transactional revocation tombstone and owner-scoped Firestore rules.
+- Added native glass dialogs for device revocation, password changes and session history removal.
+- Included the accumulated browser developer-tools and Android 10+ compatibility improvements.
+
 ## 3.2.3.beta
 
 - Added PiperOS View Remote for Android screen sharing and remote control on a

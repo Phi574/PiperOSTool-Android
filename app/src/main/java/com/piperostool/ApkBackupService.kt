@@ -180,7 +180,6 @@ class ApkBackupService : Service() {
     }
 
     private fun createChannel() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         getSystemService(NotificationManager::class.java).createNotificationChannel(
             NotificationChannel(CHANNEL_ID, "APK backup", NotificationManager.IMPORTANCE_LOW).apply {
                 description = "Tiến trình sao lưu tệp từ APK"

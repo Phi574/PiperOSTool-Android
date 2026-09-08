@@ -6,42 +6,54 @@
     android:layout_height="match_parent"
     android:padding="20dp">
 
-    <LinearLayout
+    <com.example.liquidglass.LiquidGlassView
+        android:id="@+id/homeGlassPanel"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@drawable/bg_glass_panel"
-        android:orientation="vertical"
         android:padding="24dp"
+        app:cornerRadius="24dp"
+        app:glassMaterial="clear"
+        app:refractionHeight="34dp"
+        app:bevelWidth="10dp"
+        app:dispersionStrength="0.08"
+        app:sensorHighlight="true"
+        app:backdropSourceId="@id/homeBackground"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintVertical_bias="0.2">
 
-        <ImageView
-            android:layout_width="52dp"
-            android:layout_height="52dp"
-            android:layout_marginBottom="16dp"
-            android:scaleType="centerInside"
-            android:src="@drawable/a3tn" />
-
-        <TextView
-            android:id="@+id/homeScreenTitle"
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:letterSpacing="0.1"
-            android:text="@string/home_screen_title"
-            android:textColor="#FFFFFF"
-            android:textSize="22sp"
-            android:textStyle="bold" />
+            android:orientation="vertical">
 
-        <TextView
-            android:id="@+id/homeScreenSummary"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="@string/home_screen_summary"
-            android:textColor="#B3FFFFFF"
-            android:textSize="14sp" />
+            <ImageView
+                android:layout_width="52dp"
+                android:layout_height="52dp"
+                android:layout_marginBottom="16dp"
+                android:scaleType="centerInside"
+                android:src="@drawable/a3tn" />
 
-    </LinearLayout>
+            <TextView
+                android:id="@+id/homeScreenTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:letterSpacing="0.1"
+                android:text="@string/home_screen_title"
+                android:textColor="#FFFFFF"
+                android:textSize="22sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/homeScreenSummary"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/home_screen_summary"
+                android:textColor="#B3FFFFFF"
+                android:textSize="14sp" />
+
+        </LinearLayout>
+    </com.example.liquidglass.LiquidGlassView>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

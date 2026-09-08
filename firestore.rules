@@ -112,8 +112,13 @@ service cloud.firestore {
             'androidVersion', 'sdk', 'abis', 'platform', 'windowsVersion',
             'architecture', 'app', 'appVersion', 'updatedAt',
             'loginAt', 'lastSeenAt', 'active', 'revoked', 'status',
-            'locationLat', 'locationLon', 'signedOutAt', 'revokedAt', 'revokedBy'
-          ]);
+            'locationLat', 'locationLon', 'signedOutAt', 'revokedAt', 'revokedBy', 'historyHidden'
+          ])
+          && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['historyHidden'])
+            || (request.resource.data.historyHidden == true
+              && (resource.data.revoked == true || resource.data.active == false)
+              && request.resource.data.revoked == true
+              && request.resource.data.active == false));
         allow delete: if false;
       }
     }

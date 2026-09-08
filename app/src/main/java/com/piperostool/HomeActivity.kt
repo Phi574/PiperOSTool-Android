@@ -9,6 +9,10 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.view.View
+import android.view.ViewGroup
+import android.animation.ValueAnimator
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -18,6 +22,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import com.google.firebase.auth.FirebaseAuth
+import com.example.liquidglass.LiquidGlassView
+import kotlin.math.sin
 
 class HomeActivity : AppCompatActivity() {
 
@@ -26,6 +32,7 @@ class HomeActivity : AppCompatActivity() {
     private lateinit var btnApps: LinearLayout
     private lateinit var btnSettings: LinearLayout
     private lateinit var btnDevices: LinearLayout
+    private lateinit var navSelectionGlass: LiquidGlassView
 
     private lateinit var listIcons: List<ImageView>
     private lateinit var listTexts: List<TextView>
@@ -54,10 +61,18 @@ class HomeActivity : AppCompatActivity() {
         setContentView(R.layout.activity_home)
 
         applyCustomBackground()
+        findViewById<LiquidGlassView>(R.id.bottomNavCard)?.apply {
+            enableDynamicBackground = true
+            backdropSource = findViewById(R.id.homeBackground)
+        }
         initViews()
         setupListeners()
         setupBackPressHandler()
         setupKeyboardAwareBottomNav()
+
+        findViewById<View>(R.id.bottomNavCard).post {
+            positionNavSelectionLens(animate = false)
+        }
 
         replaceFragment(homeFragment())
         currentTab = 0
@@ -111,7 +126,6 @@ class HomeActivity : AppCompatActivity() {
                 leavingForAccountState = true
                 FirebaseAuth.getInstance().signOut()
                 startActivity(Intent(this, LoginActivity::class.java).apply {
-                    putExtra(SplashScreenActivity.EXTRA_SESSION_EXPIRED, true)
                     flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                 })
             }
@@ -197,6 +211,7 @@ class HomeActivity : AppCompatActivity() {
         btnApps = findViewById(R.id.navApps)
         btnSettings = findViewById(R.id.navSettings)
         btnDevices = findViewById(R.id.navDevices)
+        navSelectionGlass = findViewById(R.id.navSelectionGlass)
 
         listIcons = listOf(
             findViewById(R.id.iconHome),
@@ -260,9 +275,20 @@ class HomeActivity : AppCompatActivity() {
 
     private fun replaceFragment(fragment: Fragment) {
         val transaction = supportFragmentManager.beginTransaction()
-        transaction.setCustomAnimations(R.anim.fade_in, R.anim.fade_out)
+        // Commit synchronously so the new page is ready before the next frame.
+        transaction.setReorderingAllowed(true)
         transaction.replace(R.id.fragment_container, fragment)
-        transaction.commit()
+        transaction.commitNow()
+        val page = fragment.view ?: return
+        page.alpha = 0f
+        page.translationY = dp(6).toFloat()
+        page.animate()
+            .alpha(1f)
+            .translationY(0f)
+            .setDuration(170L)
+            .setInterpolator(android.view.animation.DecelerateInterpolator())
+            .withLayer()
+            .start()
     }
 
     private fun updateTabUI(selectedIndex: Int) {
@@ -296,13 +322,82 @@ class HomeActivity : AppCompatActivity() {
                 listTexts[i].setTextColor(unselectedColor)
             }
         }
+
+        positionNavSelectionLens()
     }
+
+    private fun positionNavSelectionLens(animate: Boolean = true) {
+        val bar = findViewById<View>(R.id.bottomNavCard) ?: return
+        if (bar.width <= 0 || bar.height <= 0) {
+            bar.post { positionNavSelectionLens(animate) }
+            return
+        }
+
+        val navItems = listOf(btnHome, btnBeta, btnApps, btnSettings, btnDevices)
+        val selectedItem = navItems.getOrNull(currentTab)
+        if (selectedItem == null || selectedItem.width <= 0) {
+            bar.post { positionNavSelectionLens(animate) }
+            return
+        }
+        val horizontalInset = dp(4)
+        val params = navSelectionGlass.layoutParams as? ViewGroup.MarginLayoutParams
+            ?: ViewGroup.MarginLayoutParams(0, 0)
+        val targetWidth = (selectedItem.width - horizontalInset * 2).coerceAtLeast(dp(1))
+        val targetHeight = (bar.height - horizontalInset * 2).coerceAtLeast(dp(1))
+        var layoutChanged = false
+        if (params.width != targetWidth) {
+            params.width = targetWidth
+            layoutChanged = true
+        }
+        if (params.height != targetHeight) {
+            params.height = targetHeight
+            layoutChanged = true
+        }
+        if (params.leftMargin != horizontalInset || params.topMargin != horizontalInset) {
+            params.leftMargin = horizontalInset
+            params.topMargin = horizontalInset
+            layoutChanged = true
+        }
+        if (layoutChanged) navSelectionGlass.layoutParams = params
+
+        val targetX = selectedItem.left + (selectedItem.width - targetWidth) / 2f
+        if (!animate || !navSelectionGlass.isLaidOut) {
+            navSelectionGlass.x = targetX
+            navSelectionGlass.scaleX = 1f
+            navSelectionGlass.scaleY = 1f
+            return
+        }
+
+        navSelectionAnimator?.cancel()
+        navSelectionAnimator = ValueAnimator.ofFloat(navSelectionGlass.x, targetX).apply {
+            duration = 360L
+            interpolator = android.view.animation.DecelerateInterpolator(1.5f)
+            addUpdateListener { animator ->
+                val progress = animator.animatedFraction
+                navSelectionGlass.x = animator.animatedValue as Float
+                val pulse = sin(progress * Math.PI).toFloat()
+                navSelectionGlass.scaleX = 1f + pulse * 0.025f
+                navSelectionGlass.scaleY = 1f + pulse * 0.012f
+            }
+            addListener(object : AnimatorListenerAdapter() {
+                override fun onAnimationEnd(animation: Animator) {
+                    navSelectionGlass.scaleX = 1f
+                    navSelectionGlass.scaleY = 1f
+                }
+            })
+            start()
+        }
+    }
+
+    private var navSelectionAnimator: ValueAnimator? = null
+
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 
     fun hideBottomNav(force: Boolean = false) {
         if (!force && currentTab != 2) return
         if (isNavHidden) return
 
-        val bottomBar = findViewById<LinearLayout>(R.id.bottomNavCard)
+        val bottomBar = findViewById<View>(R.id.bottomNavCard)
 
         bottomBar?.let {
             it.animate().cancel()
@@ -319,7 +414,7 @@ class HomeActivity : AppCompatActivity() {
         if (!force && isNavHiddenByKeyboard) return
         if (!isNavHidden) return
 
-        val bottomBar = findViewById<LinearLayout>(R.id.bottomNavCard)
+        val bottomBar = findViewById<View>(R.id.bottomNavCard)
 
         bottomBar?.let {
             it.animate().cancel()

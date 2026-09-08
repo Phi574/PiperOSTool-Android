@@ -1,22 +1,66 @@
 # Third-party notices
 
-PiperOS Tool uses open-source Android libraries, including AndroidX,
-Material Components, Firebase Android SDK, Glide and AndroidX Media3. Their
-licenses and copyright notices remain applicable to those components.
+## LiquidGlass for Android
 
-PiperOS Fake Map GPS uses osmdroid (Apache License 2.0), OpenStreetMap map
-data and the OSRM routing API. OpenStreetMap attribution is displayed directly
-on the map. OpenStreetMap data is available under ODbL; OSRM is distributed
-under the BSD 2-Clause license.
+Source: https://github.com/QWEA0/Liquid-Glass-Android
 
-The bundled **Silkscreen** and **VT323** fonts are licensed under the SIL Open
-Font License 1.1. Their license texts are stored in:
+MIT License
 
-- `app/src/main/assets/licenses/silkscreen_ofl.txt`
-- `app/src/main/assets/licenses/vt323_ofl.txt`
+Copyright (c) 2025-2026 pandadog
 
-The full Linux terminal runtime is maintained separately at
-[Piperos_termux](https://github.com/Phi574/Piperos_termux). Termux-specific
-application code is generally GPL-3.0-only, while `terminal-emulator` and
-`terminal-view` include code under Apache License 2.0. Upstream file-level
-license exceptions must be preserved when that runtime is integrated.
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+## Flaticon interface icons
+
+The application UI includes PNG icons downloaded from Flaticon under the
+Flaticon Free License (attribution required):
+
+- Code Terminal by Muhammad Ali: https://www.flaticon.com/free-icon/code-terminal_8099675
+- Terminal by Cap Cool: https://www.flaticon.com/free-icon/terminal_10769879
+- Home by HideMaru: https://www.flaticon.com/free-icon/home_17766417
+- Settings Gear Icon by Qonita: https://www.flaticon.com/free-icon/settings-gear-icon_6107019
+- File Folder by Magnific: https://www.flaticon.com/free-icon/file-folder_66742
+- Lock by Anggara: https://www.flaticon.com/free-icon/lock_5993673
+- Play by IconKanan: https://www.flaticon.com/free-icon/play_3998329
+- Remote Control by Freepik: https://www.flaticon.com/free-icon/remote-control_199062
+- Magnifying Glass: https://www.flaticon.com/free-icon/magnifying-glass_2240
+- Back Arrow: https://www.flaticon.com/free-icon/back_271220
+- Close: https://www.flaticon.com/free-icon/close_1828778
+- More: https://www.flaticon.com/free-icon/more_512142
+- Delete: https://www.flaticon.com/free-icon/delete_1214428
+- Download: https://www.flaticon.com/free-icon/download_724933
+- QR Code: https://www.flaticon.com/free-icon/qr-code_241521
+- Globe: https://www.flaticon.com/free-icon/globe_1006771
+- Image: https://www.flaticon.com/free-icon/image_2659360
+- Audio: https://www.flaticon.com/free-icon/audio_727245
+- Video: https://www.flaticon.com/free-icon/video_1179120
+- Archive: https://www.flaticon.com/free-icon/archive_149953
+- Copy: https://www.flaticon.com/free-icon/copy_1621635
+- Move: https://www.flaticon.com/free-icon/move_3140742
+- Rename: https://www.flaticon.com/free-icon/rename_1159633
+- Location Pin: https://www.flaticon.com/free-icon/location_684908
+- Fullscreen: https://www.flaticon.com/free-icon/fullscreen_2089671
+- Pause: https://www.flaticon.com/free-icon/pause_2404385
+- Next: https://www.flaticon.com/free-icon/next_318476
+- Previous: https://www.flaticon.com/free-icon/previous_318477
+- Shuffle: https://www.flaticon.com/free-icon/shuffle_149125
+- Repeat: https://www.flaticon.com/free-icon/repeat_271225
+- Stop: https://www.flaticon.com/free-icon/stop_61112
+
+Flaticon license: https://www.flaticon.com/license/license.pdf

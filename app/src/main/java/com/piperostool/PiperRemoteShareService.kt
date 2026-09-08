@@ -591,9 +591,7 @@ class PiperRemoteShareService : Service() {
     }
 
     private fun startAudioCapture(output: DataOutputStream) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q ||
-            checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) != android.content.pm.PackageManager.PERMISSION_GRANTED
-        ) return
+        if (checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) != android.content.pm.PackageManager.PERMISSION_GRANTED) return
         stopAudioCapture()
         val mediaProjection = projection ?: return
         val sampleRate = 48_000
@@ -709,9 +707,7 @@ class PiperRemoteShareService : Service() {
 
     private fun startForegroundNow() {
         val manager = getSystemService(NotificationManager::class.java)
-        if (Build.VERSION.SDK_INT >= 26) {
-            manager.createNotificationChannel(NotificationChannel(CHANNEL_ID, getString(R.string.piperos_remote), NotificationManager.IMPORTANCE_LOW))
-        }
+        manager.createNotificationChannel(NotificationChannel(CHANNEL_ID, getString(R.string.piperos_remote), NotificationManager.IMPORTANCE_LOW))
         val stopIntent = Intent(this, PiperRemoteShareService::class.java).setAction(ACTION_STOP)
         val stopPending = PendingIntent.getService(this, 201, stopIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         val openPending = PendingIntent.getActivity(
@@ -733,7 +729,7 @@ class PiperRemoteShareService : Service() {
             this,
             NOTIFICATION_ID,
             notification,
-            if (Build.VERSION.SDK_INT >= 29) ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION else 0
+            ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION
         )
     }
 

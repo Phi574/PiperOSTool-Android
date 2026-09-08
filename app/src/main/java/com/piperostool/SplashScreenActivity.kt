@@ -125,7 +125,7 @@ class SplashScreenActivity : AppCompatActivity() {
                     navigateTo(DisabledAccountActivity.createIntent(this, state))
                 is AccountSessionState.Expired -> {
                     FirebaseAuth.getInstance().signOut()
-                    navigateTo(Intent(this, LoginActivity::class.java).putExtra(EXTRA_SESSION_EXPIRED, true))
+                    navigateTo(LoginActivity::class.java)
                 }
             }
         }
