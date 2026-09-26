@@ -1,0 +1,4 @@
+<resources>
+    <dimen name="piper_media_stage_height">176dp</dimen>
+    <dimen name="piper_terminal_keyboard_height">224dp</dimen>
+</resources>

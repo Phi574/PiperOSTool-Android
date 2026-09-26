@@ -31,7 +31,6 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.button.MaterialButtonToggleGroup
 import com.google.android.material.card.MaterialCardView
@@ -172,7 +171,7 @@ class PiperRemoteActivity : AppCompatActivity(), PiperRemoteClient.Listener {
         val scroll = findViewById<View>(R.id.remoteScroll)
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.remoteRoot)) { _, insets ->
             val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            toolbar.setPadding(toolbar.paddingLeft, bars.top + dp(10), toolbar.paddingRight, toolbar.paddingBottom)
+            PiperClassicGlassUi.setContainerPadding(toolbar, toolbar.paddingLeft, bars.top + dp(10), toolbar.paddingRight, toolbar.paddingBottom)
             scroll.setPadding(scroll.paddingLeft, scroll.paddingTop, scroll.paddingRight, bars.bottom + dp(18))
             insets
         }
@@ -232,9 +231,7 @@ class PiperRemoteActivity : AppCompatActivity(), PiperRemoteClient.Listener {
 
     private fun chooseQrShare() {
         val dialogView = layoutInflater.inflate(R.layout.dialog_remote_qr_choice, null)
-        val dialog = MaterialAlertDialogBuilder(this)
-            .setView(dialogView)
-            .create()
+        val dialog = PiperDialog.createContent(this, dialogView)
         dialogView.findViewById<View>(R.id.btnQrOtherDevice).setOnClickListener {
             dialog.dismiss()
                     pendingPcInvite = null
@@ -329,7 +326,7 @@ class PiperRemoteActivity : AppCompatActivity(), PiperRemoteClient.Listener {
             R.string.remote_connection_request_detail, request.deviceName, request.address,
             request.targetWidth, request.targetFps
         )
-        val dialog = MaterialAlertDialogBuilder(this).setView(dialogView).create()
+        val dialog = PiperDialog.createContent(this, dialogView)
         dialogView.findViewById<View>(R.id.btnRemoteDeny).setOnClickListener { dialog.dismiss(); answerRequest(request.id, false) }
         dialogView.findViewById<View>(R.id.btnRemoteAllow).setOnClickListener { dialog.dismiss(); answerRequest(request.id, true) }
         dialog.setOnCancelListener { answerRequest(request.id, false) }
@@ -426,7 +423,7 @@ class PiperRemoteActivity : AppCompatActivity(), PiperRemoteClient.Listener {
             PiperRemoteStream.H264 -> R.id.radioRemoteH264
             PiperRemoteStream.HEVC -> R.id.radioRemoteHevc
         })
-        val dialog = MaterialAlertDialogBuilder(this).setView(dialogView).create()
+        val dialog = PiperDialog.createContent(this, dialogView)
         dialogView.findViewById<View>(R.id.btnApplyRemoteStream).setOnClickListener {
             val stream = when (group.checkedRadioButtonId) {
                 R.id.radioRemoteJpeg -> PiperRemoteStream.JPEG
@@ -604,17 +601,13 @@ class PiperRemoteActivity : AppCompatActivity(), PiperRemoteClient.Listener {
     )
 
     private fun confirmDisconnect() {
-        MaterialAlertDialogBuilder(this)
-            .setTitle(R.string.remote_disconnect_title)
-            .setMessage(R.string.remote_disconnect_message)
-            .setNegativeButton(android.R.string.cancel, null)
-            .setPositiveButton(R.string.remote_disconnect) { _, _ ->
+        PiperDialog.showConfirm(this, getString(R.string.remote_disconnect_title),
+            getString(R.string.remote_disconnect_message), getString(R.string.remote_disconnect)) {
                 client.close(false)
                 connected = false
                 exitViewer()
                 showStatus(getString(R.string.remote_disconnected))
             }
-            .show()
     }
 
     override fun onStart() {

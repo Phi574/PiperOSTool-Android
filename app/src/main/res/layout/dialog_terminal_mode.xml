@@ -28,7 +28,7 @@
     <LinearLayout
         android:id="@+id/terminalModeLinux"
         android:layout_width="match_parent"
-        android:layout_height="72dp"
+        android:layout_height="64dp"
         android:background="@drawable/bg_terminal_key"
         android:clickable="true"
         android:focusable="true"
@@ -41,7 +41,7 @@
             android:layout_height="28dp"
             android:contentDescription="@null"
             android:src="@drawable/ic_terminal"
-            app:tint="#8DFFB0" />
+            app:tint="#8DFFB0"  android:scaleType="centerInside" />
 
         <LinearLayout
             android:layout_width="0dp"
@@ -72,7 +72,7 @@
     <LinearLayout
         android:id="@+id/terminalModeShell"
         android:layout_width="match_parent"
-        android:layout_height="72dp"
+        android:layout_height="64dp"
         android:layout_marginTop="10dp"
         android:background="@drawable/bg_terminal_key"
         android:clickable="true"
@@ -86,7 +86,7 @@
             android:layout_height="28dp"
             android:contentDescription="@null"
             android:src="@drawable/system"
-            app:tint="#8AD6FF" />
+            app:tint="#8AD6FF"  android:scaleType="centerInside" />
 
         <LinearLayout
             android:layout_width="0dp"

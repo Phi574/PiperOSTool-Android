@@ -34,7 +34,6 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.OnBackPressedCallback
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
@@ -809,59 +808,15 @@ class PiperMediaActivity : AppCompatActivity() {
         }
     }
 
-    private fun showSourceSelectionDialogLegacy() {
-        val sources = orderedSources(allMedia)
-        if (sources.isEmpty()) {
-            Toast.makeText(this, R.string.media_no_sources, Toast.LENGTH_SHORT).show()
-            return
-        }
-        val counts = allMedia.groupingBy(PiperMediaAsset::source).eachCount()
-        val pending = enabledSources.toMutableSet()
-        val labels = sources.map { source ->
-            getString(R.string.media_source_with_count, source, counts[source] ?: 0)
-        }.toTypedArray()
-        val checked = BooleanArray(sources.size) { sources[it] in pending }
-
-        AlertDialog.Builder(this)
-            .setTitle(R.string.media_choose_sources)
-            .setMultiChoiceItems(labels, checked) { _, which, enabled ->
-                if (enabled) pending += sources[which] else pending -= sources[which]
-            }
-            .setNegativeButton(android.R.string.cancel, null)
-            .setPositiveButton(android.R.string.ok) { _, _ ->
-                if (pending.isEmpty()) {
-                    Toast.makeText(
-                        this,
-                        R.string.media_choose_at_least_one_source,
-                        Toast.LENGTH_SHORT
-                    ).show()
-                    return@setPositiveButton
-                }
-                enabledSources.clear()
-                enabledSources += pending
-                if (currentSource !in enabledSources) currentSource = null
-                saveEnabledSources()
-                updateFilterCounts()
-                rebuildSourceChips()
-                showFilter(currentFilter)
-            }
-            .show()
-    }
-
     private fun showSortDialog() {
-        val modes = LibrarySort.entries
-        val labels = modes.map(::sortLabel).toTypedArray()
-        AlertDialog.Builder(this)
-            .setTitle(R.string.media_sort_title)
-            .setSingleChoiceItems(labels, modes.indexOf(currentSort)) { dialog, which ->
-                currentSort = modes[which]
+        PiperActionSheet.showSingleSelect(this, getString(R.string.media_sort_title),
+            LibrarySort.entries.map { PiperSheetChoice(it.name, sortLabel(it), it == currentSort) },
+            onSelect = { key ->
+                currentSort = LibrarySort.valueOf(key)
                 preferences.edit().putString(KEY_SORT, currentSort.name).apply()
                 updateSortButton()
                 showFilter(currentFilter)
-                dialog.dismiss()
-            }
-            .setNegativeButton(android.R.string.cancel, null)
-            .show()
+            }, onRemove = {}, onAdd = {})
     }
 
     private fun sortLabel(sort: LibrarySort): String = getString(
@@ -1046,7 +1001,7 @@ class PiperMediaActivity : AppCompatActivity() {
             stage.setBackgroundResource(R.drawable.bg_media_surface)
         }
         stage.layoutParams = stage.layoutParams.apply {
-            height = if (fullScreen) 0 else dp(220)
+            height = if (fullScreen) 0 else resources.getDimensionPixelSize(R.dimen.piper_media_stage_height)
             if (this is LinearLayout.LayoutParams) {
                 weight = if (fullScreen) 1f else 0f
                 setMargins(

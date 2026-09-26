@@ -26,7 +26,6 @@ import android.widget.RadioGroup
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import org.json.JSONArray
@@ -316,7 +315,7 @@ class PiperTerminalActivity : AppCompatActivity(), TerminalSessionManager.Listen
         }
         val runtimeInstalled = TerminalRuntime.inspect(this).installed
         val content = layoutInflater.inflate(R.layout.dialog_terminal_mode, null)
-        val dialog = AlertDialog.Builder(this).setView(content).create()
+        val dialog = PiperDialog.createContent(this, content)
         content.findViewById<View>(R.id.terminalModeLinux).apply {
             alpha = if (runtimeInstalled) 1f else 0.45f
             setOnClickListener {
@@ -338,13 +337,6 @@ class PiperTerminalActivity : AppCompatActivity(), TerminalSessionManager.Listen
         }
         content.findViewById<View>(R.id.btnTerminalModeCancel).setOnClickListener {
             dialog.dismiss()
-        }
-        dialog.setOnShowListener {
-            dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
-            dialog.window?.setLayout(
-                (resources.displayMetrics.widthPixels * 0.9f).toInt(),
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            )
         }
         dialog.show()
     }

@@ -35,7 +35,7 @@ data class PiperSheetChoice(
 object PiperActionSheet {
     fun show(context: Context, title: String, actions: List<PiperSheetAction>) {
         val dialog = BottomSheetDialog(context)
-        val content = sheetRoot(context)
+        val content = compactSheetRoot(context, actions.size)
         content.addView(titleView(context, title))
         val list = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
@@ -60,7 +60,7 @@ object PiperActionSheet {
             )
         )
         PiperModernUi.apply(content)
-        dialog.setContentView(content)
+        setSheetContent(dialog, content)
         styleBottomSheet(dialog, context)
         dialog.show()
     }
@@ -74,7 +74,7 @@ object PiperActionSheet {
     ) {
         val dialog = BottomSheetDialog(context)
         val pending = selected.toMutableSet()
-        val root = sheetRoot(context)
+        val root = compactSheetRoot(context, options.size)
         root.addView(titleView(context, title))
         val list = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL }
         options.forEachIndexed { index, label ->
@@ -114,9 +114,11 @@ object PiperActionSheet {
         actions.addView(applyButton)
         root.addView(actions)
         PiperModernUi.apply(root)
-        applyButton.backgroundTintList = ColorStateList.valueOf(PiperModernUi.accentColor(context))
-        applyButton.setTextColor(Color.WHITE)
-        dialog.setContentView(root)
+        if (PiperUiPreferences.isModern(context)) {
+            applyButton.backgroundTintList = ColorStateList.valueOf(PiperModernUi.accentColor(context))
+            applyButton.setTextColor(Color.WHITE)
+        }
+        setSheetContent(dialog, root)
         styleBottomSheet(dialog, context)
         dialog.show()
     }
@@ -217,7 +219,7 @@ object PiperActionSheet {
 
         PiperModernUi.apply(root)
         PiperAutoFont.watch(root)
-        dialog.setContentView(root)
+        setSheetContent(dialog, root)
         styleBottomSheet(dialog, context)
         dialog.show()
     }
@@ -261,8 +263,30 @@ object PiperActionSheet {
         )
     )
 
+    private fun setSheetContent(dialog: BottomSheetDialog, content: View) {
+        if (PiperUiPreferences.isModern(content.context)) {
+            dialog.setContentView(content)
+            return
+        }
+        val panel = com.google.android.material.card.MaterialCardView(android.view.ContextThemeWrapper(content.context, R.style.Theme_PiperOSTool)).apply {
+            layoutParams = content.layoutParams
+            cardElevation = 0f
+            preventCornerOverlap = false
+            setCardBackgroundColor(Color.TRANSPARENT)
+        }
+        content.layoutParams = android.widget.FrameLayout.LayoutParams(-1, -1)
+        content.background = null
+        panel.addView(content)
+        dialog.setContentView(panel)
+        panel.post { PiperClassicGlassUi.apply(panel); content.background = null }
+    }
+
     private fun styleBottomSheet(dialog: BottomSheetDialog, context: Context) {
         dialog.setOnShowListener {
+            if (!PiperUiPreferences.isModern(context)) {
+                dialog.findViewById<View>(com.google.android.material.R.id.design_bottom_sheet)?.setBackgroundColor(Color.TRANSPARENT)
+                return@setOnShowListener
+            }
             dialog.findViewById<View>(com.google.android.material.R.id.design_bottom_sheet)?.background =
                 GradientDrawable().apply {
                     shape = GradientDrawable.RECTANGLE
@@ -289,7 +313,7 @@ object PiperActionSheet {
         LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            minimumHeight = dp(context, 64)
+            minimumHeight = dp(context, 56)
             setPadding(dp(context, 14), dp(context, 8), dp(context, 14), dp(context, 8))
             isClickable = true
             isFocusable = true
@@ -305,6 +329,7 @@ object PiperActionSheet {
             ).apply { bottomMargin = dp(context, 8) }
             addView(ImageView(context).apply {
                 setImageResource(action.icon)
+                scaleType = ImageView.ScaleType.CENTER_INSIDE
                 imageTintList = ColorStateList.valueOf(PiperModernUi.accentColor(context))
                 setPadding(dp(context, 3), dp(context, 3), dp(context, 3), dp(context, 3))
             }, LinearLayout.LayoutParams(dp(context, 30), dp(context, 30)))

@@ -20,9 +20,17 @@
 
 ## Bản hiện tại
 
-`3.3.6.Beta` (versionCode `45`) sử dụng `minSdk 29 (Android 10)`, `targetSdk 36`, Kotlin `2.4.10`.
+`3.4.0.beta` (versionCode `46`) sử dụng `minSdk 29 (Android 10)`, `targetSdk 36`, Kotlin `2.4.10`.
 
-### Cải tiến mới trong 3.3.6.Beta
+**Tải và cài đặt:** [PiperOS-Tool-3.4.0-beta-debug.apk](https://github.com/Phi574/PiperOSTool-Android/releases/download/v3.4.0.beta/PiperOS-Tool-3.4.0-beta-debug.apk) · [Chi tiết bản phát hành](https://github.com/Phi574/PiperOSTool-Android/releases/tag/v3.4.0.beta). APK debug được ký bằng khóa debug của bản build này; nếu máy báo xung đột chữ ký với bản đang cài, hãy sao lưu dữ liệu ứng dụng trước khi gỡ bản cũ.
+
+### Cải tiến mới trong 3.4.0.beta
+
+- LiquidGlass cho thanh công cụ, bảng điều khiển và danh sách của Media, Terminal, Fake GPS, File Manager, View Remote và Apple Mirroring.
+- Dialog và menu nổi dùng LiquidGlass trong giao diện Classic; giao diện Modern vẫn dùng kiểu riêng.
+- Thu gọn panel, thanh chọn tệp và icon; điều chỉnh vùng media và bàn phím Terminal khi xoay ngang.
+
+### Cải tiến trước trong 3.3.6.Beta
 
 - LiquidGlass cho Home, Beta, Ứng dụng, Cài đặt, Info, màn xác thực, Thông tin người dùng và Thiết bị đăng nhập; đồng bộ ảnh nền và kích thước icon quay về.
 - Hiệu ứng chuyển tab và mở/đóng mục Info; các mục thông tin không tự mở sẵn.

@@ -1,18 +1,66 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="80dp"
-    android:background="?attr/selectableItemBackground"
+    android:layout_height="wrap_content"
     android:clickable="true"
     android:focusable="true"
-    android:gravity="center_vertical"
-    android:orientation="horizontal"
-    android:paddingHorizontal="16dp">
-    <ImageView android:id="@+id/archiveEntryIcon" android:layout_width="48dp" android:layout_height="48dp" android:background="#172127" android:clipToOutline="true" android:contentDescription="@null" android:padding="6dp" android:scaleType="centerInside" android:src="@drawable/backup" />
-    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="14dp" android:layout_weight="1" android:orientation="vertical">
-        <TextView android:id="@+id/archiveEntryName" android:layout_width="match_parent" android:layout_height="wrap_content" android:ellipsize="middle" android:maxLines="1" android:textColor="@color/white" android:textSize="14sp" android:textStyle="bold" />
-        <TextView android:id="@+id/archiveEntryMeta" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:ellipsize="end" android:maxLines="1" android:textColor="#9FFFFFFF" android:textSize="11sp" />
+    app:cardCornerRadius="20dp"
+    app:cardElevation="0dp"
+    app:cardBackgroundColor="@android:color/transparent"
+    app:contentPadding="0dp"
+    app:cardPreventCornerOverlap="false"
+    android:minHeight="72dp">
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="16dp"
+        android:tag="piper_glass_content"
+        android:minHeight="72dp">
+        <ImageView
+            android:id="@+id/archiveEntryIcon"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="#172127"
+            android:clipToOutline="true"
+            android:contentDescription="@null"
+            android:padding="6dp"
+            android:scaleType="centerInside"
+            android:src="@drawable/backup" />
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="14dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+            <TextView
+                android:id="@+id/archiveEntryName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="middle"
+                android:maxLines="1"
+                android:textColor="@color/white"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+            <TextView
+                android:id="@+id/archiveEntryMeta"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="3dp"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textColor="#9FFFFFFF"
+                android:textSize="11sp" />
+        </LinearLayout>
+        <ImageView
+            android:id="@+id/archiveEntryTrailing"
+            android:layout_width="22dp"
+            android:layout_height="22dp"
+            android:contentDescription="@null"
+            android:src="@drawable/ic_chevron_right"
+            app:tint="#70FFFFFF" />
     </LinearLayout>
-    <ImageView android:id="@+id/archiveEntryTrailing" android:layout_width="22dp" android:layout_height="22dp" android:contentDescription="@null" android:src="@drawable/ic_chevron_right" app:tint="#70FFFFFF" />
-</LinearLayout>
+</com.google.android.material.card.MaterialCardView>

@@ -87,6 +87,11 @@ class FileManagerAdapter(
                 }
             }
         }
+        if (!PiperUiPreferences.isModern(holder.itemView.context)) {
+            PiperClassicGlassUi.apply(holder.itemView)
+            holder.trailing.imageTintList = ColorStateList.valueOf(PiperClassicGlassUi.textColor(holder.itemView.context))
+            holder.trailing.setImageResource(if (entry.archivePath in selectedPaths) R.drawable.check_circle else R.drawable.ic_chevron_right)
+        }
         holder.itemView.setOnClickListener { onClick(entry) }
         holder.itemView.setOnLongClickListener { onLongClick(entry); true }
         PiperAutoFont.apply(holder.itemView)

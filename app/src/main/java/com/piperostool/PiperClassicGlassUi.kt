@@ -75,6 +75,12 @@ object PiperClassicGlassUi {
     fun surfaceColor(context: Context): Int = palette(context).strongGlass
     fun borderColor(context: Context): Int = palette(context).border
 
+    // CardView ignores View.setPadding; use content padding for system insets.
+    fun setContainerPadding(view: View, left: Int, top: Int, right: Int, bottom: Int) {
+        if (view is MaterialCardView) view.setContentPadding(left, top, right, bottom)
+        else view.setPadding(left, top, right, bottom)
+    }
+
     private fun applyWindow(activity: Activity, colors: Palette) {
         activity.window.statusBarColor = Color.TRANSPARENT
         activity.window.navigationBarColor = Color.TRANSPARENT
@@ -154,7 +160,7 @@ object PiperClassicGlassUi {
      * so text and icons are never captured into their own glass.
      */
     private fun installNativeGlassSurfaces(root: View) {
-        val backdrop = findBackdrop(root) ?: root.rootView
+        val backdrop = findBackdrop(root) ?: return
         val pending = ArrayDeque<View>()
         pending.add(root)
         while (pending.isNotEmpty()) {
@@ -167,7 +173,7 @@ object PiperClassicGlassUi {
                     current.post { installNativeGlassSurfaces(current) }
                     continue
                 }
-                val listItem = current.parent is RecyclerView
+                val listItem = current.parent is RecyclerView || current.parent is android.widget.AbsListView
                 val glass = LiquidGlassView(current.context).apply {
                     layoutParams = FrameLayout.LayoutParams(
                         FrameLayout.LayoutParams.MATCH_PARENT,
@@ -248,7 +254,16 @@ object PiperClassicGlassUi {
         // DecorView when that activity background is available: capturing the
         // DecorView from a lens creates a recursive RenderNode draw.
         root.rootView.findViewById<View?>(R.id.homeBackground)?.let { return it }
-        return root.rootView.findViewWithTag<View>(BACKGROUND_TAG)
+        root.rootView.findViewWithTag<View>(BACKGROUND_TAG)?.let { return it }
+        var context = root.context
+        while (context is ContextWrapper) {
+            if (context is Activity) {
+                return context.findViewById<View>(R.id.homeBackground)
+                    ?: context.window.decorView.findViewWithTag<View>(BACKGROUND_TAG)
+            }
+            context = context.baseContext
+        }
+        return null
     }
 
     /** Adds a lightweight progressive blur only to the edge of a scrolling menu. */
@@ -321,6 +336,19 @@ object PiperClassicGlassUi {
     private fun applyView(view: View, colors: Palette) {
         val name = resourceName(view)
         if (name == "homeBackground") return
+        if (view.tag == "piper_glass_content") {
+            view.background = null
+            return
+        }
+        if (view is ImageButton) view.scaleType = ImageView.ScaleType.CENTER_INSIDE
+        if (view is TextView) {
+            val size = dp(view, 20f)
+            val icons = view.compoundDrawablesRelative
+            if (icons.any { it != null && (it.bounds.width() != size || it.bounds.height() != size) }) {
+                icons.forEach { it?.setBounds(0, 0, size, size) }
+                view.setCompoundDrawablesRelative(icons[0], icons[1], icons[2], icons[3])
+            }
+        }
         if (isPageRoot(name)) {
             view.backgroundTintList = null
             view.setBackgroundColor(Color.TRANSPARENT)
@@ -335,6 +363,11 @@ object PiperClassicGlassUi {
         }
 
         when (view) {
+            is android.widget.Spinner -> {
+                view.backgroundTintList = null
+                view.background = glassDrawable(view, colors, 18f)
+                view.setPopupBackgroundDrawable(glassDrawable(view, colors, 20f, strong = true))
+            }
             is MaterialCardView -> {
                 view.backgroundTintList = null
                 view.setCardBackgroundColor(Color.TRANSPARENT)
@@ -364,7 +397,7 @@ object PiperClassicGlassUi {
                     return
                 }
                 view.backgroundTintList = null
-                view.background = if (primary && !authScreen) {
+                view.background = if (primary && !authScreen && !isFeatureScreen(view)) {
                     solidDrawable(view, colors.accent, colors.border, 22f)
                 } else {
                     glassDrawable(view, colors, 22f, strong = true)
@@ -402,7 +435,7 @@ object PiperClassicGlassUi {
                 view.isAllCaps = false
                 view.setTextColor(if (primary) colors.onAccent else colors.text)
                 view.backgroundTintList = null
-                view.background = if (primary && !authScreen) {
+                view.background = if (primary && !authScreen && !isFeatureScreen(view)) {
                     solidDrawable(view, colors.accent, colors.border, 22f)
                 } else {
                     glassDrawable(view, colors, 22f, strong = true)
@@ -457,7 +490,7 @@ object PiperClassicGlassUi {
     }
 
     private fun applyText(view: TextView, colors: Palette) {
-        if (resourceName(view).contains("terminal", true)) return
+        if (resourceName(view) in setOf("tvTerminalOutput", "etTerminalCommand", "tvTerminalPromptMode")) return
         val currentAlpha = Color.alpha(view.currentTextColor)
         if (currentAlpha < 70) return
         val sizeSp = view.textSize / view.resources.displayMetrics.scaledDensity
@@ -495,9 +528,24 @@ object PiperClassicGlassUi {
             context is SignupActivity || context is ForgotPassword
     }
 
+    private fun isFeatureScreen(view: View): Boolean {
+        var context = view.context
+        while (context is ContextWrapper) {
+            if (context is PiperMediaActivity || context is PiperTerminalActivity ||
+                context is FakeMapActivity || context is PiperFileManagerActivity ||
+                context is PiperRemoteActivity || context is PiperAppleMirrorActivity) return true
+            context = context.baseContext
+        }
+        return false
+    }
+
     private fun isNavigationItem(name: String): Boolean = name in navigationItems
 
-    private fun isSpecialSurface(name: String): Boolean = specialHints.any { name.contains(it, true) }
+    private fun isSpecialSurface(name: String): Boolean = name in setOf(
+        "fakeMapView", "mediaPlayerView", "mediaStage", "mediaDiscContainer",
+        "terminalScroll", "remoteViewerPanel", "remoteFrameView", "remoteVideoSurface",
+        "appleMirrorViewer", "appleMirrorSurface"
+    ) || name.contains("progress", true) || name.contains("camera", true) || name.contains("previewSurface", true)
 
     private fun preserveChildren(view: View): Boolean {
         val className = view.javaClass.name

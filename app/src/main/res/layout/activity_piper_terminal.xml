@@ -7,135 +7,146 @@
     android:layout_height="match_parent"
     android:background="#FF090D10"
     android:fitsSystemWindows="true">
-
-    <LinearLayout
+    <com.google.android.material.card.MaterialCardView
         android:id="@+id/terminalToolbar"
         android:layout_width="0dp"
         android:layout_height="56dp"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingHorizontal="10dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
-
-        <ImageButton
-            android:id="@+id/btnTerminalBack"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="@string/go_back"
-            android:padding="10dp"
-            android:src="@drawable/ic_browser_back"
-            app:tint="@color/white" />
-
-        <ImageView
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:layout_marginStart="4dp"
-            android:contentDescription="@null"
-            android:src="@drawable/ic_terminal"
-            app:tint="#8DFFB0" />
-
+        app:layout_constraintTop_toTopOf="parent"
+        app:cardCornerRadius="20dp"
+        app:cardElevation="0dp"
+        app:cardBackgroundColor="@android:color/transparent"
+        app:contentPadding="0dp"
+        app:cardPreventCornerOverlap="false">
         <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="10dp"
-            android:layout_weight="1"
-            android:orientation="vertical">
-            <TextView
-                android:layout_width="match_parent"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="10dp"
+            android:tag="piper_glass_content">
+            <ImageButton
+                android:id="@+id/btnTerminalBack"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/go_back"
+                android:padding="10dp"
+                android:src="@drawable/ic_browser_back"
+                app:tint="@color/white"
+                android:scaleType="centerInside" />
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_marginStart="4dp"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_terminal"
+                app:tint="#8DFFB0"
+                android:scaleType="centerInside" />
+            <LinearLayout
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:ellipsize="end"
-                android:maxLines="1"
-                android:text="@string/piperos_terminal"
-                android:textColor="@color/white"
-                android:textSize="17sp"
-                android:textStyle="bold" />
-            <TextView
-                android:id="@+id/tvTerminalStatus"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:ellipsize="end"
-                android:maxLines="1"
-                android:text="@string/terminal_status_ready"
-                android:textColor="#9FFFFFFF"
-                android:textSize="11sp" />
+                android:layout_marginStart="10dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:text="@string/piperos_terminal"
+                    android:textColor="@color/white"
+                    android:textSize="17sp"
+                    android:textStyle="bold" />
+                <TextView
+                    android:id="@+id/tvTerminalStatus"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:text="@string/terminal_status_ready"
+                    android:textColor="#9FFFFFFF"
+                    android:textSize="11sp" />
+            </LinearLayout>
+            <ImageButton
+                android:id="@+id/btnTerminalClear"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/terminal_clear"
+                android:padding="9dp"
+                android:src="@drawable/ic_browser_reload"
+                app:tint="#B8FFFFFF"
+                android:scaleType="centerInside" />
         </LinearLayout>
-
-        <ImageButton
-            android:id="@+id/btnTerminalClear"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="@string/terminal_clear"
-            android:padding="9dp"
-            android:src="@drawable/ic_browser_reload"
-            app:tint="#B8FFFFFF" />
-    </LinearLayout>
-
-    <LinearLayout
+    </com.google.android.material.card.MaterialCardView>
+    <com.google.android.material.card.MaterialCardView
         android:id="@+id/terminalRuntimeStatus"
         android:layout_width="0dp"
         android:layout_height="60dp"
         android:layout_marginHorizontal="8dp"
-        android:background="@drawable/bg_terminal_runtime_status"
         android:clickable="true"
         android:focusable="true"
         android:foreground="?attr/selectableItemBackground"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingHorizontal="12dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/terminalToolbar">
-
-        <ImageView
-            android:layout_width="28dp"
-            android:layout_height="28dp"
-            android:contentDescription="@null"
-            android:src="@drawable/ic_terminal"
-            app:tint="#FFFFC46B" />
-
+        app:layout_constraintTop_toBottomOf="@id/terminalToolbar"
+        app:cardCornerRadius="20dp"
+        app:cardElevation="0dp"
+        app:cardBackgroundColor="@android:color/transparent"
+        app:contentPadding="0dp"
+        app:cardPreventCornerOverlap="false">
         <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
-            android:layout_weight="1"
-            android:orientation="vertical">
-
-            <TextView
-                android:id="@+id/tvTerminalRuntimeMode"
-                android:layout_width="match_parent"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="12dp"
+            android:tag="piper_glass_content">
+            <ImageView
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_terminal"
+                app:tint="#FFFFC46B"
+                android:scaleType="centerInside" />
+            <LinearLayout
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:ellipsize="end"
-                android:maxLines="1"
-                android:text="@string/terminal_runtime_android_mode"
-                android:textColor="#FFFFD38A"
-                android:textSize="13sp"
+                android:layout_marginStart="12dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+                <TextView
+                    android:id="@+id/tvTerminalRuntimeMode"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:text="@string/terminal_runtime_android_mode"
+                    android:textColor="#FFFFD38A"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+                <TextView
+                    android:id="@+id/tvTerminalRuntimeDetail"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:text="@string/terminal_runtime_missing"
+                    android:textColor="#BFFFFFFF"
+                    android:textSize="11sp" />
+            </LinearLayout>
+            <TextView
+                android:id="@+id/tvTerminalRuntimeVersion"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:textColor="#9FFFFFFF"
+                android:textSize="10sp"
                 android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/tvTerminalRuntimeDetail"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:ellipsize="end"
-                android:maxLines="1"
-                android:text="@string/terminal_runtime_missing"
-                android:textColor="#BFFFFFFF"
-                android:textSize="11sp" />
         </LinearLayout>
-
-        <TextView
-            android:id="@+id/tvTerminalRuntimeVersion"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:textColor="#9FFFFFFF"
-            android:textSize="10sp"
-            android:textStyle="bold" />
-    </LinearLayout>
-
+    </com.google.android.material.card.MaterialCardView>
     <LinearLayout
         android:id="@+id/terminalRuntimeActions"
         android:layout_width="0dp"
@@ -148,7 +159,6 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/terminalRuntimeStatus">
-
         <TextView
             android:id="@+id/btnTerminalRuntimeInstall"
             android:layout_width="wrap_content"
@@ -161,7 +171,6 @@
             android:textColor="#8DFFB0"
             android:textSize="11sp"
             android:textStyle="bold" />
-
         <TextView
             android:id="@+id/btnTerminalRuntimeRemove"
             android:layout_width="wrap_content"
@@ -176,7 +185,6 @@
             android:textSize="11sp"
             android:textStyle="bold" />
     </LinearLayout>
-
     <LinearLayout
         android:id="@+id/terminalTabsBar"
         android:layout_width="0dp"
@@ -188,7 +196,6 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/terminalRuntimeActions">
-
         <HorizontalScrollView
             android:layout_width="0dp"
             android:layout_height="match_parent"
@@ -203,7 +210,6 @@
                 android:gravity="center_vertical"
                 android:orientation="horizontal" />
         </HorizontalScrollView>
-
         <ImageButton
             android:id="@+id/btnNewTerminalTab"
             android:layout_width="40dp"
@@ -212,8 +218,8 @@
             android:contentDescription="@string/terminal_new_session"
             android:padding="9dp"
             android:src="@drawable/ic_browser_add"
-            app:tint="#8DFFB0" />
-
+            app:tint="#8DFFB0"
+            android:scaleType="centerInside" />
         <ImageButton
             android:id="@+id/btnCloseTerminalTab"
             android:layout_width="40dp"
@@ -222,9 +228,9 @@
             android:contentDescription="@string/terminal_close_session"
             android:padding="9dp"
             android:src="@drawable/ic_browser_close"
-            app:tint="#FB7185" />
+            app:tint="#FB7185"
+            android:scaleType="centerInside" />
     </LinearLayout>
-
     <ScrollView
         android:id="@+id/terminalScroll"
         android:layout_width="0dp"
@@ -249,184 +255,187 @@
             android:textIsSelectable="true"
             android:textSize="13sp" />
     </ScrollView>
-
-    <LinearLayout
+    <com.google.android.material.card.MaterialCardView
         android:id="@+id/terminalTaskPanel"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="8dp"
-        android:background="@drawable/bg_terminal_input_row"
-        android:orientation="vertical"
-        android:padding="10dp"
         android:visibility="gone"
         app:layout_constraintBottom_toTopOf="@id/terminalInputRow"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent">
-
+        app:layout_constraintStart_toStartOf="parent"
+        app:cardCornerRadius="20dp"
+        app:cardElevation="0dp"
+        app:cardBackgroundColor="@android:color/transparent"
+        app:contentPadding="0dp"
+        app:cardPreventCornerOverlap="false">
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
-
-            <TextView
-                android:id="@+id/tvTerminalTaskStatus"
-                android:layout_width="0dp"
+            android:orientation="vertical"
+            android:padding="10dp"
+            android:tag="piper_glass_content">
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:ellipsize="middle"
-                android:maxLines="1"
-                android:textColor="#D9FCE5"
-                android:textSize="11sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/tvTerminalTaskPercent"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:textColor="#8AD6FF"
-                android:textSize="11sp"
-                android:textStyle="bold" />
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+                <TextView
+                    android:id="@+id/tvTerminalTaskStatus"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:ellipsize="middle"
+                    android:maxLines="1"
+                    android:textColor="#D9FCE5"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+                <TextView
+                    android:id="@+id/tvTerminalTaskPercent"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:textColor="#8AD6FF"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+            <ProgressBar
+                android:id="@+id/terminalTaskProgress"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent"
+                android:layout_height="4dp"
+                android:layout_marginTop="7dp"
+                android:indeterminateTint="#8AD6FF"
+                android:max="100"
+                android:progressTint="#8DFFB0" />
+            <LinearLayout
+                android:id="@+id/terminalConfirmationActions"
+                android:layout_width="match_parent"
+                android:layout_height="40dp"
+                android:layout_marginTop="8dp"
+                android:gravity="end|center_vertical"
+                android:orientation="horizontal"
+                android:visibility="gone">
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/terminal_confirmation_question"
+                    android:textColor="#BFFFFFFF"
+                    android:textSize="11sp" />
+                <TextView
+                    android:id="@+id/btnTerminalNo"
+                    android:layout_width="58dp"
+                    android:layout_height="36dp"
+                    android:background="@drawable/bg_terminal_key"
+                    android:gravity="center"
+                    android:text="N"
+                    android:textColor="#FB7185"
+                    android:textStyle="bold" />
+                <TextView
+                    android:id="@+id/btnTerminalYes"
+                    android:layout_width="58dp"
+                    android:layout_height="36dp"
+                    android:layout_marginStart="8dp"
+                    android:background="@drawable/bg_terminal_key"
+                    android:gravity="center"
+                    android:text="Y"
+                    android:textColor="#8DFFB0"
+                    android:textStyle="bold" />
+            </LinearLayout>
         </LinearLayout>
-
-        <ProgressBar
-            android:id="@+id/terminalTaskProgress"
-            style="?android:attr/progressBarStyleHorizontal"
-            android:layout_width="match_parent"
-            android:layout_height="4dp"
-            android:layout_marginTop="7dp"
-            android:indeterminateTint="#8AD6FF"
-            android:max="100"
-            android:progressTint="#8DFFB0" />
-
-        <LinearLayout
-            android:id="@+id/terminalConfirmationActions"
-            android:layout_width="match_parent"
-            android:layout_height="40dp"
-            android:layout_marginTop="8dp"
-            android:gravity="end|center_vertical"
-            android:orientation="horizontal"
-            android:visibility="gone">
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/terminal_confirmation_question"
-                android:textColor="#BFFFFFFF"
-                android:textSize="11sp" />
-
-            <TextView
-                android:id="@+id/btnTerminalNo"
-                android:layout_width="58dp"
-                android:layout_height="36dp"
-                android:background="@drawable/bg_terminal_key"
-                android:gravity="center"
-                android:text="N"
-                android:textColor="#FB7185"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/btnTerminalYes"
-                android:layout_width="58dp"
-                android:layout_height="36dp"
-                android:layout_marginStart="8dp"
-                android:background="@drawable/bg_terminal_key"
-                android:gravity="center"
-                android:text="Y"
-                android:textColor="#8DFFB0"
-                android:textStyle="bold" />
-        </LinearLayout>
-    </LinearLayout>
-
-    <LinearLayout
+    </com.google.android.material.card.MaterialCardView>
+    <com.google.android.material.card.MaterialCardView
         android:id="@+id/terminalInputRow"
         android:layout_width="0dp"
         android:layout_height="58dp"
         android:layout_marginHorizontal="8dp"
-        android:background="@drawable/bg_terminal_input_row"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:padding="5dp"
         app:layout_constraintBottom_toTopOf="@id/terminalCustomKeyboard"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent">
-
-        <TextView
-            android:id="@+id/tvTerminalPromptMode"
-            android:layout_width="wrap_content"
-            android:layout_height="48dp"
-            android:background="@drawable/bg_terminal_input"
-            android:ellipsize="start"
-            android:gravity="center"
-            android:maxLines="1"
-            android:maxWidth="132dp"
-            android:minWidth="62dp"
-            android:paddingHorizontal="10dp"
-            android:text="~ $"
-            android:textColor="#8DFFB0"
-            android:textSize="11sp"
-            android:textStyle="bold" />
-
-        <EditText
-            android:id="@+id/etTerminalCommand"
-            android:layout_width="0dp"
-            android:layout_height="48dp"
-            android:layout_weight="1"
-            android:background="@drawable/bg_terminal_input"
-            android:fontFamily="monospace"
-            android:hint="@string/terminal_command_hint"
-            android:imeOptions="actionSend"
-            android:inputType="text|textNoSuggestions"
-            android:maxLines="1"
-            android:singleLine="true"
-            android:textColor="@color/white"
-            android:textColorHint="#72FFFFFF"
-            android:textSize="14sp" />
-
-        <TextView
-            android:id="@+id/btnTerminalKeyboardMode"
-            android:layout_width="42dp"
-            android:layout_height="42dp"
-            android:layout_marginStart="6dp"
-            android:background="@drawable/bg_terminal_key"
-            android:contentDescription="@string/terminal_keyboard_mode"
-            android:gravity="center"
-            android:text="SYS"
-            android:textColor="#D9FCE5"
-            android:textSize="10sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/btnTerminalClipboard"
-            android:layout_width="42dp"
-            android:layout_height="42dp"
-            android:layout_marginStart="6dp"
-            android:background="@drawable/bg_terminal_key"
-            android:contentDescription="@string/terminal_clipboard"
-            android:gravity="center"
-            android:text="@string/terminal_clip_short"
-            android:textColor="#D9FCE5"
-            android:textSize="9sp"
-            android:textStyle="bold" />
-
-        <ImageButton
-            android:id="@+id/btnTerminalSend"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:layout_marginStart="6dp"
-            android:background="@drawable/bg_terminal_send"
-            android:contentDescription="@string/terminal_run_command"
-            android:padding="12dp"
-            android:src="@drawable/ic_terminal"
-            app:tint="#08110B" />
-    </LinearLayout>
-
+        app:layout_constraintStart_toStartOf="parent"
+        app:cardCornerRadius="20dp"
+        app:cardElevation="0dp"
+        app:cardBackgroundColor="@android:color/transparent"
+        app:contentPadding="0dp"
+        app:cardPreventCornerOverlap="false">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:padding="5dp"
+            android:tag="piper_glass_content">
+            <TextView
+                android:id="@+id/tvTerminalPromptMode"
+                android:layout_width="wrap_content"
+                android:layout_height="48dp"
+                android:background="@drawable/bg_terminal_input"
+                android:ellipsize="start"
+                android:gravity="center"
+                android:maxLines="1"
+                android:maxWidth="132dp"
+                android:minWidth="62dp"
+                android:paddingHorizontal="10dp"
+                android:text="~ $"
+                android:textColor="#8DFFB0"
+                android:textSize="11sp"
+                android:textStyle="bold" />
+            <EditText
+                android:id="@+id/etTerminalCommand"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_terminal_input"
+                android:fontFamily="monospace"
+                android:hint="@string/terminal_command_hint"
+                android:imeOptions="actionSend"
+                android:inputType="text|textNoSuggestions"
+                android:maxLines="1"
+                android:singleLine="true"
+                android:textColor="@color/white"
+                android:textColorHint="#72FFFFFF"
+                android:textSize="14sp" />
+            <TextView
+                android:id="@+id/btnTerminalKeyboardMode"
+                android:layout_width="42dp"
+                android:layout_height="42dp"
+                android:layout_marginStart="6dp"
+                android:background="@drawable/bg_terminal_key"
+                android:contentDescription="@string/terminal_keyboard_mode"
+                android:gravity="center"
+                android:text="SYS"
+                android:textColor="#D9FCE5"
+                android:textSize="10sp"
+                android:textStyle="bold" />
+            <TextView
+                android:id="@+id/btnTerminalClipboard"
+                android:layout_width="42dp"
+                android:layout_height="42dp"
+                android:layout_marginStart="6dp"
+                android:background="@drawable/bg_terminal_key"
+                android:contentDescription="@string/terminal_clipboard"
+                android:gravity="center"
+                android:text="@string/terminal_clip_short"
+                android:textColor="#D9FCE5"
+                android:textSize="9sp"
+                android:textStyle="bold" />
+            <ImageButton
+                android:id="@+id/btnTerminalSend"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_marginStart="6dp"
+                android:background="@drawable/bg_terminal_send"
+                android:contentDescription="@string/terminal_run_command"
+                android:padding="12dp"
+                android:src="@drawable/ic_terminal"
+                app:tint="#08110B"
+                android:scaleType="centerInside" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
     <LinearLayout
         android:id="@+id/terminalCustomKeyboard"
         android:layout_width="0dp"
-        android:layout_height="250dp"
+        android:layout_height="@dimen/piper_terminal_keyboard_height"
         android:background="#FF0B1115"
         android:orientation="vertical"
         android:paddingStart="6dp"
@@ -435,14 +444,12 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
-
         <HorizontalScrollView
             android:layout_width="match_parent"
             android:layout_height="42dp"
             android:fillViewport="false"
             android:overScrollMode="never"
             android:scrollbars="none">
-
             <LinearLayout
                 android:id="@+id/terminalFunctionKeys"
                 android:layout_width="wrap_content"
@@ -450,7 +457,6 @@
                 android:gravity="center_vertical"
                 android:orientation="horizontal" />
         </HorizontalScrollView>
-
         <LinearLayout
             android:id="@+id/terminalKeyboardRows"
             android:layout_width="match_parent"

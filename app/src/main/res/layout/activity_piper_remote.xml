@@ -6,90 +6,95 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/remote_page_background">
-
-    <LinearLayout
+    <com.google.android.material.card.MaterialCardView
         android:id="@+id/remoteToolbar"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingStart="16dp"
-        android:paddingTop="14dp"
-        android:paddingEnd="16dp"
-        android:paddingBottom="12dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
-
-        <ImageButton
-            android:id="@+id/btnRemoteBack"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="@string/dismiss"
-            android:padding="12dp"
-            android:src="@drawable/ic_browser_back"
-            app:tint="@color/remote_text_primary" />
-
-        <ImageView
-            android:layout_width="42dp"
-            android:layout_height="42dp"
-            android:layout_marginStart="4dp"
-            android:background="@drawable/bg_browser_icon"
-            android:contentDescription="@null"
-            android:padding="9dp"
-            android:src="@drawable/ic_remote_view"
-            app:tint="@color/remote_accent" />
-
+        app:layout_constraintTop_toTopOf="parent"
+        app:cardCornerRadius="20dp"
+        app:cardElevation="0dp"
+        app:cardBackgroundColor="@android:color/transparent"
+        app:contentPadding="0dp"
+        app:cardPreventCornerOverlap="false">
         <LinearLayout
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
-            android:layout_weight="1"
-            android:orientation="vertical">
-
-            <TextView
-                android:layout_width="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="16dp"
+            android:paddingTop="0dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="12dp"
+            android:tag="piper_glass_content">
+            <ImageButton
+                android:id="@+id/btnRemoteBack"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/dismiss"
+                android:padding="12dp"
+                android:src="@drawable/ic_browser_back"
+                app:tint="@color/remote_text_primary"
+                android:scaleType="centerInside" />
+            <ImageView
+                android:layout_width="42dp"
+                android:layout_height="42dp"
+                android:layout_marginStart="4dp"
+                android:background="@drawable/bg_browser_icon"
+                android:contentDescription="@null"
+                android:padding="9dp"
+                android:src="@drawable/ic_remote_view"
+                app:tint="@color/remote_accent"
+                android:scaleType="centerInside" />
+            <LinearLayout
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:text="@string/piperos_remote"
-                android:textColor="@color/remote_text_primary"
-                android:textSize="20sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/tvRemoteToolbarStatus"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:ellipsize="end"
-                android:maxLines="1"
-                android:text="@string/remote_ready"
-                android:textColor="@color/remote_text_secondary"
-                android:textSize="12sp" />
+                android:layout_marginStart="12dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/piperos_remote"
+                    android:textColor="@color/remote_text_primary"
+                    android:textSize="20sp"
+                    android:textStyle="bold" />
+                <TextView
+                    android:id="@+id/tvRemoteToolbarStatus"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:text="@string/remote_ready"
+                    android:textColor="@color/remote_text_secondary"
+                    android:textSize="12sp" />
+            </LinearLayout>
+            <ImageButton
+                android:id="@+id/btnRemoteStreamSettings"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/remote_stream_settings"
+                android:padding="12dp"
+                android:src="@drawable/ic_remote_settings"
+                app:tint="@color/remote_text_secondary"
+                android:scaleType="centerInside" />
+            <ImageButton
+                android:id="@+id/btnRemoteStopToolbar"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/remote_stop"
+                android:padding="12dp"
+                android:src="@drawable/ic_stop"
+                android:visibility="gone"
+                app:tint="#FF6B7A"
+                android:scaleType="centerInside" />
         </LinearLayout>
-
-        <ImageButton
-            android:id="@+id/btnRemoteStreamSettings"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="@string/remote_stream_settings"
-            android:padding="12dp"
-            android:src="@drawable/ic_remote_settings"
-            app:tint="@color/remote_text_secondary" />
-
-        <ImageButton
-            android:id="@+id/btnRemoteStopToolbar"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="@string/remote_stop"
-            android:padding="12dp"
-            android:src="@drawable/ic_stop"
-            android:visibility="gone"
-            app:tint="#FF6B7A" />
-    </LinearLayout>
-
+    </com.google.android.material.card.MaterialCardView>
     <androidx.core.widget.NestedScrollView
         android:id="@+id/remoteScroll"
         android:layout_width="0dp"
@@ -104,12 +109,10 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/remoteToolbar">
-
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">
-
             <com.google.android.material.button.MaterialButtonToggleGroup
                 android:id="@+id/remoteRoleGroup"
                 android:layout_width="match_parent"
@@ -118,7 +121,6 @@
                 app:checkedButton="@id/btnRoleShare"
                 app:selectionRequired="true"
                 app:singleSelection="true">
-
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnRoleShare"
                     style="@style/Widget.MaterialComponents.Button.OutlinedButton"
@@ -126,7 +128,6 @@
                     android:layout_height="match_parent"
                     android:layout_weight="1"
                     android:text="@string/remote_share_device" />
-
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnRoleConnect"
                     style="@style/Widget.MaterialComponents.Button.OutlinedButton"
@@ -135,7 +136,6 @@
                     android:layout_weight="1"
                     android:text="@string/remote_control_device" />
             </com.google.android.material.button.MaterialButtonToggleGroup>
-
             <TextView
                 android:id="@+id/tvRemoteStatus"
                 android:layout_width="match_parent"
@@ -146,7 +146,6 @@
                 android:text="@string/remote_private_lan_note"
                 android:textColor="@color/remote_text_primary"
                 android:textSize="13sp" />
-
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardAppleMirror"
                 android:layout_width="match_parent"
@@ -159,21 +158,19 @@
                 app:cardElevation="0dp"
                 app:strokeColor="@color/remote_border"
                 app:strokeWidth="1dp">
-
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center_vertical"
                     android:orientation="horizontal"
                     android:padding="16dp">
-
                     <ImageView
                         android:layout_width="44dp"
                         android:layout_height="44dp"
                         android:background="@drawable/bg_browser_icon"
                         android:padding="10dp"
-                        android:src="@drawable/ic_apple_mirror" />
-
+                        android:src="@drawable/ic_apple_mirror"
+                        android:scaleType="centerInside" />
                     <LinearLayout
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
@@ -195,22 +192,20 @@
                             android:textColor="@color/remote_text_secondary"
                             android:textSize="12sp" />
                     </LinearLayout>
-
                     <ImageView
                         android:layout_width="28dp"
                         android:layout_height="28dp"
                         android:src="@drawable/ic_browser_forward"
-                        app:tint="@color/remote_text_secondary" />
+                        app:tint="@color/remote_text_secondary"
+                        android:scaleType="centerInside" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
-
             <LinearLayout
                 android:id="@+id/remoteSharePanel"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="14dp"
                 android:orientation="vertical">
-
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -218,7 +213,6 @@
                     android:textColor="@color/remote_text_primary"
                     android:textSize="18sp"
                     android:textStyle="bold" />
-
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/cardShareLan"
                     android:layout_width="match_parent"
@@ -242,7 +236,6 @@
                         android:textStyle="bold"
                         app:drawableTint="@color/remote_accent" />
                 </com.google.android.material.card.MaterialCardView>
-
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/cardShareQr"
                     android:layout_width="match_parent"
@@ -266,7 +259,6 @@
                         android:textStyle="bold"
                         app:drawableTint="@color/remote_accent" />
                 </com.google.android.material.card.MaterialCardView>
-
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/cardShareCode"
                     android:layout_width="match_parent"
@@ -290,7 +282,6 @@
                         android:textStyle="bold"
                         app:drawableTint="@color/remote_accent" />
                 </com.google.android.material.card.MaterialCardView>
-
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/cardShareUsb"
                     android:layout_width="match_parent"
@@ -314,164 +305,212 @@
                         android:textStyle="bold"
                         app:drawableTint="@color/remote_accent" />
                 </com.google.android.material.card.MaterialCardView>
-
-                <LinearLayout
+                <com.google.android.material.card.MaterialCardView
                     android:id="@+id/remoteShareCredentialPanel"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="14dp"
-                    android:background="@drawable/bg_remote_surface"
-                    android:gravity="center"
-                    android:orientation="vertical"
-                    android:padding="18dp"
-                    android:visibility="gone">
-
-                    <ImageView
-                        android:id="@+id/imgRemoteQr"
-                        android:layout_width="220dp"
-                        android:layout_height="220dp"
-                        android:contentDescription="@string/remote_qr_code"
-                        android:visibility="gone" />
-
-                    <TextView
-                        android:id="@+id/tvRemoteCode"
-                        android:layout_width="wrap_content"
+                    android:visibility="gone"
+                    app:cardCornerRadius="20dp"
+                    app:cardElevation="0dp"
+                    app:cardBackgroundColor="@android:color/transparent"
+                    app:contentPadding="0dp"
+                    app:cardPreventCornerOverlap="false">
+                    <LinearLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:letterSpacing="0.18"
-                        android:textColor="@color/remote_text_primary"
-                        android:textSize="38sp"
-                        android:textStyle="bold"
-                        android:visibility="gone" />
-
-                    <TextView
-                        android:id="@+id/tvRemoteShareAddress"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
                         android:gravity="center"
-                        android:textColor="@color/remote_text_secondary"
-                        android:textSize="12sp" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnEnableRemoteControl"
-                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                        android:layout_width="match_parent"
-                        android:layout_height="48dp"
-                        android:layout_marginTop="14dp"
-                        android:text="@string/remote_enable_control" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnStopRemoteShare"
-                        android:layout_width="match_parent"
-                        android:layout_height="48dp"
-                        android:layout_marginTop="8dp"
-                        android:text="@string/remote_stop_share" />
-                </LinearLayout>
+                        android:orientation="vertical"
+                        android:padding="18dp"
+                        android:tag="piper_glass_content">
+                        <ImageView
+                            android:id="@+id/imgRemoteQr"
+                            android:layout_width="220dp"
+                            android:layout_height="220dp"
+                            android:contentDescription="@string/remote_qr_code"
+                            android:visibility="gone" />
+                        <TextView
+                            android:id="@+id/tvRemoteCode"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:letterSpacing="0.18"
+                            android:textColor="@color/remote_text_primary"
+                            android:textSize="38sp"
+                            android:textStyle="bold"
+                            android:visibility="gone" />
+                        <TextView
+                            android:id="@+id/tvRemoteShareAddress"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:gravity="center"
+                            android:textColor="@color/remote_text_secondary"
+                            android:textSize="12sp" />
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnEnableRemoteControl"
+                            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                            android:layout_width="match_parent"
+                            android:layout_height="48dp"
+                            android:layout_marginTop="14dp"
+                            android:text="@string/remote_enable_control" />
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnStopRemoteShare"
+                            android:layout_width="match_parent"
+                            android:layout_height="48dp"
+                            android:layout_marginTop="8dp"
+                            android:text="@string/remote_stop_share" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
             </LinearLayout>
-
-            <LinearLayout
+            <com.google.android.material.card.MaterialCardView
                 android:id="@+id/remoteConnectPanel"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="14dp"
-                android:orientation="vertical"
-                android:visibility="gone">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/remote_choose_connect_method"
-                    android:textColor="@color/remote_text_primary"
-                    android:textSize="18sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="14dp"
-                    android:text="@string/remote_stream_quality"
-                    android:textColor="@color/remote_text_secondary"
-                    android:textSize="13sp"
-                    android:textStyle="bold" />
-
-                <com.google.android.material.button.MaterialButtonToggleGroup
-                    android:id="@+id/remoteResolutionGroup"
-                    android:layout_width="match_parent"
-                    android:layout_height="48dp"
-                    android:layout_marginTop="8dp"
-                    app:checkedButton="@id/btnRemote720"
-                    app:selectionRequired="true"
-                    app:singleSelection="true">
-
-                    <com.google.android.material.button.MaterialButton android:id="@+id/btnRemote480" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:text="480p" />
-                    <com.google.android.material.button.MaterialButton android:id="@+id/btnRemote720" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:text="720p" />
-                    <com.google.android.material.button.MaterialButton android:id="@+id/btnRemote1080" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:text="1080p" />
-                    <com.google.android.material.button.MaterialButton android:id="@+id/btnRemoteNative" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:text="@string/remote_native_quality" />
-                </com.google.android.material.button.MaterialButtonToggleGroup>
-
-                <com.google.android.material.button.MaterialButtonToggleGroup
-                    android:id="@+id/remoteFpsGroup"
-                    android:layout_width="match_parent"
-                    android:layout_height="48dp"
-                    android:layout_marginTop="8dp"
-                    app:checkedButton="@id/btnRemote30Fps"
-                    app:selectionRequired="true"
-                    app:singleSelection="true">
-
-                    <com.google.android.material.button.MaterialButton android:id="@+id/btnRemote24Fps" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:text="24 FPS" />
-                    <com.google.android.material.button.MaterialButton android:id="@+id/btnRemote30Fps" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:text="30 FPS" />
-                    <com.google.android.material.button.MaterialButton android:id="@+id/btnRemote60Fps" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:text="60 FPS" />
-                    <com.google.android.material.button.MaterialButton android:id="@+id/btnRemoteMaxFps" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:text="@string/remote_max_fps" />
-                </com.google.android.material.button.MaterialButtonToggleGroup>
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnScanLanRemote"
-                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="52dp"
-                    android:layout_marginTop="12dp"
-                    android:text="@string/remote_scan_lan" />
-
+                android:visibility="gone"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="0dp"
+                app:cardBackgroundColor="@android:color/transparent"
+                app:contentPadding="0dp"
+                app:cardPreventCornerOverlap="false">
                 <LinearLayout
-                    android:id="@+id/remoteDeviceList"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnScanRemoteQr"
-                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="52dp"
-                    android:layout_marginTop="10dp"
-                    android:text="@string/remote_scan_qr" />
-
-                <com.google.android.material.textfield.TextInputLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    android:hint="@string/remote_code_hint">
-
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/etRemoteCode"
+                    android:orientation="vertical"
+                    android:tag="piper_glass_content"
+                    android:padding="12dp">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/remote_choose_connect_method"
+                        android:textColor="@color/remote_text_primary"
+                        android:textSize="18sp"
+                        android:textStyle="bold" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp"
+                        android:text="@string/remote_stream_quality"
+                        android:textColor="@color/remote_text_secondary"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+                    <com.google.android.material.button.MaterialButtonToggleGroup
+                        android:id="@+id/remoteResolutionGroup"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:layout_marginTop="8dp"
+                        app:checkedButton="@id/btnRemote720"
+                        app:selectionRequired="true"
+                        app:singleSelection="true">
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnRemote480"
+                            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_weight="1"
+                            android:text="480p" />
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnRemote720"
+                            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_weight="1"
+                            android:text="720p" />
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnRemote1080"
+                            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_weight="1"
+                            android:text="1080p" />
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnRemoteNative"
+                            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_weight="1"
+                            android:text="@string/remote_native_quality" />
+                    </com.google.android.material.button.MaterialButtonToggleGroup>
+                    <com.google.android.material.button.MaterialButtonToggleGroup
+                        android:id="@+id/remoteFpsGroup"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:layout_marginTop="8dp"
+                        app:checkedButton="@id/btnRemote30Fps"
+                        app:selectionRequired="true"
+                        app:singleSelection="true">
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnRemote24Fps"
+                            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_weight="1"
+                            android:text="24 FPS" />
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnRemote30Fps"
+                            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_weight="1"
+                            android:text="30 FPS" />
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnRemote60Fps"
+                            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_weight="1"
+                            android:text="60 FPS" />
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnRemoteMaxFps"
+                            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_weight="1"
+                            android:text="@string/remote_max_fps" />
+                    </com.google.android.material.button.MaterialButtonToggleGroup>
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnScanLanRemote"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="52dp"
+                        android:layout_marginTop="12dp"
+                        android:text="@string/remote_scan_lan" />
+                    <LinearLayout
+                        android:id="@+id/remoteDeviceList"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:digits="0123456789"
-                        android:inputType="number"
-                        android:maxLength="6"
-                        android:textSize="20sp" />
-                </com.google.android.material.textfield.TextInputLayout>
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnConnectRemoteCode"
-                    android:layout_width="match_parent"
-                    android:layout_height="52dp"
-                    android:layout_marginTop="8dp"
-                    android:text="@string/remote_connect_code" />
-            </LinearLayout>
+                        android:orientation="vertical" />
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnScanRemoteQr"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="52dp"
+                        android:layout_marginTop="10dp"
+                        android:text="@string/remote_scan_qr" />
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:hint="@string/remote_code_hint">
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etRemoteCode"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:digits="0123456789"
+                            android:inputType="number"
+                            android:maxLength="6"
+                            android:textSize="20sp" />
+                    </com.google.android.material.textfield.TextInputLayout>
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnConnectRemoteCode"
+                        android:layout_width="match_parent"
+                        android:layout_height="52dp"
+                        android:layout_marginTop="8dp"
+                        android:text="@string/remote_connect_code" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
-
     <FrameLayout
         android:id="@+id/remoteViewerPanel"
         android:layout_width="0dp"
@@ -482,29 +521,25 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
-
         <com.piperostool.PiperRemoteFrameView
             android:id="@+id/remoteFrameView"
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
-
         <SurfaceView
             android:id="@+id/remoteVideoSurface"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:visibility="gone" />
-
         <TextView
             android:id="@+id/tvRemoteViewerHint"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:gravity="center"
-            android:padding="20dp"
+            android:padding="14dp"
             android:text="@string/remote_waiting_frame"
             android:textColor="#B8FFFFFF"
             android:textSize="14sp" />
-
         <ImageButton
             android:id="@+id/btnRemoteExitViewer"
             android:layout_width="48dp"
@@ -515,6 +550,7 @@
             android:contentDescription="@string/remote_disconnect"
             android:padding="13dp"
             android:src="@drawable/ic_browser_close"
-            app:tint="#FFFFFF" />
+            app:tint="#FFFFFF"
+            android:scaleType="centerInside" />
     </FrameLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

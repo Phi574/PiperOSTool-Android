@@ -1,30 +1,90 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/fileManagerRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#090D10"
     android:orientation="vertical">
-
-    <LinearLayout
+    <com.google.android.material.card.MaterialCardView
         android:id="@+id/fileManagerToolbar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:gravity="center_vertical"
-        android:minHeight="66dp"
-        android:orientation="horizontal"
-        android:paddingHorizontal="12dp"
-        android:paddingVertical="9dp">
-        <ImageButton android:id="@+id/btnFileManagerBack" android:layout_width="44dp" android:layout_height="44dp" android:background="?attr/selectableItemBackgroundBorderless" android:contentDescription="Quay lại" android:padding="10dp" android:src="@drawable/ic_browser_back" />
-        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:layout_weight="1" android:orientation="vertical">
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/piperos_file_manager" android:textColor="@color/white" android:textSize="17sp" android:textStyle="bold" />
-            <TextView android:id="@+id/fileManagerPath" android:layout_width="match_parent" android:layout_height="wrap_content" android:ellipsize="start" android:maxLines="1" android:textColor="#8FFFFFFF" android:textSize="10sp" />
+        android:minHeight="56dp"
+        app:cardCornerRadius="20dp"
+        app:cardElevation="0dp"
+        app:cardBackgroundColor="@android:color/transparent"
+        app:contentPadding="0dp"
+        app:cardPreventCornerOverlap="false">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="4dp"
+            android:tag="piper_glass_content">
+            <ImageButton
+                android:id="@+id/btnFileManagerBack"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Quay lại"
+                android:padding="10dp"
+                android:src="@drawable/ic_browser_back"
+                android:scaleType="centerInside" />
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/piperos_file_manager"
+                    android:textColor="@color/white"
+                    android:textSize="17sp"
+                    android:textStyle="bold" />
+                <TextView
+                    android:id="@+id/fileManagerPath"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="start"
+                    android:maxLines="1"
+                    android:textColor="#8FFFFFFF"
+                    android:textSize="10sp" />
+            </LinearLayout>
+            <ImageButton
+                android:id="@+id/btnFileManagerHome"
+                android:layout_width="42dp"
+                android:layout_height="42dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Bộ nhớ trong"
+                android:padding="10dp"
+                android:src="@drawable/home"
+                android:scaleType="centerInside" />
+            <ImageButton
+                android:id="@+id/btnFileManagerRefresh"
+                android:layout_width="42dp"
+                android:layout_height="42dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Làm mới"
+                android:padding="10dp"
+                android:src="@drawable/reload"
+                android:scaleType="centerInside" />
+            <ImageButton
+                android:id="@+id/btnFileManagerMore"
+                android:layout_width="42dp"
+                android:layout_height="42dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Công cụ"
+                android:padding="10dp"
+                android:src="@drawable/ic_browser_more"
+                android:scaleType="centerInside" />
         </LinearLayout>
-        <ImageButton android:id="@+id/btnFileManagerHome" android:layout_width="42dp" android:layout_height="42dp" android:background="?attr/selectableItemBackgroundBorderless" android:contentDescription="Bộ nhớ trong" android:padding="10dp" android:src="@drawable/home" />
-        <ImageButton android:id="@+id/btnFileManagerRefresh" android:layout_width="42dp" android:layout_height="42dp" android:background="?attr/selectableItemBackgroundBorderless" android:contentDescription="Làm mới" android:padding="10dp" android:src="@drawable/reload" />
-        <ImageButton android:id="@+id/btnFileManagerMore" android:layout_width="42dp" android:layout_height="42dp" android:background="?attr/selectableItemBackgroundBorderless" android:contentDescription="Công cụ" android:padding="10dp" android:src="@drawable/ic_browser_more" />
-    </LinearLayout>
-
+    </com.google.android.material.card.MaterialCardView>
     <EditText
         android:id="@+id/fileManagerSearch"
         android:layout_width="match_parent"
@@ -39,57 +99,155 @@
         android:singleLine="true"
         android:textColor="@color/white"
         android:textColorHint="#7FFFFFFF" />
-
-    <LinearLayout
+    <com.google.android.material.card.MaterialCardView
         android:id="@+id/fileSelectionBar"
         android:layout_width="match_parent"
-        android:layout_height="52dp"
+        android:layout_height="wrap_content"
         android:layout_marginHorizontal="14dp"
         android:layout_marginBottom="8dp"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingHorizontal="8dp"
-        android:visibility="gone">
-        <TextView android:id="@+id/fileSelectionCount" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="0 đã chọn" android:textStyle="bold" />
-        <ImageButton android:id="@+id/fileSelectAll" android:layout_width="42dp" android:layout_height="42dp" android:background="?attr/selectableItemBackgroundBorderless" android:contentDescription="Chọn tất cả" android:padding="10dp" android:src="@drawable/check_circle" />
-        <ImageButton android:id="@+id/fileCopySelected" android:layout_width="42dp" android:layout_height="42dp" android:background="?attr/selectableItemBackgroundBorderless" android:contentDescription="Sao chép mục đã chọn" android:padding="10dp" android:src="@drawable/ic_file_copy" />
-        <ImageButton android:id="@+id/fileMoveSelected" android:layout_width="42dp" android:layout_height="42dp" android:background="?attr/selectableItemBackgroundBorderless" android:contentDescription="Di chuyển mục đã chọn" android:padding="10dp" android:src="@drawable/ic_file_move" />
-        <ImageButton android:id="@+id/fileCompressSelected" android:layout_width="42dp" android:layout_height="42dp" android:background="?attr/selectableItemBackgroundBorderless" android:contentDescription="Nén mục đã chọn" android:padding="10dp" android:src="@drawable/ic_file_archive" />
-        <ImageButton android:id="@+id/fileBackupSelected" android:layout_width="42dp" android:layout_height="42dp" android:background="?attr/selectableItemBackgroundBorderless" android:contentDescription="Sao lưu mục đã chọn" android:padding="10dp" android:src="@drawable/ic_file_backup" />
-        <ImageButton android:id="@+id/fileDeleteSelected" android:layout_width="42dp" android:layout_height="42dp" android:background="?attr/selectableItemBackgroundBorderless" android:contentDescription="Xóa mục đã chọn" android:padding="10dp" android:src="@drawable/ic_file_delete" />
-        <ImageButton android:id="@+id/fileSelectionClose" android:layout_width="42dp" android:layout_height="42dp" android:background="?attr/selectableItemBackgroundBorderless" android:contentDescription="Hủy chọn" android:padding="10dp" android:src="@drawable/ic_browser_close" />
-    </LinearLayout>
-
-    <FrameLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1">
-        <androidx.recyclerview.widget.RecyclerView android:id="@+id/fileManagerFiles" android:layout_width="match_parent" android:layout_height="match_parent" android:clipToPadding="false" android:paddingBottom="12dp" />
-        <TextView android:id="@+id/fileManagerEmpty" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="center" android:text="Không có tệp phù hợp" android:textColor="#7FFFFFFF" android:textSize="13sp" android:visibility="gone" />
-        <LinearLayout
+        android:visibility="gone"
+        app:cardCornerRadius="20dp"
+        app:cardElevation="0dp"
+        app:cardBackgroundColor="@android:color/transparent"
+        app:contentPadding="0dp"
+        app:cardPreventCornerOverlap="false">
+        <HorizontalScrollView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:scrollbars="none">
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="48dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingHorizontal="8dp"
+                android:tag="piper_glass_content">
+                <TextView
+                    android:id="@+id/fileSelectionCount"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="0 đã chọn"
+                    android:textStyle="bold"
+                    android:minWidth="64dp" />
+                <ImageButton
+                    android:id="@+id/fileSelectAll"
+                    android:layout_width="42dp"
+                    android:layout_height="42dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Chọn tất cả"
+                    android:padding="10dp"
+                    android:src="@drawable/check_circle"
+                    android:scaleType="centerInside" />
+                <ImageButton
+                    android:id="@+id/fileCopySelected"
+                    android:layout_width="42dp"
+                    android:layout_height="42dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Sao chép mục đã chọn"
+                    android:padding="10dp"
+                    android:src="@drawable/ic_file_copy"
+                    android:scaleType="centerInside" />
+                <ImageButton
+                    android:id="@+id/fileMoveSelected"
+                    android:layout_width="42dp"
+                    android:layout_height="42dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Di chuyển mục đã chọn"
+                    android:padding="10dp"
+                    android:src="@drawable/ic_file_move"
+                    android:scaleType="centerInside" />
+                <ImageButton
+                    android:id="@+id/fileCompressSelected"
+                    android:layout_width="42dp"
+                    android:layout_height="42dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Nén mục đã chọn"
+                    android:padding="10dp"
+                    android:src="@drawable/ic_file_archive"
+                    android:scaleType="centerInside" />
+                <ImageButton
+                    android:id="@+id/fileBackupSelected"
+                    android:layout_width="42dp"
+                    android:layout_height="42dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Sao lưu mục đã chọn"
+                    android:padding="10dp"
+                    android:src="@drawable/ic_file_backup"
+                    android:scaleType="centerInside" />
+                <ImageButton
+                    android:id="@+id/fileDeleteSelected"
+                    android:layout_width="42dp"
+                    android:layout_height="42dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Xóa mục đã chọn"
+                    android:padding="10dp"
+                    android:src="@drawable/ic_file_delete"
+                    android:scaleType="centerInside" />
+                <ImageButton
+                    android:id="@+id/fileSelectionClose"
+                    android:layout_width="42dp"
+                    android:layout_height="42dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Hủy chọn"
+                    android:padding="10dp"
+                    android:src="@drawable/ic_browser_close"
+                    android:scaleType="centerInside" />
+            </LinearLayout>
+        </HorizontalScrollView>
+    </com.google.android.material.card.MaterialCardView>
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/fileManagerFiles"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:paddingBottom="12dp" />
+        <TextView
+            android:id="@+id/fileManagerEmpty"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:text="Không có tệp phù hợp"
+            android:textColor="#7FFFFFFF"
+            android:textSize="13sp"
+            android:visibility="gone" />
+        <com.google.android.material.card.MaterialCardView
             android:id="@+id/fileManagerLoading"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:background="@drawable/bg_glass_panel"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:paddingHorizontal="18dp"
-            android:paddingVertical="14dp"
-            android:visibility="gone">
-
-            <ProgressBar
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:indeterminate="true" />
-
-            <TextView
-                android:id="@+id/fileManagerLoadingText"
-                android:layout_width="wrap_content"
+            android:visibility="gone"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="0dp"
+            app:cardBackgroundColor="@android:color/transparent"
+            app:contentPadding="0dp"
+            app:cardPreventCornerOverlap="false">
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="12dp"
-                android:maxWidth="260dp"
-                android:maxLines="2"
-                android:text="Đang đọc thư mục..."
-                android:textColor="@color/white"
-                android:textSize="13sp" />
-        </LinearLayout>
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingHorizontal="18dp"
+                android:paddingVertical="14dp"
+                android:tag="piper_glass_content">
+                <ProgressBar
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:indeterminate="true" />
+                <TextView
+                    android:id="@+id/fileManagerLoadingText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:maxWidth="260dp"
+                    android:maxLines="2"
+                    android:text="Đang đọc thư mục..."
+                    android:textColor="@color/white"
+                    android:textSize="13sp" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
     </FrameLayout>
 </LinearLayout>

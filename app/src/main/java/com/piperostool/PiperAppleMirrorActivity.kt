@@ -24,7 +24,6 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.button.MaterialButtonToggleGroup
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.textfield.TextInputEditText
 import kotlin.math.roundToInt
 
@@ -105,7 +104,7 @@ class PiperAppleMirrorActivity : AppCompatActivity(), SurfaceHolder.Callback {
         val content = findViewById<View>(R.id.appleMirrorScroll)
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.appleMirrorRoot)) { _, insets ->
             val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            toolbar.setPadding(toolbar.paddingLeft, bars.top + dp(8), toolbar.paddingRight, toolbar.paddingBottom)
+            PiperClassicGlassUi.setContainerPadding(toolbar, toolbar.paddingLeft, bars.top + dp(8), toolbar.paddingRight, toolbar.paddingBottom)
             content.setPadding(content.paddingLeft, content.paddingTop, content.paddingRight, bars.bottom + dp(18))
             insets
         }
@@ -218,12 +217,8 @@ class PiperAppleMirrorActivity : AppCompatActivity(), SurfaceHolder.Callback {
     private fun showStatus(message: String) { status.text = message }
 
     private fun confirmStop() {
-        MaterialAlertDialogBuilder(this)
-            .setTitle(R.string.apple_mirror_stop_title)
-            .setMessage(R.string.apple_mirror_stop_message)
-            .setNegativeButton(android.R.string.cancel, null)
-            .setPositiveButton(R.string.remote_stop) { _, _ -> stopReceiver() }
-            .show()
+        PiperDialog.showConfirm(this, getString(R.string.apple_mirror_stop_title),
+            getString(R.string.apple_mirror_stop_message), getString(R.string.remote_stop)) { stopReceiver() }
     }
 
     private fun bindReceiverService() {

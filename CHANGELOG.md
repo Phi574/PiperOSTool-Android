@@ -1,5 +1,14 @@
 # Changelog
 
+## 3.4.0.beta
+
+- Mở rộng LiquidGlass native cho các thanh công cụ, bảng điều khiển và danh sách của Media, Terminal, Fake Map GPS, File Manager, View Remote và Apple Mirroring.
+- Đồng bộ LiquidGlass cho dialog và menu nổi trong giao diện Classic; giữ giao diện Modern khi được chọn. Sửa theme của dialog tùy chỉnh để mở được từ màn hình AppCompat.
+- Thu gọn icon, ô tìm kiếm, thanh chọn tệp và các bảng quá lớn; Media và bàn phím Terminal có kích thước riêng khi xoay ngang.
+- Giữ nguyên vùng phát media, màn hình map, terminal và hình ảnh remote cùng thao tác của các tính năng.
+- Nâng versionCode lên 46. Build debug, 23 unit test và lint hoàn tất không có lỗi.
+
+
 ## 3.3.6.Beta
 
 - Raised versionCode to 45 and Android baseline to API 29.
