@@ -1,5 +1,14 @@
 # Changelog
 
+## 3.4.2
+
+- Sửa crash của tiến trình PPS khi Firebase không khởi tạo trong tiến trình phụ; Start/Stop không còn chờ Binder vô hạn và kết quả khởi động cũ không ghi đè lệnh Dừng.
+- Cải thiện duyệt tệp chuyên sâu, báo lỗi quyền thay vì danh sách rỗng; gọi PPS cho thao tác tạo thư mục, đổi tên và xóa vùng được bảo vệ.
+- Loại bỏ VPN Center và Browser Account Manager cùng mã giao diện, tính năng lưu mật khẩu của chúng.
+- Thêm Activity cấu hình User-Agent với danh mục 1.307 mục nhập từ dữ liệu người dùng, tìm kiếm, chọn hãng/dòng/thiết bị/OS/mã máy và các token trình duyệt; khởi tạo có kiểm tra và nút restart Browser không xóa dữ liệu.
+- Thiết kế lại màn hình và hộp chọn User-Agent thành LiquidGlass có ô tìm kiếm, vùng cuộn hai chiều độc lập; thêm bản đồ chọn vị trí HTML5 chỉ trong Browser, không đổi IP hay vị trí hệ thống.
+- Nâng versionCode lên 48 và versionName lên 3.4.2.
+
 ## 3.4.1
 
 - Giới hạn marker Fake Map GPS ở 32dp thay cho ảnh nguồn 512px.

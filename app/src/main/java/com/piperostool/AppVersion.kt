@@ -15,6 +15,6 @@ object AppVersion {
             @Suppress("DEPRECATION")
             context.packageManager.getPackageInfo(context.packageName, 0)
         }
-        return info.versionName ?: "3.4.1"
+        return info.versionName ?: "3.4.2"
     }
 }

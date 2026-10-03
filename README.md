@@ -20,9 +20,17 @@
 
 ## Bản hiện tại
 
-`3.4.1` (versionCode `47`) sử dụng `minSdk 29 (Android 10)`, `targetSdk 36`, Kotlin `2.4.10`.
+`3.4.2` (versionCode `48`) sử dụng `minSdk 29 (Android 10)`, `targetSdk 36`, Kotlin `2.4.10`.
 
-**Tải và cài đặt:** [PiperOS-Tool-3.4.1-debug.apk](https://github.com/Phi574/PiperOSTool-Android/releases/download/v3.4.1/PiperOS-Tool-3.4.1-debug.apk) · [Chi tiết bản phát hành](https://github.com/Phi574/PiperOSTool-Android/releases/tag/v3.4.1). APK được ký bằng khóa debug như bản 3.4.0.beta; nếu máy báo xung đột chữ ký với bản cài khác, hãy sao lưu dữ liệu ứng dụng trước khi gỡ bản cũ.
+**Tải và cài đặt:** [PiperOS-Tool-3.4.2-debug.apk](https://github.com/Phi574/PiperOSTool-Android/releases/download/v3.4.2/PiperOS-Tool-3.4.2-debug.apk) · [Chi tiết bản phát hành](https://github.com/Phi574/PiperOSTool-Android/releases/tag/v3.4.2). APK được ký bằng khóa debug như bản 3.4.1; nếu máy báo xung đột chữ ký với bản cài khác, hãy sao lưu dữ liệu ứng dụng trước khi gỡ bản cũ.
+
+### Cải tiến mới trong 3.4.2
+
+- Sửa dịch vụ Truy cập chuyên sâu bị crash ở tiến trình PPS; chặn kết quả khởi động cũ ghi đè trạng thái Dừng và giới hạn thời gian chờ Binder.
+- Trình quản lý tệp báo rõ lỗi quyền, nhận diện đúng vùng Android/data, Android/obb và tệp hệ thống; tạo thư mục, đổi tên, xóa trong vùng chuyên sâu qua PPS.
+- Gỡ Trung tâm VPN và Quản lý tài khoản của Browser, bao gồm màn hình và luồng lưu mật khẩu.
+- Phiên User-Agent có Activity riêng với 1.307 mục từ `dataPhone.xlsx`, lọc hãng/dòng/máy, mã máy, phiên bản OS và token trình duyệt; cấu hình được áp dụng sau khi khởi động lại Browser, giữ tab/cookie.
+- Chọn vị trí website trên bản đồ riêng của Browser; trang web nhận tọa độ HTML5 đã chọn mà không đổi GPS hệ thống hay IP công cộng. Bộ chọn thiết bị dùng hộp kính có danh sách cuộn độc lập và ô tìm kiếm.
 
 ### Cải tiến mới trong 3.4.1
 

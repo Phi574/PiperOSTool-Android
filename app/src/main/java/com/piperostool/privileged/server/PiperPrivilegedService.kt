@@ -23,9 +23,12 @@ import org.json.JSONObject
 import java.io.File
 import java.io.FileOutputStream
 import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicInteger
 
 class PiperPrivilegedService : Service() {
     private val worker = Executors.newSingleThreadExecutor()
+    private val generation = AtomicInteger()
+    @Volatile private var desiredState = PiperServiceState.STARTING
     @Volatile private var backend: PrivilegedFileBackend = NormalFileBackend()
     @Volatile private var capabilities = PiperCapabilities()
     @Volatile private var status = PiperServiceStatus(
@@ -129,6 +132,8 @@ class PiperPrivilegedService : Service() {
 
         override fun shutdown() {
             enforceClient()
+            generation.incrementAndGet()
+            desiredState = PiperServiceState.STOPPED
             this@PiperPrivilegedService.status = this@PiperPrivilegedService.status.copy(
                 state = PiperServiceState.STOPPED,
                 privilege = PiperPrivilege.STANDARD,
@@ -209,12 +214,28 @@ class PiperPrivilegedService : Service() {
     }
 
     private fun requestInitialization() {
+        val requestedGeneration = generation.incrementAndGet()
+        desiredState = PiperServiceState.STARTING
         status = status.copy(
             state = PiperServiceState.STARTING,
             error = PiperError.NONE,
             detail = ""
         )
-        worker.execute(::initializeBackend)
+        worker.execute {
+            if (generation.get() != requestedGeneration) return@execute
+            initializeBackend()
+            if (generation.get() != requestedGeneration) {
+                runCatching { backend.close() }
+                backend = NormalFileBackend()
+                capabilities = PiperCapabilities()
+                status = status.copy(
+                    state = desiredState,
+                    privilege = PiperPrivilege.STANDARD,
+                    error = PiperError.NONE,
+                    detail = ""
+                )
+            }
+        }
     }
 
     private fun initializeAdbBackend(rootDetail: String) {

@@ -14,6 +14,7 @@ import com.piperostool.privileged.server.PiperPrivilegedService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import org.json.JSONObject
 import java.io.Closeable
 import java.io.File
@@ -41,6 +42,7 @@ class PiperPrivilegedClient(context: Context) : Closeable {
         override fun onServiceDisconnected(name: ComponentName?) {
             service = null
             binding = false
+            finishWaiters(false)
         }
 
         override fun onBindingDied(name: ComponentName?) {
@@ -52,12 +54,16 @@ class PiperPrivilegedClient(context: Context) : Closeable {
 
     suspend fun connect(): Boolean {
         if (service != null) return true
-        return suspendCancellableCoroutine { continuation ->
-            synchronized(waiters) {
-                waiters += { connected -> if (continuation.isActive) continuation.resume(connected) }
+        return withTimeoutOrNull(5_000L) {
+            suspendCancellableCoroutine { continuation ->
+                val waiter: (Boolean) -> Unit = { connected ->
+                    if (continuation.isActive) continuation.resume(connected)
+                }
+                synchronized(waiters) { waiters += waiter }
+                continuation.invokeOnCancellation { synchronized(waiters) { waiters.remove(waiter) } }
+                connectAsync()
             }
-            connectAsync()
-        }
+        } ?: false
     }
 
     suspend fun status(): PiperServiceStatus? = withConnected {

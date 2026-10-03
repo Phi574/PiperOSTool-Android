@@ -216,6 +216,8 @@ class PiperOsApplication : Application(), Application.ActivityLifecycleCallbacks
 
     override fun onCreate() {
         super.onCreate()
+        // The isolated PPS process has no FirebaseInitProvider; it only serves local Binder calls.
+        if (Application.getProcessName().endsWith(":pps")) return
         deleteSharedPreferences("account_session_guard")
         PiperUiPreferences.initialize(this)
         PiperAutoFont.initialize(this)

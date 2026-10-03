@@ -98,7 +98,6 @@ object AccountDataScope {
         }
         if (previousAccount != activeAccount) {
             TerminalSessionManager.closeAll()
-            BrowserVaultSession.clear()
             app.stopService(Intent(app, PiperTerminalService::class.java))
             app.stopService(Intent(app, PiperPlaybackService::class.java))
             app.stopService(Intent(app, MockLocationService::class.java))

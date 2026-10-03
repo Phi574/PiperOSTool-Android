@@ -38,6 +38,7 @@ import com.piperostool.privileged.adb.PiperAdbBootstrap
 import com.piperostool.privileged.adb.PiperAdbPairingNotifications
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
 import java.io.File
 import java.text.DateFormat
 import java.util.Date
@@ -65,6 +66,7 @@ class AdvancedAccessActivity : AppCompatActivity() {
     private var latestCapabilities = PiperCapabilities()
     private var latestStatus = PiperServiceStatus()
     private var operationRunning = false
+    private var operationJob: Job? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -174,11 +176,14 @@ class AdvancedAccessActivity : AppCompatActivity() {
         methodRow.setOnClickListener { showMethodPicker() }
         startButton.setOnClickListener { startSelectedMethod() }
         stopButton.setOnClickListener {
-            if (operationRunning) return@setOnClickListener
+            operationJob?.cancel()
             lifecycleScope.launch {
                 setOperationRunning(true)
                 try {
-                    client.shutdown()
+                    if (!client.shutdown()) {
+                        Toast.makeText(this@AdvancedAccessActivity, "Không thể dừng dịch vụ PiperOS", Toast.LENGTH_LONG).show()
+                        return@launch
+                    }
                     latestCapabilities = PiperCapabilities()
                     render(PiperServiceStatus(), latestCapabilities)
                 } finally {
@@ -199,7 +204,7 @@ class AdvancedAccessActivity : AppCompatActivity() {
     }
 
     private fun startAutomaticPiperOs() {
-        lifecycleScope.launch {
+        operationJob = lifecycleScope.launch {
             setOperationRunning(true)
             try {
                 stateView.text = getString(R.string.pps_auto_connecting)
@@ -234,7 +239,7 @@ class AdvancedAccessActivity : AppCompatActivity() {
         methodRow.alpha = if (active) 0.45f else 1f
         startButton.setText(if (active) R.string.pps_active else R.string.pps_start)
         startButton.isEnabled = !operationRunning && !active
-        stopButton.isEnabled = !operationRunning && active
+        stopButton.isEnabled = active || latestStatus.state == PiperServiceState.STARTING
         refreshButton.isEnabled = !operationRunning
     }
 
@@ -299,7 +304,7 @@ class AdvancedAccessActivity : AppCompatActivity() {
     }
 
     private fun pairPiperOs(code: String) {
-        lifecycleScope.launch {
+        operationJob = lifecycleScope.launch {
             stateView.text = getString(R.string.pps_pairing_discovering)
             val port = PiperAdbBootstrap.discoverPairingPort(this@AdvancedAccessActivity)
                 .getOrElse {
@@ -386,7 +391,7 @@ class AdvancedAccessActivity : AppCompatActivity() {
 
     private fun refreshService() {
         if (operationRunning) return
-        lifecycleScope.launch {
+        operationJob = lifecycleScope.launch {
             setOperationRunning(true)
             try {
                 stateView.text = getString(R.string.pps_state_starting)

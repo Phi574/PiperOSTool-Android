@@ -393,11 +393,15 @@ class PiperFileManagerActivity : AppCompatActivity() {
         adapter.updateSelection(selectedPaths)
     }
 
-    private fun selectedFiles(): List<File> = selectedPaths.map(::File).filter(File::exists)
+    private fun selectedFiles(): List<File> = selectedPaths.map(::File)
 
     private fun backupSelected() {
         val files = selectedFiles()
         if (files.isEmpty()) return
+        if (files.any { shouldUsePrivilegedBackend(it.parentFile ?: it) }) {
+            Toast.makeText(this, "Sao lưu tệp chuyên sâu: hãy mở tệp rồi lưu bản sao vào bộ nhớ thường.", Toast.LENGTH_LONG).show()
+            return
+        }
         val suggested = File(
             Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
             "PiperOS_Backups/${System.currentTimeMillis()}"
@@ -424,6 +428,10 @@ class PiperFileManagerActivity : AppCompatActivity() {
     private fun showTransferDestination(action: String, sourceFiles: List<File> = selectedFiles()) {
         val files = sourceFiles
         if (files.isEmpty()) return
+        if (files.any { shouldUsePrivilegedBackend(it.parentFile ?: it) }) {
+            Toast.makeText(this, "Sao chép hoặc di chuyển từ vùng chuyên sâu hiện chưa được hỗ trợ.", Toast.LENGTH_LONG).show()
+            return
+        }
         val (destinationRow, destination) = destinationField(currentDirectory.absolutePath)
         val moving = action == FileOperationService.ACTION_MOVE
         PiperDialog.showCustom(
@@ -504,17 +512,22 @@ class PiperFileManagerActivity : AppCompatActivity() {
             positiveLabel = "Xóa",
             destructive = true
         ) {
-            startBatchFileOperation(
-                FileOperationService.ACTION_DELETE,
-                files,
-                currentDirectory
-            )
+            val privileged = files.filter { shouldUsePrivilegedBackend(it.parentFile ?: it) }
+            val regular = files - privileged.toSet()
+            if (regular.isNotEmpty()) startBatchFileOperation(FileOperationService.ACTION_DELETE, regular, currentDirectory)
+            if (privileged.isNotEmpty()) lifecycleScope.launch {
+                val failed = privileged.filterNot { privilegedClient.delete(it.absolutePath, true) }
+                if (failed.isNotEmpty()) Toast.makeText(this@PiperFileManagerActivity,
+                    "Không thể xóa ${failed.size} mục chuyên sâu", Toast.LENGTH_LONG).show()
+                render(forceRefresh = true)
+            }
             clearSelection()
         }
     }
 
     private fun listDirectory(directory: File): List<ApkWorkspaceEntry> =
-        directory.listFiles()?.map { file ->
+        (directory.listFiles() ?: throw java.io.IOException("Không thể đọc ${directory.absolutePath}"))
+            .map { file ->
             ApkWorkspaceEntry(
                 name = file.name,
                 archivePath = file.absolutePath,
@@ -522,14 +535,18 @@ class PiperFileManagerActivity : AppCompatActivity() {
                 size = if (file.isFile) file.length() else 0L,
                 extractedFile = file
             )
-        }?.filter { PiperPrivilegedPreferences.showHidden(this) || !it.name.startsWith('.') }
-            ?.sortedWith(compareByDescending<ApkWorkspaceEntry> { it.isDirectory }.thenBy { it.name.lowercase() })
-            ?: emptyList()
+        }.filter { PiperPrivilegedPreferences.showHidden(this) || !it.name.startsWith('.') }
+            .sortedWith(compareByDescending<ApkWorkspaceEntry> { it.isDirectory }.thenBy { it.name.lowercase() })
+
 
     private fun shouldUsePrivilegedBackend(directory: File): Boolean {
-        if (directory.absolutePath == "/" && PiperPrivilegedPreferences.systemFiles(this)) return true
-        val restricted = directory.absolutePath.startsWith("/storage/emulated/0/Android/data") ||
-            directory.absolutePath.startsWith("/storage/emulated/0/Android/obb")
+        if (PiperPrivilegedPreferences.systemFiles(this) && directory.absolutePath.startsWith("/")) {
+            if (directory.absolutePath == "/" || listOf("/system", "/vendor", "/data", "/proc", "/dev")
+                    .any { directory.absolutePath == it || directory.absolutePath.startsWith("$it/") }) return true
+        }
+        val path = directory.absolutePath
+        val restricted = listOf("/storage/emulated/0/Android/data", "/storage/emulated/0/Android/obb")
+            .any { path == it || path.startsWith("$it/") }
         return restricted && PiperPrivilegedPreferences.androidRestricted(this)
     }
 
@@ -724,6 +741,9 @@ class PiperFileManagerActivity : AppCompatActivity() {
         PiperActionSheet.show(this, "Công cụ tệp", actions)
     }
 
+    private fun validChildName(name: String): Boolean =
+        name.isNotBlank() && name != "." && name != ".." && '/' !in name && '\\' !in name
+
     private fun createFolder() {
         val input = EditText(this).apply { hint = "Tên thư mục" }
         PiperDialog.showCustom(
@@ -732,8 +752,21 @@ class PiperFileManagerActivity : AppCompatActivity() {
             content = input,
             positiveLabel = "Tạo",
             onPositive = {
-                val target = File(currentDirectory, input.text.toString().trim())
-                val success = target.name.isNotEmpty() && target.mkdir()
+                val name = input.text.toString().trim()
+                if (!validChildName(name)) {
+                    input.error = "Tên không hợp lệ"
+                    return@showCustom false
+                }
+                val target = File(currentDirectory, name)
+                if (shouldUsePrivilegedBackend(currentDirectory)) {
+                    lifecycleScope.launch {
+                        val success = privilegedClient.mkdir(target.absolutePath)
+                        if (!success) Toast.makeText(this@PiperFileManagerActivity, "Không thể tạo thư mục", Toast.LENGTH_SHORT).show()
+                        render(forceRefresh = true)
+                    }
+                    return@showCustom true
+                }
+                val success = target.mkdir()
                 if (success) render() else Toast.makeText(this, "Không thể tạo thư mục", Toast.LENGTH_SHORT).show()
                 success
             }
@@ -748,9 +781,17 @@ class PiperFileManagerActivity : AppCompatActivity() {
             content = input,
             positiveLabel = "Tạo",
             onPositive = {
+                if (shouldUsePrivilegedBackend(currentDirectory)) {
+                    Toast.makeText(this, "Không thể tạo tệp trực tiếp trong vùng chuyên sâu", Toast.LENGTH_LONG).show()
+                    return@showCustom false
+                }
                 val name = input.text.toString().trim()
+                if (!validChildName(name)) {
+                    input.error = "Tên không hợp lệ"
+                    return@showCustom false
+                }
                 val target = File(currentDirectory, name)
-                val success = name.isNotEmpty() && !target.exists() && runCatching {
+                val success = !target.exists() && runCatching {
                     target.parentFile?.mkdirs()
                     target.createNewFile()
                 }.getOrDefault(false)
@@ -774,8 +815,22 @@ class PiperFileManagerActivity : AppCompatActivity() {
             content = input,
             positiveLabel = "Lưu",
             onPositive = {
-                val target = File(file.parentFile, input.text.toString().trim())
-                val success = target.name.isNotEmpty() && file.renameTo(target)
+                val name = input.text.toString().trim()
+                if (!validChildName(name)) {
+                    input.error = "Tên không hợp lệ"
+                    return@showCustom false
+                }
+                val target = File(file.parentFile, name)
+                if (shouldUsePrivilegedBackend(file.parentFile ?: currentDirectory)) {
+                    if (target.name == file.name) return@showCustom false
+                    lifecycleScope.launch {
+                        val success = privilegedClient.rename(file.absolutePath, target.absolutePath)
+                        if (!success) Toast.makeText(this@PiperFileManagerActivity, "Không thể đổi tên", Toast.LENGTH_SHORT).show()
+                        render(forceRefresh = true)
+                    }
+                    return@showCustom true
+                }
+                val success = file.renameTo(target)
                 if (success) render() else Toast.makeText(this, "Không thể đổi tên", Toast.LENGTH_SHORT).show()
                 success
             }
@@ -790,7 +845,11 @@ class PiperFileManagerActivity : AppCompatActivity() {
             positiveLabel = "Xóa",
             destructive = true
         ) {
-            startBatchFileOperation(FileOperationService.ACTION_DELETE, listOf(file), file.parentFile ?: currentDirectory)
+            if (shouldUsePrivilegedBackend(file.parentFile ?: currentDirectory)) lifecycleScope.launch {
+                if (!privilegedClient.delete(file.absolutePath, true))
+                    Toast.makeText(this@PiperFileManagerActivity, "Không thể xóa", Toast.LENGTH_SHORT).show()
+                render(forceRefresh = true)
+            } else startBatchFileOperation(FileOperationService.ACTION_DELETE, listOf(file), file.parentFile ?: currentDirectory)
         }
     }
 

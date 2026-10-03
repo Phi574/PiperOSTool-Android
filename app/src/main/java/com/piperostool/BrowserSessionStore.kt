@@ -22,6 +22,8 @@ data class BrowserUserAgent(
     val value: String?
 )
 
+data class BrowserLocation(val latitude: Double, val longitude: Double, val label: String)
+
 enum class BrowserThemeMode(val preferenceValue: String) {
     SYSTEM("system"),
     LIGHT("light"),
@@ -135,14 +137,43 @@ class BrowserSessionStore(context: Context) {
         preferences.edit().putString(KEY_USER_AGENT, id).apply()
     }
 
-    fun preferredVpnPackage(): String? =
-        preferences.getString(KEY_VPN_PACKAGE, null)
+    fun customUserAgent(): BrowserUserAgent? {
+        val value = preferences.getString(KEY_CUSTOM_USER_AGENT, null) ?: return null
+        return BrowserUserAgent("custom", preferences.getString(KEY_CUSTOM_LABEL, "Tùy chỉnh") ?: "Tùy chỉnh", value)
+    }
 
-    fun setPreferredVpnPackage(packageName: String?) {
-        preferences.edit().apply {
-            if (packageName == null) remove(KEY_VPN_PACKAGE)
-            else putString(KEY_VPN_PACKAGE, packageName)
-        }.apply()
+    fun customUserAgentSignature(): String? = preferences.getString(KEY_CUSTOM_SIGNATURE, null)
+    fun customUserAgentRow(): Int = preferences.getInt(KEY_CUSTOM_ROW, -1)
+    fun customUserAgentChoices(): String? = preferences.getString(KEY_CUSTOM_CHOICES, null)
+
+    fun setCustomUserAgent(label: String, value: String, signature: String, row: Int, choices: String) {
+        preferences.edit().putString(KEY_CUSTOM_LABEL, label).putString(KEY_CUSTOM_USER_AGENT, value)
+            .putString(KEY_CUSTOM_SIGNATURE, signature).putInt(KEY_CUSTOM_ROW, row)
+            .putString(KEY_CUSTOM_CHOICES, choices).putString(KEY_USER_AGENT, "custom").commit()
+    }
+
+    fun clearCustomUserAgent() {
+        preferences.edit().remove(KEY_CUSTOM_LABEL).remove(KEY_CUSTOM_USER_AGENT)
+            .remove(KEY_CUSTOM_SIGNATURE).remove(KEY_CUSTOM_ROW).remove(KEY_CUSTOM_CHOICES)
+            .putString(KEY_USER_AGENT, USER_AGENT_DEFAULT).commit()
+    }
+
+    fun browserLocation(): BrowserLocation? {
+        val raw = preferences.getString(KEY_BROWSER_LOCATION, null) ?: return null
+        return runCatching {
+            val data = JSONObject(raw)
+            BrowserLocation(data.getDouble("lat"), data.getDouble("lon"), data.optString("label"))
+        }.getOrNull()
+    }
+
+    fun setBrowserLocation(location: BrowserLocation) {
+        val data = JSONObject().put("lat", location.latitude).put("lon", location.longitude)
+            .put("label", location.label)
+        preferences.edit().putString(KEY_BROWSER_LOCATION, data.toString()).commit()
+    }
+
+    fun clearBrowserLocation() {
+        preferences.edit().remove(KEY_BROWSER_LOCATION).commit()
     }
 
     fun browserThemeMode(): BrowserThemeMode = BrowserThemeMode.fromPreference(
@@ -187,7 +218,12 @@ class BrowserSessionStore(context: Context) {
         private const val KEY_HISTORY = "history"
         private const val KEY_DESKTOP_MODE = "desktop_mode"
         private const val KEY_USER_AGENT = "user_agent"
-        private const val KEY_VPN_PACKAGE = "vpn_package"
+        private const val KEY_CUSTOM_USER_AGENT = "custom_user_agent"
+        private const val KEY_CUSTOM_LABEL = "custom_label"
+        private const val KEY_CUSTOM_SIGNATURE = "custom_signature"
+        private const val KEY_CUSTOM_ROW = "custom_row"
+        private const val KEY_CUSTOM_CHOICES = "custom_choices"
+        private const val KEY_BROWSER_LOCATION = "browser_location"
         private const val KEY_BROWSER_THEME = "browser_theme"
         private const val KEY_SEARCH_ENGINE = "search_engine"
         private const val MAX_HISTORY_ITEMS = 250
