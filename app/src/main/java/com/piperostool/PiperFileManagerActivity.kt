@@ -201,6 +201,7 @@ class PiperFileManagerActivity : AppCompatActivity() {
         ViewCompat.setOnApplyWindowInsetsListener(root) { _, insets ->
             val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             PiperClassicGlassUi.setContainerPadding(toolbar, toolbar.paddingLeft, top + bars.top, toolbar.paddingRight, toolbar.paddingBottom)
+            toolbar.layoutParams = toolbar.layoutParams.apply { height = dp(56) + bars.top }
             root.setPadding(root.paddingLeft, root.paddingTop, root.paddingRight, bottom + bars.bottom)
             insets
         }

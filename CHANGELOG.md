@@ -1,5 +1,15 @@
 # Changelog
 
+## 3.4.1
+
+- Giới hạn marker Fake Map GPS ở 32dp thay cho ảnh nguồn 512px.
+- Đồng nhất thanh công cụ Remote, Apple Mirroring và File Manager; sửa nền cửa sổ và chuyển cảnh để tránh chớp trắng khi mở trang.
+- Giảm công việc tô lại giao diện trên mỗi lần layout và áp dụng kiểu giao diện trước khung hình đầu.
+- Browser luôn hiển thị trong Beta khi offline; bỏ thông báo bị ẩn.
+- Splash dùng kiểm tra phiên/mật khẩu có thời hạn và đường vào ngoại tuyến, giữ màn khóa cục bộ hoặc vân tay nếu đã bật.
+- Xóa activity khóa tài khoản, giao diện kháng nghị và các tuyến điều hướng liên quan; gỡ quyền ghi trạng thái khóa/kháng nghị khỏi rule Realtime Database, duy trì kiểm tra hết hạn phiên và thu hồi thiết bị.
+- Nâng versionCode lên 47 và versionName lên 3.4.1.
+
 ## 3.4.0.beta
 
 - Mở rộng LiquidGlass native cho các thanh công cụ, bảng điều khiển và danh sách của Media, Terminal, Fake Map GPS, File Manager, View Remote và Apple Mirroring.

@@ -32,6 +32,9 @@ class SplashScreenActivity : AppCompatActivity() {
     private lateinit var appNameTextView: TextView
     private lateinit var developerTextView: TextView
     private val handler = Handler(Looper.getMainLooper())
+    private var navigating = false
+    private var sessionResolved = false
+    private var passwordResolved = false
 
     // --- Biometric Variables ---
     private lateinit var executor: Executor
@@ -106,23 +109,28 @@ class SplashScreenActivity : AppCompatActivity() {
 
     // --- LOGIC ĐIỀU HƯỚNG ---
     private fun checkNavigation() {
+        if (navigating) return
         val currentUser = FirebaseAuth.getInstance().currentUser
         if (currentUser == null) {
-            AccountSessionGuard.cachedDisabled(this)?.let { disabled ->
-                navigateTo(DisabledAccountActivity.createIntent(this, disabled))
-                return
-            }
             // 1. Chưa đăng nhập -> Vào Welcome
             navigateTo(WelcomeActivity::class.java)
             return
         }
 
+        val timeout = Runnable {
+            if (!sessionResolved && !navigating) {
+                sessionResolved = true
+                continueSecurityNavigation(currentUser.uid, forceOffline = true)
+            }
+        }
+        handler.postDelayed(timeout, 3_500L)
         AccountSessionGuard.verify(this) { state ->
+            if (sessionResolved || navigating) return@verify
+            sessionResolved = true
+            handler.removeCallbacks(timeout)
             when (state) {
                 AccountSessionState.Valid, AccountSessionState.Offline ->
                     continueSecurityNavigation(currentUser.uid)
-                is AccountSessionState.Disabled ->
-                    navigateTo(DisabledAccountActivity.createIntent(this, state))
                 is AccountSessionState.Expired -> {
                     FirebaseAuth.getInstance().signOut()
                     navigateTo(LoginActivity::class.java)
@@ -131,31 +139,32 @@ class SplashScreenActivity : AppCompatActivity() {
         }
     }
 
-    private fun continueSecurityNavigation(userId: String) {
+    private fun continueSecurityNavigation(userId: String, forceOffline: Boolean = false) {
 
         // 2. Đã đăng nhập -> Kiểm tra các lớp bảo mật
         val prefs = AccountDataScope.preferences(this, "PiperPrefs")
         val isFingerprintEnabled = prefs.getBoolean("fingerprint_enabled", false)
 
-        if (!NetworkAccess.isOnline(this)) {
-            val lockPrefs = AccountDataScope.preferences(this, LockScreenActivity.PREFS_NAME)
-            when {
-                lockPrefs.getString(LockScreenActivity.KEY_CACHED_PASS, null) != null -> {
-                    val intent = Intent(this, LockScreenActivity::class.java)
-                    intent.putExtra("IS_UNLOCK_MODE", true)
-                    navigateTo(intent)
-                }
-                isFingerprintEnabled -> biometricPrompt.authenticate(promptInfo)
-                else -> navigateTo(HomeActivity::class.java)
-            }
+        if (forceOffline || !NetworkAccess.isOnline(this)) {
+            continueWithCachedSecurity(isFingerprintEnabled)
             return
         }
 
         val database = FirebaseDatabase.getInstance()
         val myRef = database.getReference("users/$userId/security/password")
+        val timeout = Runnable {
+            if (!passwordResolved && !navigating) {
+                passwordResolved = true
+                continueWithCachedSecurity(isFingerprintEnabled)
+            }
+        }
+        handler.postDelayed(timeout, 3_500L)
 
         myRef.addListenerForSingleValueEvent(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
+                if (passwordResolved || navigating) return
+                passwordResolved = true
+                handler.removeCallbacks(timeout)
                 val hasPassword = snapshot.exists() && snapshot.value.toString().isNotEmpty()
 
                 when {
@@ -179,10 +188,26 @@ class SplashScreenActivity : AppCompatActivity() {
             }
 
             override fun onCancelled(error: DatabaseError) {
-                // Lỗi mạng, tạm cho vào Home
-                navigateTo(HomeActivity::class.java)
+                if (passwordResolved || navigating) return
+                passwordResolved = true
+                handler.removeCallbacks(timeout)
+                continueWithCachedSecurity(isFingerprintEnabled)
             }
         })
+    }
+
+    private fun continueWithCachedSecurity(isFingerprintEnabled: Boolean) {
+        if (navigating) return
+        val lockPrefs = AccountDataScope.preferences(this, LockScreenActivity.PREFS_NAME)
+        when {
+            lockPrefs.getString(LockScreenActivity.KEY_CACHED_PASS, null) != null -> {
+                val intent = Intent(this, LockScreenActivity::class.java)
+                intent.putExtra("IS_UNLOCK_MODE", true)
+                navigateTo(intent)
+            }
+            isFingerprintEnabled -> biometricPrompt.authenticate(promptInfo)
+            else -> navigateTo(HomeActivity::class.java)
+        }
     }
 
     companion object {
@@ -221,12 +246,18 @@ class SplashScreenActivity : AppCompatActivity() {
     }
 
     private fun navigateTo(activityClass: Class<*>) {
+        if (navigating) return
+        navigating = true
+        handler.removeCallbacksAndMessages(null)
         val intent = Intent(this, activityClass)
         startActivity(intent)
         finish()
     }
 
     private fun navigateTo(intent: Intent) {
+        if (navigating) return
+        navigating = true
+        handler.removeCallbacksAndMessages(null)
         startActivity(intent)
         finish()
     }
@@ -234,27 +265,27 @@ class SplashScreenActivity : AppCompatActivity() {
     private fun showAppNameAndDeveloper() {
         // Hiệu ứng hiện tên App (Fade In)
         val fadeInAppName = ObjectAnimator.ofFloat(appNameTextView, "alpha", 0.0f, 0.5f)
-        fadeInAppName.duration = 1000
+        fadeInAppName.duration = 650
 
         // Hiệu ứng hiện tên Dev (Trượt lên + Fade In)
         val slideInDeveloper = ObjectAnimator.ofFloat(developerTextView, "translationY", 100f, 0f)
-        slideInDeveloper.duration = 800
+        slideInDeveloper.duration = 650
         slideInDeveloper.interpolator = DecelerateInterpolator()
 
         val fadeInDeveloper = ObjectAnimator.ofFloat(developerTextView, "alpha", 0.0f, 0.5f)
-        fadeInDeveloper.duration = 800
+        fadeInDeveloper.duration = 650
 
         val animatorSet = AnimatorSet()
         animatorSet.playTogether(fadeInAppName, slideInDeveloper, fadeInDeveloper)
-        animatorSet.startDelay = 200 // Đợi 0.2s rồi mới bắt đầu hiện
+        animatorSet.startDelay = 100
 
         animatorSet.addListener(object : android.animation.Animator.AnimatorListener {
             override fun onAnimationStart(animation: android.animation.Animator) {}
             override fun onAnimationEnd(animation: android.animation.Animator) {
-                // Sau khi hiện chữ xong, đợi 1 giây rồi kiểm tra quyền/điều hướng
+                // Giữ logo một nhịp ngắn rồi điều hướng, kể cả khi offline.
                 handler.postDelayed({
                     checkAndRequestStoragePermission()
-                }, 1000)
+                }, 250)
             }
             override fun onAnimationCancel(animation: android.animation.Animator) {}
             override fun onAnimationRepeat(animation: android.animation.Animator) {}

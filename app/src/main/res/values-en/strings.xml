@@ -1,7 +1,6 @@
 <resources>
     <string name="dismiss">Close</string>
     <string name="offline_message">No network connection. Online features are temporarily hidden.</string>
-    <string name="offline_beta_note">PiperOS Browser is hidden while offline. PiperOS Media and Terminal remain available.</string>
     <string name="auth_offline_note">This device is offline. Connect to the internet to use your PiperOS account.</string>
     <string name="lock_offline_note">Unlocking offline with the latest synchronized security data.</string>
     <string name="auth_version">PiperOS Tool · %1$s</string>
@@ -514,24 +513,8 @@
     <string name="browser_cookie_invalid_name">Invalid cookie name</string>
     <string name="browser_delete">Delete</string>
     <plurals name="browser_cookie_count"><item quantity="one">%d cookie</item><item quantity="other">%d cookies</item></plurals>
-    <string name="account_disabled_title">Account disabled</string>
-    <string name="account_disabled_message">This account was disabled for violating PiperOS Tool standards.</string>
-    <string name="account_disabled_email">Account</string>
-    <string name="account_disabled_time">Disabled at</string>
-    <string name="account_disabled_reason">Reason</string>
-    <string name="account_disabled_default_reason">Violation of the application usage standards</string>
-    <string name="account_unknown">Not available</string>
-    <string name="account_appeal_hint">Explain why you want to appeal…</string>
-    <string name="account_appeal_eta">Appeals are sent to gayivt@gmail.com and are usually reviewed within 24–48 hours.</string>
-    <string name="account_appeal_required">Please enter your appeal reason</string>
-    <string name="account_appeal_no_email_app">No email app was found. Please send the appeal manually to %1$s.</string>
-    <string name="account_send_appeal">Send appeal</string>
-    <string name="account_recheck">Check account again</string>
-    <string name="account_checking_status">Checking…</string>
-    <string name="account_sign_out">Sign out</string>
+    <string name="profile_no_email_app">No email app was found.</string>
     <string name="account_session_expired">Your session expired or the password changed. Please sign in again.</string>
-    <string name="account_appeal_subject">PiperOS account appeal: %1$s</string>
-    <string name="account_appeal_email_body">Account: %1$s\nDisabled timestamp: %2$d\nSystem reason: %3$s\n\nAppeal:\n%4$s</string>
     <string name="browser_tokens">Tokens &amp; web storage</string>
     <string name="browser_tokens_summary">View and edit data for an open tab</string>
     <string name="browser_token_add">Add token</string>

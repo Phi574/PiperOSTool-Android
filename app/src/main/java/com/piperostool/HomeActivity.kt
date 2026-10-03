@@ -117,11 +117,6 @@ class HomeActivity : AppCompatActivity() {
         if (leavingForAccountState) return
         when (state) {
             AccountSessionState.Valid, AccountSessionState.Offline -> Unit
-            is AccountSessionState.Disabled -> {
-                leavingForAccountState = true
-                sessionHandler.removeCallbacks(sessionCheck)
-                startActivity(DisabledAccountActivity.createIntent(this, state))
-            }
             is AccountSessionState.Expired -> {
                 leavingForAccountState = true
                 FirebaseAuth.getInstance().signOut()

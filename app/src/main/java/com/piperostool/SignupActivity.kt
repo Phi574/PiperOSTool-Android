@@ -73,7 +73,7 @@ class SignupActivity : AppCompatActivity() {
 
         tvBackToLogin.setOnClickListener {
             finish() // Tắt màn hình này sẽ tự lùi về Login
-            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+            overridePendingTransition(R.anim.piper_page_enter, R.anim.piper_page_exit)
         }
 
         // Xóa lỗi khi gõ
@@ -150,7 +150,7 @@ class SignupActivity : AppCompatActivity() {
                     val intent = Intent(this, HomeActivity::class.java)
                     intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                     startActivity(intent)
-                    overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+                    overridePendingTransition(R.anim.piper_page_enter, R.anim.piper_page_exit)
                     finish()
                 }
             }

@@ -5,11 +5,11 @@
     android:id="@+id/appleMirrorRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/remote_page_background">
+    android:background="@color/piper_window_background">
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/appleMirrorToolbar"
         android:layout_width="0dp"
-        android:layout_height="wrap_content"
+        android:layout_height="56dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
@@ -20,13 +20,10 @@
         app:cardPreventCornerOverlap="false">
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
             android:gravity="center_vertical"
             android:orientation="horizontal"
-            android:paddingStart="12dp"
-            android:paddingTop="0dp"
-            android:paddingEnd="12dp"
-            android:paddingBottom="10dp"
+            android:paddingHorizontal="8dp"
             android:tag="piper_glass_content">
             <ImageButton
                 android:id="@+id/btnAppleMirrorBack"
@@ -38,18 +35,10 @@
                 android:src="@drawable/ic_browser_back"
                 app:tint="@color/remote_text_primary"
                 android:scaleType="centerInside" />
-            <ImageView
-                android:layout_width="42dp"
-                android:layout_height="42dp"
-                android:layout_marginStart="4dp"
-                android:background="@drawable/bg_browser_icon"
-                android:padding="9dp"
-                android:src="@drawable/ic_apple_mirror"
-                android:scaleType="centerInside" />
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="12dp"
+                android:layout_marginStart="4dp"
                 android:layout_weight="1"
                 android:orientation="vertical">
                 <TextView

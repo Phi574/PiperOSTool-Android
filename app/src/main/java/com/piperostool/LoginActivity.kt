@@ -125,7 +125,6 @@ class LoginActivity : AppCompatActivity() {
         auth.signInWithEmailAndPassword(email, password)
             .addOnCompleteListener(this) { task ->
                 if (task.isSuccessful) {
-                    AccountSessionGuard.clearCachedDisabled(this)
                     val userId = auth.currentUser?.uid
                     if (userId != null) {
                         DeviceSessionManager.startNewSession(this) {
@@ -133,9 +132,6 @@ class LoginActivity : AppCompatActivity() {
                                 when (state) {
                                     AccountSessionState.Valid, AccountSessionState.Offline ->
                                         checkSecurityAndProceed(userId)
-                                    is AccountSessionState.Disabled -> {
-                                        startActivity(DisabledAccountActivity.createIntent(this, state))
-                                    }
                                     is AccountSessionState.Expired -> {
                                         auth.signOut()
                                         resetLoginButton()
@@ -147,17 +143,8 @@ class LoginActivity : AppCompatActivity() {
                         resetLoginButton()
                     }
                 } else {
-                    val disabled = AccountSessionGuard.disabledFromAuthFailure(
-                        this,
-                        task.exception,
-                        email
-                    )
-                    if (disabled != null) {
-                        startActivity(DisabledAccountActivity.createIntent(this, disabled))
-                    } else {
-                        resetLoginButton()
-                        Toast.makeText(this, "Kiểm tra lại thông tin: ${task.exception?.message}", Toast.LENGTH_LONG).show()
-                    }
+                    resetLoginButton()
+                    Toast.makeText(this, "Kiểm tra lại thông tin: ${task.exception?.message}", Toast.LENGTH_LONG).show()
                 }
             }
     }

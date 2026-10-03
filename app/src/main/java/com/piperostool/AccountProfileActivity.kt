@@ -223,18 +223,18 @@ class AccountProfileActivity : AppCompatActivity() {
             "createdAt" to System.currentTimeMillis()
         )
         db.collection("users").document(user.uid).collection("profileChangeRequests")
-            .document(requestId).set(data).addOnSuccessListener { openAppealEmail(reason) }
+            .document(requestId).set(data).addOnSuccessListener { openChangeRequestEmail(reason) }
             .addOnFailureListener { Toast.makeText(this, R.string.profile_request_failed, Toast.LENGTH_LONG).show() }
     }
 
-    private fun openAppealEmail(reason: String) {
+    private fun openChangeRequestEmail(reason: String) {
         val user = auth.currentUser ?: return
         val intent = Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:gayivt@gmail.com")).apply {
             putExtra(Intent.EXTRA_SUBJECT, getString(R.string.profile_email_subject, user.uid))
             putExtra(Intent.EXTRA_TEXT, getString(R.string.profile_email_body, user.uid, user.email ?: "", reason))
         }
         runCatching { startActivity(intent) }.onFailure {
-            Toast.makeText(this, R.string.account_appeal_no_email_app, Toast.LENGTH_LONG).show()
+            Toast.makeText(this, R.string.profile_no_email_app, Toast.LENGTH_LONG).show()
         }
     }
 }

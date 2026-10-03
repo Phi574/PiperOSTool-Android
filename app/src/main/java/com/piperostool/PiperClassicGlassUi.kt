@@ -59,7 +59,7 @@ object PiperClassicGlassUi {
                 if (!PiperUiPreferences.isModern(activity)) applyTree(root, palette(activity))
             }
         }
-        root.post { applyTree(root, colors) }
+        applyTree(root, colors)
     }
 
     fun apply(root: View) {
@@ -137,14 +137,9 @@ object PiperClassicGlassUi {
         val signature = colors.hashCode()
         while (pending.isNotEmpty()) {
             val view = pending.removeFirst()
-            if (view is TextView || view.getTag(R.id.piper_classic_glass_applied) != signature) {
+            if (view.getTag(R.id.piper_classic_glass_applied) != signature) {
                 applyView(view, colors)
                 view.setTag(R.id.piper_classic_glass_applied, signature)
-                if (view is TextView) {
-                    view.post {
-                        if (!PiperUiPreferences.isModern(view.context)) applyText(view, palette(view.context))
-                    }
-                }
             }
             if (view is ViewGroup && !preserveChildren(view)) {
                 for (index in 0 until view.childCount) pending.addLast(view.getChildAt(index))

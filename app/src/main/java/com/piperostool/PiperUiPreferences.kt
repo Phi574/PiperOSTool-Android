@@ -128,7 +128,7 @@ object PiperModernUi {
                 if (PiperUiPreferences.isModern(activity)) applyTree(root, palette(activity))
             }
         }
-        root.post { applyTree(root, palette(activity)) }
+        applyTree(root, palette(activity))
     }
 
     fun apply(root: View) {
@@ -157,8 +157,7 @@ object PiperModernUi {
         pending.add(root)
         while (pending.isNotEmpty()) {
             val view = pending.removeFirst()
-            // Text may be rebound by adapters after inflation, so refresh it on every layout pass.
-            if (view is TextView || view.getTag(R.id.piper_modern_ui_applied) != palette.hashCode()) {
+            if (view.getTag(R.id.piper_modern_ui_applied) != palette.hashCode()) {
                 applyView(view, palette)
                 view.setTag(R.id.piper_modern_ui_applied, palette.hashCode())
             }

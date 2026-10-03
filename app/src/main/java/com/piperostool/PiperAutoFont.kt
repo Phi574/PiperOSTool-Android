@@ -52,7 +52,7 @@ object PiperAutoFont {
             applyToTree(root)
         }
         root.viewTreeObserver.addOnGlobalLayoutListener(listener)
-        root.post { applyToTree(root) }
+        applyToTree(root)
     }
 
     fun apply(textView: TextView) {
@@ -216,6 +216,7 @@ class PiperOsApplication : Application(), Application.ActivityLifecycleCallbacks
 
     override fun onCreate() {
         super.onCreate()
+        deleteSharedPreferences("account_session_guard")
         PiperUiPreferences.initialize(this)
         PiperAutoFont.initialize(this)
         AccountDataScope.activate(this, FirebaseAuth.getInstance().currentUser?.uid)
@@ -273,7 +274,6 @@ class PiperOsApplication : Application(), Application.ActivityLifecycleCallbacks
         latestAccountState = null
         observedAccountUid = currentUid
         if (currentUid == null) {
-            latestAccountState = AccountSessionGuard.cachedDisabled(this)
             return
         }
         accountObservation = AccountSessionGuard.observe(this) { state ->
@@ -285,21 +285,13 @@ class PiperOsApplication : Application(), Application.ActivityLifecycleCallbacks
     private fun routeAccountState(activity: Activity, state: AccountSessionState) {
         if (activity.isFinishing || activity.isDestroyed || routingAccountState) return
         when (state) {
-            is AccountSessionState.Disabled -> {
-                if (activity is DisabledAccountActivity) return
-                routingAccountState = true
-                activity.startActivity(
-                    DisabledAccountActivity.createIntent(activity, state)
-                )
-            }
             is AccountSessionState.Expired -> {
                 if (
                     activity is LoginActivity ||
                     activity is WelcomeActivity ||
                     activity is SignupActivity ||
                     activity is ForgotPassword ||
-                    activity is SplashScreenActivity ||
-                    activity is DisabledAccountActivity
+                    activity is SplashScreenActivity
                 ) return
                 routingAccountState = true
                 FirebaseAuth.getInstance().signOut()

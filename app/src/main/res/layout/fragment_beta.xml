@@ -33,21 +33,6 @@
             android:textColor="#B8FFFFFF"
             android:textSize="14sp" />
 
-        <TextView
-            android:id="@+id/betaOfflineState"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="22dp"
-            android:background="@drawable/bg_offline_notice"
-            android:drawableStart="@drawable/ic_browser_globe"
-            android:drawablePadding="12dp"
-            android:padding="14dp"
-            android:text="@string/offline_beta_note"
-            android:textColor="#E8FFFFFF"
-            android:textSize="13sp"
-            android:visibility="gone"
-            app:drawableTint="#FFB74D" />
-
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/featurePiperBrowser"
             android:layout_width="match_parent"

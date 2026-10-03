@@ -20,9 +20,18 @@
 
 ## Bản hiện tại
 
-`3.4.0.beta` (versionCode `46`) sử dụng `minSdk 29 (Android 10)`, `targetSdk 36`, Kotlin `2.4.10`.
+`3.4.1` (versionCode `47`) sử dụng `minSdk 29 (Android 10)`, `targetSdk 36`, Kotlin `2.4.10`.
 
-**Tải và cài đặt:** [PiperOS-Tool-3.4.0-beta-debug.apk](https://github.com/Phi574/PiperOSTool-Android/releases/download/v3.4.0.beta/PiperOS-Tool-3.4.0-beta-debug.apk) · [Chi tiết bản phát hành](https://github.com/Phi574/PiperOSTool-Android/releases/tag/v3.4.0.beta). APK debug được ký bằng khóa debug của bản build này; nếu máy báo xung đột chữ ký với bản đang cài, hãy sao lưu dữ liệu ứng dụng trước khi gỡ bản cũ.
+**Tải và cài đặt:** [PiperOS-Tool-3.4.1-debug.apk](https://github.com/Phi574/PiperOSTool-Android/releases/download/v3.4.1/PiperOS-Tool-3.4.1-debug.apk) · [Chi tiết bản phát hành](https://github.com/Phi574/PiperOSTool-Android/releases/tag/v3.4.1). APK được ký bằng khóa debug như bản 3.4.0.beta; nếu máy báo xung đột chữ ký với bản cài khác, hãy sao lưu dữ liệu ứng dụng trước khi gỡ bản cũ.
+
+### Cải tiến mới trong 3.4.1
+
+- Thu nhỏ icon vị trí trên Fake Map GPS, giữ bản đồ dễ nhìn.
+- Nền cửa sổ sẵn từ khung hình đầu, giảm chớp viền trắng và tải giao diện muộn; thêm chuyển cảnh ngắn khi mở/đóng trang.
+- Đồng nhất thanh công cụ của View Remote, Chiếu màn hình Apple và Trình quản lý tệp với Fake Map GPS.
+- PiperOS Browser luôn hiện trong Beta, kể cả khi offline, không hiện thông báo bị ẩn.
+- Màn hình khởi động dùng lối vào ngoại tuyến có giới hạn thời gian khi Firebase không phản hồi.
+- Xóa trang vô hiệu hóa tài khoản và luồng điều hướng liên quan; vẫn giữ kiểm tra phiên đăng nhập và phiên thiết bị bị thu hồi.
 
 ### Cải tiến mới trong 3.4.0.beta
 
@@ -74,15 +83,10 @@
   tự dùng native fallback. Bản hiện tại ưu tiên chất lượng live đầy đủ; hồ sơ tối ưu máy yếu
   sẽ được tách riêng ở bước tiếp theo.
 - APK Editor giảm tải bộ nhớ khi giải nén, tách luồng chỉnh tài nguyên và smali, đồng thời báo tiến trình trung thực.
-- Kiểm tra phiên Firebase liên tục và màn hình kháng nghị cho tài khoản bị vô hiệu hóa.
+- Kiểm tra phiên Firebase và phiên thiết bị bị thu hồi.
 - Fake Map GPS phát đồng thời qua Android GPS/Network và Google Fused Location, kèm tốc độ, hướng và timestamp ổn định cho ứng dụng giao thông.
-- Theo dõi trạng thái tài khoản Firebase thời gian thực và tự khôi phục màn hình chính ngay khi tài khoản được kích hoạt lại.
 - Tách phiên, cài đặt, lịch sử, terminal, media, mock GPS và workspace APK theo Firebase UID; dữ liệu cục bộ nhạy cảm được mã hóa AES-256-GCM bằng khóa Android Keystore riêng cho từng tài khoản.
 - PiperOS Browser dùng WebView profile riêng theo UID để cookie, token, WebStorage và phiên đăng nhập của tài khoản A không xuất hiện trong tài khoản B.
-
-Trạng thái quản trị tài khoản được đặt tại `users/{uid}/accountStatus` trong Realtime Database,
-với các trường `enabled`, `status`, `disabledAt` và `reason`. Client chỉ có quyền đọc trạng thái
-của chính mình; `database.rules.json` chặn client tự thay đổi trạng thái này.
 
 - **PiperOS Privileged Service (PPS):** tiến trình service riêng giao tiếp qua
   AIDL/Binder, xác thực UID phía server, tự kết nối lại khi Binder chết và dùng

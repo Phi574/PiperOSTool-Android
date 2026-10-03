@@ -20,6 +20,7 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.graphics.drawable.toBitmap
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -540,10 +541,23 @@ class FakeMapActivity : AppCompatActivity() {
         Marker(map).apply {
             position = GeoPoint(point.latitude, point.longitude)
             title = label
-            icon = ContextCompat.getDrawable(this@FakeMapActivity, iconResource)
+            icon = compactMarkerIcon(iconResource)
             setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
             map.overlays.add(this)
         }
+
+    private val markerBitmaps = mutableMapOf<Int, android.graphics.Bitmap>()
+
+    private fun compactMarkerIcon(resource: Int): android.graphics.drawable.Drawable {
+        val size = (32 * resources.displayMetrics.density).toInt().coerceAtLeast(1)
+        val bitmap = markerBitmaps.getOrPut(resource) {
+            requireNotNull(ContextCompat.getDrawable(this, resource))
+                .toBitmap(size, size)
+        }
+        return android.graphics.drawable.BitmapDrawable(resources, bitmap).apply {
+            setBounds(0, 0, size, size)
+        }
+    }
 
     private fun configureSpeed(value: Double) {
         speedSeek.max = (travelMode.maximumSpeedKmh - 1).coerceAtLeast(1)

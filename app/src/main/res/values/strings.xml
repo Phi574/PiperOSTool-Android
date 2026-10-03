@@ -1,7 +1,6 @@
 <resources>
     <string name="dismiss">Đóng</string>
     <string name="offline_message">Không có kết nối mạng. Các tính năng trực tuyến đã tạm ẩn.</string>
-    <string name="offline_beta_note">PiperOS Browser tạm ẩn vì thiết bị đang offline. PiperOS Media và Terminal vẫn sử dụng bình thường.</string>
     <string name="auth_offline_note">Thiết bị đang offline. Kết nối mạng để sử dụng tài khoản PiperOS.</string>
     <string name="lock_offline_note">Đang mở khóa ngoại tuyến bằng dữ liệu bảo mật đã đồng bộ gần nhất.</string>
     <string name="auth_version">PiperOS Tool · %1$s</string>
@@ -516,24 +515,8 @@
     <string name="browser_cookie_invalid_name">Tên Cookie không hợp lệ</string>
     <string name="browser_delete">Xóa</string>
     <plurals name="browser_cookie_count"><item quantity="one">%d Cookie</item><item quantity="other">%d Cookie</item></plurals>
-    <string name="account_disabled_title">Tài khoản đã bị vô hiệu hóa</string>
-    <string name="account_disabled_message">Tài khoản này đã bị vô hiệu hóa do vi phạm tiêu chuẩn của PiperOS Tool.</string>
-    <string name="account_disabled_email">Tài khoản</string>
-    <string name="account_disabled_time">Thời gian vô hiệu hóa</string>
-    <string name="account_disabled_reason">Lý do</string>
-    <string name="account_disabled_default_reason">Vi phạm tiêu chuẩn sử dụng của ứng dụng</string>
-    <string name="account_unknown">Chưa có thông tin</string>
-    <string name="account_appeal_hint">Nêu lý do bạn muốn kháng nghị…</string>
-    <string name="account_appeal_eta">Kháng nghị được gửi tới gayivt@gmail.com và thường được xem xét trong 24–48 giờ.</string>
-    <string name="account_appeal_required">Vui lòng nhập lý do kháng nghị</string>
-    <string name="account_appeal_no_email_app">Không tìm thấy ứng dụng email. Hãy gửi kháng nghị thủ công tới %1$s.</string>
-    <string name="account_send_appeal">Gửi kháng nghị</string>
-    <string name="account_recheck">Kiểm tra lại tài khoản</string>
-    <string name="account_checking_status">Đang kiểm tra…</string>
-    <string name="account_sign_out">Đăng xuất</string>
+    <string name="profile_no_email_app">Không tìm thấy ứng dụng email.</string>
     <string name="account_session_expired">Phiên đăng nhập đã hết hạn hoặc mật khẩu đã thay đổi. Vui lòng đăng nhập lại.</string>
-    <string name="account_appeal_subject">Kháng nghị tài khoản PiperOS: %1$s</string>
-    <string name="account_appeal_email_body">Tài khoản: %1$s\nMốc vô hiệu hóa: %2$d\nLý do hệ thống: %3$s\n\nNội dung kháng nghị:\n%4$s</string>
     <string name="browser_tokens">Token &amp; bộ nhớ web</string>
     <string name="browser_tokens_summary">Xem và chỉnh dữ liệu của tab đang mở</string>
     <string name="browser_token_add">Thêm Token</string>

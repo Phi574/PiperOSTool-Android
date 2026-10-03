@@ -28,11 +28,6 @@ class WelcomeActivity : AppCompatActivity() {
         auth = Firebase.auth
 
         // 3. Tự động chuyển hướng nếu User đã đăng nhập trước đó
-        AccountSessionGuard.cachedDisabled(this)?.let { disabled ->
-            startActivity(DisabledAccountActivity.createIntent(this, disabled))
-            finish()
-            return
-        }
         if (auth.currentUser != null) {
             AccountSessionGuard.verify(this) { state ->
                 when (state) {
@@ -40,8 +35,6 @@ class WelcomeActivity : AppCompatActivity() {
                         startActivity(Intent(this, HomeActivity::class.java))
                         finish()
                     }
-                    is AccountSessionState.Disabled ->
-                        startActivity(DisabledAccountActivity.createIntent(this, state))
                     is AccountSessionState.Expired -> {
                         auth.signOut()
                         recreate()
@@ -70,13 +63,13 @@ class WelcomeActivity : AppCompatActivity() {
         btnLogin.setOnClickListener {
             startActivity(Intent(this, LoginActivity::class.java))
             // Thêm hiệu ứng mờ ảo khi chuyển màn (tùy chọn)
-            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+            overridePendingTransition(R.anim.piper_page_enter, R.anim.piper_page_exit)
         }
 
         // Chuyển sang màn Đăng ký
         btnSignup.setOnClickListener {
             startActivity(Intent(this, SignupActivity::class.java))
-            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+            overridePendingTransition(R.anim.piper_page_enter, R.anim.piper_page_exit)
         }
     }
 }

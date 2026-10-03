@@ -69,7 +69,7 @@ class ForgotPassword : AppCompatActivity() {
                     if (task.isSuccessful) {
                         Toast.makeText(this, "Recovery link sent! Please check your email.", Toast.LENGTH_LONG).show()
                         finish() // Tự động quay về màn Login
-                        overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+                        overridePendingTransition(R.anim.piper_page_enter, R.anim.piper_page_exit)
                     } else {
                         Toast.makeText(this, "Lỗi: ${task.exception?.message}", Toast.LENGTH_LONG).show()
                         btnReset.isEnabled = true
@@ -81,7 +81,7 @@ class ForgotPassword : AppCompatActivity() {
 
         tvBackToLogin.setOnClickListener {
             finish() // Tắt màn hình hiện tại để lùi về Login
-            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+            overridePendingTransition(R.anim.piper_page_enter, R.anim.piper_page_exit)
         }
 
         // Xóa lỗi khi người dùng bắt đầu gõ lại

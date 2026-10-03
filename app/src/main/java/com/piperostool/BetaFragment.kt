@@ -18,19 +18,8 @@ class BetaFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        val browserFeature = view.findViewById<View>(R.id.featurePiperBrowser)
-        val offlineState = view.findViewById<View>(R.id.betaOfflineState)
-
-        NetworkAccess.observe(viewLifecycleOwner, requireContext()) { online ->
-            browserFeature.visibility = if (online) View.VISIBLE else View.GONE
-            offlineState.visibility = if (online) View.GONE else View.VISIBLE
-            if (!online) NetworkAccess.showOffline(view)
-        }
-
-        browserFeature.setOnClickListener {
-            NetworkAccess.requireOnline(view) {
-                startActivity(Intent(requireContext(), PiperBrowserActivity::class.java))
-            }
+        view.findViewById<View>(R.id.featurePiperBrowser).setOnClickListener {
+            startActivity(Intent(requireContext(), PiperBrowserActivity::class.java))
         }
         view.findViewById<View>(R.id.featurePiperMedia).setOnClickListener {
             startActivity(Intent(requireContext(), PiperMediaActivity::class.java))

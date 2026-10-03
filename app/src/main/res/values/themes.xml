@@ -1,6 +1,8 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
     <style name="Theme.PiperOSTool" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="android:windowBackground">@color/piper_window_background</item>
+        <item name="android:windowAnimationStyle">@style/PiperActivityAnimations</item>
         <!-- Primary brand color. -->
         <item name="colorPrimary">#FB8D8D</item>
         <item name="colorPrimaryVariant">#FB4C4C</item>
@@ -17,16 +19,27 @@
         <item name="imageButtonStyle">@style/PiperContainedImageButton</item>
     </style>
     <style name="Theme.PiperOSTool.AppCompat.NoActionBar" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="android:windowBackground">@color/piper_window_background</item>
+        <item name="android:windowAnimationStyle">@style/PiperActivityAnimations</item>
         <item name="android:fontFamily">@font/piper_app_font</item>
         <item name="fontFamily">@font/piper_app_font</item>
         <item name="android:imageButtonStyle">@style/PiperContainedImageButton</item>
         <item name="imageButtonStyle">@style/PiperContainedImageButton</item>
     </style>
     <style name="Theme.PiperOSTool.AppCompat.Light.NoActionBar" parent="Theme.AppCompat.Light.NoActionBar">
+        <item name="android:windowBackground">@color/piper_window_background</item>
+        <item name="android:windowAnimationStyle">@style/PiperActivityAnimations</item>
         <item name="android:fontFamily">@font/piper_app_font</item>
         <item name="fontFamily">@font/piper_app_font</item>
         <item name="android:imageButtonStyle">@style/PiperContainedImageButton</item>
         <item name="imageButtonStyle">@style/PiperContainedImageButton</item>
+    </style>
+
+    <style name="PiperActivityAnimations">
+        <item name="android:activityOpenEnterAnimation">@anim/piper_page_enter</item>
+        <item name="android:activityOpenExitAnimation">@anim/piper_page_exit</item>
+        <item name="android:activityCloseEnterAnimation">@anim/piper_page_return</item>
+        <item name="android:activityCloseExitAnimation">@anim/piper_page_leave</item>
     </style>
 
     <style name="PiperContainedImageView">
