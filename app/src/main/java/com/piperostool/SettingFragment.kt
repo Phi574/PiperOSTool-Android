@@ -143,7 +143,7 @@ class SettingFragment : Fragment() {
         initViews(view)
         settingsRoot = view
         clearLegacyRowSurfaces(view)
-        view.findViewById<LiquidGlassView>(R.id.settingsJunkGlass).apply {
+        view.findViewById<LiquidGlassView>(R.id.btnCleanJunk).apply {
             backdropSource = requireActivity().findViewById(R.id.homeBackground)
             postDelayed({ invalidate() }, 180L)
         }
@@ -264,7 +264,6 @@ class SettingFragment : Fragment() {
             R.id.layoutPasswordToggle,
             R.id.btnChangeLock,
             R.id.btnPermissions,
-            R.id.btnCleanJunk,
             R.id.layoutUiStyle,
             R.id.layoutColorMode,
             R.id.layoutLanguage,

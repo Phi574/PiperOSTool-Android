@@ -29,9 +29,10 @@ class UpdatedFeatureUiInstrumentedTest {
         val home = inflater.inflate(R.layout.fragment_home, null)
         val settings = inflater.inflate(R.layout.fragment_setting, null)
         assertNotNull(home.findViewById<LiquidGlassView>(R.id.homePiperBrowser))
-        val junkGlass = settings.findViewById<LiquidGlassView>(R.id.settingsJunkGlass)
+        val junkGlass = settings.findViewById<LiquidGlassView>(R.id.btnCleanJunk)
         assertNotNull(junkGlass)
         assertEquals(GlassMaterial.REGULAR, junkGlass.material)
+        assertTrue(junkGlass.isClickable)
         assertTrue(junkGlass.childCount >= 2)
     }
 

@@ -407,9 +407,12 @@
                 android:text="BỘ NHỚ" />
 
             <com.example.liquidglass.LiquidGlassView
-                android:id="@+id/settingsJunkGlass"
+                android:id="@+id/btnCleanJunk"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:clickable="true"
+                android:focusable="true"
+                android:contentDescription="Xóa rác ứng dụng"
                 app:bevelWidth="9dp"
                 app:cornerRadius="24dp"
                 app:dispersionStrength="0.07"
@@ -423,9 +426,10 @@
                     android:background="@drawable/settings_junk_glass_sheen"
                     android:importantForAccessibility="no" />
                 <LinearLayout
-                    android:id="@+id/btnCleanJunk"
                     style="@style/SettingsRow"
-                    android:background="?attr/selectableItemBackground">
+                    android:clickable="false"
+                    android:focusable="false"
+                    android:background="@android:color/transparent">
                     <ImageView
                         style="@style/SettingsRowIcon"
                         android:src="@android:drawable/ic_menu_delete"
