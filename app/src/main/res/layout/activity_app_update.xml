@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#101A2A"
+    android:fitsSystemWindows="true"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="64dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="20dp">
+        <com.example.liquidglass.LiquidGlassView
+            android:id="@+id/updateBack"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:contentDescription="Quay lại"
+            app:cornerRadius="17dp"
+            app:glassMaterial="clear">
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:padding="14dp"
+                android:src="@drawable/ic_browser_back"
+                app:tint="#FFFFFF" />
+        </com.example.liquidglass.LiquidGlassView>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:text="Cập nhật PiperOS"
+            android:textColor="#FFFFFF"
+            android:textSize="21sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingHorizontal="20dp"
+            android:paddingBottom="20dp">
+            <TextView
+                android:id="@+id/updateHeadline"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:text="Đang tải thông tin phiên bản"
+                android:textColor="#FFFFFF"
+                android:textSize="23sp"
+                android:textStyle="bold" />
+            <TextView
+                android:id="@+id/updateCurrentVersion"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:textColor="#B9C8DC"
+                android:textSize="14sp" />
+            <TextView
+                android:id="@+id/updatePublished"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:textColor="#8FDAC4"
+                android:textSize="14sp" />
+            <TextView
+                android:id="@+id/updateDescription"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="22dp"
+                android:background="#263448"
+                android:padding="18dp"
+                android:textColor="#ECF2FB"
+                android:textSize="15sp" />
+            <TextView
+                android:id="@+id/updateStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:textColor="#B7E7D7"
+                android:textSize="14sp" />
+            <ProgressBar
+                android:id="@+id/updateProgress"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent"
+                android:layout_height="8dp"
+                android:layout_marginTop="12dp"
+                android:max="100"
+                android:visibility="gone" />
+            <TextView
+                android:id="@+id/updateLogToggle"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:gravity="center_vertical"
+                android:text="Chi tiết tải xuống  ▾"
+                android:textColor="#9DD6FF"
+                android:textSize="14sp"
+                android:visibility="gone" />
+            <ScrollView
+                android:id="@+id/updateLogScroll"
+                android:layout_width="match_parent"
+                android:layout_height="220dp"
+                android:background="#172438"
+                android:padding="12dp"
+                android:visibility="gone">
+                <TextView
+                    android:id="@+id/updateLog"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textColor="#C8D5E6"
+                    android:textSize="12sp" />
+            </ScrollView>
+        </LinearLayout>
+    </ScrollView>
+
+    <com.example.liquidglass.LiquidGlassView
+        android:id="@+id/updateAction"
+        android:layout_width="match_parent"
+        android:layout_height="58dp"
+        android:layout_marginBottom="8dp"
+        android:layout_marginHorizontal="20dp"
+        android:clickable="true"
+        android:focusable="true"
+        app:cornerRadius="20dp"
+        app:glassMaterial="regular">
+        <TextView
+            android:id="@+id/updateActionText"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:text="Tải xuống và cài đặt"
+            android:textColor="#FFFFFF"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+    </com.example.liquidglass.LiquidGlassView>
+    <com.example.liquidglass.LiquidGlassView
+        android:id="@+id/updateCancel"
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:layout_marginBottom="14dp"
+        android:layout_marginHorizontal="20dp"
+        android:clickable="true"
+        android:focusable="true"
+        android:visibility="gone"
+        app:cornerRadius="18dp"
+        app:glassMaterial="clear">
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:text="Hủy tải xuống"
+            android:textColor="#FCA5A5"
+            android:textSize="15sp" />
+    </com.example.liquidglass.LiquidGlassView>
+</LinearLayout>

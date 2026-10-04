@@ -20,9 +20,14 @@
 
 ## Bản hiện tại
 
-`3.4.3` (versionCode `49`) sử dụng `minSdk 29 (Android 10)`, `targetSdk 36`, Kotlin `2.4.10`.
+`3.4.5.PRE` (versionCode `50`) sử dụng `minSdk 29 (Android 10)`, `targetSdk 36`, Kotlin `2.4.10`.
 
-**Tải và cài đặt:** [PiperOS-Tool-3.4.3-debug.apk](https://github.com/Phi574/PiperOSTool-Android/releases/download/v3.4.3/PiperOS-Tool-3.4.3-debug.apk) · [Chi tiết bản phát hành](https://github.com/Phi574/PiperOSTool-Android/releases/tag/v3.4.3). APK được ký bằng khóa debug như bản 3.4.2; nếu máy báo xung đột chữ ký với bản cài khác, hãy sao lưu dữ liệu ứng dụng trước khi gỡ bản cũ.
+**Tải và cài đặt:** [PiperOS-Tool-3.4.5.PRE-debug.apk](https://github.com/Phi574/PiperOSTool-Android/releases/download/v3.4.5.PRE/PiperOS-Tool-3.4.5.PRE-debug.apk) · [Chi tiết bản phát hành](https://github.com/Phi574/PiperOSTool-Android/releases/tag/v3.4.5.PRE). APK được ký bằng khóa debug của dự án; màn Cập nhật chỉ chấp nhận APK có cùng chữ ký với bản đang cài.
+
+### Cải tiến mới trong 3.4.5.PRE
+
+- Trong Cài đặt có màn Cập nhật đọc GitHub Releases, hiển thị mô tả phiên bản và trạng thái bản mới nhất.
+- Có xác nhận trước khi tải, tiến độ, log tải mở rộng và hủy; APK được xác thực chữ ký, tên gói và phiên bản trước khi mở trình cài đặt.
 
 ### Cải tiến mới trong 3.4.3
 

@@ -1,5 +1,13 @@
 # Changelog
 
+## 3.4.5.PRE
+
+- Thêm màn Cập nhật trong Cài đặt, lấy cả bản phát hành thử nghiệm từ GitHub Releases và hiển thị thông tin phiên bản mới hoặc trạng thái đã mới nhất.
+- Tải APK trong ứng dụng với tiến độ phần trăm, log mở rộng và nút hủy; hiển thị xác nhận trước khi tải.
+- Xác thực SHA-256 khi GitHub cung cấp, chữ ký APK, tên gói và mã phiên bản trước khi chuyển cho trình cài đặt Android; báo lỗi rõ nếu chữ ký khác bản đang cài.
+- Hỗ trợ quyền cài từ nguồn này, trình cài đặt hệ thống và lựa chọn trình cài APK khác khi cần.
+- Nâng versionCode lên 50 và versionName lên 3.4.5.PRE.
+
 ## 3.4.3
 
 - Hoàn thiện LiquidGlass cho thẻ PiperOS Browser ở Home.

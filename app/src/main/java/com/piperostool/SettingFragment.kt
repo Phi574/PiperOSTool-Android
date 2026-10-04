@@ -147,6 +147,9 @@ class SettingFragment : Fragment() {
         view.findViewById<View>(R.id.btnSettingLogout).setOnClickListener {
             showLogoutConfirmation()
         }
+        view.findViewById<View>(R.id.btnCheckUpdate).setOnClickListener {
+            startActivity(Intent(requireContext(), AppUpdateActivity::class.java))
+        }
         view.findViewById<View>(R.id.btnAndroidSource).setOnClickListener {
             openProjectUrl(ANDROID_SOURCE_URL)
         }
@@ -256,6 +259,7 @@ class SettingFragment : Fragment() {
             R.id.layoutPasswordToggle,
             R.id.btnChangeLock,
             R.id.btnPermissions,
+            R.id.btnCheckUpdate,
             R.id.layoutUiStyle,
             R.id.layoutColorMode,
             R.id.layoutLanguage,

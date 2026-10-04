@@ -106,6 +106,8 @@ object PiperModernUi {
     )
 
     fun watch(activity: Activity) {
+        // The updater owns its intentionally restrained surface and native glass buttons.
+        if (activity is AppUpdateActivity) return
         if (activity is WelcomeActivity || activity is LoginActivity ||
             activity is SignupActivity || activity is ForgotPassword
         ) {
