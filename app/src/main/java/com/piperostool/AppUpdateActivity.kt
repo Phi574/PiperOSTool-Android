@@ -135,12 +135,12 @@ class AppUpdateActivity : AppCompatActivity() {
                 val remote = AppUpdateRepository.version(found.tag)
                 val newer = local != null && remote != null && remote > local
                 if (newer) {
-                    description.text = found.description
+                    description.text = readableNotes(found.description)
                     status.text = if (found.assetUrl == null) "Có bản mới nhưng chưa có APK để cài" else "Có phiên bản mới ${found.tag}"
                     if (found.assetUrl != null) setAction("Tải xuống và cài đặt") { showInstallConfirmation() }
                 } else {
                     if (remote != local) published.text = "Bản công khai gần nhất: ${found.tag}"
-                    description.text = if (remote == local) found.description else
+                    description.text = if (remote == local) readableNotes(found.description) else
                         "Bản ${AppVersion.name(this@AppUpdateActivity)} gồm màn cập nhật trong ứng dụng, kiểm tra APK và hỗ trợ trình cài đặt hệ thống."
                     headline.text = "PiperOS Tool ${AppVersion.name(this@AppUpdateActivity)}"
                     status.text = "Bản hiện tại là bản mới nhất"
@@ -176,7 +176,7 @@ class AppUpdateActivity : AppCompatActivity() {
             setTypeface(typeface, android.graphics.Typeface.BOLD)
         })
         root.addView(TextView(this).apply {
-            text = "Hãy sao lưu dữ liệu quan trọng trước khi cài. Giữ ứng dụng mở trong lúc tải và chuyển sang trình cài đặt; không đóng ứng dụng từ màn đa nhiệm."
+            text = "Hãy sao lưu dữ liệu quan trọng trước khi cài. Không đóng app khi đang tải và cài đặt. Nếu đã bật chạy nền, bạn có thể chuyển sang app khác nhưng đừng vuốt tắt PiperOS khỏi màn đa nhiệm."
             textSize = 14f
             setTextColor(Color.rgb(203, 215, 231))
             setPadding(0, dp(14), 0, dp(16))
@@ -324,6 +324,14 @@ class AppUpdateActivity : AppCompatActivity() {
         status.text = message
         Toast.makeText(this, message, Toast.LENGTH_LONG).show()
     }
+
+    private fun readableNotes(markdown: String): String = markdown
+        .replace(Regex("(?m)^#{1,6}\\s*"), "")
+        .replace(Regex("(?m)^\\s*-\\s+"), "• ")
+        .replace(Regex("\\[([^]]+)]\\([^)]+\\)"), "$1")
+        .replace("**", "")
+        .replace("`", "")
+        .trim()
 
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 }
