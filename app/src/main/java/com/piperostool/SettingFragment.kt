@@ -19,6 +19,7 @@ import androidx.biometric.BiometricPrompt
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import com.google.android.material.switchmaterial.SwitchMaterial
+import com.example.liquidglass.LiquidGlassView
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
@@ -142,6 +143,8 @@ class SettingFragment : Fragment() {
         initViews(view)
         settingsRoot = view
         clearLegacyRowSurfaces(view)
+        view.findViewById<LiquidGlassView>(R.id.settingsJunkGlass).backdropSource =
+            requireActivity().findViewById(R.id.homeBackground)
         view.findViewById<TextView>(R.id.tvSettingVersion).text =
             getString(R.string.auth_version, AppVersion.name(requireContext()))
         view.findViewById<View>(R.id.btnSettingLogout).setOnClickListener {

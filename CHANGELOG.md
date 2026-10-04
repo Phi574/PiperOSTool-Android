@@ -2,6 +2,7 @@
 
 ## 3.4.3
 
+- Hoàn thiện LiquidGlass cho thẻ PiperOS Browser ở Home, thẻ Xóa rác trong Cài đặt và toàn bộ màn quét/chọn tệp rác.
 - Dừng dịch vụ Terminal khi người dùng đóng tác vụ và các phiên chỉ đang chờ lệnh; giữ lệnh đang chạy tiếp tục ở nền.
 - Giảm nhịp cập nhật của Fake Map khi cố định hoặc tạm dừng, nhả wake lock lúc tạm dừng và không khởi động lại dịch vụ sau khi đã dừng.
 - Dịch vụ tải Browser tự dừng nếu không có URL hợp lệ hay tác vụ tải đang theo dõi.

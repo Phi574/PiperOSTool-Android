@@ -5,6 +5,7 @@ import android.widget.ImageButton
 import android.widget.ImageView
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.example.liquidglass.LiquidGlassView
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -14,6 +15,28 @@ import kotlin.math.roundToInt
 
 @RunWith(AndroidJUnit4::class)
 class UpdatedFeatureUiInstrumentedTest {
+    @Test
+    fun browserAndJunkEntryPointsUseNativeGlass() {
+        ActivityScenario.launch(AppJunkCleanerActivity::class.java).use { scenario ->
+            scenario.onActivity { activity ->
+                val home = activity.layoutInflater.inflate(R.layout.fragment_home, null)
+                val settings = activity.layoutInflater.inflate(R.layout.fragment_setting, null)
+                assertNotNull(home.findViewById<LiquidGlassView>(R.id.homePiperBrowser))
+                assertNotNull(settings.findViewById<LiquidGlassView>(R.id.settingsJunkGlass))
+                val root = activity.findViewById<View>(android.R.id.content)
+                assertTrue(countGlassSurfaces(root) >= 2)
+            }
+        }
+    }
+
+    private fun countGlassSurfaces(view: View): Int {
+        var count = if (view is LiquidGlassView) 1 else 0
+        if (view is android.view.ViewGroup) {
+            for (index in 0 until view.childCount) count += countGlassSurfaces(view.getChildAt(index))
+        }
+        return count
+    }
+
     @Test
     fun browserUsesBottomPiperExitWithoutOldTitleBar() {
         ActivityScenario.launch(PiperBrowserActivity::class.java).use { scenario ->

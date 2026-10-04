@@ -23,6 +23,8 @@ class homeFragment : Fragment() {
         view.findViewById<View>(R.id.homePiperBrowser).setOnClickListener {
             startActivity(Intent(requireContext(), PiperBrowserActivity::class.java))
         }
+        view.findViewById<LiquidGlassView>(R.id.homePiperBrowser).backdropSource =
+            requireActivity().findViewById(R.id.homeBackground)
         if (!PiperUiPreferences.isModern(requireContext())) {
         view.findViewById<TextView>(R.id.homeScreenTitle).setText(R.string.home_classic_title)
         view.findViewById<TextView>(R.id.homeScreenSummary).setText(R.string.home_classic_summary)

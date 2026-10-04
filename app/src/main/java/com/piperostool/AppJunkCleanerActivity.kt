@@ -1,11 +1,13 @@
 package com.piperostool
 
 import android.os.Bundle
+import android.content.res.Configuration
 import android.text.format.Formatter
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
 import android.widget.CheckBox
+import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
@@ -16,8 +18,9 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.example.liquidglass.GlassMaterial
+import com.example.liquidglass.LiquidGlassView
 import com.google.android.material.button.MaterialButton
-import com.google.android.material.card.MaterialCardView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -29,14 +32,27 @@ class AppJunkCleanerActivity : AppCompatActivity() {
     private lateinit var progress: ProgressBar
     private lateinit var deleteButton: MaterialButton
     private lateinit var list: RecyclerView
+    private lateinit var backdrop: PiperLiquidGlassBackgroundView
     private val adapter = JunkAdapter()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
+        val screen = FrameLayout(this).apply { tag = "piper_glass_content" }
+        backdrop = PiperLiquidGlassBackgroundView(this).apply {
+            tag = "piper_classic_liquid_glass_background"
+            darkMode = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK ==
+                Configuration.UI_MODE_NIGHT_YES
+        }
+        screen.addView(backdrop, FrameLayout.LayoutParams(-1, -1))
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(16), dp(16), dp(16), dp(16))
+            tag = "piper_glass_content"
+        }
+        val intro = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(14), dp(10), dp(14), dp(12))
         }
         val header = LinearLayout(this).apply { gravity = Gravity.CENTER_VERTICAL }
         header.addView(MaterialButton(this).apply {
@@ -50,8 +66,8 @@ class AppJunkCleanerActivity : AppCompatActivity() {
             textSize = 22f
             setTextColor(PiperModernUi.textColor(this@AppJunkCleanerActivity))
         }, LinearLayout.LayoutParams(0, -2, 1f))
-        root.addView(header)
-        root.addView(TextView(this).apply {
+        intro.addView(header)
+        intro.addView(TextView(this).apply {
             text = "Quét bộ nhớ đệm, nhật ký cũ và thiết lập tính năng đã gỡ. Dữ liệu tài khoản, trình duyệt, tệp tải về, bản sao lưu và dữ liệu Terminal không nằm trong danh sách."
             textSize = 13f
             setTextColor(PiperModernUi.secondaryTextColor(this@AppJunkCleanerActivity))
@@ -61,9 +77,9 @@ class AppJunkCleanerActivity : AppCompatActivity() {
             textSize = 14f
             setTextColor(PiperModernUi.textColor(this@AppJunkCleanerActivity))
         }
-        root.addView(summary)
+        intro.addView(summary)
         progress = ProgressBar(this).apply { visibility = View.GONE }
-        root.addView(progress, LinearLayout.LayoutParams(dp(36), dp(36)).apply {
+        intro.addView(progress, LinearLayout.LayoutParams(dp(36), dp(36)).apply {
             gravity = Gravity.CENTER_HORIZONTAL
         })
         val actions = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
@@ -86,7 +102,10 @@ class AppJunkCleanerActivity : AppCompatActivity() {
                 updateSummary()
             }
         }, LinearLayout.LayoutParams(0, dp(48), 1f))
-        root.addView(actions)
+        intro.addView(actions)
+        root.addView(glassPanel(intro, 23f, true), LinearLayout.LayoutParams(-1, -2).apply {
+            bottomMargin = dp(10)
+        })
         list = RecyclerView(this).apply {
             layoutManager = LinearLayoutManager(this@AppJunkCleanerActivity)
             adapter = this@AppJunkCleanerActivity.adapter
@@ -97,13 +116,21 @@ class AppJunkCleanerActivity : AppCompatActivity() {
             isAllCaps = false
             setOnClickListener { confirmDelete() }
         }
-        root.addView(deleteButton, LinearLayout.LayoutParams(-1, dp(52)))
-        root.addView(MaterialButton(this).apply {
+        val footer = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(12), dp(10), dp(12), dp(10))
+        }
+        footer.addView(deleteButton, LinearLayout.LayoutParams(-1, dp(52)))
+        footer.addView(MaterialButton(this).apply {
             text = "Quét lại"
             isAllCaps = false
             setOnClickListener { scan() }
         }, LinearLayout.LayoutParams(-1, dp(48)))
-        setContentView(root)
+        root.addView(glassPanel(footer, 22f, true), LinearLayout.LayoutParams(-1, -2).apply {
+            topMargin = dp(8)
+        })
+        screen.addView(root, FrameLayout.LayoutParams(-1, -1))
+        setContentView(screen)
         ViewCompat.setOnApplyWindowInsetsListener(root) { _, insets ->
             val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             root.setPadding(dp(16), dp(16) + bars.top, dp(16), dp(16) + bars.bottom)
@@ -111,8 +138,22 @@ class AppJunkCleanerActivity : AppCompatActivity() {
         }
         ViewCompat.requestApplyInsets(root)
         PiperModernUi.apply(root)
+        root.background = null
         scan()
     }
+
+    private fun glassPanel(content: View, radiusDp: Float, dynamic: Boolean): LiquidGlassView =
+        LiquidGlassView(this).apply {
+            material = GlassMaterial.CLEAR
+            cornerRadius = dp(radiusDp)
+            refractionHeight = dp(30).toFloat()
+            bevelWidth = dp(9).toFloat()
+            dispersionStrength = 0.08f
+            enableSensorHighlight = true
+            enableDynamicBackground = dynamic
+            backdropSource = backdrop
+            addView(content, FrameLayout.LayoutParams(-1, -2))
+        }
 
     private fun scan() {
         progress.visibility = View.VISIBLE
@@ -153,17 +194,10 @@ class AppJunkCleanerActivity : AppCompatActivity() {
     }
 
     private inner class JunkAdapter : RecyclerView.Adapter<JunkAdapter.Holder>() {
-        inner class Holder(val card: MaterialCardView, val check: CheckBox, val detail: TextView) :
+        inner class Holder(val card: LiquidGlassView, val check: CheckBox, val detail: TextView) :
             RecyclerView.ViewHolder(card)
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): Holder {
-            val card = MaterialCardView(parent.context).apply {
-                radius = dp(16).toFloat()
-                cardElevation = 0f
-                setCardBackgroundColor(PiperModernUi.surfaceColor(this@AppJunkCleanerActivity))
-                strokeColor = PiperModernUi.borderColor(this@AppJunkCleanerActivity)
-                strokeWidth = dp(1)
-            }
             val column = LinearLayout(parent.context).apply {
                 orientation = LinearLayout.VERTICAL
                 setPadding(dp(12), dp(7), dp(12), dp(9))
@@ -176,7 +210,9 @@ class AppJunkCleanerActivity : AppCompatActivity() {
             }
             column.addView(check)
             column.addView(detail)
-            card.addView(column)
+            val card = glassPanel(column, 16f, false).apply {
+                layoutParams = RecyclerView.LayoutParams(-1, -2).apply { bottomMargin = dp(8) }
+            }
             return Holder(card, check, detail)
         }
 
@@ -198,4 +234,5 @@ class AppJunkCleanerActivity : AppCompatActivity() {
     }
 
     private fun dp(value: Int) = (value * resources.displayMetrics.density).toInt()
+    private fun dp(value: Float) = value * resources.displayMetrics.density
 }
