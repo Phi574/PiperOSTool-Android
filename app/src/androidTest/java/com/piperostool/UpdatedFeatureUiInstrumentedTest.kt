@@ -9,7 +9,6 @@ import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.example.liquidglass.LiquidGlassView
-import com.google.android.material.card.MaterialCardView
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -20,7 +19,7 @@ import kotlin.math.roundToInt
 @RunWith(AndroidJUnit4::class)
 class UpdatedFeatureUiInstrumentedTest {
     @Test
-    fun browserAndJunkEntryPointsUseNativeGlass() {
+    fun browserEntryPointUsesNativeGlassAndJunkEntryIsGone() {
         val context = ContextThemeWrapper(
             InstrumentationRegistry.getInstrumentation().targetContext,
             R.style.Theme_PiperOSTool
@@ -29,11 +28,9 @@ class UpdatedFeatureUiInstrumentedTest {
         val home = inflater.inflate(R.layout.fragment_home, null)
         val settings = inflater.inflate(R.layout.fragment_setting, null)
         assertNotNull(home.findViewById<LiquidGlassView>(R.id.homePiperBrowser))
-        val storageCard = settings.findViewById<MaterialCardView>(R.id.settingsStorageSurface)
-        val accountCard = settings.findViewById<MaterialCardView>(R.id.settingsAccountSurface)
-        assertNotNull(storageCard)
-        assertEquals(accountCard.radius, storageCard.radius)
-        assertNotNull(storageCard.findViewById<View>(R.id.btnCleanJunk))
+        assertEquals(0, context.resources.getIdentifier("settingsStorageSurface", "id", context.packageName))
+        assertEquals(0, context.resources.getIdentifier("btnCleanJunk", "id", context.packageName))
+        assertNotNull(settings.findViewById<View>(R.id.settingsAccountSurface))
     }
 
     @Test

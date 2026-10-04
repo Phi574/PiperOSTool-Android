@@ -27,7 +27,6 @@
 ### Cải tiến mới trong 3.4.3
 
 - Terminal tự ngừng dịch vụ nền khi đóng ứng dụng và chỉ còn shell rảnh; lệnh đang chạy vẫn được giữ. Fake Map giảm cập nhật và nhả wake lock khi tạm dừng.
-- Xóa rác trong Cài đặt quét các tệp đệm cũ và nhật ký cũ, hiển thị từng tệp để bỏ chọn trước khi xóa. Dữ liệu tài khoản, lịch sử Browser, Terminal, tệp tải về và bản sao lưu không nằm trong phạm vi dọn.
 - PiperOS Browser xuất hiện ở Home thay cho Beta.
 
 ### Cải tiến mới trong 3.4.2

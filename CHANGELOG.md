@@ -2,12 +2,11 @@
 
 ## 3.4.3
 
-- Hoàn thiện LiquidGlass cho thẻ PiperOS Browser ở Home, thẻ Xóa rác trong Cài đặt và toàn bộ màn quét/chọn tệp rác.
-- Đồng bộ thẻ Xóa rác trong Cài đặt với các thẻ LiquidGlass khác của Settings: cùng MaterialCardView, kính clear và hàng chọn bên trong.
+- Hoàn thiện LiquidGlass cho thẻ PiperOS Browser ở Home.
+- Gỡ hoàn toàn tính năng Xóa rác ứng dụng khỏi Cài đặt và mã ứng dụng.
 - Dừng dịch vụ Terminal khi người dùng đóng tác vụ và các phiên chỉ đang chờ lệnh; giữ lệnh đang chạy tiếp tục ở nền.
 - Giảm nhịp cập nhật của Fake Map khi cố định hoặc tạm dừng, nhả wake lock lúc tạm dừng và không khởi động lại dịch vụ sau khi đã dừng.
 - Dịch vụ tải Browser tự dừng nếu không có URL hợp lệ hay tác vụ tải đang theo dõi.
-- Thêm Xóa rác trong Cài đặt: quét tệp đệm cũ và nhật ký cũ của app, xem từng mục, bỏ chọn và xác nhận trước khi xóa; bảo vệ dữ liệu người dùng và tệp đang thay đổi.
 - Chuyển PiperOS Browser từ Beta sang trang Home.
 - Nâng versionCode lên 49 và versionName lên 3.4.3.
 

@@ -155,7 +155,6 @@
         <activity android:name=".DeviceSessionsActivity" android:exported="false" android:theme="@style/Theme.PiperOSTool" android:windowSoftInputMode="adjustResize" />
 
         <activity android:name=".HomeActivity" android:exported="false" android:launchMode="singleTask" android:windowSoftInputMode="adjustResize" />
-        <activity android:name=".AppJunkCleanerActivity" android:exported="false" android:theme="@style/Theme.PiperOSTool" />
         <activity
             android:name=".PiperBrowserActivity"
             android:configChanges="keyboard|keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize"
