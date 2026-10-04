@@ -98,6 +98,29 @@
                 </LinearLayout>
             </com.example.liquidglass.LiquidGlassView>
 
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:background="#33415566"
+                android:orientation="vertical"
+                android:padding="14dp">
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="3.5.0.Beta · Thông báo dự án"
+                    android:textColor="#D1FAE5"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="PiperOS dự kiến dừng phát triển LiquidGlass và chuyển về giao diện Hiện Đại trong bản sau. Bản Beta này mới thông báo kế hoạch; giao diện và các tính năng hiện tại chưa thay đổi."
+                    android:textColor="#E4EDFA"
+                    android:textSize="13sp" />
+            </LinearLayout>
+
         </LinearLayout>
     </com.example.liquidglass.LiquidGlassView>
 

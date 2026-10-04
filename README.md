@@ -20,9 +20,13 @@
 
 ## Bản hiện tại
 
-`3.4.5.PRE` (versionCode `50`) sử dụng `minSdk 29 (Android 10)`, `targetSdk 36`, Kotlin `2.4.10`.
+`3.5.0.Beta` (versionCode `51`) sử dụng `minSdk 29 (Android 10)`, `targetSdk 36`, Kotlin `2.4.10`.
 
-**Tải và cài đặt:** [PiperOS-Tool-3.4.5.PRE-debug.apk](https://github.com/Phi574/PiperOSTool-Android/releases/download/v3.4.5.PRE/PiperOS-Tool-3.4.5.PRE-debug.apk) · [Chi tiết bản phát hành](https://github.com/Phi574/PiperOSTool-Android/releases/tag/v3.4.5.PRE). APK được ký bằng khóa debug của dự án; màn Cập nhật chỉ chấp nhận APK có cùng chữ ký với bản đang cài.
+**Tải và cài đặt:** [PiperOS-Tool-3.5.0.Beta-debug.apk](https://github.com/Phi574/PiperOSTool-Android/releases/download/v3.5.0.Beta/PiperOS-Tool-3.5.0.Beta-debug.apk) · [Chi tiết bản phát hành](https://github.com/Phi574/PiperOSTool-Android/releases/tag/v3.5.0.Beta). APK được ký bằng khóa debug của dự án; màn Cập nhật chỉ chấp nhận APK có cùng chữ ký với bản đang cài.
+
+### Thông báo trong 3.5.0.Beta
+
+- Trang chủ thông báo kế hoạch dừng LiquidGlass và chuyển về giao diện Hiện Đại ở bản sau. Bản này chưa thực hiện việc chuyển đổi hay gỡ tính năng.
 
 ### Cải tiến mới trong 3.4.5.PRE
 

@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.5.0.Beta
+
+- Hiển thị thông báo dự án tại Trang chủ: dự kiến dừng LiquidGlass và chuyển toàn bộ về giao diện Hiện Đại ở bản tiếp theo.
+- Bản này chỉ công bố kế hoạch; chưa xóa Kiểu Giao Diện, LiquidGlass hoặc thay đổi các tính năng hiện tại.
+- Nâng versionCode lên 51 và versionName lên 3.5.0.Beta để hỗ trợ cập nhật trong ứng dụng.
+
 ## 3.4.5.PRE
 
 - Thêm màn Cập nhật trong Cài đặt, lấy cả bản phát hành thử nghiệm từ GitHub Releases và hiển thị thông tin phiên bản mới hoặc trạng thái đã mới nhất.
