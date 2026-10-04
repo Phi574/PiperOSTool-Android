@@ -406,30 +406,23 @@
                 android:layout_marginTop="18dp"
                 android:text="BỘ NHỚ" />
 
-            <com.example.liquidglass.LiquidGlassView
-                android:id="@+id/btnCleanJunk"
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/settingsStorageSurface"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:clickable="true"
-                android:focusable="true"
-                android:contentDescription="Xóa rác ứng dụng"
                 app:bevelWidth="9dp"
                 app:cornerRadius="24dp"
                 app:dispersionStrength="0.07"
-                app:glassMaterial="regular"
+                app:glassMaterial="clear"
                 app:refractionHeight="32dp"
-                app:sensorHighlight="true"
-                app:backdropSourceId="@id/homeBackground">
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:background="@drawable/settings_junk_glass_sheen"
-                    android:importantForAccessibility="no" />
+                app:cardBackgroundColor="@android:color/transparent"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="0dp">
                 <LinearLayout
+                    android:id="@+id/btnCleanJunk"
                     style="@style/SettingsRow"
-                    android:clickable="false"
-                    android:focusable="false"
-                    android:background="@android:color/transparent">
+                    android:background="?attr/selectableItemBackground">
                     <ImageView
                         style="@style/SettingsRowIcon"
                         android:src="@android:drawable/ic_menu_delete"
@@ -444,7 +437,7 @@
                     </LinearLayout>
                     <ImageView style="@style/SettingsChevron" />
                 </LinearLayout>
-            </com.example.liquidglass.LiquidGlassView>
+            </com.google.android.material.card.MaterialCardView>
 
             <TextView
                 style="@style/SettingsSectionTitle"

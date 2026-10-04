@@ -8,8 +8,8 @@ import android.widget.ImageView
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import com.example.liquidglass.GlassMaterial
 import com.example.liquidglass.LiquidGlassView
+import com.google.android.material.card.MaterialCardView
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -29,11 +29,11 @@ class UpdatedFeatureUiInstrumentedTest {
         val home = inflater.inflate(R.layout.fragment_home, null)
         val settings = inflater.inflate(R.layout.fragment_setting, null)
         assertNotNull(home.findViewById<LiquidGlassView>(R.id.homePiperBrowser))
-        val junkGlass = settings.findViewById<LiquidGlassView>(R.id.btnCleanJunk)
-        assertNotNull(junkGlass)
-        assertEquals(GlassMaterial.REGULAR, junkGlass.material)
-        assertTrue(junkGlass.isClickable)
-        assertTrue(junkGlass.childCount >= 2)
+        val storageCard = settings.findViewById<MaterialCardView>(R.id.settingsStorageSurface)
+        val accountCard = settings.findViewById<MaterialCardView>(R.id.settingsAccountSurface)
+        assertNotNull(storageCard)
+        assertEquals(accountCard.radius, storageCard.radius)
+        assertNotNull(storageCard.findViewById<View>(R.id.btnCleanJunk))
     }
 
     @Test
