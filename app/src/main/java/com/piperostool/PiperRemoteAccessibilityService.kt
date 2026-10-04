@@ -8,6 +8,8 @@ import android.view.accessibility.AccessibilityEvent
 class PiperRemoteAccessibilityService : AccessibilityService() {
     override fun onServiceConnected() {
         instance = this
+        // Remote control sends gestures; it does not inspect accessibility events.
+        serviceInfo = serviceInfo.apply { eventTypes = 0 }
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) = Unit

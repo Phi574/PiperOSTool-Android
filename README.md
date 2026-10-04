@@ -20,9 +20,15 @@
 
 ## Bản hiện tại
 
-`3.4.2` (versionCode `48`) sử dụng `minSdk 29 (Android 10)`, `targetSdk 36`, Kotlin `2.4.10`.
+`3.4.3` (versionCode `49`) sử dụng `minSdk 29 (Android 10)`, `targetSdk 36`, Kotlin `2.4.10`.
 
-**Tải và cài đặt:** [PiperOS-Tool-3.4.2-debug.apk](https://github.com/Phi574/PiperOSTool-Android/releases/download/v3.4.2/PiperOS-Tool-3.4.2-debug.apk) · [Chi tiết bản phát hành](https://github.com/Phi574/PiperOSTool-Android/releases/tag/v3.4.2). APK được ký bằng khóa debug như bản 3.4.1; nếu máy báo xung đột chữ ký với bản cài khác, hãy sao lưu dữ liệu ứng dụng trước khi gỡ bản cũ.
+**Tải và cài đặt:** [PiperOS-Tool-3.4.3-debug.apk](https://github.com/Phi574/PiperOSTool-Android/releases/download/v3.4.3/PiperOS-Tool-3.4.3-debug.apk) · [Chi tiết bản phát hành](https://github.com/Phi574/PiperOSTool-Android/releases/tag/v3.4.3). APK được ký bằng khóa debug như bản 3.4.2; nếu máy báo xung đột chữ ký với bản cài khác, hãy sao lưu dữ liệu ứng dụng trước khi gỡ bản cũ.
+
+### Cải tiến mới trong 3.4.3
+
+- Terminal tự ngừng dịch vụ nền khi đóng ứng dụng và chỉ còn shell rảnh; lệnh đang chạy vẫn được giữ. Fake Map giảm cập nhật và nhả wake lock khi tạm dừng.
+- Xóa rác trong Cài đặt quét các tệp đệm cũ và nhật ký cũ, hiển thị từng tệp để bỏ chọn trước khi xóa. Dữ liệu tài khoản, lịch sử Browser, Terminal, tệp tải về và bản sao lưu không nằm trong phạm vi dọn.
+- PiperOS Browser xuất hiện ở Home thay cho Beta.
 
 ### Cải tiến mới trong 3.4.2
 

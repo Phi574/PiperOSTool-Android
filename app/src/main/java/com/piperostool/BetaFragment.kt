@@ -18,9 +18,6 @@ class BetaFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        view.findViewById<View>(R.id.featurePiperBrowser).setOnClickListener {
-            startActivity(Intent(requireContext(), PiperBrowserActivity::class.java))
-        }
         view.findViewById<View>(R.id.featurePiperMedia).setOnClickListener {
             startActivity(Intent(requireContext(), PiperMediaActivity::class.java))
         }

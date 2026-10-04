@@ -1,5 +1,14 @@
 # Changelog
 
+## 3.4.3
+
+- Dừng dịch vụ Terminal khi người dùng đóng tác vụ và các phiên chỉ đang chờ lệnh; giữ lệnh đang chạy tiếp tục ở nền.
+- Giảm nhịp cập nhật của Fake Map khi cố định hoặc tạm dừng, nhả wake lock lúc tạm dừng và không khởi động lại dịch vụ sau khi đã dừng.
+- Dịch vụ tải Browser tự dừng nếu không có URL hợp lệ hay tác vụ tải đang theo dõi.
+- Thêm Xóa rác trong Cài đặt: quét tệp đệm cũ và nhật ký cũ của app, xem từng mục, bỏ chọn và xác nhận trước khi xóa; bảo vệ dữ liệu người dùng và tệp đang thay đổi.
+- Chuyển PiperOS Browser từ Beta sang trang Home.
+- Nâng versionCode lên 49 và versionName lên 3.4.3.
+
 ## 3.4.2
 
 - Sửa crash của tiến trình PPS khi Firebase không khởi tạo trong tiến trình phụ; Start/Stop không còn chờ Binder vô hạn và kết quả khởi động cũ không ghi đè lệnh Dừng.

@@ -120,6 +120,7 @@ class BrowserDownloadService : Service() {
             }
 
             ACTION_DOWNLOAD -> enqueueDownload(intent)
+            else -> if (trackedDownloads.isEmpty() && pendingMetadataRequests == 0) stopSelf(startId)
         }
         return START_NOT_STICKY
     }
@@ -134,7 +135,10 @@ class BrowserDownloadService : Service() {
 
     private fun enqueueDownload(intent: Intent) {
         val url = intent.getStringExtra(EXTRA_URL).orEmpty()
-        if (!URLUtil.isNetworkUrl(url)) return
+        if (!URLUtil.isNetworkUrl(url)) {
+            if (trackedDownloads.isEmpty() && pendingMetadataRequests == 0) stopSelf()
+            return
+        }
 
         if (!foregroundStarted) {
             startAsForeground(buildProgressNotification(null, false))

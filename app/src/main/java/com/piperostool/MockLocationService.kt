@@ -65,7 +65,11 @@ class MockLocationService : Service() {
     private val ticker = object : Runnable {
         override fun run() {
             tick()
-            if (snapshot.running) worker.postDelayed(this, UPDATE_INTERVAL_MS)
+            if (snapshot.running) worker.postDelayed(this, when {
+                paused -> PAUSED_UPDATE_INTERVAL_MS
+                scenario?.mode == MockScenarioMode.FIXED -> FIXED_UPDATE_INTERVAL_MS
+                else -> UPDATE_INTERVAL_MS
+            })
         }
     }
 
@@ -85,6 +89,7 @@ class MockLocationService : Service() {
             ACTION_PAUSE -> {
                 if (restoreSessionIfNeeded()) {
                     paused = true
+                    releaseWakeLock()
                     publishState()
                     saveCheckpoint(force = true)
                     updateNotification()
@@ -93,11 +98,14 @@ class MockLocationService : Service() {
             ACTION_RESUME -> {
                 if (restoreSessionIfNeeded()) {
                     paused = false
+                    acquireWakeLock()
                     arrived = false
                     lastTickElapsed = SystemClock.elapsedRealtime()
                     publishState()
                     saveCheckpoint(force = true)
                     updateNotification()
+                    worker.removeCallbacks(ticker)
+                    worker.post(ticker)
                 }
             }
             ACTION_START -> startMocking(resumeCheckpoint = false)
@@ -110,7 +118,8 @@ class MockLocationService : Service() {
             }
             else -> stopSelf(startId)
         }
-        return START_STICKY
+        return if (MockLocationRuntimeStore.load(this)?.active == true) START_STICKY
+            else START_NOT_STICKY
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -187,7 +196,7 @@ class MockLocationService : Service() {
             progress = calculateProgress(),
             point = lastPoint
         )
-        acquireWakeLock()
+        if (!paused) acquireWakeLock()
         saveCheckpoint(force = true)
         worker.removeCallbacks(ticker)
         worker.post(ticker)
@@ -677,8 +686,10 @@ class MockLocationService : Service() {
         private const val REQUEST_OPEN = 4802
         private const val REQUEST_PAUSE = 4803
         private const val REQUEST_STOP = 4804
-        private const val UPDATE_INTERVAL_MS = 500L
-        private const val NOTIFICATION_UPDATE_INTERVAL_MS = 1_000L
+        private const val UPDATE_INTERVAL_MS = 1_000L
+        private const val FIXED_UPDATE_INTERVAL_MS = 2_000L
+        private const val PAUSED_UPDATE_INTERVAL_MS = 15_000L
+        private const val NOTIFICATION_UPDATE_INTERVAL_MS = 5_000L
         private const val CHECKPOINT_INTERVAL_MS = 2_000L
 
         @Volatile

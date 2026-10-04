@@ -153,6 +153,9 @@ class SettingFragment : Fragment() {
         view.findViewById<View>(R.id.btnRuntimeSource).setOnClickListener {
             openProjectUrl(RUNTIME_SOURCE_URL)
         }
+        view.findViewById<View>(R.id.btnCleanJunk).setOnClickListener {
+            startActivity(Intent(requireContext(), AppJunkCleanerActivity::class.java))
+        }
         NetworkAccess.observe(viewLifecycleOwner, requireContext()) { online ->
             layoutPasswordToggle.visibility = if (online) View.VISIBLE else View.GONE
             btnChangeLock.visibility = if (online) View.VISIBLE else View.GONE
@@ -256,6 +259,7 @@ class SettingFragment : Fragment() {
             R.id.layoutPasswordToggle,
             R.id.btnChangeLock,
             R.id.btnPermissions,
+            R.id.btnCleanJunk,
             R.id.layoutUiStyle,
             R.id.layoutColorMode,
             R.id.layoutLanguage,

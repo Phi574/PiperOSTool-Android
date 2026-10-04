@@ -35,6 +35,16 @@ class PiperTerminalService : Service(), TerminalSessionManager.Listener {
 
     override fun onBind(intent: Intent?): IBinder? = null
 
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        // A shell waiting at its prompt is not active work. Keep actual commands alive.
+        if (TerminalSessionManager.listSessions().none { it.busy || it.awaitingConfirmation }) {
+            TerminalSessionManager.closeAll()
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            stopSelf()
+        }
+        super.onTaskRemoved(rootIntent)
+    }
+
     override fun onDestroy() {
         TerminalSessionManager.removeListener(this)
         super.onDestroy()

@@ -53,6 +53,17 @@
                 android:textColor="#B3FFFFFF"
                 android:textSize="14sp" />
 
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/homePiperBrowser"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:layout_marginTop="20dp"
+                android:text="@string/piperos_browser"
+                android:textAllCaps="false"
+                app:icon="@drawable/browser"
+                app:iconSize="24dp"
+                app:iconGravity="textStart" />
+
         </LinearLayout>
     </com.example.liquidglass.LiquidGlassView>
 

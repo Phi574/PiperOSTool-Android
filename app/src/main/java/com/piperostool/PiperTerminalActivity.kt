@@ -225,6 +225,10 @@ class PiperTerminalActivity : AppCompatActivity(), TerminalSessionManager.Listen
     override fun onStop() {
         keyboardController.stop()
         TerminalSessionManager.removeListener(this)
+        if (isFinishing && TerminalSessionManager.listSessions().none { it.busy || it.awaitingConfirmation }) {
+            TerminalSessionManager.closeAll()
+            stopService(Intent(this, PiperTerminalService::class.java))
+        }
         if (runtimeReceiverRegistered) {
             unregisterReceiver(runtimeStateReceiver)
             runtimeReceiverRegistered = false
