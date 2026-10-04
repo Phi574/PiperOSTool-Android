@@ -413,10 +413,15 @@
                 app:bevelWidth="9dp"
                 app:cornerRadius="24dp"
                 app:dispersionStrength="0.07"
-                app:glassMaterial="clear"
+                app:glassMaterial="regular"
                 app:refractionHeight="32dp"
                 app:sensorHighlight="true"
                 app:backdropSourceId="@id/homeBackground">
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/settings_junk_glass_sheen"
+                    android:importantForAccessibility="no" />
                 <LinearLayout
                     android:id="@+id/btnCleanJunk"
                     style="@style/SettingsRow"

@@ -143,8 +143,10 @@ class SettingFragment : Fragment() {
         initViews(view)
         settingsRoot = view
         clearLegacyRowSurfaces(view)
-        view.findViewById<LiquidGlassView>(R.id.settingsJunkGlass).backdropSource =
-            requireActivity().findViewById(R.id.homeBackground)
+        view.findViewById<LiquidGlassView>(R.id.settingsJunkGlass).apply {
+            backdropSource = requireActivity().findViewById(R.id.homeBackground)
+            postDelayed({ invalidate() }, 180L)
+        }
         view.findViewById<TextView>(R.id.tvSettingVersion).text =
             getString(R.string.auth_version, AppVersion.name(requireContext()))
         view.findViewById<View>(R.id.btnSettingLogout).setOnClickListener {

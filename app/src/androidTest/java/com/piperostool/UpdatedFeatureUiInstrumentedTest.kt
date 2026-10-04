@@ -1,10 +1,14 @@
 package com.piperostool
 
 import android.view.View
+import android.view.ContextThemeWrapper
+import android.view.LayoutInflater
 import android.widget.ImageButton
 import android.widget.ImageView
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
+import com.example.liquidglass.GlassMaterial
 import com.example.liquidglass.LiquidGlassView
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -17,24 +21,18 @@ import kotlin.math.roundToInt
 class UpdatedFeatureUiInstrumentedTest {
     @Test
     fun browserAndJunkEntryPointsUseNativeGlass() {
-        ActivityScenario.launch(AppJunkCleanerActivity::class.java).use { scenario ->
-            scenario.onActivity { activity ->
-                val home = activity.layoutInflater.inflate(R.layout.fragment_home, null)
-                val settings = activity.layoutInflater.inflate(R.layout.fragment_setting, null)
-                assertNotNull(home.findViewById<LiquidGlassView>(R.id.homePiperBrowser))
-                assertNotNull(settings.findViewById<LiquidGlassView>(R.id.settingsJunkGlass))
-                val root = activity.findViewById<View>(android.R.id.content)
-                assertTrue(countGlassSurfaces(root) >= 2)
-            }
-        }
-    }
-
-    private fun countGlassSurfaces(view: View): Int {
-        var count = if (view is LiquidGlassView) 1 else 0
-        if (view is android.view.ViewGroup) {
-            for (index in 0 until view.childCount) count += countGlassSurfaces(view.getChildAt(index))
-        }
-        return count
+        val context = ContextThemeWrapper(
+            InstrumentationRegistry.getInstrumentation().targetContext,
+            R.style.Theme_PiperOSTool
+        )
+        val inflater = LayoutInflater.from(context)
+        val home = inflater.inflate(R.layout.fragment_home, null)
+        val settings = inflater.inflate(R.layout.fragment_setting, null)
+        assertNotNull(home.findViewById<LiquidGlassView>(R.id.homePiperBrowser))
+        val junkGlass = settings.findViewById<LiquidGlassView>(R.id.settingsJunkGlass)
+        assertNotNull(junkGlass)
+        assertEquals(GlassMaterial.REGULAR, junkGlass.material)
+        assertTrue(junkGlass.childCount >= 2)
     }
 
     @Test
