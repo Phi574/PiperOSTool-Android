@@ -185,8 +185,13 @@ object PiperModernUi {
         }
 
         if (name == "qrPreviewBadgeBeta" && view is TextView) {
-            view.setTextColor(Color.WHITE)
-            view.background = rounded(Color.rgb(196, 36, 48), Color.rgb(196, 36, 48), 100f, view)
+            view.setTextColor(palette.accent)
+            view.background = rounded(
+                ColorUtils.blendARGB(palette.surface, palette.accent, 0.12f),
+                ColorUtils.blendARGB(palette.border, palette.accent, 0.2f),
+                100f,
+                view
+            )
             return
         }
 
@@ -214,17 +219,14 @@ object PiperModernUi {
                     .getBoolean("has_custom_bg", false)
                 val cardColor = when (name) {
                     "updateAction" -> palette.accent
-                    "featurePiperQr" -> if (isDark(view.context)) Color.rgb(50, 59, 69) else Color.rgb(232, 235, 239)
                     else -> palette.surface
                 }
                 view.setCardBackgroundColor(
-                    if (customBackground && name != "updateAction" && name != "featurePiperQr") {
+                    if (customBackground && name != "updateAction") {
                         ColorUtils.setAlphaComponent(cardColor, if (isDark(view.context)) 218 else 226)
                     } else cardColor
                 )
-                view.strokeColor = if (name == "featurePiperQr") {
-                    if (isDark(view.context)) Color.rgb(71, 81, 92) else Color.rgb(213, 218, 224)
-                } else palette.border
+                view.strokeColor = palette.border
                 view.strokeWidth = view.resources.displayMetrics.density.toInt().coerceAtLeast(1)
                 view.radius = 18f * view.resources.displayMetrics.density
                 view.cardElevation = 0f
@@ -337,7 +339,7 @@ object PiperModernUi {
                         "fileManagerFeatureIcon"
                     ) ->
                         view.imageTintList = android.content.res.ColorStateList.valueOf(palette.accent)
-                    (name.startsWith("icon", true) || name.endsWith("Arrow", true)) &&
+                    (name.startsWith("icon", true) || name.endsWith("Arrow", true) || name == "piperosQrIcon") &&
                         !name.contains("Artwork", true) ->
                         view.imageTintList = android.content.res.ColorStateList.valueOf(palette.secondaryText)
                 }
@@ -393,7 +395,7 @@ object PiperModernUi {
     private fun isPageRoot(name: String): Boolean = name in setOf(
         "homeRoot", "updateRoot", "lockRoot", "loginRoot", "signupRoot", "forgotRoot", "welcomeRoot", "permissionRoot",
         "browserRoot", "mediaRoot", "mediaGalleryRoot", "fileManagerRoot", "filePreviewRoot",
-        "fakeMapRoot", "terminalRoot", "apkEditorRoot", "textEditorRoot",
+        "fakeMapRoot", "terminalRoot", "apkEditorRoot", "textEditorRoot", "piperQrRoot",
         "accountProfileRoot", "deviceSessionsRoot"
     )
 

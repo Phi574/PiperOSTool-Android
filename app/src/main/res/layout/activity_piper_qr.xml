@@ -1,0 +1,304 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/piperQrRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:paddingStart="16dp"
+    android:paddingTop="8dp"
+    android:paddingEnd="16dp">
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/piperQrToolbar"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        app:cardCornerRadius="20dp"
+        app:cardElevation="0dp"
+        app:strokeWidth="0dp">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="8dp">
+            <ImageButton
+                android:id="@+id/btnPiperQrBack"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/go_back"
+                android:padding="12dp"
+                android:src="@drawable/ic_browser_back"
+                app:tint="@color/remote_text_primary" />
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:text="@string/piperos_qr"
+                android:textColor="@color/remote_text_primary"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+            <ImageView
+                android:id="@+id/iconPiperQrToolbar"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_piperos_qr" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <com.google.android.material.button.MaterialButtonToggleGroup
+        android:id="@+id/piperQrTabGroup"
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:layout_marginTop="12dp"
+        app:checkedButton="@id/btnPiperQrCreateTab"
+        app:selectionRequired="true"
+        app:singleSelection="true">
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnPiperQrCreateTab"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:text="@string/qr_create_tab" />
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnPiperQrScanTab"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:text="@string/qr_scan_tab" />
+    </com.google.android.material.button.MaterialButtonToggleGroup>
+
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/piperQrScroll"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="8dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:fillViewport="true"
+        android:paddingBottom="24dp">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:id="@+id/piperQrCreatePanel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="10dp"
+                    android:text="@string/qr_create_help"
+                    android:textColor="@color/remote_text_secondary"
+                    android:textSize="14sp" />
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:layout_marginBottom="6dp"
+                    android:text="@string/qr_type_label"
+                    android:textColor="@color/remote_text_secondary"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/qrTypeSelectorCard"
+                    android:layout_width="match_parent"
+                    android:layout_height="58dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?attr/selectableItemBackground"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="0dp"
+                    app:strokeWidth="1dp">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingHorizontal="16dp">
+                        <TextView
+                            android:id="@+id/piperQrTypeMenu"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/qr_default_kind"
+                            android:textColor="@color/remote_text_primary"
+                            android:textSize="15sp"
+                            android:textStyle="bold" />
+                        <ImageView
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:contentDescription="@null"
+                            android:rotation="270"
+                            android:src="@drawable/ic_browser_back"
+                            app:tint="@color/remote_text_secondary" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+                <LinearLayout
+                    android:id="@+id/piperQrDynamicFields"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnPiperQrStartGenerate"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/qr_generate" />
+
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/piperQrGeneratedCard"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:visibility="gone"
+                    app:cardCornerRadius="20dp"
+                    app:cardElevation="0dp"
+                    app:strokeWidth="1dp">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_horizontal"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+                        <ImageView
+                            android:id="@+id/piperQrGeneratedImage"
+                            android:layout_width="240dp"
+                            android:layout_height="240dp"
+                            android:adjustViewBounds="true"
+                            android:background="#FFFFFFFF"
+                            android:contentDescription="@string/qr_generated_image"
+                            android:padding="8dp"
+                            android:scaleType="fitCenter" />
+                        <TextView
+                            android:id="@+id/piperQrGeneratedText"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="12dp"
+                            android:maxLines="5"
+                            android:ellipsize="end"
+                            android:textColor="@color/remote_text_secondary"
+                            android:textSize="12sp" />
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:orientation="horizontal">
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnPiperQrCopy"
+                                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                                android:layout_width="0dp"
+                                android:layout_height="48dp"
+                                android:layout_weight="1"
+                                android:text="@string/qr_copy" />
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnPiperQrShare"
+                                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                                android:layout_width="0dp"
+                                android:layout_height="48dp"
+                                android:layout_marginStart="8dp"
+                                android:layout_weight="1"
+                                android:text="@string/qr_share" />
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnPiperQrSave"
+                                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                                android:layout_width="0dp"
+                                android:layout_height="48dp"
+                                android:layout_marginStart="8dp"
+                                android:layout_weight="1"
+                                android:text="@string/qr_save" />
+                        </LinearLayout>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/piperQrScanPanel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    app:cardCornerRadius="18dp"
+                    app:cardElevation="0dp"
+                    app:strokeWidth="1dp">
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:padding="16dp"
+                        android:text="@string/qr_scan_help"
+                        android:textColor="@color/remote_text_secondary"
+                        android:textSize="14sp" />
+                </com.google.android.material.card.MaterialCardView>
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnPiperQrStartScan"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:layout_marginTop="14dp"
+                    android:text="@string/qr_scan_now" />
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/piperQrScanResultCard"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:visibility="gone"
+                    app:cardCornerRadius="20dp"
+                    app:cardElevation="0dp"
+                    app:strokeWidth="1dp">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+                        <TextView
+                            android:id="@+id/piperQrScanResultTitle"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textSize="18sp"
+                            android:textStyle="bold" />
+                        <TextView
+                            android:id="@+id/piperQrScanResultBody"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:textColor="@color/remote_text_secondary"
+                            android:textIsSelectable="true"
+                            android:textSize="14sp" />
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="10dp"
+                            android:orientation="horizontal">
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnPiperQrHandleScan"
+                                android:layout_width="0dp"
+                                android:layout_height="48dp"
+                                android:layout_weight="1"
+                                android:text="@string/qr_open_action" />
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnPiperQrCopyScan"
+                                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                                android:layout_width="0dp"
+                                android:layout_height="48dp"
+                                android:layout_marginStart="8dp"
+                                android:layout_weight="1"
+                                android:text="@string/qr_copy" />
+                        </LinearLayout>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+            </LinearLayout>
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+</LinearLayout>

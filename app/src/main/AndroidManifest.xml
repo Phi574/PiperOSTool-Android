@@ -213,6 +213,17 @@
             android:screenOrientation="portrait"
             android:theme="@style/zxing_CaptureTheme" />
         <activity
+            android:name=".PiperQrActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.PiperOSTool"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".PiperQrCaptureActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/zxing_CaptureTheme" />
+        <activity
             android:name=".FakeMapActivity"
             android:configChanges="keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
             android:exported="false"

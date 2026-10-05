@@ -1,5 +1,14 @@
 # Changelog
 
+## 3.5.7.PRE
+
+- Bỏ khóa truy cập thử nghiệm PiperOS QR; thẻ Beta hoạt động như các thẻ tính năng khác.
+- Thêm Activity PiperOS QR đồng bộ giao diện và theme, gồm hai tab Tạo và Quét.
+- Hỗ trợ tạo mã Văn bản, URL, Wi-Fi, Điện thoại, SMS, Email, vCard, Vị trí, Sự kiện, Mạng xã hội, Deep Link, Thanh toán, Sản phẩm, Vé, Nhân viên/Sinh viên, Tài liệu và JSON tùy chỉnh.
+- Thêm menu PiperOS để chọn loại nội dung, lưu/chia sẻ ảnh QR và đọc kết quả quét; Activity quét chỉ chạy dọc, các liên kết ngoài cần người dùng xác nhận trước khi mở.
+- Chừa khoảng an toàn dưới thanh trạng thái cho tiêu đề PiperOS QR và sửa nhãn nổi của ô nhập để dùng đúng font người dùng đã chọn.
+- Nâng versionCode lên 58 để cập nhật đè từ 3.5.6.PRE.
+
 ## 3.5.6.PRE
 
 - Chuyển PiperOS Fake Map GPS sang Trang chủ và gỡ thẻ khỏi Beta.

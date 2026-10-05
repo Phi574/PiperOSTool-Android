@@ -30,5 +30,8 @@ class BetaFragment : Fragment() {
         view.findViewById<View>(R.id.featurePiperRemote).setOnClickListener {
             startActivity(Intent(requireContext(), PiperRemoteActivity::class.java))
         }
+        view.findViewById<View>(R.id.featurePiperQr).setOnClickListener {
+            startActivity(Intent(requireContext(), PiperQrActivity::class.java))
+        }
     }
 }

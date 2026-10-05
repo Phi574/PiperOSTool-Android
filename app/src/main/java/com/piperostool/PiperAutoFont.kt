@@ -20,6 +20,7 @@ import androidx.core.content.res.ResourcesCompat
 import androidx.core.widget.TextViewCompat
 import androidx.core.widget.doAfterTextChanged
 import com.google.firebase.auth.FirebaseAuth
+import com.google.android.material.textfield.TextInputLayout
 import java.util.ArrayDeque
 import java.lang.ref.WeakReference
 
@@ -63,19 +64,12 @@ object PiperAutoFont {
         val fontKey = PiperFontPreferences.selectedKey(textView.context)
         val language = if (fontKey == PiperFontPreferences.BILINGUAL) {
             detectLanguage(textView)
-        } else {
-            null
-        }
+        } else null
         val requestedStyle = textView.typeface?.style ?: Typeface.NORMAL
         val signature = "$fontKey|${language?.name}|${textView.text}|$requestedStyle"
         if (textView.getTag(R.id.piper_auto_font_signature) == signature) return
 
-        val family = when {
-            fontKey == PiperFontPreferences.SYSTEM -> Typeface.DEFAULT
-            fontKey == PiperFontPreferences.INTER -> inter
-            fontKey == PiperFontPreferences.BILINGUAL && language == TextLanguage.VIETNAMESE -> vt323
-            else -> silkscreen
-        }
+        val family = selectedTypeface(fontKey, language)
         textView.typeface = Typeface.create(family, requestedStyle)
         textView.setTag(R.id.piper_auto_font_signature, signature)
     }
@@ -91,6 +85,13 @@ object PiperAutoFont {
         while (pending.isNotEmpty()) {
             when (val view = pending.removeFirst()) {
                 is TextView -> apply(view)
+                is TextInputLayout -> {
+                    apply(view)
+                    PiperUiText.apply(view)
+                    for (index in 0 until view.childCount) {
+                        pending.addLast(view.getChildAt(index))
+                    }
+                }
                 is ViewGroup -> {
                     PiperUiText.apply(view)
                     for (index in 0 until view.childCount) {
@@ -100,6 +101,31 @@ object PiperAutoFont {
                 else -> PiperUiText.apply(view)
             }
         }
+    }
+
+    /** TextInputLayout draws its floating and collapsed hints itself, so those labels
+     * do not inherit the font from their TextInputEditText child. */
+    private fun apply(layout: TextInputLayout) {
+        if (!::vt323.isInitialized || layout.getTag(R.id.piper_auto_font_ignore) == true) return
+        val fontKey = PiperFontPreferences.selectedKey(layout.context)
+        val hint = layout.hint?.toString().orEmpty()
+        val language = if (fontKey == PiperFontPreferences.BILINGUAL) {
+            languageOf(hint) ?: if (PiperUiPreferences.language(layout.context) == "vi") {
+                TextLanguage.VIETNAMESE
+            } else TextLanguage.ENGLISH
+        } else null
+        val requestedStyle = layout.typeface?.style ?: Typeface.NORMAL
+        val signature = "$fontKey|${language?.name}|$hint|$requestedStyle"
+        if (layout.getTag(R.id.piper_auto_font_signature) == signature) return
+        layout.setTypeface(Typeface.create(selectedTypeface(fontKey, language), requestedStyle))
+        layout.setTag(R.id.piper_auto_font_signature, signature)
+    }
+
+    private fun selectedTypeface(fontKey: String, language: TextLanguage?): Typeface = when {
+        fontKey == PiperFontPreferences.SYSTEM -> Typeface.DEFAULT
+        fontKey == PiperFontPreferences.INTER -> inter
+        fontKey == PiperFontPreferences.BILINGUAL && language == TextLanguage.VIETNAMESE -> vt323
+        else -> silkscreen
     }
 
     private fun ensureTextWatcher(textView: TextView) {

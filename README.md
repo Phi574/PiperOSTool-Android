@@ -20,9 +20,16 @@
 
 ## Bản hiện tại
 
-`3.5.6.PRE` (versionCode `57`) sử dụng `minSdk 29 (Android 10)`, `targetSdk 36`, Kotlin `2.4.10`.
+`3.5.7.PRE` (versionCode `58`) sử dụng `minSdk 29 (Android 10)`, `targetSdk 36`, Kotlin `2.4.10`.
 
-**Tải và cài đặt:** [PiperOS-Tool-3.5.6.PRE-debug.apk](https://github.com/Phi574/PiperOSTool-Android/releases/download/v3.5.6.PRE/PiperOS-Tool-3.5.6.PRE-debug.apk) · [Chi tiết bản phát hành](https://github.com/Phi574/PiperOSTool-Android/releases/tag/v3.5.6.PRE). APK được ký bằng khóa debug của dự án; màn Cập nhật chỉ chấp nhận APK có cùng chữ ký với bản đang cài.
+**Tải và cài đặt:** [PiperOS-Tool-3.5.7.PRE-debug.apk](https://github.com/Phi574/PiperOSTool-Android/releases/download/v3.5.7.PRE/PiperOS-Tool-3.5.7.PRE-debug.apk) · [Chi tiết bản phát hành](https://github.com/Phi574/PiperOSTool-Android/releases/tag/v3.5.7.PRE). APK được ký bằng khóa debug của dự án; màn Cập nhật chỉ chấp nhận APK có cùng chữ ký với bản đang cài.
+
+### Cải tiến trong 3.5.7.PRE
+
+- Thẻ PiperOS QR trong Beta mở Activity hai tab Tạo và Quét, không còn khóa PREVIEW.
+- Hỗ trợ tạo 17 loại payload QR, lưu/chia sẻ ảnh và xử lý nội dung quét bằng ứng dụng phù hợp sau khi người dùng xác nhận.
+- Bộ chọn loại QR dùng menu PiperOS; màn hình quét khóa dọc và tiêu đề chừa vùng thanh trạng thái.
+- Sửa nhãn nổi của các trường nhập để theo đúng font Inter hoặc font tích hợp mà người dùng đã chọn.
 
 ### Cải tiến trong 3.5.6.PRE
 
