@@ -21,5 +21,8 @@ class homeFragment : Fragment() {
         view.findViewById<View>(R.id.homePiperBrowser).setOnClickListener {
             startActivity(Intent(requireContext(), PiperBrowserActivity::class.java))
         }
+        view.findViewById<View>(R.id.homeFakeMap).setOnClickListener {
+            startActivity(Intent(requireContext(), FakeMapActivity::class.java))
+        }
     }
 }

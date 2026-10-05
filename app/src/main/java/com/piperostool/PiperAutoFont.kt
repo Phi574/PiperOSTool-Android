@@ -218,11 +218,13 @@ class PiperOsApplication : Application(), Application.ActivityLifecycleCallbacks
         val newNightMode = newConfig.uiMode and Configuration.UI_MODE_NIGHT_MASK
         val systemThemeChanged = newNightMode != lastNightMode
         lastNightMode = newNightMode
-        if (systemThemeChanged && PiperUiPreferences.colorMode(this) == PiperColorMode.SYSTEM) {
-            Handler(Looper.getMainLooper()).post {
-                resumedActivity.get()
-                    ?.takeUnless { it.isFinishing || it.isDestroyed }
-                    ?.recreate()
+        Handler(Looper.getMainLooper()).post {
+            val activity = resumedActivity.get()
+                ?.takeUnless { it.isFinishing || it.isDestroyed }
+                ?: return@post
+            PiperModernUi.refresh(activity)
+            if (systemThemeChanged && PiperUiPreferences.colorMode(this) == PiperColorMode.SYSTEM) {
+                activity.recreate()
             }
         }
     }

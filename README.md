@@ -20,9 +20,14 @@
 
 ## Bản hiện tại
 
-`3.5.5.PRE` (versionCode `56`) sử dụng `minSdk 29 (Android 10)`, `targetSdk 36`, Kotlin `2.4.10`.
+`3.5.6.PRE` (versionCode `57`) sử dụng `minSdk 29 (Android 10)`, `targetSdk 36`, Kotlin `2.4.10`.
 
-**Tải và cài đặt:** [PiperOS-Tool-3.5.5.PRE-debug.apk](https://github.com/Phi574/PiperOSTool-Android/releases/download/v3.5.5.PRE/PiperOS-Tool-3.5.5.PRE-debug.apk) · [Chi tiết bản phát hành](https://github.com/Phi574/PiperOSTool-Android/releases/tag/v3.5.5.PRE). APK được ký bằng khóa debug của dự án; màn Cập nhật chỉ chấp nhận APK có cùng chữ ký với bản đang cài.
+**Tải và cài đặt:** [PiperOS-Tool-3.5.6.PRE-debug.apk](https://github.com/Phi574/PiperOSTool-Android/releases/download/v3.5.6.PRE/PiperOS-Tool-3.5.6.PRE-debug.apk) · [Chi tiết bản phát hành](https://github.com/Phi574/PiperOSTool-Android/releases/tag/v3.5.6.PRE). APK được ký bằng khóa debug của dự án; màn Cập nhật chỉ chấp nhận APK có cùng chữ ký với bản đang cài.
+
+### Cải tiến trong 3.5.6.PRE
+
+- Chuyển PiperOS Fake Map GPS sang Trang chủ và gỡ thẻ khỏi Beta.
+- Thêm thẻ PiperOS QR với icon riêng, nhãn PREVIEW màu đỏ và trạng thái chưa phát hành.
 
 ### Cải tiến trong 3.5.5.PRE
 

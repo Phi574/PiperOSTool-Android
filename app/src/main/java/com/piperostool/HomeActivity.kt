@@ -53,6 +53,7 @@ class HomeActivity : AppCompatActivity() {
 
         setContentView(R.layout.activity_home)
 
+        PiperModernUi.watch(this)
         applyCustomBackground()
         initViews()
         setupListeners()

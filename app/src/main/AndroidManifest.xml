@@ -42,7 +42,6 @@
     <uses-permission android:name="android.permission.DUMP" tools:ignore="ProtectedPermissions" />
 
     <queries>
-        <package android:name="com.google.android.gms" />
         <intent>
             <action android:name="android.intent.action.INSTALL_PACKAGE" />
             <data android:scheme="content" />
@@ -151,6 +150,7 @@
         <activity
             android:name=".SplashScreenActivity"
             android:exported="true"
+            android:screenOrientation="portrait"
             android:theme="@style/Theme.PiperOSTool.AppCompat.NoActionBar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -158,13 +158,13 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".LoginActivity" android:exported="false" android:theme="@style/Theme.PiperOSTool.AppCompat.NoActionBar" />
-        <activity android:name=".SignupActivity" android:exported="false" android:theme="@style/Theme.PiperOSTool.AppCompat.NoActionBar" />
-        <activity android:name=".ForgotPassword" android:exported="false" android:theme="@style/Theme.PiperOSTool.AppCompat.NoActionBar" />
+        <activity android:name=".LoginActivity" android:exported="false" android:screenOrientation="portrait" android:theme="@style/Theme.PiperOSTool.AppCompat.NoActionBar" />
+        <activity android:name=".SignupActivity" android:exported="false" android:screenOrientation="portrait" android:theme="@style/Theme.PiperOSTool.AppCompat.NoActionBar" />
+        <activity android:name=".ForgotPassword" android:exported="false" android:screenOrientation="portrait" android:theme="@style/Theme.PiperOSTool.AppCompat.NoActionBar" />
         <activity android:name=".AccountProfileActivity" android:exported="false" android:theme="@style/Theme.PiperOSTool" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".DeviceSessionsActivity" android:exported="false" android:theme="@style/Theme.PiperOSTool" android:windowSoftInputMode="adjustResize" />
 
-        <activity android:name=".HomeActivity" android:exported="false" android:launchMode="singleTask" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".HomeActivity" android:exported="false" android:launchMode="singleTask" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".PiperBrowserActivity"
             android:configChanges="keyboard|keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize"
@@ -269,7 +269,7 @@
             android:exported="false"
             android:foregroundServiceType="dataSync" />
         <activity android:name=".PermissionManagerActivity" android:exported="false" android:theme="@style/Theme.PiperOSTool.AppCompat.NoActionBar" />
-        <activity android:name=".WelcomeActivity" android:exported="false" android:theme="@style/Theme.PiperOSTool.AppCompat.NoActionBar"/>
+        <activity android:name=".WelcomeActivity" android:exported="false" android:screenOrientation="portrait" android:theme="@style/Theme.PiperOSTool.AppCompat.NoActionBar"/>
         <activity android:name=".LockScreenActivity" android:exported="false" android:screenOrientation="portrait" />
         <receiver
             android:name=".MyDeviceAdminReceiver"

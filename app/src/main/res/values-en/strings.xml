@@ -63,8 +63,6 @@
     <string name="home_press_again_to_exit">Press again to exit</string>
     <string name="home_screen_title">Home</string>
     <string name="home_screen_summary">Your PiperOS tools are ready on this device.</string>
-    <string name="home_fcm_notice_title">Coming soon: FCM PiperOS</string>
-    <string name="home_fcm_notice_summary">A new feature called “FCM PiperOS” is in preparation to help mainland devices receive notifications and improve Google FCM stability.</string>
     <string name="app_name">Piper OS Tool</string>
     <string name="settings_project_section">OPEN SOURCE PROJECTS</string>
     <string name="settings_android_source">PiperOS Android on GitHub</string>
@@ -78,9 +76,11 @@
     <string name="beta_lab_subtitle">Independent features currently in development.</string>
     <string name="piperos_browser">PiperOS Browser</string>
     <string name="piperos_browser_summary">Multi-tab browser with persistent sessions and direct downloads.</string>
-    <string name="fcm_piperos_title">FCM PiperOS</string>
-    <string name="fcm_piperos_summary">Improved Google FCM notifications for mainland devices.</string>
     <string name="not_released">Not released</string>
+    <string name="beta_status">BETA</string>
+    <string name="piperos_qr">PiperOS QR</string>
+    <string name="piperos_qr_preview_description">PiperOS QR preview, not available yet</string>
+    <string name="preview_status">PREVIEW</string>
     <string name="piperos_media">PiperOS Media</string>
     <string name="piperos_media_summary">Music, video, background playback and picture-in-picture.</string>
     <string name="piperos_terminal">PiperOS Terminal</string>

@@ -63,8 +63,6 @@
     <string name="home_press_again_to_exit">Nhấn lần nữa để thoát</string>
     <string name="home_screen_title">Trang chủ</string>
     <string name="home_screen_summary">Các công cụ PiperOS đã sẵn sàng trên thiết bị của bạn.</string>
-    <string name="home_fcm_notice_title">Sắp có: FCM PiperOS</string>
-    <string name="home_fcm_notice_summary">Chuẩn bị tiến hành cập nhật tính năng mới đặc biệt mang tên “FCM PiperOS”, giúp máy nội địa nhận thông báo và tối ưu Google FCM để chạy ổn định hơn trên máy nội địa.</string>
     <string name="app_name">Piper OS Tool</string>
     <string name="settings_project_section">DỰ ÁN MÃ NGUỒN MỞ</string>
     <string name="settings_android_source">PiperOS Android trên GitHub</string>
@@ -78,9 +76,11 @@
     <string name="beta_lab_subtitle">Các tính năng độc lập đang được phát triển.</string>
     <string name="piperos_browser">PiperOS Browser</string>
     <string name="piperos_browser_summary">Trình duyệt nhiều tab, lưu phiên và tải xuống trực tiếp.</string>
-    <string name="fcm_piperos_title">FCM PiperOS</string>
-    <string name="fcm_piperos_summary">Tối ưu thông báo Google FCM cho máy nội địa.</string>
     <string name="not_released">Chưa phát hành</string>
+    <string name="beta_status">BETA</string>
+    <string name="piperos_qr">PiperOS QR</string>
+    <string name="piperos_qr_preview_description">PiperOS QR, bản xem trước, chưa thể mở</string>
+    <string name="preview_status">PREVIEW</string>
     <string name="piperos_media">PiperOS Media</string>
     <string name="piperos_media_summary">Nghe nhạc, xem video, phát nền và cửa sổ nổi.</string>
     <string name="piperos_terminal">PiperOS Terminal</string>

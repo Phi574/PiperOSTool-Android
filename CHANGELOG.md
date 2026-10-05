@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.5.6.PRE
+
+- Chuyển PiperOS Fake Map GPS sang Trang chủ và gỡ thẻ khỏi Beta.
+- Thêm thẻ PiperOS QR với icon được cung cấp, nhãn PREVIEW màu đỏ và trạng thái chưa thể bấm.
+- Nâng versionCode lên 57 để cập nhật đè từ 3.5.5.PRE.
+
 ## 3.5.5.PRE
 
 - Gỡ luồng thêm phông chữ thủ công; chỉ cho chọn phông chữ tích hợp sẵn, các lựa chọn cũ không còn hợp lệ sẽ tự về phông chữ mặc định.

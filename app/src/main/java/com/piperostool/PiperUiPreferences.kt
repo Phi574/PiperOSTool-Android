@@ -91,24 +91,32 @@ object PiperModernUi {
     )
 
     fun watch(activity: Activity) {
-        val dark = isDark(activity)
-        applyWindow(activity.window, dark)
-        installAmbientBackground(activity, dark)
         val root = activity.window.decorView
         if (root.getTag(R.id.piper_modern_ui_watcher) != true) {
             root.setTag(R.id.piper_modern_ui_watcher, true)
             root.viewTreeObserver.addOnGlobalLayoutListener {
-                applyTree(root, palette(activity))
+                // Decor views can survive AppCompat's night-mode recreation. Read the
+                // mode from each current child instead of the Activity captured here.
+                applyTree(root) { view -> palette(view.context) }
             }
         }
-        applyTree(root, palette(activity))
+        refresh(activity)
+    }
+
+    fun refresh(activity: Activity) {
+        if (activity.isFinishing || activity.isDestroyed) return
+        val dark = isDark(activity)
+        applyWindow(activity.window, dark)
+        installAmbientBackground(activity, dark)
+        val root = activity.window.decorView
+        applyTree(root) { view -> palette(view.context) }
     }
 
     fun apply(root: View) {
         val colors = palette(root.context)
         root.backgroundTintList = null
         root.background = rounded(colors.surface, colors.border, 14f, root)
-        applyTree(root, colors)
+        applyTree(root) { view -> palette(view.context) }
     }
 
     private fun applyWindow(window: Window, dark: Boolean) {
@@ -121,11 +129,12 @@ object PiperModernUi {
         }
     }
 
-    private fun applyTree(root: View, palette: Palette) {
+    private fun applyTree(root: View, paletteFor: (View) -> Palette) {
         val pending = ArrayDeque<View>()
         pending.add(root)
         while (pending.isNotEmpty()) {
             val view = pending.removeFirst()
+            val palette = paletteFor(view)
             if (view.getTag(R.id.piper_modern_ui_applied) != palette.hashCode()) {
                 applyView(view, palette)
                 view.setTag(R.id.piper_modern_ui_applied, palette.hashCode())
@@ -164,6 +173,23 @@ object PiperModernUi {
             return
         }
 
+        if (name.endsWith("FeatureStatus", ignoreCase = true) && view is TextView) {
+            view.setTextColor(palette.accent)
+            view.background = rounded(
+                ColorUtils.blendARGB(palette.surface, palette.accent, 0.12f),
+                ColorUtils.blendARGB(palette.border, palette.accent, 0.2f),
+                100f,
+                view
+            )
+            return
+        }
+
+        if (name == "qrPreviewBadge" && view is TextView) {
+            view.setTextColor(Color.WHITE)
+            view.background = rounded(Color.rgb(196, 36, 48), Color.rgb(196, 36, 48), 100f, view)
+            return
+        }
+
         if (isSettingsRow(name)) {
             val selectable = TypedValue()
             if (view.context.theme.resolveAttribute(
@@ -186,27 +212,49 @@ object PiperModernUi {
                 view.backgroundTintList = null
                 val customBackground = AccountDataScope.preferences(view.context, "PiperPrefs")
                     .getBoolean("has_custom_bg", false)
-                val cardColor = if (name == "updateAction") palette.accent else palette.surface
+                val cardColor = when (name) {
+                    "updateAction" -> palette.accent
+                    "homePiperQr" -> if (isDark(view.context)) Color.rgb(50, 59, 69) else Color.rgb(232, 235, 239)
+                    else -> palette.surface
+                }
                 view.setCardBackgroundColor(
-                    if (customBackground && name != "updateAction") {
+                    if (customBackground && name != "updateAction" && name != "homePiperQr") {
                         ColorUtils.setAlphaComponent(cardColor, if (isDark(view.context)) 218 else 226)
                     } else cardColor
                 )
-                view.strokeColor = palette.border
+                view.strokeColor = if (name == "homePiperQr") {
+                    if (isDark(view.context)) Color.rgb(71, 81, 92) else Color.rgb(213, 218, 224)
+                } else palette.border
                 view.strokeWidth = view.resources.displayMetrics.density.toInt().coerceAtLeast(1)
-                view.radius = 14f * view.resources.displayMetrics.density
+                view.radius = 18f * view.resources.displayMetrics.density
                 view.cardElevation = 0f
             }
             is MaterialButton -> {
                 view.isAllCaps = false
                 val primary = isPrimaryAction(name)
-                view.setTextColor(if (primary) palette.onAccent else palette.text)
-                view.backgroundTintList = android.content.res.ColorStateList.valueOf(
-                    if (primary) palette.accent else palette.surface
-                )
-                view.strokeColor = android.content.res.ColorStateList.valueOf(
-                    if (primary) palette.accent else palette.border
-                )
+                if (view.isCheckable) {
+                    val states = arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf())
+                    view.setTextColor(android.content.res.ColorStateList(
+                        states,
+                        intArrayOf(palette.onAccent, palette.text)
+                    ))
+                    view.backgroundTintList = android.content.res.ColorStateList(
+                        states,
+                        intArrayOf(palette.accent, palette.surface)
+                    )
+                    view.strokeColor = android.content.res.ColorStateList(
+                        states,
+                        intArrayOf(palette.accent, palette.border)
+                    )
+                } else {
+                    view.setTextColor(if (primary) palette.onAccent else palette.text)
+                    view.backgroundTintList = android.content.res.ColorStateList.valueOf(
+                        if (primary) palette.accent else palette.surface
+                    )
+                    view.strokeColor = android.content.res.ColorStateList.valueOf(
+                        if (primary) palette.accent else palette.border
+                    )
+                }
                 view.strokeWidth = view.resources.displayMetrics.density.toInt().coerceAtLeast(1)
                 view.cornerRadius = (14f * view.resources.displayMetrics.density).toInt()
                 view.iconTint = android.content.res.ColorStateList.valueOf(
@@ -279,6 +327,10 @@ object PiperModernUi {
                     return
                 }
                 when {
+                    name == "piperosQrIcon" ->
+                        view.imageTintList = android.content.res.ColorStateList.valueOf(palette.secondaryText)
+                    parentName in setOf("btnOpenApkEditor", "btnRefreshApps", "btnSortApps") ->
+                        view.imageTintList = android.content.res.ColorStateList.valueOf(palette.secondaryText)
                     parentName in setOf(
                         "fakeMapFeatureIcon",
                         "terminalFeatureIcon",
@@ -376,6 +428,7 @@ object PiperModernUi {
     fun textColor(context: Context): Int = palette(context).text
     fun secondaryTextColor(context: Context): Int = palette(context).secondaryText
     fun accentColor(context: Context): Int = palette(context).accent
+    fun onAccentColor(context: Context): Int = palette(context).onAccent
     fun surfaceColor(context: Context): Int = palette(context).surface
     fun borderColor(context: Context): Int = palette(context).border
 

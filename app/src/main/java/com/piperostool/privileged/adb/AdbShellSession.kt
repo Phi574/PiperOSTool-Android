@@ -4,6 +4,9 @@ import android.content.Context
 import io.github.muntashirakon.adb.AdbStream
 import java.io.ByteArrayOutputStream
 import java.nio.charset.StandardCharsets
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 
 data class AdbShellResult(val output: String, val exitCode: Int)
 
@@ -50,4 +53,5 @@ class AdbShellSession(context: Context) : AutoCloseable {
             return output.toString(StandardCharsets.UTF_8.name())
         }
     }
+
 }

@@ -371,6 +371,38 @@ class FakeMapActivity : AppCompatActivity() {
     }
 
     private fun renderSelectionHint() {
+        val selectedButtonId = when (selectionTarget) {
+            SelectionTarget.FIXED -> View.NO_ID
+            SelectionTarget.START -> R.id.btnPickStart
+            SelectionTarget.END -> R.id.btnPickEnd
+            SelectionTarget.WAYPOINT -> R.id.btnPickWaypoint
+        }
+        if (selectedButtonId != View.NO_ID && pointGroup.checkedButtonId != selectedButtonId) {
+            pointGroup.check(selectedButtonId)
+        }
+        val checkedColor = PiperModernUi.accentColor(this)
+        val normalColor = PiperModernUi.surfaceColor(this)
+        val checkedText = PiperModernUi.onAccentColor(this)
+        val normalText = PiperModernUi.textColor(this)
+        val borderColor = PiperModernUi.borderColor(this)
+        // Keep selection styling state-based. Assigning isChecked to each child here
+        // fights MaterialButtonToggleGroup's single-selection bookkeeping on rapid taps.
+        listOf(R.id.btnPickStart, R.id.btnPickEnd, R.id.btnPickWaypoint).forEach { id ->
+            val button = findViewById<MaterialButton>(id)
+            button.isCheckable = true
+            button.backgroundTintList = android.content.res.ColorStateList(
+                arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf()),
+                intArrayOf(checkedColor, normalColor)
+            )
+            button.strokeColor = android.content.res.ColorStateList(
+                arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf()),
+                intArrayOf(checkedColor, borderColor)
+            )
+            button.setTextColor(android.content.res.ColorStateList(
+                arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf()),
+                intArrayOf(checkedText, normalText)
+            ))
+        }
         selectionHint.setText(
             when (selectionTarget) {
                 SelectionTarget.FIXED -> R.string.fake_map_pick_fixed
