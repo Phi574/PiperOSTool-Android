@@ -184,7 +184,7 @@ object PiperModernUi {
             return
         }
 
-        if (name == "qrPreviewBadge" && view is TextView) {
+        if (name == "qrPreviewBadgeBeta" && view is TextView) {
             view.setTextColor(Color.WHITE)
             view.background = rounded(Color.rgb(196, 36, 48), Color.rgb(196, 36, 48), 100f, view)
             return
@@ -214,15 +214,15 @@ object PiperModernUi {
                     .getBoolean("has_custom_bg", false)
                 val cardColor = when (name) {
                     "updateAction" -> palette.accent
-                    "homePiperQr" -> if (isDark(view.context)) Color.rgb(50, 59, 69) else Color.rgb(232, 235, 239)
+                    "featurePiperQr" -> if (isDark(view.context)) Color.rgb(50, 59, 69) else Color.rgb(232, 235, 239)
                     else -> palette.surface
                 }
                 view.setCardBackgroundColor(
-                    if (customBackground && name != "updateAction" && name != "homePiperQr") {
+                    if (customBackground && name != "updateAction" && name != "featurePiperQr") {
                         ColorUtils.setAlphaComponent(cardColor, if (isDark(view.context)) 218 else 226)
                     } else cardColor
                 )
-                view.strokeColor = if (name == "homePiperQr") {
+                view.strokeColor = if (name == "featurePiperQr") {
                     if (isDark(view.context)) Color.rgb(71, 81, 92) else Color.rgb(213, 218, 224)
                 } else palette.border
                 view.strokeWidth = view.resources.displayMetrics.density.toInt().coerceAtLeast(1)

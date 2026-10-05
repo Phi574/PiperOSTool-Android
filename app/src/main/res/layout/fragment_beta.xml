@@ -321,5 +321,83 @@
             </androidx.constraintlayout.widget.ConstraintLayout>
         </com.google.android.material.card.MaterialCardView>
 
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/featurePiperQr"
+            android:layout_width="match_parent"
+            android:layout_height="100dp"
+            android:layout_marginTop="14dp"
+            android:clickable="false"
+            android:focusable="false"
+            android:contentDescription="@string/piperos_qr_preview_description"
+            app:cardBackgroundColor="#E612171C"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="0dp"
+            app:strokeColor="#5AFFFFFF"
+            app:strokeWidth="1dp">
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:padding="15dp">
+
+                <FrameLayout
+                    android:id="@+id/qrFeatureIcon"
+                    android:layout_width="52dp"
+                    android:layout_height="52dp"
+                    android:background="@drawable/bg_qr_feature_icon"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent">
+                    <ImageView
+                        android:id="@+id/piperosQrIcon"
+                        android:layout_width="30dp"
+                        android:layout_height="30dp"
+                        android:layout_gravity="center"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_piperos_qr" />
+                </FrameLayout>
+
+                <TextView
+                    android:id="@+id/qrFeatureTitle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:text="@string/piperos_qr"
+                    android:textColor="@color/white"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    app:layout_constraintEnd_toStartOf="@id/qrPreviewBadgeBeta"
+                    app:layout_constraintStart_toEndOf="@id/qrFeatureIcon"
+                    app:layout_constraintTop_toTopOf="@id/qrFeatureIcon" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginTop="6dp"
+                    android:ellipsize="end"
+                    android:maxLines="2"
+                    android:text="@string/piperos_qr_summary"
+                    android:textColor="#AFFFFFFF"
+                    android:textSize="12sp"
+                    app:layout_constraintEnd_toStartOf="@id/qrPreviewBadgeBeta"
+                    app:layout_constraintStart_toEndOf="@id/qrFeatureIcon"
+                    app:layout_constraintTop_toBottomOf="@id/qrFeatureTitle" />
+
+                <TextView
+                    android:id="@+id/qrPreviewBadgeBeta"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:paddingHorizontal="9dp"
+                    android:paddingVertical="5dp"
+                    android:text="@string/preview_status"
+                    android:textColor="#FFFFFF"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+            </androidx.constraintlayout.widget.ConstraintLayout>
+        </com.google.android.material.card.MaterialCardView>
+
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>

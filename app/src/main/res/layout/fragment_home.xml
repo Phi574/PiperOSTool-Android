@@ -131,58 +131,6 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/homePiperQr"
-                android:layout_width="match_parent"
-                android:layout_height="76dp"
-                android:layout_marginTop="14dp"
-                android:clickable="false"
-                android:focusable="false"
-                android:contentDescription="@string/piperos_qr_preview_description"
-                app:cardCornerRadius="19dp"
-                app:cardElevation="0dp"
-                app:strokeWidth="1dp">
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:paddingHorizontal="16dp">
-                    <FrameLayout
-                        android:id="@+id/qrFeatureIcon"
-                        android:layout_width="38dp"
-                        android:layout_height="38dp"
-                        android:background="@drawable/bg_qr_feature_icon">
-                        <ImageView
-                            android:id="@+id/piperosQrIcon"
-                            android:layout_width="28dp"
-                            android:layout_height="28dp"
-                            android:layout_gravity="center"
-                            android:contentDescription="@null"
-                            android:src="@drawable/ic_piperos_qr" />
-                    </FrameLayout>
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="14dp"
-                        android:layout_weight="1"
-                        android:text="@string/piperos_qr"
-                        android:textColor="#FFFFFF"
-                        android:textSize="17sp"
-                        android:textStyle="bold" />
-                    <TextView
-                        android:id="@+id/qrPreviewBadge"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:paddingHorizontal="9dp"
-                        android:paddingVertical="5dp"
-                        android:text="@string/preview_status"
-                        android:textColor="#B42332"
-                        android:textSize="10sp"
-                        android:textStyle="bold" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 

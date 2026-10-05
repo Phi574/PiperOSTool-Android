@@ -80,6 +80,7 @@
     <string name="beta_status">BETA</string>
     <string name="piperos_qr">PiperOS QR</string>
     <string name="piperos_qr_preview_description">PiperOS QR, bản xem trước, chưa thể mở</string>
+    <string name="piperos_qr_summary">Tính năng mới đang được chuẩn bị.</string>
     <string name="preview_status">PREVIEW</string>
     <string name="piperos_media">PiperOS Media</string>
     <string name="piperos_media_summary">Nghe nhạc, xem video, phát nền và cửa sổ nổi.</string>
