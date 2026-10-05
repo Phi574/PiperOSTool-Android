@@ -29,8 +29,6 @@ object PiperAutoFont {
     private lateinit var vt323: Typeface
     private lateinit var silkscreen: Typeface
     private lateinit var inter: Typeface
-    private var cachedCustomKey: String? = null
-    private var cachedCustomTypeface: Typeface? = null
 
     fun initialize(context: Context) {
         vt323 = checkNotNull(ResourcesCompat.getFont(context, R.font.vt323))
@@ -39,8 +37,7 @@ object PiperAutoFont {
     }
 
     fun clearTypefaceCache() {
-        cachedCustomKey = null
-        cachedCustomTypeface = null
+        // Font selection is resolved from the bundled font families only.
     }
 
     fun watch(root: View) {
@@ -77,8 +74,7 @@ object PiperAutoFont {
             fontKey == PiperFontPreferences.SYSTEM -> Typeface.DEFAULT
             fontKey == PiperFontPreferences.INTER -> inter
             fontKey == PiperFontPreferences.BILINGUAL && language == TextLanguage.VIETNAMESE -> vt323
-            fontKey == PiperFontPreferences.BILINGUAL -> silkscreen
-            else -> customTypeface(textView.context, fontKey) ?: Typeface.DEFAULT
+            else -> silkscreen
         }
         textView.typeface = Typeface.create(family, requestedStyle)
         textView.setTag(R.id.piper_auto_font_signature, signature)
@@ -87,16 +83,6 @@ object PiperAutoFont {
     fun apply(root: View) {
         if (!::vt323.isInitialized) return
         applyToTree(root)
-    }
-
-    private fun customTypeface(context: Context, key: String): Typeface? {
-        if (cachedCustomKey == key) return cachedCustomTypeface
-        val loaded = PiperFontPreferences.customFontFile(context, key)?.let { file ->
-            runCatching { Typeface.createFromFile(file) }.getOrNull()
-        }
-        cachedCustomKey = key
-        cachedCustomTypeface = loaded
-        return loaded
     }
 
     private fun applyToTree(root: View) {

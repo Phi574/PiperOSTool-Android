@@ -445,5 +445,81 @@
             </androidx.constraintlayout.widget.ConstraintLayout>
         </com.google.android.material.card.MaterialCardView>
 
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/featureFcmPiperOs"
+            android:layout_width="match_parent"
+            android:layout_height="104dp"
+            android:layout_marginTop="14dp"
+            android:clickable="false"
+            android:focusable="false"
+            android:enabled="false"
+            android:alpha="0.62"
+            android:importantForAccessibility="no"
+            app:cardBackgroundColor="#E612171C"
+            app:cardCornerRadius="14dp"
+            app:cardElevation="0dp"
+            app:strokeColor="#5AFFFFFF"
+            app:strokeWidth="1dp">
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:padding="16dp">
+                <ImageView
+                    android:id="@+id/fcmPiperOsIcon"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:contentDescription="@string/fcm_piperos_title"
+                    android:src="@drawable/ic_fcm_piperos_cloud"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <TextView
+                    android:id="@+id/fcmPiperOsTitle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="14dp"
+                    android:layout_marginEnd="8dp"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:text="@string/fcm_piperos_title"
+                    android:textColor="#B5BDC4"
+                    android:textSize="17sp"
+                    android:textStyle="bold"
+                    app:layout_constraintEnd_toStartOf="@id/fcmPiperOsStatus"
+                    app:layout_constraintStart_toEndOf="@id/fcmPiperOsIcon"
+                    app:layout_constraintTop_toTopOf="@id/fcmPiperOsIcon" />
+
+                <TextView
+                    android:id="@+id/fcmPiperOsSummary"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="14dp"
+                    android:layout_marginTop="5dp"
+                    android:maxLines="2"
+                    android:text="@string/fcm_piperos_summary"
+                    android:textColor="#B5BDC4"
+                    android:textSize="12sp"
+                    app:layout_constraintEnd_toStartOf="@id/fcmPiperOsStatus"
+                    app:layout_constraintStart_toEndOf="@id/fcmPiperOsIcon"
+                    app:layout_constraintTop_toBottomOf="@id/fcmPiperOsTitle" />
+
+                <TextView
+                    android:id="@+id/fcmPiperOsStatus"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_fcm_status_pill"
+                    android:paddingHorizontal="9dp"
+                    android:paddingVertical="5dp"
+                    android:text="@string/not_released"
+                    android:textColor="#9BA4AB"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+            </androidx.constraintlayout.widget.ConstraintLayout>
+        </com.google.android.material.card.MaterialCardView>
+
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>

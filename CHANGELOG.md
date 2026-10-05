@@ -1,5 +1,14 @@
 # Changelog
 
+## 3.5.5.PRE
+
+- Gỡ luồng thêm phông chữ thủ công; chỉ cho chọn phông chữ tích hợp sẵn, các lựa chọn cũ không còn hợp lệ sẽ tự về phông chữ mặc định.
+- Hiển thị hình nền tùy chỉnh xuyên suốt Home, Beta, Ứng dụng, Cài đặt và Thông tin bằng các thẻ nền trong suốt nhẹ.
+- Sửa cửa sổ chọn loại khóa để nội dung tương phản, đọc được và dùng giao diện hộp thoại PiperOS.
+- Chuyển xác nhận khởi động lại sau khi đổi hình nền sang hộp thoại trong ứng dụng.
+- Thêm thông báo FCM PiperOS sắp ra mắt trên Home và thẻ Beta bị làm mờ, không thể bấm, kèm nhãn “Chưa phát hành”.
+- Nâng versionCode lên 56 để cập nhật đè từ 3.5.4.PRE.
+
 ## 3.5.4.PRE
 
 - Cập nhật bố cục, icon và màu giao diện theo tinh chỉnh mới.

@@ -314,8 +314,7 @@
 
                     <ImageView
                         style="@style/SettingsRowIcon"
-                        android:src="@drawable/ic_font"
-                        app:tint="#A78BFA" />
+                        android:src="@drawable/ic_font"/>
 
                     <LinearLayout style="@style/SettingsRowTextGroup">
                         <TextView

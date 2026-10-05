@@ -1,6 +1,5 @@
 package com.piperostool
 
-import android.app.AlertDialog
 import android.app.admin.DevicePolicyManager
 import android.content.ComponentName
 import android.content.Context
@@ -78,26 +77,6 @@ class SettingFragment : Fragment() {
                 Toast.makeText(context, "Lỗi khi lưu ảnh! Hãy thử ảnh khác.", Toast.LENGTH_SHORT).show()
             }
         }
-    }
-    private val pickFontLauncher = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        val activeContext = context ?: return@registerForActivityResult
-        if (uri == null) return@registerForActivityResult
-        PiperFontPreferences.importFont(activeContext, uri)
-            .onSuccess { font ->
-                Toast.makeText(
-                    activeContext,
-                    getString(R.string.settings_font_imported, font.name),
-                    Toast.LENGTH_SHORT
-                ).show()
-                activity?.recreate()
-            }
-            .onFailure {
-                Toast.makeText(
-                    activeContext,
-                    R.string.settings_font_import_failed,
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
     }
     private val adminResultLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         updateAdminSwitchState()
@@ -392,24 +371,15 @@ class SettingFragment : Fragment() {
                 PiperSheetChoice(
                     key = choice.key,
                     label = choice.name,
-                    selected = choice.key == selected,
-                    removable = choice.removable
+                    selected = choice.key == selected
                 )
             },
-            addLabel = getString(R.string.settings_font_add),
             onSelect = { key ->
                 PiperFontPreferences.select(activeContext, key)
                 requireActivity().recreate()
             },
-            onRemove = { key ->
-                PiperFontPreferences.delete(activeContext, key)
-                requireActivity().recreate()
-            },
-            onAdd = {
-                pickFontLauncher.launch(
-                    arrayOf("font/ttf", "font/otf", "application/x-font-ttf", "application/octet-stream")
-                )
-            }
+            onRemove = {},
+            onAdd = {}
         )
     }
 
@@ -477,14 +447,14 @@ class SettingFragment : Fragment() {
     }
 
     private fun showRestartDialog() {
-        AlertDialog.Builder(requireContext())
-            .setTitle("Yêu cầu Khởi động lại")
-            .setMessage("Cần khởi động lại ứng dụng để áp dụng hình nền mới.")
-            .setCancelable(false)
-            .setPositiveButton("Khởi động lại ngay") { _, _ ->
-                restartApp()
-            }
-            .show()
+        PiperDialog.showConfirm(
+            context = requireContext(),
+            title = "Yêu cầu khởi động lại",
+            message = "Cần khởi động lại ứng dụng để áp dụng hình nền mới.",
+            positiveLabel = "Khởi động lại ngay",
+            negativeLabel = "Để sau",
+            onConfirm = ::restartApp
+        )
     }
 
     private fun restartApp() {
@@ -527,13 +497,8 @@ class SettingFragment : Fragment() {
 
     }
 
-
-
-// --- LOGIC RÀNG BUỘC BẢO MẬT (Constraint) ---
-
     private fun checkSecurityConstraintForFingerprint() {
 
-// Người dùng muốn TẮT vân tay. Kiểm tra xem có Password không.
 
         val myRef = database.getReference("users/$userId/security/password")
 
@@ -547,18 +512,11 @@ class SettingFragment : Fragment() {
 
                 if (hasPassword) {
 
-// OK, có password dự phòng, cho phép tắt vân tay nhưng cần xác thực vân tay lần cuối
-
                     biometricPrompt.authenticate(promptInfo)
 
                 } else {
 
-// Không được tắt vì sẽ không còn bảo mật nào
-
                     Toast.makeText(requireContext(), "Không thể tắt! Phải bật ít nhất 1 phương thức bảo mật.", Toast.LENGTH_LONG).show()
-
-// switchFingerprint.isChecked = true // Không cần dòng này nữa vì switch không tự nhảy
-
                 }
 
             }
@@ -579,54 +537,28 @@ class SettingFragment : Fragment() {
             return
         }
 
-        val dialog = com.google.android.material.bottomsheet.BottomSheetDialog(requireContext(), R.style.BottomSheetDialogTheme)
-
-        val view = layoutInflater.inflate(R.layout.dialog_lock_type_selection, null)
-        PiperAutoFont.watch(view)
-
-
-
-// Hàm phụ để xử lý click cho gọn
-
-        fun setupClick(viewId: Int, selectedKey: String) {
-
-            view.findViewById<android.view.View>(viewId).setOnClickListener {
-
-                val intent = Intent(requireContext(), LockScreenActivity::class.java)
-
-                intent.putExtra("LOCK_TYPE_TO_CREATE", selectedKey)
-
-                lockScreenLauncher.launch(intent)
-
-                dialog.dismiss()
-
+        val choices = listOf(
+            "none" to "Tắt mã khóa",
+            "pin_4" to "Mã PIN 4 số",
+            "pin_6" to "Mã PIN 6 số",
+            "custom" to "Mật khẩu tùy chỉnh (Chữ & Số)"
+        )
+        PiperActionSheet.show(
+            requireContext(),
+            "Chọn loại khóa bảo mật",
+            choices.map { (key, label) ->
+                PiperSheetAction(label = label, icon = R.drawable.lock, onClick = {
+                    val intent = Intent(requireContext(), LockScreenActivity::class.java)
+                    intent.putExtra("LOCK_TYPE_TO_CREATE", key)
+                    lockScreenLauncher.launch(intent)
+                })
             }
-
-        }
-
-
-
-// Gán sự kiện cho từng nút Kính
-
-        setupClick(R.id.btnNone, "none")
-
-        setupClick(R.id.btnPin4, "pin_4")
-
-        setupClick(R.id.btnPin6, "pin_6")
-
-        setupClick(R.id.btnCustom, "custom")
-
-
-
-        dialog.setContentView(view)
-
-        dialog.show()
+        )
 
     }
 
 
 
-// --- DEVICE ADMIN ---
 
     private fun setupDeviceAdmin() {
 
@@ -636,15 +568,8 @@ class SettingFragment : Fragment() {
 
 
 
-// XÓA: switchAdmin.setOnClickListener (Vì đã tắt cảm ứng trong XML)
-
-
-
-// Chỉ bắt sự kiện ở Layout
-
         layoutAdmin.setOnClickListener {
 
-// Kiểm tra trạng thái hiện tại của switch để toggle
 
             if (switchAdmin.isChecked) {
 

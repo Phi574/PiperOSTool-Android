@@ -53,10 +53,7 @@
     <string name="settings_font_system">Hệ thống</string>
     <string name="settings_font_bilingual">VT323 tiếng Việt + Silkscreen tiếng Anh</string>
     <string name="settings_font_inter">Inter</string>
-    <string name="settings_font_add">Thêm phông chữ từ thiết bị</string>
     <string name="settings_font_remove">Xóa phông chữ</string>
-    <string name="settings_font_imported">Đã thêm phông chữ %1$s</string>
-    <string name="settings_font_import_failed">Không thể sử dụng tệp phông chữ này</string>
     <string name="settings_restart_ui_message">Giao diện sẽ được tải lại để áp dụng lựa chọn mới.</string>
     <string name="nav_home">Trang chủ</string>
     <string name="nav_beta">Beta</string>
@@ -66,6 +63,8 @@
     <string name="home_press_again_to_exit">Nhấn lần nữa để thoát</string>
     <string name="home_screen_title">Trang chủ</string>
     <string name="home_screen_summary">Các công cụ PiperOS đã sẵn sàng trên thiết bị của bạn.</string>
+    <string name="home_fcm_notice_title">Sắp có: FCM PiperOS</string>
+    <string name="home_fcm_notice_summary">Chuẩn bị tiến hành cập nhật tính năng mới đặc biệt mang tên “FCM PiperOS”, giúp máy nội địa nhận thông báo và tối ưu Google FCM để chạy ổn định hơn trên máy nội địa.</string>
     <string name="app_name">Piper OS Tool</string>
     <string name="settings_project_section">DỰ ÁN MÃ NGUỒN MỞ</string>
     <string name="settings_android_source">PiperOS Android trên GitHub</string>
@@ -79,6 +78,9 @@
     <string name="beta_lab_subtitle">Các tính năng độc lập đang được phát triển.</string>
     <string name="piperos_browser">PiperOS Browser</string>
     <string name="piperos_browser_summary">Trình duyệt nhiều tab, lưu phiên và tải xuống trực tiếp.</string>
+    <string name="fcm_piperos_title">FCM PiperOS</string>
+    <string name="fcm_piperos_summary">Tối ưu thông báo Google FCM cho máy nội địa.</string>
+    <string name="not_released">Chưa phát hành</string>
     <string name="piperos_media">PiperOS Media</string>
     <string name="piperos_media_summary">Nghe nhạc, xem video, phát nền và cửa sổ nổi.</string>
     <string name="piperos_terminal">PiperOS Terminal</string>

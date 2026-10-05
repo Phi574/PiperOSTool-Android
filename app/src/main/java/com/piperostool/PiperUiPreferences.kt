@@ -184,7 +184,14 @@ object PiperModernUi {
         when (view) {
             is MaterialCardView -> {
                 view.backgroundTintList = null
-                view.setCardBackgroundColor(if (name == "updateAction") palette.accent else palette.surface)
+                val customBackground = AccountDataScope.preferences(view.context, "PiperPrefs")
+                    .getBoolean("has_custom_bg", false)
+                val cardColor = if (name == "updateAction") palette.accent else palette.surface
+                view.setCardBackgroundColor(
+                    if (customBackground && name != "updateAction") {
+                        ColorUtils.setAlphaComponent(cardColor, if (isDark(view.context)) 218 else 226)
+                    } else cardColor
+                )
                 view.strokeColor = palette.border
                 view.strokeWidth = view.resources.displayMetrics.density.toInt().coerceAtLeast(1)
                 view.radius = 14f * view.resources.displayMetrics.density

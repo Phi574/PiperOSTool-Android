@@ -53,10 +53,7 @@
     <string name="settings_font_system">System</string>
     <string name="settings_font_bilingual">VT323 Vietnamese + Silkscreen English</string>
     <string name="settings_font_inter">Inter</string>
-    <string name="settings_font_add">Add font from device</string>
     <string name="settings_font_remove">Remove font</string>
-    <string name="settings_font_imported">Added font %1$s</string>
-    <string name="settings_font_import_failed">This font file cannot be used</string>
     <string name="settings_restart_ui_message">The interface will reload to apply the new selection.</string>
     <string name="nav_home">Home</string>
     <string name="nav_beta">Beta</string>
@@ -66,6 +63,8 @@
     <string name="home_press_again_to_exit">Press again to exit</string>
     <string name="home_screen_title">Home</string>
     <string name="home_screen_summary">Your PiperOS tools are ready on this device.</string>
+    <string name="home_fcm_notice_title">Coming soon: FCM PiperOS</string>
+    <string name="home_fcm_notice_summary">A new feature called “FCM PiperOS” is in preparation to help mainland devices receive notifications and improve Google FCM stability.</string>
     <string name="app_name">Piper OS Tool</string>
     <string name="settings_project_section">OPEN SOURCE PROJECTS</string>
     <string name="settings_android_source">PiperOS Android on GitHub</string>
@@ -79,6 +78,9 @@
     <string name="beta_lab_subtitle">Independent features currently in development.</string>
     <string name="piperos_browser">PiperOS Browser</string>
     <string name="piperos_browser_summary">Multi-tab browser with persistent sessions and direct downloads.</string>
+    <string name="fcm_piperos_title">FCM PiperOS</string>
+    <string name="fcm_piperos_summary">Improved Google FCM notifications for mainland devices.</string>
+    <string name="not_released">Not released</string>
     <string name="piperos_media">PiperOS Media</string>
     <string name="piperos_media_summary">Music, video, background playback and picture-in-picture.</string>
     <string name="piperos_terminal">PiperOS Terminal</string>
