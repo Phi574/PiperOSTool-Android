@@ -42,9 +42,6 @@
     <string name="lock_connection_required">Connection required</string>
     <string name="lock_no_offline_data">No synchronized lock data is available. Connect once to verify securely.</string>
     <string name="settings_lock_offline">Online lock settings are hidden while offline</string>
-    <string name="settings_ui_style">Interface style</string>
-    <string name="settings_ui_classic">Liquid Glass (Classic)</string>
-    <string name="settings_ui_modern">Modern</string>
     <string name="settings_color_mode">Color mode</string>
     <string name="settings_color_system">Follow system</string>
     <string name="settings_color_light">Light</string>
@@ -69,8 +66,6 @@
     <string name="home_press_again_to_exit">Press again to exit</string>
     <string name="home_screen_title">Home</string>
     <string name="home_screen_summary">Your PiperOS tools are ready on this device.</string>
-    <string name="home_classic_title">HOME</string>
-    <string name="home_classic_summary">All systems operational. Security scans have been bypassed.</string>
     <string name="app_name">Piper OS Tool</string>
     <string name="settings_project_section">OPEN SOURCE PROJECTS</string>
     <string name="settings_android_source">PiperOS Android on GitHub</string>

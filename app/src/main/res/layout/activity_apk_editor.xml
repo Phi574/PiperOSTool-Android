@@ -123,7 +123,7 @@
         android:layout_height="46dp"
         android:layout_marginHorizontal="14dp"
         android:layout_marginBottom="8dp"
-        android:background="@drawable/bg_glass_input"
+        android:background="@drawable/bg_modern_input"
         android:hint="Tìm tệp trong thư mục hiện tại..."
         android:paddingHorizontal="14dp"
         android:singleLine="true"

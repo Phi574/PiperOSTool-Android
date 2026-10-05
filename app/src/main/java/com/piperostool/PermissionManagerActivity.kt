@@ -179,9 +179,7 @@ class PermissionManagerActivity : AppCompatActivity() {
         }
         permissionContainer.addView(permissionView)
         PiperAutoFont.apply(text)
-        if (PiperUiPreferences.isModern(this)) {
-            text.setTextColor(PiperModernUi.secondaryTextColor(this))
-        }
+        text.setTextColor(PiperModernUi.secondaryTextColor(this))
     }
 
     private fun setupOptimizationButtons() {

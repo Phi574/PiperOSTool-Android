@@ -6,18 +6,13 @@
     android:layout_height="match_parent"
     android:padding="20dp">
 
-    <com.example.liquidglass.LiquidGlassView
-        android:id="@+id/homeGlassPanel"
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/homeFeaturePanel"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="24dp"
-        app:cornerRadius="24dp"
-        app:glassMaterial="clear"
-        app:refractionHeight="34dp"
-        app:bevelWidth="10dp"
-        app:dispersionStrength="0.08"
-        app:sensorHighlight="true"
-        app:backdropSourceId="@id/homeBackground"
+        app:cardCornerRadius="24dp"
+        app:cardElevation="0dp"
+        app:strokeWidth="1dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintVertical_bias="0.2">
@@ -25,6 +20,7 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:padding="24dp"
             android:orientation="vertical">
 
             <ImageView
@@ -53,7 +49,7 @@
                 android:textColor="#B3FFFFFF"
                 android:textSize="14sp" />
 
-            <com.example.liquidglass.LiquidGlassView
+            <com.google.android.material.card.MaterialCardView
                 android:id="@+id/homePiperBrowser"
                 android:layout_width="match_parent"
                 android:layout_height="76dp"
@@ -61,13 +57,9 @@
                 android:clickable="true"
                 android:focusable="true"
                 android:contentDescription="@string/piperos_browser"
-                app:cornerRadius="19dp"
-                app:glassMaterial="clear"
-                app:refractionHeight="26dp"
-                app:bevelWidth="8dp"
-                app:dispersionStrength="0.08"
-                app:sensorHighlight="true"
-                app:backdropSourceId="@id/homeBackground">
+                app:cardCornerRadius="19dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="1dp">
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
@@ -96,9 +88,9 @@
                         android:src="@drawable/ic_browser_back"
                         app:tint="#DFFFFFFF" />
                 </LinearLayout>
-            </com.example.liquidglass.LiquidGlassView>
+            </com.google.android.material.card.MaterialCardView>
 
         </LinearLayout>
-    </com.example.liquidglass.LiquidGlassView>
+    </com.google.android.material.card.MaterialCardView>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

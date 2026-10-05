@@ -109,10 +109,6 @@ class BrowserLocationMapActivity : AppCompatActivity() {
             insets
         }
         ViewCompat.requestApplyInsets(root)
-        if (!PiperUiPreferences.isModern(this)) {
-            header.setBackgroundColor(Color.argb(120, 17, 30, 49))
-            footer.setBackgroundColor(Color.argb(165, 17, 30, 49))
-        }
     }
 
     private fun configureMap() {

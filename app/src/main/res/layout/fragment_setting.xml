@@ -258,33 +258,6 @@
                     android:orientation="vertical">
 
                 <LinearLayout
-                    android:id="@+id/layoutUiStyle"
-                    style="@style/SettingsRow"
-                    android:background="?attr/selectableItemBackground">
-
-                    <ImageView
-                        style="@style/SettingsRowIcon"
-                        android:src="@drawable/apps"
-                        app:tint="#34A87C" />
-
-                    <LinearLayout style="@style/SettingsRowTextGroup">
-                        <TextView
-                            style="@style/SettingsRowTitle"
-                            android:text="@string/settings_ui_style" />
-                        <TextView
-                            android:id="@+id/tvUiStyleValue"
-                            style="@style/SettingsRowSubtitle"
-                            android:text="@string/settings_ui_modern" />
-                    </LinearLayout>
-
-                    <ImageView style="@style/SettingsChevron" />
-                </LinearLayout>
-
-                <View
-                    android:id="@+id/layoutColorModeDivider"
-                    style="@style/SettingsDivider" />
-
-                <LinearLayout
                     android:id="@+id/layoutColorMode"
                     style="@style/SettingsRow"
                     android:background="?attr/selectableItemBackground">
@@ -410,11 +383,7 @@
                 android:id="@+id/settingsUpdateSurface"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:bevelWidth="9dp"
                 app:cornerRadius="24dp"
-                app:dispersionStrength="0.07"
-                app:glassMaterial="clear"
-                app:refractionHeight="32dp"
                 app:cardBackgroundColor="@android:color/transparent"
                 app:cardCornerRadius="24dp"
                 app:cardElevation="0dp"
@@ -447,11 +416,7 @@
 
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/settingsAccountSurface"
-                app:bevelWidth="9dp"
                 app:cornerRadius="24dp"
-                app:dispersionStrength="0.07"
-                app:glassMaterial="clear"
-                app:refractionHeight="32dp"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 app:cardBackgroundColor="@android:color/transparent"
@@ -494,11 +459,7 @@
                 android:id="@+id/settingsProjectSurface"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:bevelWidth="9dp"
                 app:cornerRadius="24dp"
-                app:dispersionStrength="0.07"
-                app:glassMaterial="clear"
-                app:refractionHeight="32dp"
                 app:cardBackgroundColor="@android:color/transparent"
                 app:cardCornerRadius="24dp"
                 app:cardElevation="0dp"

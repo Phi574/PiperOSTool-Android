@@ -730,7 +730,6 @@ class PiperMediaActivity : AppCompatActivity() {
 
     private fun createSourceChip(label: String, source: String?): MaterialButton {
         val selected = currentSource == source
-        val modern = PiperUiPreferences.isModern(this)
         val accent = PiperModernUi.accentColor(this)
         return MaterialButton(
             this,
@@ -746,24 +745,13 @@ class PiperMediaActivity : AppCompatActivity() {
             insetBottom = 0
             cornerRadius = dp(6)
             backgroundTintList = ColorStateList.valueOf(
-                if (modern) {
-                    if (selected) accent else PiperModernUi.surfaceColor(this@PiperMediaActivity)
-                } else {
-                    if (selected) Color.rgb(35, 89, 60) else Color.rgb(16, 23, 27)
-                }
+                if (selected) accent else PiperModernUi.surfaceColor(this@PiperMediaActivity)
             )
             strokeColor = ColorStateList.valueOf(
-                if (modern) {
-                    if (selected) accent else PiperModernUi.borderColor(this@PiperMediaActivity)
-                } else if (selected) {
-                    Color.rgb(57, 229, 140)
-                } else {
-                    Color.argb(85, 255, 255, 255)
-                }
+                if (selected) accent else PiperModernUi.borderColor(this@PiperMediaActivity)
             )
             setTextColor(
-                if (modern && !selected) PiperModernUi.textColor(this@PiperMediaActivity)
-                else Color.WHITE
+                if (selected) Color.WHITE else PiperModernUi.textColor(this@PiperMediaActivity)
             )
             setOnClickListener {
                 currentSource = source
@@ -1017,16 +1005,8 @@ class PiperMediaActivity : AppCompatActivity() {
 
     private fun updatePlaybackUi() {
         val activeController = controller ?: return
-        val inactive = if (PiperUiPreferences.isModern(this)) {
-            PiperModernUi.secondaryTextColor(this)
-        } else {
-            Color.WHITE
-        }
-        val active = if (PiperUiPreferences.isModern(this)) {
-            PiperModernUi.accentColor(this)
-        } else {
-            Color.rgb(57, 229, 140)
-        }
+        val inactive = PiperModernUi.secondaryTextColor(this)
+        val active = PiperModernUi.accentColor(this)
         playPause.setImageResource(
             if (activeController.isPlaying) R.drawable.ic_media_pause
             else R.drawable.ic_media_play
@@ -1203,14 +1183,12 @@ class PiperMediaActivity : AppCompatActivity() {
                 .placeholder(if (item.isVideo) R.drawable.ic_media_library else R.drawable.a3tn)
                 .error(if (item.isVideo) R.drawable.ic_media_library else R.drawable.a3tn)
                 .into(view.findViewById(R.id.mediaItemArtwork))
-            if (PiperUiPreferences.isModern(this@PiperMediaActivity)) {
-                view.findViewById<TextView>(R.id.mediaItemTitle)
-                    .setTextColor(PiperModernUi.textColor(this@PiperMediaActivity))
-                view.findViewById<TextView>(R.id.mediaItemSubtitle)
-                    .setTextColor(PiperModernUi.secondaryTextColor(this@PiperMediaActivity))
-                view.findViewById<TextView>(R.id.mediaItemDetails)
-                    .setTextColor(PiperModernUi.secondaryTextColor(this@PiperMediaActivity))
-            }
+            view.findViewById<TextView>(R.id.mediaItemTitle)
+                .setTextColor(PiperModernUi.textColor(this@PiperMediaActivity))
+            view.findViewById<TextView>(R.id.mediaItemSubtitle)
+                .setTextColor(PiperModernUi.secondaryTextColor(this@PiperMediaActivity))
+            view.findViewById<TextView>(R.id.mediaItemDetails)
+                .setTextColor(PiperModernUi.secondaryTextColor(this@PiperMediaActivity))
             PiperModernUi.apply(view)
             PiperAutoFont.apply(view)
             return view

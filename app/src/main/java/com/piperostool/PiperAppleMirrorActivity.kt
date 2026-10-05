@@ -104,7 +104,7 @@ class PiperAppleMirrorActivity : AppCompatActivity(), SurfaceHolder.Callback {
         val content = findViewById<View>(R.id.appleMirrorScroll)
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.appleMirrorRoot)) { _, insets ->
             val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            PiperClassicGlassUi.setContainerPadding(toolbar, toolbar.paddingLeft, bars.top, toolbar.paddingRight, toolbar.paddingBottom)
+            toolbar.setPadding(toolbar.paddingLeft, bars.top, toolbar.paddingRight, toolbar.paddingBottom)
             toolbar.layoutParams = toolbar.layoutParams.apply { height = dp(56) + bars.top }
             content.setPadding(content.paddingLeft, content.paddingTop, content.paddingRight, bars.bottom + dp(18))
             insets

@@ -34,15 +34,7 @@ class AccountProfileActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_account_profile)
         val background = findViewById<android.widget.ImageView>(R.id.homeBackground)
-        if (!PiperUiPreferences.isModern(this)) {
-            val prefs = AccountDataScope.preferences(this, "PiperPrefs")
-            if (prefs.getBoolean("has_custom_bg", false)) {
-                val file = AccountDataScope.file(this, "appearance", "custom_bg.jpg")
-                android.graphics.drawable.Drawable.createFromPath(file.absolutePath)?.let {
-                    background.setImageDrawable(it)
-                }
-            }
-        } else background.visibility = android.view.View.GONE
+        background.visibility = android.view.View.GONE
         findViewById<android.view.View>(R.id.btnProfileBack).setOnClickListener { finish() }
         uid = findViewById(R.id.etProfileUid)
         fullName = findViewById(R.id.etProfileName)
@@ -147,18 +139,6 @@ class AccountProfileActivity : AppCompatActivity() {
 
     private fun pickBirthDate() {
         val calendar = Calendar.getInstance()
-        if (!PiperUiPreferences.isModern(this)) {
-            val picker = android.widget.DatePicker(this).apply {
-                maxDate = System.currentTimeMillis()
-                init(calendar.get(Calendar.YEAR) - 18, calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH), null)
-            }
-            PiperDialog.showCustom(this, getString(R.string.profile_birth_date), content = picker,
-                positiveLabel = getString(android.R.string.ok), onPositive = {
-                    birthDate.setText(String.format(Locale.US, "%04d-%02d-%02d", picker.year, picker.month + 1, picker.dayOfMonth))
-                    true
-                })
-            return
-        }
         DatePickerDialog(this, { _, year, month, day ->
             birthDate.setText(String.format(Locale.US, "%04d-%02d-%02d", year, month + 1, day))
         }, calendar.get(Calendar.YEAR) - 18, calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH)).apply {

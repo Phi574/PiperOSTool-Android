@@ -98,7 +98,6 @@ class BrowserUserAgentActivity : AppCompatActivity() {
             setPadding(dp(18), dp(22), dp(18), dp(24))
         }
         val scroll = ScrollView(this).apply { addView(root) }
-        if (!PiperUiPreferences.isModern(this)) scroll.setBackgroundColor(Color.argb(115, 15, 26, 44))
         setContentView(scroll)
         ViewCompat.setOnApplyWindowInsetsListener(scroll) { _, insets ->
             val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())

@@ -1715,14 +1715,7 @@ class PiperBrowserActivity : AppCompatActivity() {
                             null
                         } else {
                             android.content.res.ColorStateList.valueOf(
-                                if (PiperUiPreferences.isModern(this@PiperBrowserActivity)) {
-                                    PiperModernUi.accentColor(this@PiperBrowserActivity)
-                                } else {
-                                    ContextCompat.getColor(
-                                        this@PiperBrowserActivity,
-                                        R.color.green_neon
-                                    )
-                                }
+                                PiperModernUi.accentColor(this@PiperBrowserActivity)
                             )
                         }
                 },

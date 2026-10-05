@@ -22,8 +22,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.FileProvider
 import androidx.lifecycle.lifecycleScope
-import com.example.liquidglass.GlassMaterial
-import com.example.liquidglass.LiquidGlassView
+import com.google.android.material.button.MaterialButton
+import com.google.android.material.card.MaterialCardView
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -38,9 +38,9 @@ class AppUpdateActivity : AppCompatActivity() {
     private lateinit var description: TextView
     private lateinit var status: TextView
     private lateinit var progress: ProgressBar
-    private lateinit var action: LiquidGlassView
+    private lateinit var action: MaterialCardView
     private lateinit var actionText: TextView
-    private lateinit var cancel: LiquidGlassView
+    private lateinit var cancel: MaterialCardView
     private lateinit var logToggle: TextView
     private lateinit var logScroll: ScrollView
     private lateinit var log: TextView
@@ -65,8 +65,7 @@ class AppUpdateActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_app_update)
-        window.statusBarColor = Color.rgb(16, 26, 42)
-        window.navigationBarColor = Color.rgb(16, 26, 42)
+        PiperModernUi.watch(this)
         headline = findViewById(R.id.updateHeadline)
         currentVersion = findViewById(R.id.updateCurrentVersion)
         published = findViewById(R.id.updatePublished)
@@ -191,18 +190,17 @@ class AppUpdateActivity : AppCompatActivity() {
         dialog.window?.setLayout((resources.displayMetrics.widthPixels * 0.88f).toInt(), ViewGroup.LayoutParams.WRAP_CONTENT)
     }
 
-    private fun dialogButton(label: String, click: () -> Unit): LiquidGlassView = LiquidGlassView(this).apply {
-        material = GlassMaterial.REGULAR
-        cornerRadius = dp(18).toFloat()
+    private fun dialogButton(label: String, click: () -> Unit): MaterialButton = MaterialButton(this).apply {
+        text = label
+        isAllCaps = false
+        cornerRadius = dp(18)
+        backgroundTintList = android.content.res.ColorStateList.valueOf(PiperModernUi.surfaceColor(this@AppUpdateActivity))
+        strokeColor = android.content.res.ColorStateList.valueOf(PiperModernUi.borderColor(this@AppUpdateActivity))
+        strokeWidth = dp(1)
+        setTextColor(PiperModernUi.textColor(this@AppUpdateActivity))
         isClickable = true
         isFocusable = true
         contentDescription = label
-        addView(TextView(this@AppUpdateActivity).apply {
-            text = label
-            textSize = 15f
-            gravity = Gravity.CENTER
-            setTextColor(Color.WHITE)
-        }, ViewGroup.LayoutParams(-1, -1))
         layoutParams = LinearLayout.LayoutParams(-1, dp(48))
         setOnClickListener { click() }
     }

@@ -2,9 +2,6 @@
 <resources>
     <item name="piper_modern_ui_applied" type="id" />
     <item name="piper_modern_ui_watcher" type="id" />
-    <item name="piper_classic_glass_applied" type="id" />
-    <item name="piper_classic_glass_watcher" type="id" />
-    <item name="piper_native_glass_installed" type="id" />
     <item name="piper_auto_font_watcher" type="id" />
     <item name="piper_auto_font_signature" type="id" />
     <item name="piper_auto_font_text_watcher" type="id" />

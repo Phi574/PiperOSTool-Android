@@ -54,7 +54,7 @@ class SignupActivity : AppCompatActivity() {
         AuthScreenUi.apply(
             this,
             root,
-            findViewById(R.id.authClassicBackground),
+            findViewById(R.id.authBackground),
             findViewById(R.id.modernAuthOverlay)
         )
         offlineState = findViewById(R.id.signupOfflineState)

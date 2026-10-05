@@ -209,7 +209,7 @@ class FakeMapActivity : AppCompatActivity() {
         val controlsBottom = controls.paddingBottom
         ViewCompat.setOnApplyWindowInsetsListener(root) { _, insets ->
             val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            PiperClassicGlassUi.setContainerPadding(toolbar,
+            toolbar.setPadding(
                 toolbar.paddingLeft,
                 toolbarTop + bars.top,
                 toolbar.paddingRight,

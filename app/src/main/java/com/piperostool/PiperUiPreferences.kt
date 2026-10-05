@@ -26,32 +26,23 @@ import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputLayout
 import java.util.ArrayDeque
 
-enum class PiperUiStyle(val key: String) {
-    CLASSIC("classic"), MODERN("modern")
-}
-
 enum class PiperColorMode(val key: String) {
     SYSTEM("system"), LIGHT("light"), DARK("dark")
 }
 
 object PiperUiPreferences {
     private const val PREFS = "PiperPrefs"
-    private const val KEY_STYLE = "ui_style"
     private const val KEY_COLOR_MODE = "ui_color_mode"
     private const val KEY_LANGUAGE = "app_language"
 
     fun initialize(context: Context) {
+        // Remove the obsolete style selection from existing installations.
+        prefs(context).edit().remove("ui_style").apply()
         applyColorMode(context)
         AppCompatDelegate.setApplicationLocales(
             LocaleListCompat.forLanguageTags(language(context))
         )
     }
-
-    fun style(context: Context): PiperUiStyle =
-        when (prefs(context).getString(KEY_STYLE, PiperUiStyle.MODERN.key)) {
-            PiperUiStyle.CLASSIC.key -> PiperUiStyle.CLASSIC
-            else -> PiperUiStyle.MODERN
-        }
 
     fun colorMode(context: Context): PiperColorMode =
         when (prefs(context).getString(KEY_COLOR_MODE, PiperColorMode.SYSTEM.key)) {
@@ -63,10 +54,6 @@ object PiperUiPreferences {
     fun language(context: Context): String =
         prefs(context).getString(KEY_LANGUAGE, "vi")?.takeIf { it == "vi" || it == "en" } ?: "vi"
 
-    fun setStyle(context: Context, value: PiperUiStyle) {
-        prefs(context).edit().putString(KEY_STYLE, value.key).apply()
-    }
-
     fun setColorMode(context: Context, value: PiperColorMode) {
         prefs(context).edit().putString(KEY_COLOR_MODE, value.key).apply()
         applyColorMode(context)
@@ -77,8 +64,6 @@ object PiperUiPreferences {
         prefs(context).edit().putString(KEY_LANGUAGE, safeLanguage).apply()
         AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(safeLanguage))
     }
-
-    fun isModern(context: Context): Boolean = style(context) == PiperUiStyle.MODERN
 
     private fun applyColorMode(context: Context) {
         AppCompatDelegate.setDefaultNightMode(
@@ -106,20 +91,6 @@ object PiperModernUi {
     )
 
     fun watch(activity: Activity) {
-        // The updater owns its intentionally restrained surface and native glass buttons.
-        if (activity is AppUpdateActivity) return
-        if (activity is WelcomeActivity || activity is LoginActivity ||
-            activity is SignupActivity || activity is ForgotPassword
-        ) {
-            // AuthScreenUi owns these screens; do not let the generic modern
-            // pass replace their transparent LiquidGlass shell on resume.
-            PiperClassicGlassUi.watch(activity)
-            return
-        }
-        if (!PiperUiPreferences.isModern(activity)) {
-            PiperClassicGlassUi.watch(activity)
-            return
-        }
         val dark = isDark(activity)
         applyWindow(activity.window, dark)
         installAmbientBackground(activity, dark)
@@ -127,17 +98,13 @@ object PiperModernUi {
         if (root.getTag(R.id.piper_modern_ui_watcher) != true) {
             root.setTag(R.id.piper_modern_ui_watcher, true)
             root.viewTreeObserver.addOnGlobalLayoutListener {
-                if (PiperUiPreferences.isModern(activity)) applyTree(root, palette(activity))
+                applyTree(root, palette(activity))
             }
         }
         applyTree(root, palette(activity))
     }
 
     fun apply(root: View) {
-        if (!PiperUiPreferences.isModern(root.context)) {
-            PiperClassicGlassUi.apply(root)
-            return
-        }
         val colors = palette(root.context)
         root.backgroundTintList = null
         root.background = rounded(colors.surface, colors.border, 14f, root)
@@ -172,7 +139,7 @@ object PiperModernUi {
     private fun applyView(view: View, palette: Palette) {
         val name = resourceName(view)
         if (name == "homeBackground") {
-            view.visibility = View.GONE
+            if (view.rootView.findViewById<View>(R.id.homeRoot) == null) view.visibility = View.GONE
             return
         }
         if (name == "bottomNavCard") return
@@ -217,7 +184,7 @@ object PiperModernUi {
         when (view) {
             is MaterialCardView -> {
                 view.backgroundTintList = null
-                view.setCardBackgroundColor(palette.surface)
+                view.setCardBackgroundColor(if (name == "updateAction") palette.accent else palette.surface)
                 view.strokeColor = palette.border
                 view.strokeWidth = view.resources.displayMetrics.density.toInt().coerceAtLeast(1)
                 view.radius = 14f * view.resources.displayMetrics.density
@@ -335,6 +302,10 @@ object PiperModernUi {
     }
 
     private fun modernizeText(view: TextView, palette: Palette) {
+        if (resourceName(view) == "updateActionText") {
+            view.setTextColor(palette.onAccent)
+            return
+        }
         if (preserveTextSurface(resourceName(view))) return
         val current = view.currentTextColor
         val alpha = Color.alpha(current)
@@ -361,7 +332,7 @@ object PiperModernUi {
             name.contains("progress", true) || name == "terminalScroll"
 
     private fun isPageRoot(name: String): Boolean = name in setOf(
-        "homeRoot", "lockRoot", "loginRoot", "signupRoot", "forgotRoot", "welcomeRoot", "permissionRoot",
+        "homeRoot", "updateRoot", "lockRoot", "loginRoot", "signupRoot", "forgotRoot", "welcomeRoot", "permissionRoot",
         "browserRoot", "mediaRoot", "mediaGalleryRoot", "fileManagerRoot", "filePreviewRoot",
         "fakeMapRoot", "terminalRoot", "apkEditorRoot", "textEditorRoot",
         "accountProfileRoot", "deviceSessionsRoot"
@@ -369,7 +340,7 @@ object PiperModernUi {
 
     private fun isSettingsRow(name: String): Boolean = name in setOf(
         "layoutDeviceAdmin", "layoutFingerprint", "layoutPasswordToggle", "btnChangeLock",
-        "btnPermissions", "layoutUiStyle", "layoutColorMode", "layoutLanguage", "layoutFont",
+        "btnPermissions", "layoutColorMode", "layoutLanguage", "layoutFont",
         "layoutChangeBackground", "layoutResetBackground", "btnAndroidSource", "btnRuntimeSource"
     )
 
@@ -395,35 +366,11 @@ object PiperModernUi {
         )
     }
 
-    fun textColor(context: Context): Int = if (PiperUiPreferences.isModern(context)) {
-        palette(context).text
-    } else {
-        PiperClassicGlassUi.textColor(context)
-    }
-
-    fun secondaryTextColor(context: Context): Int = if (PiperUiPreferences.isModern(context)) {
-        palette(context).secondaryText
-    } else {
-        PiperClassicGlassUi.secondaryTextColor(context)
-    }
-
-    fun accentColor(context: Context): Int = if (PiperUiPreferences.isModern(context)) {
-        palette(context).accent
-    } else {
-        PiperClassicGlassUi.accentColor(context)
-    }
-
-    fun surfaceColor(context: Context): Int = if (PiperUiPreferences.isModern(context)) {
-        palette(context).surface
-    } else {
-        PiperClassicGlassUi.surfaceColor(context)
-    }
-
-    fun borderColor(context: Context): Int = if (PiperUiPreferences.isModern(context)) {
-        palette(context).border
-    } else {
-        PiperClassicGlassUi.borderColor(context)
-    }
+    fun textColor(context: Context): Int = palette(context).text
+    fun secondaryTextColor(context: Context): Int = palette(context).secondaryText
+    fun accentColor(context: Context): Int = palette(context).accent
+    fun surfaceColor(context: Context): Int = palette(context).surface
+    fun borderColor(context: Context): Int = palette(context).border
 
     private fun isPrimaryAction(name: String): Boolean =
         name.contains("start", true) || name.contains("login", true) ||

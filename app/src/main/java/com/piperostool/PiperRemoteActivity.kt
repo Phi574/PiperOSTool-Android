@@ -171,7 +171,7 @@ class PiperRemoteActivity : AppCompatActivity(), PiperRemoteClient.Listener {
         val scroll = findViewById<View>(R.id.remoteScroll)
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.remoteRoot)) { _, insets ->
             val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            PiperClassicGlassUi.setContainerPadding(toolbar, toolbar.paddingLeft, bars.top, toolbar.paddingRight, toolbar.paddingBottom)
+            toolbar.setPadding(toolbar.paddingLeft, bars.top, toolbar.paddingRight, toolbar.paddingBottom)
             toolbar.layoutParams = toolbar.layoutParams.apply { height = dp(56) + bars.top }
             scroll.setPadding(scroll.paddingLeft, scroll.paddingTop, scroll.paddingRight, bars.bottom + dp(18))
             insets

@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:background="@drawable/bg_glass_input"
+    android:background="@drawable/bg_modern_input"
     android:backgroundTint="#2C2C2C"
     android:padding="20dp"
     android:layout_margin="20dp">
@@ -29,7 +29,7 @@
         android:id="@+id/btnNone"
         android:layout_width="match_parent"
         android:layout_height="60dp"
-        android:background="@drawable/bg_glass_panel"
+        android:background="@drawable/bg_modern_panel"
         android:gravity="center_vertical"
         android:paddingHorizontal="20dp"
         android:layout_marginBottom="12dp"
@@ -47,7 +47,7 @@
         android:id="@+id/btnPin4"
         android:layout_width="match_parent"
         android:layout_height="60dp"
-        android:background="@drawable/bg_glass_panel"
+        android:background="@drawable/bg_modern_panel"
         android:gravity="center_vertical"
         android:paddingHorizontal="20dp"
         android:layout_marginBottom="12dp">
@@ -63,7 +63,7 @@
         android:id="@+id/btnPin6"
         android:layout_width="match_parent"
         android:layout_height="60dp"
-        android:background="@drawable/bg_glass_panel"
+        android:background="@drawable/bg_modern_panel"
         android:gravity="center_vertical"
         android:paddingHorizontal="20dp"
         android:layout_marginBottom="12dp">
@@ -79,7 +79,7 @@
         android:id="@+id/btnCustom"
         android:layout_width="match_parent"
         android:layout_height="60dp"
-        android:background="@drawable/bg_glass_panel"
+        android:background="@drawable/bg_modern_panel"
         android:gravity="center_vertical"
         android:paddingHorizontal="20dp"
         android:layout_marginBottom="12dp">

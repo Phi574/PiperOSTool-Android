@@ -11,7 +11,7 @@ import android.widget.TextView
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import com.example.liquidglass.LiquidGlassView
+import com.google.android.material.card.MaterialCardView
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -23,7 +23,7 @@ import java.io.File
 @RunWith(AndroidJUnit4::class)
 class UpdatedFeatureUiInstrumentedTest {
     @Test
-    fun browserEntryPointUsesNativeGlassAndJunkEntryIsGone() {
+    fun browserEntryPointUsesModernCardAndJunkEntryIsGone() {
         val context = ContextThemeWrapper(
             InstrumentationRegistry.getInstrumentation().targetContext,
             R.style.Theme_PiperOSTool
@@ -31,10 +31,30 @@ class UpdatedFeatureUiInstrumentedTest {
         val inflater = LayoutInflater.from(context)
         val home = inflater.inflate(R.layout.fragment_home, null)
         val settings = inflater.inflate(R.layout.fragment_setting, null)
-        assertNotNull(home.findViewById<LiquidGlassView>(R.id.homePiperBrowser))
+        assertNotNull(home.findViewById<MaterialCardView>(R.id.homeFeaturePanel))
+        assertNotNull(home.findViewById<MaterialCardView>(R.id.homePiperBrowser))
         assertEquals(0, context.resources.getIdentifier("settingsStorageSurface", "id", context.packageName))
         assertEquals(0, context.resources.getIdentifier("btnCleanJunk", "id", context.packageName))
         assertNotNull(settings.findViewById<View>(R.id.settingsAccountSurface))
+    }
+
+    @Test
+    fun updateScreenUsesModernCards() {
+        ActivityScenario.launch(AppUpdateActivity::class.java).use { scenario ->
+            scenario.onActivity { activity ->
+                assertNotNull(activity.findViewById<MaterialCardView>(R.id.updateBack))
+                assertNotNull(activity.findViewById<MaterialCardView>(R.id.updateAction))
+                assertNotNull(activity.findViewById<MaterialCardView>(R.id.updateCancel))
+                assertTrue(activity.findViewById<TextView>(R.id.updateCurrentVersion).text.contains("3.5.3.PRE"))
+            }
+            InstrumentationRegistry.getInstrumentation().waitForIdleSync()
+            val screenshot = InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot()
+            val context = InstrumentationRegistry.getInstrumentation().targetContext
+            File(context.getExternalFilesDir(null), "update-modern-3.5.3.png").outputStream().use {
+                screenshot.compress(Bitmap.CompressFormat.PNG, 100, it)
+            }
+            screenshot.recycle()
+        }
     }
 
     @Test
@@ -95,39 +115,39 @@ class UpdatedFeatureUiInstrumentedTest {
 
     @Test
     fun modernHomeKeepsAppearanceControlsAvailable() {
-        val context = androidx.test.core.app.ApplicationProvider.getApplicationContext<android.content.Context>()
-        val previousStyle = PiperUiPreferences.style(context)
-        try {
-            PiperUiPreferences.setStyle(context, PiperUiStyle.MODERN)
-            ActivityScenario.launch(HomeActivity::class.java).use { scenario ->
+        ActivityScenario.launch(HomeActivity::class.java).use { scenario ->
                 scenario.onActivity { activity ->
                     assertEquals(View.GONE, activity.findViewById<View>(R.id.homeBackground).visibility)
+                    assertNotNull(activity.findViewById<MaterialCardView>(R.id.homeFeaturePanel))
+                    assertNotNull(activity.findViewById<MaterialCardView>(R.id.homePiperBrowser))
+                }
+                val screenshot = InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot()
+                val context = InstrumentationRegistry.getInstrumentation().targetContext
+                File(context.getExternalFilesDir(null), "home-modern-3.5.3.png").outputStream().use {
+                    screenshot.compress(Bitmap.CompressFormat.PNG, 100, it)
+                }
+                screenshot.recycle()
+                scenario.onActivity { activity ->
                     activity.findViewById<View>(R.id.navSettings).performClick()
                     activity.supportFragmentManager.executePendingTransactions()
-                    assertNotNull(activity.findViewById<View>(R.id.layoutUiStyle))
+                    assertEquals(0, activity.resources.getIdentifier("layoutUiStyle", "id", activity.packageName))
                     assertNotNull(activity.findViewById<View>(R.id.layoutColorMode))
                     assertNotNull(activity.findViewById<View>(R.id.layoutLanguage))
                 }
-            }
-        } finally {
-            PiperUiPreferences.setStyle(context, previousStyle)
         }
     }
 
     @Test
-    fun modernHomeNavigationSelectsTabsWithoutGlassOrSlidingIndicator() {
+    fun modernHomeNavigationSelectsTabsWithoutSlidingIndicator() {
         val context = androidx.test.core.app.ApplicationProvider.getApplicationContext<android.content.Context>()
-        val previousStyle = PiperUiPreferences.style(context)
         val previousColorMode = PiperUiPreferences.colorMode(context)
         try {
-            PiperUiPreferences.setStyle(context, PiperUiStyle.MODERN)
             for (mode in listOf(PiperColorMode.LIGHT, PiperColorMode.DARK)) {
                 PiperUiPreferences.setColorMode(context, mode)
                 InstrumentationRegistry.getInstrumentation().waitForIdleSync()
                 ActivityScenario.launch(HomeActivity::class.java).use { scenario ->
                     scenario.onActivity { activity ->
                         val nav = activity.findViewById<FrameLayout>(R.id.bottomNavCard)
-                        assertTrue(nav.javaClass != LiquidGlassView::class.java)
                         assertEquals(1, nav.childCount)
                         val homeLabel = activity.findViewById<TextView>(R.id.txtHome)
                         val settingsLabel = activity.findViewById<TextView>(R.id.txtSettings)
@@ -151,7 +171,6 @@ class UpdatedFeatureUiInstrumentedTest {
             }
         } finally {
             PiperUiPreferences.setColorMode(context, previousColorMode)
-            PiperUiPreferences.setStyle(context, previousStyle)
         }
     }
 }

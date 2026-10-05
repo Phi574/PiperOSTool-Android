@@ -21,4 +21,3 @@ dependencyResolutionManagement {
 
 rootProject.name = "Piper OS Tool"
 include(":app")
-include(":liquidglass")

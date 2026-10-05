@@ -42,9 +42,6 @@
     <string name="lock_connection_required">Cần kết nối mạng</string>
     <string name="lock_no_offline_data">Thiết bị chưa có dữ liệu mã khóa đã đồng bộ. Hãy kết nối mạng một lần để xác minh an toàn.</string>
     <string name="settings_lock_offline">Mã khóa trực tuyến tạm ẩn khi offline</string>
-    <string name="settings_ui_style">Kiểu giao diện</string>
-    <string name="settings_ui_classic">Liquid Glass (Cổ điển)</string>
-    <string name="settings_ui_modern">Hiện đại</string>
     <string name="settings_color_mode">Màu giao diện</string>
     <string name="settings_color_system">Theo hệ thống</string>
     <string name="settings_color_light">Sáng</string>
@@ -69,8 +66,6 @@
     <string name="home_press_again_to_exit">Nhấn lần nữa để thoát</string>
     <string name="home_screen_title">Trang chủ</string>
     <string name="home_screen_summary">Các công cụ PiperOS đã sẵn sàng trên thiết bị của bạn.</string>
-    <string name="home_classic_title">TRANG CHỦ</string>
-    <string name="home_classic_summary">Mọi hệ thống đang hoạt động. Quét bảo mật đã được bỏ qua.</string>
     <string name="app_name">Piper OS Tool</string>
     <string name="settings_project_section">DỰ ÁN MÃ NGUỒN MỞ</string>
     <string name="settings_android_source">PiperOS Android trên GitHub</string>

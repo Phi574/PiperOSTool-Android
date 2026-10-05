@@ -20,9 +20,14 @@
 
 ## Bản hiện tại
 
-`3.5.2.PRE` (versionCode `53`) sử dụng `minSdk 29 (Android 10)`, `targetSdk 36`, Kotlin `2.4.10`.
+`3.5.3.PRE` (versionCode `54`) sử dụng `minSdk 29 (Android 10)`, `targetSdk 36`, Kotlin `2.4.10`.
 
-**Tải và cài đặt:** [PiperOS-Tool-3.5.2.PRE-debug.apk](https://github.com/Phi574/PiperOSTool-Android/releases/download/v3.5.2.PRE/PiperOS-Tool-3.5.2.PRE-debug.apk) · [Chi tiết bản phát hành](https://github.com/Phi574/PiperOSTool-Android/releases/tag/v3.5.2.PRE). APK được ký bằng khóa debug của dự án; màn Cập nhật chỉ chấp nhận APK có cùng chữ ký với bản đang cài.
+**Tải và cài đặt:** [PiperOS-Tool-3.5.3.PRE-debug.apk](https://github.com/Phi574/PiperOSTool-Android/releases/download/v3.5.3.PRE/PiperOS-Tool-3.5.3.PRE-debug.apk) · [Chi tiết bản phát hành](https://github.com/Phi574/PiperOSTool-Android/releases/tag/v3.5.3.PRE). APK được ký bằng khóa debug của dự án; màn Cập nhật chỉ chấp nhận APK có cùng chữ ký với bản đang cài.
+
+### Giao diện Hiện Đại trong 3.5.3.PRE
+
+- Gỡ module LiquidGlass và lựa chọn Kiểu giao diện; giữ tùy chọn màu Theo hệ thống, Sáng, Tối.
+- Hai thẻ Trang chủ, nút màn Cập nhật và các hộp thoại dùng thẻ Hiện Đại bo góc.
 
 ### Sửa luồng cài trên OnePlus trong 3.5.2.PRE
 

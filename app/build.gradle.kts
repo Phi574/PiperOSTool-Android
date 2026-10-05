@@ -25,8 +25,8 @@ android {
         // scoped-storage model and media/remote features.
         minSdk = 29
         targetSdk = 36
-        versionCode = 53
-        versionName = "3.5.2.PRE"
+        versionCode = 54
+        versionName = "3.5.3.PRE"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         ndk {
@@ -99,7 +99,6 @@ dependencies {
     implementation("com.github.MuntashirAkon:sun-security-android:1.1")
     implementation("org.conscrypt:conscrypt-android:2.5.3")
     implementation("com.journeyapps:zxing-android-embedded:4.3.0")
-    implementation(project(":liquidglass"))
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

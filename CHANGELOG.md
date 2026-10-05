@@ -1,5 +1,12 @@
 # Changelog
 
+## 3.5.3.PRE
+
+- Gỡ module LiquidGlass, mã vẽ kính, tài nguyên và các nhánh giao diện cũ; giao diện Hiện Đại là giao diện duy nhất.
+- Bỏ mục Kiểu giao diện trong Cài đặt và xóa lựa chọn cũ đã lưu khi khởi động.
+- Chuyển hai thẻ Trang chủ, các nút màn Cập nhật và hộp thoại sang thẻ Hiện Đại bo góc; giữ chế độ Sáng/Tối và các tính năng cập nhật.
+- Nâng versionCode lên 54 để cập nhật đè từ 3.5.2.PRE.
+
 ## 3.5.2.PRE
 
 - Mỗi bản cập nhật dùng tên APK và FileProvider URI riêng theo tag/SHA-256 để trình cài của ROM không nhận lại đường dẫn tệp của bản trước.

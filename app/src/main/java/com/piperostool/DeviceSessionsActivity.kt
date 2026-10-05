@@ -29,11 +29,7 @@ class DeviceSessionsActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_device_sessions)
         val background = findViewById<ImageView>(R.id.homeBackground)
-        if (PiperUiPreferences.isModern(this)) background.visibility = View.GONE
-        else if (AccountDataScope.preferences(this, "PiperPrefs").getBoolean("has_custom_bg", false)) {
-            val file = AccountDataScope.file(this, "appearance", "custom_bg.jpg")
-            android.graphics.drawable.Drawable.createFromPath(file.absolutePath)?.let { background.setImageDrawable(it) }
-        }
+        background.visibility = View.GONE
         PiperModernUi.watch(this)
         findViewById<View>(R.id.btnSessionsBack).setOnClickListener { finish() }
         findViewById<Button>(R.id.btnChangeAccountPassword).setOnClickListener { showPasswordDialog() }
@@ -104,7 +100,6 @@ class DeviceSessionsActivity : AppCompatActivity() {
                     getString(R.string.sessions_revoke_message),
                     getString(R.string.sessions_revoke_action),
                     destructive = true,
-                    liquidGlass = true
                 ) {
                     val uid = auth.currentUser?.uid ?: return@showConfirm
                     DeviceSessionManager.revokeSession(
@@ -127,7 +122,7 @@ class DeviceSessionsActivity : AppCompatActivity() {
                 PiperDialog.showConfirm(this@DeviceSessionsActivity,
                     getString(R.string.sessions_delete_history),
                     getString(R.string.sessions_delete_message),
-                    getString(R.string.sessions_delete_history), destructive = true, liquidGlass = true) {
+                    getString(R.string.sessions_delete_history), destructive = true) {
                     isEnabled = false
                     DeviceSessionManager.removeEndedSession(this@DeviceSessionsActivity, sessionId) { success ->
                         if (!isDestroyed && !isFinishing && !success) {
@@ -161,7 +156,6 @@ class DeviceSessionsActivity : AppCompatActivity() {
         PiperDialog.showCustom(
             context = this,
             title = getString(R.string.sessions_change_password),
-            liquidGlass = true,
             message = getString(R.string.sessions_change_password_note),
             content = fields,
             positiveLabel = getString(R.string.sessions_update_password),

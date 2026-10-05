@@ -24,7 +24,7 @@
             android:gravity="center_vertical"
             android:orientation="horizontal"
             android:paddingHorizontal="8dp"
-            android:tag="piper_glass_content">
+            >
             <ImageButton
                 android:id="@+id/btnRemoteBack"
                 android:layout_width="48dp"
@@ -309,7 +309,7 @@
                         android:gravity="center"
                         android:orientation="vertical"
                         android:padding="18dp"
-                        android:tag="piper_glass_content">
+                        >
                         <ImageView
                             android:id="@+id/imgRemoteQr"
                             android:layout_width="220dp"
@@ -364,7 +364,6 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:tag="piper_glass_content"
                     android:padding="12dp">
                     <TextView
                         android:layout_width="wrap_content"
@@ -533,7 +532,7 @@
             android:layout_height="48dp"
             android:layout_gravity="top|end"
             android:layout_margin="16dp"
-            android:background="@drawable/bg_pill_glass"
+            android:background="@drawable/bg_modern_pill"
             android:contentDescription="@string/remote_disconnect"
             android:padding="13dp"
             android:src="@drawable/ic_browser_close"

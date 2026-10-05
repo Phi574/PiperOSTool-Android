@@ -47,37 +47,25 @@ object PiperActionSheet {
     ): android.app.Dialog {
         val dialog = android.app.Dialog(context)
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
-        val classic = !PiperUiPreferences.isModern(context)
-        fun choiceBackground() = if (classic) GradientDrawable().apply {
-            cornerRadius = dp(context, 16).toFloat()
-            setColor(Color.argb(112, 19, 31, 49))
-            setStroke(dp(context, 1), Color.argb(105, 255, 255, 255))
-        } else sheetItemBackground(context)
+        fun choiceBackground() = sheetItemBackground(context)
         val root = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(context, 18), dp(context, 14), dp(context, 18), dp(context, 16))
         }
-        root.addView(titleView(context, title).apply {
-            if (classic) setTextColor(Color.WHITE)
-        })
+        root.addView(titleView(context, title))
         val search = EditText(context).apply {
             hint = "Tìm trong ${choices.size} lựa chọn"
             setSingleLine(true)
             textSize = 15f
             setPadding(dp(context, 14), dp(context, 7), dp(context, 14), dp(context, 7))
             background = choiceBackground()
-            if (classic) {
-                setTextColor(Color.WHITE)
-                setHintTextColor(Color.argb(200, 255, 255, 255))
-            }
         }
         root.addView(search, LinearLayout.LayoutParams(-1, dp(context, 48)).apply {
             bottomMargin = dp(context, 10)
         })
         val count = TextView(context).apply {
             textSize = 12f
-            setTextColor(if (classic) Color.argb(225, 255, 255, 255)
-                else PiperModernUi.secondaryTextColor(context))
+            setTextColor(PiperModernUi.secondaryTextColor(context))
             setPadding(dp(context, 8), 0, dp(context, 8), dp(context, 8))
         }
         root.addView(count)
@@ -95,7 +83,7 @@ object PiperActionSheet {
                 list.addView(TextView(context).apply {
                     text = if (choice.selected) "✓  ${choice.label}" else choice.label
                     textSize = 15f
-                    setTextColor(if (classic) Color.WHITE else PiperModernUi.textColor(context))
+                    setTextColor(PiperModernUi.textColor(context))
                     gravity = Gravity.CENTER_VERTICAL
                     minimumHeight = dp(context, 52)
                     setPadding(dp(context, 16), dp(context, 8), dp(context, 16), dp(context, 8))
@@ -129,19 +117,9 @@ object PiperActionSheet {
         dialog.setContentView(panel, ViewGroup.LayoutParams(-1, -1))
         dialog.setCanceledOnTouchOutside(false)
         dialog.setOnShowListener {
-            if (PiperUiPreferences.isModern(context)) {
-                panel.setCardBackgroundColor(PiperModernUi.surfaceColor(context))
-                panel.strokeColor = PiperModernUi.borderColor(context)
-                panel.strokeWidth = dp(context, 1)
-            } else {
-                PiperClassicGlassUi.apply(panel)
-                root.background = GradientDrawable().apply {
-                    cornerRadius = dp(context, 24).toFloat()
-                    setColor(Color.argb(118, 13, 24, 42))
-                }
-                search.background = choiceBackground()
-                for (index in 0 until list.childCount) list.getChildAt(index).background = choiceBackground()
-            }
+            panel.setCardBackgroundColor(PiperModernUi.surfaceColor(context))
+            panel.strokeColor = PiperModernUi.borderColor(context)
+            panel.strokeWidth = dp(context, 1)
             dialog.window?.apply {
                 setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
                 addFlags(android.view.WindowManager.LayoutParams.FLAG_DIM_BEHIND)
@@ -240,10 +218,8 @@ object PiperActionSheet {
         actions.addView(applyButton)
         root.addView(actions)
         PiperModernUi.apply(root)
-        if (PiperUiPreferences.isModern(context)) {
-            applyButton.backgroundTintList = ColorStateList.valueOf(PiperModernUi.accentColor(context))
-            applyButton.setTextColor(Color.WHITE)
-        }
+        applyButton.backgroundTintList = ColorStateList.valueOf(PiperModernUi.accentColor(context))
+        applyButton.setTextColor(Color.WHITE)
         setSheetContent(dialog, root)
         styleBottomSheet(dialog, context)
         dialog.show()
@@ -390,29 +366,11 @@ object PiperActionSheet {
     )
 
     private fun setSheetContent(dialog: BottomSheetDialog, content: View) {
-        if (PiperUiPreferences.isModern(content.context)) {
-            dialog.setContentView(content)
-            return
-        }
-        val panel = com.google.android.material.card.MaterialCardView(android.view.ContextThemeWrapper(content.context, R.style.Theme_PiperOSTool)).apply {
-            layoutParams = content.layoutParams
-            cardElevation = 0f
-            preventCornerOverlap = false
-            setCardBackgroundColor(Color.TRANSPARENT)
-        }
-        content.layoutParams = android.widget.FrameLayout.LayoutParams(-1, -1)
-        content.background = null
-        panel.addView(content)
-        dialog.setContentView(panel)
-        panel.post { PiperClassicGlassUi.apply(panel); content.background = null }
+        dialog.setContentView(content)
     }
 
     private fun styleBottomSheet(dialog: BottomSheetDialog, context: Context) {
         dialog.setOnShowListener {
-            if (!PiperUiPreferences.isModern(context)) {
-                dialog.findViewById<View>(com.google.android.material.R.id.design_bottom_sheet)?.setBackgroundColor(Color.TRANSPARENT)
-                return@setOnShowListener
-            }
             dialog.findViewById<View>(com.google.android.material.R.id.design_bottom_sheet)?.background =
                 GradientDrawable().apply {
                     shape = GradientDrawable.RECTANGLE

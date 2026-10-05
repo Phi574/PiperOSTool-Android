@@ -45,7 +45,6 @@ object PiperDialog {
         positiveLabel: String,
         negativeLabel: String = context.getString(android.R.string.cancel),
         destructive: Boolean = false,
-        liquidGlass: Boolean = false,
         onConfirm: () -> Unit
     ): Dialog = showCustom(
         context = context,
@@ -54,7 +53,6 @@ object PiperDialog {
         positiveLabel = positiveLabel,
         negativeLabel = negativeLabel,
         destructive = destructive,
-        liquidGlass = liquidGlass,
         onPositive = {
             onConfirm()
             true
@@ -71,13 +69,11 @@ object PiperDialog {
         negativeLabel: String? = context.getString(android.R.string.cancel),
         neutralLabel: String? = null,
         destructive: Boolean = false,
-        liquidGlass: Boolean = false,
         onPositive: () -> Boolean,
         onNeutral: (() -> Unit)? = null,
         onNegative: (() -> Unit)? = null
     ): Dialog {
         val dialog = Dialog(context)
-        val useGlass = !PiperUiPreferences.isModern(context)
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
         val root = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
@@ -159,46 +155,13 @@ object PiperDialog {
         root.addView(buttons)
         PiperModernUi.apply(root)
         PiperAutoFont.apply(root)
-        if (useGlass) {
-            root.background = null
-            buttons.orientation = LinearLayout.VERTICAL
-            for (index in 0 until buttons.childCount) {
-                val button = buttons.getChildAt(index) as MaterialButton
-                button.layoutParams = LinearLayout.LayoutParams(-1, -2).apply {
-                    if (index > 0) topMargin = dp(context, 8)
-                }
-                button.backgroundTintList = null
-                button.background = PiperRefractiveGlassDrawable(button, dp(context, 22).toFloat(),
-                    Color.argb(36, 18, 23, 33), PiperClassicGlassUi.borderColor(context))
-                button.setTextColor(if (destructive && index == buttons.childCount - 1)
-                    Color.rgb(255, 164, 170) else PiperClassicGlassUi.textColor(context))
-            }
-            val panel = com.google.android.material.card.MaterialCardView(android.view.ContextThemeWrapper(context, R.style.Theme_PiperOSTool)).apply {
-                radius = dp(context, 24).toFloat()
-                cardElevation = 0f
-                setCardBackgroundColor(Color.TRANSPARENT)
-                preventCornerOverlap = false
-            }
-            val scroll = androidx.core.widget.NestedScrollView(context).apply {
-                isFillViewport = false
-                addView(root)
-            }
-            panel.addView(scroll, android.widget.FrameLayout.LayoutParams(-1, -2))
-            dialog.setContentView(panel)
-            panel.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
-                val maxHeight = (context.resources.displayMetrics.heightPixels * 0.8f).toInt()
-                if (scroll.height > maxHeight) {
-                    scroll.layoutParams = scroll.layoutParams.apply { height = maxHeight }
-                }
-            }
-        } else dialog.setContentView(root)
+        dialog.setContentView(root)
         dialog.setCanceledOnTouchOutside(true)
         dialog.setOnShowListener {
-            if (useGlass) dialog.findViewById<View>(android.R.id.content)?.let { PiperClassicGlassUi.apply(it) }
             dialog.window?.apply {
                 setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
                 addFlags(android.view.WindowManager.LayoutParams.FLAG_DIM_BEHIND)
-                attributes = attributes.apply { dimAmount = if (useGlass) 0.32f else 0.58f }
+                attributes = attributes.apply { dimAmount = 0.58f }
                 setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
                 setLayout(
                     (context.resources.displayMetrics.widthPixels * 0.9f).toInt().coerceAtMost(dp(context, 560)),
@@ -226,12 +189,7 @@ object PiperDialog {
         panel.addView(scroll)
         dialog.setContentView(panel)
         dialog.setOnShowListener {
-            if (PiperUiPreferences.isModern(context)) {
-                PiperModernUi.apply(panel)
-            } else {
-                content.background = null
-                PiperClassicGlassUi.apply(panel)
-            }
+            PiperModernUi.apply(panel)
             PiperAutoFont.apply(content)
             dialog.window?.apply {
                 setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))

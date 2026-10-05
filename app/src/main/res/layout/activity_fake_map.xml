@@ -24,7 +24,7 @@
             android:gravity="center_vertical"
             android:orientation="horizontal"
             android:paddingHorizontal="8dp"
-            android:tag="piper_glass_content">
+            >
             <ImageButton
                 android:id="@+id/btnFakeMapBack"
                 android:layout_width="48dp"
@@ -140,7 +140,7 @@
                 android:paddingTop="12dp"
                 android:paddingEnd="14dp"
                 android:paddingBottom="16dp"
-                android:tag="piper_glass_content">
+                >
                 <com.google.android.material.button.MaterialButtonToggleGroup
                     android:id="@+id/fakeMapModeGroup"
                     android:layout_width="match_parent"

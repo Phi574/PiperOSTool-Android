@@ -23,7 +23,7 @@
             android:orientation="horizontal"
             android:paddingStart="12dp"
             android:paddingEnd="16dp"
-            android:tag="piper_glass_content">
+            >
             <ImageButton
                 android:id="@+id/mediaClose"
                 android:layout_width="48dp"
@@ -105,7 +105,7 @@
             android:orientation="horizontal"
             android:paddingStart="14dp"
             android:paddingEnd="4dp"
-            android:tag="piper_glass_content">
+            >
             <ImageView
                 android:layout_width="20dp"
                 android:layout_height="20dp"
@@ -214,7 +214,7 @@
             android:paddingTop="12dp"
             android:paddingEnd="20dp"
             android:paddingBottom="8dp"
-            android:tag="piper_glass_content">
+            >
             <TextView
                 android:id="@+id/mediaNowTitle"
                 android:layout_width="match_parent"

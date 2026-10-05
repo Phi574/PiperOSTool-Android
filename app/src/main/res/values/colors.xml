@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <color name="modern_surface">#FFFFFFFF</color>
+    <color name="modern_surface_soft">#FFF3F6F8</color>
+    <color name="modern_border">#FFDDE5EA</color>
     <color name="piper_window_background">#090D10</color>
     <color name="home_nav_surface">#FFFDFEFF</color>
     <color name="home_nav_border">#FFDCE3E8</color>

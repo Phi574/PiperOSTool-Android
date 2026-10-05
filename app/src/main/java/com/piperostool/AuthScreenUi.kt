@@ -10,13 +10,11 @@ object AuthScreenUi {
     fun apply(
         activity: AppCompatActivity,
         root: View,
-        classicBackground: View? = null,
-        classicOverlay: View? = null
+        background: View? = null,
+        overlay: View? = null
     ) {
-        // Authentication screens use the same transparent LiquidGlass shell
-        // in every app theme so login forms never turn into opaque white cards.
-        classicBackground?.visibility = View.VISIBLE
-        classicOverlay?.visibility = View.GONE
+        background?.visibility = View.GONE
+        overlay?.visibility = View.GONE
 
         WindowCompat.setDecorFitsSystemWindows(activity.window, false)
         val initialLeft = root.paddingLeft
@@ -38,7 +36,7 @@ object AuthScreenUi {
         }
         ViewCompat.requestApplyInsets(root)
 
-        PiperClassicGlassUi.watch(activity)
+        PiperModernUi.watch(activity)
 
         root.alpha = 0f
         root.translationY = 8f * activity.resources.displayMetrics.density

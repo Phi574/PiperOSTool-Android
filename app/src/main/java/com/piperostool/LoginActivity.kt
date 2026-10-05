@@ -16,7 +16,6 @@ import com.google.firebase.firestore.firestore
 
 class LoginActivity : AppCompatActivity() {
 
-    // SỬA: Đổi sang EditText thuần để khớp với giao diện LiquidGlass (Không dùng TextInputLayout nữa)
     private lateinit var etEmail: EditText
     private lateinit var etPassword: EditText
     private lateinit var btnLogin: Button
@@ -63,7 +62,7 @@ class LoginActivity : AppCompatActivity() {
         AuthScreenUi.apply(
             this,
             root,
-            findViewById(R.id.authClassicBackground),
+            findViewById(R.id.authBackground),
             findViewById(R.id.modernAuthOverlay)
         )
         offlineState = findViewById(R.id.loginOfflineState)

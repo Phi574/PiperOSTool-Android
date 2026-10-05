@@ -77,7 +77,7 @@
             android:layout_height="50dp"
             android:layout_weight="1"
             android:layout_marginStart="6dp"
-            android:background="@drawable/bg_pill_glass"
+            android:background="@drawable/bg_modern_pill"
             android:clickable="true"
             android:focusable="true"
             android:gravity="center"

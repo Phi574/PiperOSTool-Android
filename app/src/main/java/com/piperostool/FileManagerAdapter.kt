@@ -60,7 +60,6 @@ class FileManagerAdapter(
             else -> "${fileType(entry.name)} • ${Formatter.formatShortFileSize(holder.itemView.context, entry.size)}"
         }
         holder.trailing.setImageResource(R.drawable.ic_chevron_right)
-        if (PiperUiPreferences.isModern(holder.itemView.context)) {
             holder.name.setTextColor(PiperModernUi.textColor(holder.itemView.context))
             holder.meta.setTextColor(PiperModernUi.secondaryTextColor(holder.itemView.context))
             holder.trailing.imageTintList = ColorStateList.valueOf(
@@ -86,12 +85,6 @@ class FileManagerAdapter(
                     setStroke(dp(holder.itemView, 1), PiperModernUi.accentColor(holder.itemView.context))
                 }
             }
-        }
-        if (!PiperUiPreferences.isModern(holder.itemView.context)) {
-            PiperClassicGlassUi.apply(holder.itemView)
-            holder.trailing.imageTintList = ColorStateList.valueOf(PiperClassicGlassUi.textColor(holder.itemView.context))
-            holder.trailing.setImageResource(if (entry.archivePath in selectedPaths) R.drawable.check_circle else R.drawable.ic_chevron_right)
-        }
         holder.itemView.setOnClickListener { onClick(entry) }
         holder.itemView.setOnLongClickListener { onLongClick(entry); true }
         PiperAutoFont.apply(holder.itemView)
@@ -135,7 +128,6 @@ class FileManagerAdapter(
     }
 
     private fun styleIcon(icon: ImageView, entry: ApkWorkspaceEntry, iconResource: Int) {
-        if (!PiperUiPreferences.isModern(icon.context)) return
         val density = icon.resources.displayMetrics.density
         icon.background = GradientDrawable().apply {
             shape = GradientDrawable.RECTANGLE

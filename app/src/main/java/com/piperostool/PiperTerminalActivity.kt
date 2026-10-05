@@ -109,10 +109,8 @@ class PiperTerminalActivity : AppCompatActivity(), TerminalSessionManager.Listen
         promptModeView = findViewById(R.id.tvTerminalPromptMode)
         outputView.setTag(R.id.piper_auto_font_ignore, true)
         commandInput.setTag(R.id.piper_auto_font_ignore, true)
-        if (PiperUiPreferences.isModern(this)) {
-            outputScroll.setBackgroundResource(R.drawable.bg_terminal_screen)
-            outputView.setTextColor(Color.rgb(247, 247, 248))
-        }
+        outputScroll.setBackgroundResource(R.drawable.bg_terminal_screen)
+        outputView.setTextColor(Color.rgb(247, 247, 248))
 
         loadHistory()
         val firstSession = TerminalSessionManager.ensureSession(this)

@@ -117,7 +117,7 @@ class HomeActivity : AppCompatActivity() {
         val hasCustomBg = prefs.getBoolean("has_custom_bg", false)
         val bgView = findViewById<ImageView>(R.id.homeBackground)
 
-        if (PiperUiPreferences.isModern(this)) {
+        if (!hasCustomBg) {
             bgView.visibility = View.GONE
             return
         }
@@ -130,14 +130,13 @@ class HomeActivity : AppCompatActivity() {
                 if (file.exists()) {
                     val drawable = android.graphics.drawable.Drawable.createFromPath(file.absolutePath)
                     bgView.setImageDrawable(drawable)
+                    bgView.visibility = View.VISIBLE
                 } else {
-                    bgView.setImageResource(R.drawable.backgroud)
+                    bgView.visibility = View.GONE
                 }
             } catch (e: Exception) {
-                bgView.setImageResource(R.drawable.backgroud)
+                bgView.visibility = View.GONE
             }
-        } else {
-            bgView.setImageResource(R.drawable.backgroud)
         }
     }
 

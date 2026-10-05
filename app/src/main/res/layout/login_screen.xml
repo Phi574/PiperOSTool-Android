@@ -8,7 +8,7 @@
     android:background="@color/black">
 
     <ImageView
-        android:id="@+id/authClassicBackground"
+        android:id="@+id/authBackground"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:contentDescription="@null"

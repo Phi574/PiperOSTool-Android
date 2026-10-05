@@ -56,11 +56,9 @@ class SettingFragment : Fragment() {
     private lateinit var layoutResetBackground: LinearLayout
 
     private lateinit var tvCurrentBackground: TextView
-    private lateinit var layoutUiStyle: View
     private lateinit var layoutColorMode: View
     private lateinit var layoutLanguage: View
     private lateinit var layoutFont: View
-    private lateinit var tvUiStyleValue: TextView
     private lateinit var tvColorModeValue: TextView
     private lateinit var tvLanguageValue: TextView
     private lateinit var tvFontValue: TextView
@@ -172,7 +170,6 @@ class SettingFragment : Fragment() {
         updateBackgroundStatusText()
         updateAppearanceStatus()
 
-        layoutUiStyle.setOnClickListener { showUiStyleDialog() }
         layoutColorMode.setOnClickListener { showColorModeDialog() }
         layoutLanguage.setOnClickListener { showLanguageDialog() }
         layoutFont.setOnClickListener { showFontDialog() }
@@ -260,7 +257,6 @@ class SettingFragment : Fragment() {
             R.id.btnChangeLock,
             R.id.btnPermissions,
             R.id.btnCheckUpdate,
-            R.id.layoutUiStyle,
             R.id.layoutColorMode,
             R.id.layoutLanguage,
             R.id.layoutFont,
@@ -307,11 +303,9 @@ class SettingFragment : Fragment() {
         layoutResetBackground = view.findViewById(R.id.layoutResetBackground)
 
         tvCurrentBackground = view.findViewById(R.id.tvCurrentBackground)
-        layoutUiStyle = view.findViewById(R.id.layoutUiStyle)
         layoutColorMode = view.findViewById(R.id.layoutColorMode)
         layoutLanguage = view.findViewById(R.id.layoutLanguage)
         layoutFont = view.findViewById(R.id.layoutFont)
-        tvUiStyleValue = view.findViewById(R.id.tvUiStyleValue)
         tvColorModeValue = view.findViewById(R.id.tvColorModeValue)
         tvLanguageValue = view.findViewById(R.id.tvLanguageValue)
         tvFontValue = view.findViewById(R.id.tvFontValue)
@@ -329,18 +323,6 @@ class SettingFragment : Fragment() {
     }
 
     private fun updateAppearanceStatus() {
-        val modern = PiperUiPreferences.style(requireContext()) == PiperUiStyle.MODERN
-        view?.findViewById<View>(R.id.layoutColorMode)?.visibility =
-            if (modern) View.VISIBLE else View.GONE
-        view?.findViewById<View>(R.id.layoutColorModeDivider)?.visibility =
-            if (modern) View.VISIBLE else View.GONE
-        tvUiStyleValue.setText(
-            if (modern) {
-                R.string.settings_ui_modern
-            } else {
-                R.string.settings_ui_classic
-            }
-        )
         tvColorModeValue.setText(
             when (PiperUiPreferences.colorMode(requireContext())) {
                 PiperColorMode.SYSTEM -> R.string.settings_color_system
@@ -356,27 +338,6 @@ class SettingFragment : Fragment() {
             }
         )
         tvFontValue.text = PiperFontPreferences.selectedName(requireContext())
-    }
-
-    private fun showUiStyleDialog() {
-        val current = PiperUiPreferences.style(requireContext())
-        PiperActionSheet.showSingleSelect(
-            context = requireContext(),
-            title = getString(R.string.settings_ui_style),
-            choices = listOf(
-                PiperSheetChoice("modern", getString(R.string.settings_ui_modern), current == PiperUiStyle.MODERN),
-                PiperSheetChoice("classic", getString(R.string.settings_ui_classic), current == PiperUiStyle.CLASSIC)
-            ),
-            onSelect = { key ->
-                PiperUiPreferences.setStyle(
-                    requireContext(),
-                    if (key == "modern") PiperUiStyle.MODERN else PiperUiStyle.CLASSIC
-                )
-                requireActivity().recreate()
-            },
-            onRemove = {},
-            onAdd = {}
-        )
     }
 
     private fun showColorModeDialog() {
