@@ -116,6 +116,14 @@ class SplashScreenActivity : AppCompatActivity() {
             navigateTo(WelcomeActivity::class.java)
             return
         }
+        val emailNeedsVerification = currentUser.providerData.any {
+            it.providerId == com.google.firebase.auth.EmailAuthProvider.PROVIDER_ID
+        } && !currentUser.isEmailVerified
+        if (emailNeedsVerification) {
+            FirebaseAuth.getInstance().signOut()
+            navigateTo(LoginActivity::class.java)
+            return
+        }
 
         val timeout = Runnable {
             if (!sessionResolved && !navigating) {

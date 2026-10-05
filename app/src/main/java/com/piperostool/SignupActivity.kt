@@ -21,6 +21,8 @@ class SignupActivity : AppCompatActivity() {
     private lateinit var edtPassword: EditText
     private lateinit var edtConfirm: EditText
     private lateinit var btnRegister: Button
+    private lateinit var btnGoogle: Button
+    private lateinit var btnPhone: Button
     private lateinit var tvBackToLogin: TextView
     private lateinit var root: View
     private lateinit var offlineState: View
@@ -49,6 +51,8 @@ class SignupActivity : AppCompatActivity() {
         edtPassword = findViewById(R.id.edtSignupPassword)
         edtConfirm = findViewById(R.id.edtSignupConfirm)
         btnRegister = findViewById(R.id.btnRegister)
+        btnGoogle = findViewById(R.id.btnGoogleSignIn)
+        btnPhone = findViewById(R.id.btnPhoneSignIn)
         tvBackToLogin = findViewById(R.id.tvBackToLogin)
         root = findViewById(R.id.signupRoot)
         AuthScreenUi.apply(
@@ -69,6 +73,16 @@ class SignupActivity : AppCompatActivity() {
                     performSignUp()
                 }
             }
+        }
+
+        btnGoogle.setOnClickListener {
+            NetworkAccess.requireOnline(root) { signInWithGoogle() }
+        }
+        btnPhone.setOnClickListener {
+            val intent = Intent(this, PhoneAuthActivity::class.java)
+                .putExtra(PhoneAuthActivity.EXTRA_PREFERRED_NAME, edtName.text.toString().trim())
+            startActivity(intent)
+            overridePendingTransition(R.anim.piper_page_enter, R.anim.piper_page_exit)
         }
 
         tvBackToLogin.setOnClickListener {
@@ -135,6 +149,12 @@ class SignupActivity : AppCompatActivity() {
     }
 
     private fun saveUserToFirestore(userId: String, name: String, email: String) {
+        val user = auth.currentUser
+        if (user == null) {
+            resetButton()
+            Toast.makeText(this, R.string.auth_provider_failed, Toast.LENGTH_LONG).show()
+            return
+        }
         val userMap = hashMapOf(
             "name" to name,
             "email" to email,
@@ -143,21 +163,46 @@ class SignupActivity : AppCompatActivity() {
         )
 
         db.collection("users").document(userId)
-            .set(userMap)
-            .addOnSuccessListener {
-                Toast.makeText(this, "Identity Created Successfully!", Toast.LENGTH_SHORT).show()
-                DeviceSessionManager.startNewSession(this) {
-                    val intent = Intent(this, HomeActivity::class.java)
-                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                    startActivity(intent)
-                    overridePendingTransition(R.anim.piper_page_enter, R.anim.piper_page_exit)
-                    finish()
+            .set(userMap, com.google.firebase.firestore.SetOptions.merge())
+            .addOnCompleteListener(this) {
+                user.updateProfile(
+                    com.google.firebase.auth.UserProfileChangeRequest.Builder()
+                        .setDisplayName(name)
+                        .build()
+                ).addOnCompleteListener(this) {
+                    auth.useAppLanguage()
+                    user.sendEmailVerification().addOnCompleteListener(this) { verification ->
+                        auth.signOut()
+                        resetButton()
+                        val message = if (verification.isSuccessful) {
+                            R.string.auth_signup_verify_sent
+                        } else {
+                            R.string.auth_signup_verify_failed
+                        }
+                        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+                        if (isFinishing.not()) finish()
+                    }
                 }
             }
-            .addOnFailureListener { e ->
-                Toast.makeText(this, "Lỗi lưu dữ liệu: ${e.message}", Toast.LENGTH_SHORT).show()
-                resetButton()
+    }
+
+    private fun signInWithGoogle() {
+        setAuthButtonsEnabled(false)
+        GoogleFirebaseSignIn.launch(auth = auth, activity = this, onBusy = { busy ->
+            setAuthButtonsEnabled(!busy)
+        }) { user, isNewUser, error ->
+            if (user == null) {
+                setAuthButtonsEnabled(true)
+                showAuthError(this, error)
+                return@launch
             }
+            AuthSocialProfile.createForNewUser(
+                this,
+                user,
+                isNewUser,
+                edtName.text.toString().trim()
+            ) { AuthPostLogin.continueToApp(this, user.uid) }
+        }
     }
 
     private fun resetButton() {
@@ -169,6 +214,17 @@ class SignupActivity : AppCompatActivity() {
     private fun updateNetworkUi(online: Boolean) {
         offlineState.visibility = if (online) View.GONE else View.VISIBLE
         btnRegister.visibility = if (online) View.VISIBLE else View.GONE
+        btnGoogle.visibility = if (online) View.VISIBLE else View.GONE
+        btnPhone.visibility = if (online) View.VISIBLE else View.GONE
         if (!online) NetworkAccess.showOffline(root)
+    }
+
+    private fun setAuthButtonsEnabled(enabled: Boolean) {
+        btnRegister.isEnabled = enabled
+        btnGoogle.isEnabled = enabled
+        btnPhone.isEnabled = enabled
+        listOf(btnRegister, btnGoogle, btnPhone).forEach {
+            it.alpha = if (enabled) 1f else 0.55f
+        }
     }
 }

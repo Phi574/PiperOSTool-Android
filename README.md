@@ -20,9 +20,19 @@
 
 ## Bản hiện tại
 
-`3.5.7.PRE` (versionCode `58`) sử dụng `minSdk 29 (Android 10)`, `targetSdk 36`, Kotlin `2.4.10`.
+`3.5.8.PRE` (versionCode `59`) sử dụng `minSdk 29 (Android 10)`, `targetSdk 36`, Kotlin `2.4.10`.
 
-**Tải và cài đặt:** [PiperOS-Tool-3.5.7.PRE-debug.apk](https://github.com/Phi574/PiperOSTool-Android/releases/download/v3.5.7.PRE/PiperOS-Tool-3.5.7.PRE-debug.apk) · [Chi tiết bản phát hành](https://github.com/Phi574/PiperOSTool-Android/releases/tag/v3.5.7.PRE). APK được ký bằng khóa debug của dự án; màn Cập nhật chỉ chấp nhận APK có cùng chữ ký với bản đang cài.
+**Tải và cài đặt:** [Bản phát hành 3.5.8.PRE](https://github.com/Phi574/PiperOSTool-Android/releases/tag/v3.5.8.PRE). APK được ký bằng khóa debug của dự án; màn Cập nhật chỉ chấp nhận APK có cùng chữ ký với bản đang cài.
+
+### Cải tiến trong 3.5.8.PRE
+
+- Thêm đăng nhập Google bằng Credential Manager và Firebase Authentication; đăng nhập email yêu cầu xác minh địa chỉ trước khi vào ứng dụng.
+- Thêm đăng nhập/đăng ký bằng số điện thoại, gửi và xác minh mã SMS trong Activity riêng.
+- Gửi email xác minh sau đăng ký, cho gửi lại email xác minh và dùng luồng đặt lại mật khẩu hiện hành của Firebase.
+- Thay cấu hình Firebase Android bằng tệp cấu hình mới (không lưu tệp cấu hình chứa thông tin dự án trong Git).
+- Nâng versionCode lên 59 để cập nhật từ 3.5.7.PRE.
+
+**Cấu hình Firebase cần bật:** bật Google và Phone trong Authentication > Sign-in method; với Phone, thiết lập SMS region policy. Thêm SHA-1 và SHA-256 của chứng thư ký ứng dụng vào Firebase Project Settings rồi tải lại `google-services.json`. Google sign-in cần Web client ID do tệp cấu hình tạo ra.
 
 ### Cải tiến trong 3.5.7.PRE
 

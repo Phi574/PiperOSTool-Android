@@ -61,19 +61,23 @@ class ForgotPassword : AppCompatActivity() {
 
             // Hiệu ứng loading
             btnReset.isEnabled = false
-            btnReset.text = "SENDING..."
+            btnReset.text = getString(R.string.auth_reset_sending)
             btnReset.alpha = 0.5f
 
+            auth.useAppLanguage()
             auth.sendPasswordResetEmail(email)
                 .addOnCompleteListener { task ->
                     if (task.isSuccessful) {
-                        Toast.makeText(this, "Recovery link sent! Please check your email.", Toast.LENGTH_LONG).show()
+                        Toast.makeText(this, R.string.auth_reset_generic_success, Toast.LENGTH_LONG).show()
                         finish() // Tự động quay về màn Login
                         overridePendingTransition(R.anim.piper_page_enter, R.anim.piper_page_exit)
                     } else {
-                        Toast.makeText(this, "Lỗi: ${task.exception?.message}", Toast.LENGTH_LONG).show()
+                        val message = if (task.exception is com.google.firebase.FirebaseNetworkException) {
+                            R.string.auth_network_error
+                        } else R.string.auth_reset_failed
+                        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
                         btnReset.isEnabled = true
-                        btnReset.text = "SEND RESET LINK"
+                        btnReset.text = getString(R.string.auth_send_reset)
                         btnReset.alpha = 1.0f
                     }
                 }

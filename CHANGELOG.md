@@ -1,5 +1,13 @@
 # Changelog
 
+## 3.5.8.PRE
+
+- Thêm đăng nhập Google qua Android Credential Manager và Firebase Authentication; email/password chỉ tiếp tục sau khi email được xác minh.
+- Thêm đăng nhập và tạo tài khoản bằng số điện thoại, xác minh mã SMS và xử lý tự động khi Firebase xác thực số điện thoại.
+- Gửi lại email xác minh và chuẩn hóa luồng đặt lại mật khẩu theo các action email hiện được Firebase hỗ trợ.
+- Thay cấu hình Firebase Android bằng tệp mới; không đưa tệp chứa cấu hình dự án vào Git.
+- Nâng versionCode lên 59 để cập nhật đè từ 3.5.7.PRE.
+
 ## 3.5.7.PRE
 
 - Bỏ khóa truy cập thử nghiệm PiperOS QR; thẻ Beta hoạt động như các thẻ tính năng khác.

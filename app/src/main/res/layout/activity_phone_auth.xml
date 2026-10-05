@@ -2,7 +2,7 @@
 <androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/loginRoot"
+    android:id="@+id/phoneAuthRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/black">
@@ -53,39 +53,25 @@
                 android:layout_width="64dp"
                 android:layout_height="64dp"
                 android:contentDescription="@string/app_name"
-                android:scaleType="centerInside"
                 android:src="@drawable/a3tn" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="14dp"
-                android:text="@string/auth_welcome_back"
+                android:layout_marginTop="12dp"
+                android:text="@string/auth_phone_title"
                 android:textColor="@color/white"
-                android:textSize="28sp"
+                android:textSize="24sp"
                 android:textStyle="bold" />
 
             <TextView
-                android:id="@+id/authVersion"
+                android:id="@+id/phoneAuthVersion"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
                 android:text="@string/auth_version_placeholder"
                 android:textColor="#AFFFFFFF"
                 android:textSize="12sp" />
-
-            <TextView
-                android:id="@+id/loginOfflineState"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="18dp"
-                android:background="@drawable/bg_offline_notice"
-                android:gravity="center_vertical"
-                android:padding="14dp"
-                android:text="@string/auth_offline_note"
-                android:textColor="#FFFFD180"
-                android:textSize="13sp"
-                android:visibility="gone" />
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -96,127 +82,132 @@
                 android:padding="20dp">
 
                 <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/auth_account"
-                    android:textColor="@color/white"
-                    android:textSize="19sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:text="@string/auth_login_subtitle"
-                    android:textColor="#AFFFFFFF"
-                    android:textSize="13sp" />
-
-                <EditText
-                    android:id="@+id/edtUsername"
                     android:layout_width="match_parent"
-                    android:layout_height="54dp"
-                    android:layout_marginTop="20dp"
-                    android:autofillHints="emailAddress"
-                    android:background="@drawable/bg_auth_input"
-                    android:hint="@string/auth_email_hint"
-                    android:inputType="textEmailAddress"
-                    android:maxLines="1"
-                    android:textColor="@color/white"
-                    android:textColorHint="#7FFFFFFF"
+                    android:layout_height="wrap_content"
+                    android:text="@string/auth_phone_summary"
+                    android:textColor="#BFFFFFFF"
                     android:textSize="14sp" />
 
                 <EditText
-                    android:id="@+id/edtPassword"
+                    android:id="@+id/edtPhoneDisplayName"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:layout_marginTop="16dp"
+                    android:autofillHints="name"
+                    android:background="@drawable/bg_auth_input"
+                    android:hint="@string/auth_phone_name_hint"
+                    android:inputType="textPersonName"
+                    android:maxLines="1"
+                    android:textColor="@color/white"
+                    android:textColorHint="#7FFFFFFF" />
+
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="54dp"
                     android:layout_marginTop="12dp"
-                    android:autofillHints="password"
                     android:background="@drawable/bg_auth_input"
-                    android:hint="@string/auth_password_hint"
-                    android:inputType="textPassword"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="10dp">
+
+                    <com.hbb20.CountryCodePicker
+                        android:id="@+id/phoneCountryPicker"
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        app:ccp_defaultNameCode="VN"
+                        app:ccp_showNameCode="false"
+                        app:ccp_showPhoneCode="true" />
+
+                    <EditText
+                        android:id="@+id/edtPhoneNumber"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:autofillHints="phone"
+                        android:background="@android:color/transparent"
+                        android:hint="@string/auth_phone_number_hint"
+                        android:inputType="phone"
+                        android:maxLines="1"
+                        android:paddingHorizontal="8dp"
+                        android:textColor="@color/white"
+                        android:textColorHint="#7FFFFFFF" />
+                </LinearLayout>
+
+                <EditText
+                    android:id="@+id/edtPhoneCode"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:layout_marginTop="12dp"
+                    android:background="@drawable/bg_auth_input"
+                    android:hint="@string/auth_phone_code_hint"
+                    android:inputType="number"
+                    android:maxLength="10"
                     android:maxLines="1"
                     android:textColor="@color/white"
                     android:textColorHint="#7FFFFFFF"
-                    android:textSize="14sp" />
-
-                <TextView
-                    android:id="@+id/tvForgotPassword"
-                    android:layout_width="wrap_content"
-                    android:layout_height="44dp"
-                    android:layout_gravity="end"
-                    android:gravity="center"
-                    android:text="@string/auth_forgot"
-                    android:textColor="#7DFFB0"
-                    android:textSize="13sp"
-                    android:textStyle="bold" />
-
-                <Button
-                    android:id="@+id/btnLogin"
-                    android:layout_width="match_parent"
-                    android:layout_height="54dp"
-                    android:layout_marginTop="8dp"
-                    android:background="@drawable/bg_auth_primary"
-                    android:text="@string/auth_login_action"
-                    android:textColor="#DFFFFFFF"
-                    android:textSize="14sp"
-                    android:textStyle="bold"
-                    app:backgroundTint="@null" />
+                    android:visibility="gone" />
 
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="14dp"
-                    android:gravity="center"
-                    android:text="@string/auth_or_continue"
+                    android:layout_marginTop="12dp"
+                    android:text="@string/auth_phone_sms_notice"
                     android:textColor="#AFFFFFFF"
                     android:textSize="12sp" />
 
-                <Button
-                    android:id="@+id/btnGoogleSignIn"
+                <TextView
+                    android:id="@+id/tvPhoneAuthStatus"
                     android:layout_width="match_parent"
-                    android:layout_height="50dp"
-                    android:layout_marginTop="8dp"
-                    android:background="@drawable/bg_auth_panel"
-                    android:text="@string/auth_google_button_text"
-                    android:textColor="@color/white"
-                    android:textSize="14sp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:textColor="#FFFFD180"
+                    android:textSize="13sp"
+                    android:visibility="gone" />
+
+                <Button
+                    android:id="@+id/btnPhoneSendCode"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:layout_marginTop="16dp"
+                    android:background="@drawable/bg_auth_primary"
+                    android:text="@string/auth_phone_send_code"
+                    android:textColor="#07120B"
                     android:textStyle="bold"
                     app:backgroundTint="@null" />
 
                 <Button
-                    android:id="@+id/btnPhoneSignIn"
+                    android:id="@+id/btnPhoneVerify"
                     android:layout_width="match_parent"
-                    android:layout_height="50dp"
+                    android:layout_height="52dp"
                     android:layout_marginTop="8dp"
-                    android:background="@drawable/bg_auth_panel"
-                    android:text="@string/auth_phone_continue"
-                    android:textColor="@color/white"
-                    android:textSize="14sp"
+                    android:background="@drawable/bg_auth_primary"
+                    android:text="@string/auth_phone_verify"
+                    android:textColor="#07120B"
                     android:textStyle="bold"
+                    android:visibility="gone"
                     app:backgroundTint="@null" />
 
                 <Button
-                    android:id="@+id/btnResendVerification"
+                    android:id="@+id/btnPhoneResend"
                     android:layout_width="match_parent"
                     android:layout_height="48dp"
                     android:layout_marginTop="8dp"
                     android:background="@drawable/bg_auth_panel"
-                    android:text="@string/auth_email_verification_resend"
+                    android:text="@string/auth_phone_resend"
                     android:textColor="@color/white"
-                    android:textSize="12sp"
                     android:textStyle="bold"
                     android:visibility="gone"
                     app:backgroundTint="@null" />
             </LinearLayout>
 
             <TextView
-                android:id="@+id/tvSignUp"
+                android:id="@+id/btnPhoneBack"
                 android:layout_width="match_parent"
                 android:layout_height="52dp"
                 android:layout_marginTop="14dp"
                 android:background="@drawable/bg_auth_panel"
                 android:gravity="center"
-                android:text="@string/auth_create_prompt"
+                android:text="@string/auth_return_login"
                 android:textColor="#DFFFFFFF"
                 android:textSize="13sp"
                 android:textStyle="bold" />

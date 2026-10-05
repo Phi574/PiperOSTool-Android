@@ -28,7 +28,12 @@ class WelcomeActivity : AppCompatActivity() {
         auth = Firebase.auth
 
         // 3. Tự động chuyển hướng nếu User đã đăng nhập trước đó
-        if (auth.currentUser != null) {
+        val currentUser = auth.currentUser
+        val needsEmailVerification = currentUser?.providerData?.any {
+            it.providerId == com.google.firebase.auth.EmailAuthProvider.PROVIDER_ID
+        } == true && currentUser?.isEmailVerified == false
+        if (needsEmailVerification) auth.signOut()
+        if (currentUser != null && !needsEmailVerification) {
             AccountSessionGuard.verify(this) { state ->
                 when (state) {
                     AccountSessionState.Valid, AccountSessionState.Offline -> {
