@@ -6,6 +6,7 @@ plugins {
 }
 
 val googleServicesConfig = file("google-services.json")
+val testPackage = providers.gradleProperty("piperTestPackage").orNull == "true"
 if (googleServicesConfig.isFile) {
     apply(plugin = "com.google.gms.google-services")
 } else {
@@ -19,13 +20,13 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.piper.os.tool"
+        applicationId = if (testPackage) "com.piper.os.tool.test" else "com.piper.os.tool"
         // Android 10 (API 29) is the supported baseline for the current UI,
         // scoped-storage model and media/remote features.
         minSdk = 29
         targetSdk = 36
-        versionCode = 51
-        versionName = "3.5.0.Beta"
+        versionCode = 52
+        versionName = "3.5.1.PRE"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         ndk {

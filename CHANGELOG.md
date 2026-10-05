@@ -1,5 +1,12 @@
 # Changelog
 
+## 3.5.1.PRE
+
+- Thay thanh tab dưới cùng bằng giao diện Hiện Đại bo góc, không còn LiquidGlass hay chỉ báo trượt; tab được chọn hiển thị đậm, tab còn lại xám nhạt.
+- Gỡ thông báo dự án 3.5.0.Beta khỏi Trang chủ.
+- Đổi nền Hiện Đại: chế độ Sáng dùng trắng và xám nhẹ, chế độ Tối dùng xanh đậm và xanh nhạt; Theo hệ thống bám màu thiết bị.
+- Tăng bo góc các thẻ, nút và ô nhập của giao diện Hiện Đại; nâng versionCode lên 52.
+
 ## 3.5.0.Beta
 
 - Hiển thị thông báo dự án tại Trang chủ: dự kiến dừng LiquidGlass và chuyển toàn bộ về giao diện Hiện Đại ở bản tiếp theo.

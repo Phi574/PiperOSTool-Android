@@ -1,10 +1,13 @@
 package com.piperostool
 
+import android.graphics.Bitmap
 import android.view.View
 import android.view.ContextThemeWrapper
 import android.view.LayoutInflater
 import android.widget.ImageButton
 import android.widget.ImageView
+import android.widget.FrameLayout
+import android.widget.TextView
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -15,6 +18,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import kotlin.math.roundToInt
+import java.io.File
 
 @RunWith(AndroidJUnit4::class)
 class UpdatedFeatureUiInstrumentedTest {
@@ -106,6 +110,47 @@ class UpdatedFeatureUiInstrumentedTest {
                 }
             }
         } finally {
+            PiperUiPreferences.setStyle(context, previousStyle)
+        }
+    }
+
+    @Test
+    fun modernHomeNavigationSelectsTabsWithoutGlassOrSlidingIndicator() {
+        val context = androidx.test.core.app.ApplicationProvider.getApplicationContext<android.content.Context>()
+        val previousStyle = PiperUiPreferences.style(context)
+        val previousColorMode = PiperUiPreferences.colorMode(context)
+        try {
+            PiperUiPreferences.setStyle(context, PiperUiStyle.MODERN)
+            for (mode in listOf(PiperColorMode.LIGHT, PiperColorMode.DARK)) {
+                PiperUiPreferences.setColorMode(context, mode)
+                InstrumentationRegistry.getInstrumentation().waitForIdleSync()
+                ActivityScenario.launch(HomeActivity::class.java).use { scenario ->
+                    scenario.onActivity { activity ->
+                        val nav = activity.findViewById<FrameLayout>(R.id.bottomNavCard)
+                        assertTrue(nav.javaClass != LiquidGlassView::class.java)
+                        assertEquals(1, nav.childCount)
+                        val homeLabel = activity.findViewById<TextView>(R.id.txtHome)
+                        val settingsLabel = activity.findViewById<TextView>(R.id.txtSettings)
+                        activity.findViewById<View>(R.id.navSettings).performClick()
+                        assertNotNull(activity.findViewById<View>(R.id.layoutColorMode))
+                        assertEquals(settingsLabel.currentTextColor, activity.findViewById<ImageView>(R.id.iconSettings).imageTintList?.defaultColor)
+                        assertTrue(settingsLabel.currentTextColor != homeLabel.currentTextColor)
+                    }
+                    InstrumentationRegistry.getInstrumentation().waitForIdleSync()
+                    scenario.onActivity { activity ->
+                        assertNotNull(activity.findViewById<View>(R.id.layoutColorMode))
+                    }
+                    Thread.sleep(250L) // Allow the page enter animation to finish before capture.
+                    val screenshot = InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot()
+                    assertNotNull(screenshot)
+                    File(context.getExternalFilesDir(null), "nav-${mode.key}.png").outputStream().use {
+                        screenshot.compress(Bitmap.CompressFormat.PNG, 100, it)
+                    }
+                    screenshot.recycle()
+                }
+            }
+        } finally {
+            PiperUiPreferences.setColorMode(context, previousColorMode)
             PiperUiPreferences.setStyle(context, previousStyle)
         }
     }

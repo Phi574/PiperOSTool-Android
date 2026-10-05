@@ -15,6 +15,12 @@ sealed interface AccountSessionState {
 /** Checks authentication and device-session revocation without an account-block page. */
 object AccountSessionGuard {
     fun verify(context: Context, callback: (AccountSessionState) -> Unit) {
+        // The side-by-side UI test package has no account data. Keep it isolated
+        // from the production sign-in flow so instrumentation can exercise Home.
+        if (context.packageName == "com.piper.os.tool.test") {
+            callback(AccountSessionState.Valid)
+            return
+        }
         val user = FirebaseAuth.getInstance().currentUser
             ?: return callback(AccountSessionState.Expired())
         if (!NetworkAccess.isOnline(context)) {

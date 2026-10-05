@@ -140,7 +140,7 @@ object PiperModernUi {
         }
         val colors = palette(root.context)
         root.backgroundTintList = null
-        root.background = rounded(colors.surface, colors.border, 8f, root)
+        root.background = rounded(colors.surface, colors.border, 14f, root)
         applyTree(root, colors)
     }
 
@@ -175,6 +175,7 @@ object PiperModernUi {
             view.visibility = View.GONE
             return
         }
+        if (name == "bottomNavCard") return
         if (isPageRoot(name)) {
             view.setBackgroundColor(Color.TRANSPARENT)
             return
@@ -190,7 +191,7 @@ object PiperModernUi {
             view.background = rounded(
                 ColorUtils.blendARGB(palette.surface, palette.accent, 0.07f),
                 ColorUtils.blendARGB(palette.border, palette.accent, 0.18f),
-                8f,
+                14f,
                 view
             )
             return
@@ -219,7 +220,7 @@ object PiperModernUi {
                 view.setCardBackgroundColor(palette.surface)
                 view.strokeColor = palette.border
                 view.strokeWidth = view.resources.displayMetrics.density.toInt().coerceAtLeast(1)
-                view.radius = 8f * view.resources.displayMetrics.density
+                view.radius = 14f * view.resources.displayMetrics.density
                 view.cardElevation = 0f
             }
             is MaterialButton -> {
@@ -233,7 +234,7 @@ object PiperModernUi {
                     if (primary) palette.accent else palette.border
                 )
                 view.strokeWidth = view.resources.displayMetrics.density.toInt().coerceAtLeast(1)
-                view.cornerRadius = (8f * view.resources.displayMetrics.density).toInt()
+                view.cornerRadius = (14f * view.resources.displayMetrics.density).toInt()
                 view.iconTint = android.content.res.ColorStateList.valueOf(
                     if (primary) palette.onAccent else palette.secondaryText
                 )
@@ -242,7 +243,7 @@ object PiperModernUi {
                 view.boxBackgroundColor = palette.surface
                 view.boxStrokeColor = palette.border
                 view.defaultHintTextColor = android.content.res.ColorStateList.valueOf(palette.secondaryText)
-                view.setBoxCornerRadii(8f, 8f, 8f, 8f)
+                view.setBoxCornerRadii(14f, 14f, 14f, 14f)
             }
             is CompoundButton -> {
                 view.setTextColor(palette.text)
@@ -262,7 +263,7 @@ object PiperModernUi {
                 ) {
                     null
                 } else {
-                    rounded(palette.surface, palette.border, 8f, view)
+                    rounded(palette.surface, palette.border, 14f, view)
                 }
             }
             is Button -> {
@@ -272,7 +273,7 @@ object PiperModernUi {
                 view.background = rounded(
                     if (isPrimaryAction(name)) palette.accent else palette.surface,
                     if (isPrimaryAction(name)) palette.accent else palette.border,
-                    8f,
+                    14f,
                     view
                 )
             }
@@ -283,7 +284,7 @@ object PiperModernUi {
                     view.background != null && !isNavigationItem(name)
                 ) {
                     view.backgroundTintList = null
-                    view.background = rounded(palette.surface, palette.border, 8f, view)
+                    view.background = rounded(palette.surface, palette.border, 14f, view)
                 }
             }
             is ImageButton -> {
@@ -320,7 +321,7 @@ object PiperModernUi {
                     view.background != null && view.parent != null && !isSpecialSurface(name)
                 ) {
                     view.backgroundTintList = null
-                    view.background = rounded(palette.surface, palette.border, 8f, view)
+                    view.background = rounded(palette.surface, palette.border, 14f, view)
                     view.elevation = 0f
                 }
             }
@@ -457,23 +458,23 @@ object PiperModernUi {
             Configuration.UI_MODE_NIGHT_YES
 
     private val lightPalette = Palette(
-        background = Color.rgb(248, 248, 246),
-        surface = Color.argb(226, 255, 255, 255),
-        text = Color.rgb(31, 33, 36),
-        secondaryText = Color.rgb(105, 108, 112),
-        border = Color.argb(184, 216, 219, 218),
-        accent = Color.rgb(18, 124, 86),
+        background = Color.rgb(249, 251, 252),
+        surface = Color.rgb(255, 255, 255),
+        text = Color.rgb(26, 39, 49),
+        secondaryText = Color.rgb(100, 117, 129),
+        border = Color.rgb(221, 229, 234),
+        accent = Color.rgb(21, 106, 154),
         onAccent = Color.WHITE
     )
 
     private val darkPalette = Palette(
-        background = Color.rgb(18, 18, 22),
-        surface = Color.argb(228, 28, 30, 34),
-        text = Color.rgb(241, 243, 244),
-        secondaryText = Color.rgb(174, 178, 182),
-        border = Color.argb(190, 64, 68, 72),
-        accent = Color.rgb(99, 220, 165),
-        onAccent = Color.rgb(9, 45, 31)
+        background = Color.rgb(7, 25, 41),
+        surface = Color.rgb(18, 44, 67),
+        text = Color.rgb(239, 248, 255),
+        secondaryText = Color.rgb(174, 201, 218),
+        border = Color.rgb(47, 82, 109),
+        accent = Color.rgb(141, 215, 255),
+        onAccent = Color.rgb(7, 31, 48)
     )
 
     private const val AMBIENT_TAG = "piper_modern_ambient_background"

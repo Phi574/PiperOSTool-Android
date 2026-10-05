@@ -29,38 +29,19 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
 
-    <com.example.liquidglass.LiquidGlassView
+    <FrameLayout
         android:id="@+id/bottomNavCard"
         android:layout_width="match_parent"
-        android:layout_height="70dp"
-        android:layout_marginHorizontal="20dp"
-        android:layout_marginBottom="20dp"
-        app:cornerRadius="35dp"
-        app:glassMaterial="clear"
-        app:refractionHeight="30dp"
-        app:bevelWidth="10dp"
-        app:dispersionStrength="0.08"
-        app:sensorHighlight="true"
-        app:backdropSourceId="@id/homeBackground"
-        app:cardCornerRadius="35dp"
-        app:cardElevation="10dp"
+        android:layout_height="72dp"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginBottom="16dp"
+        android:background="@drawable/bg_home_navigation"
+        android:clipToOutline="true"
+        android:elevation="8dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
-        <com.example.liquidglass.LiquidGlassView
-            android:id="@+id/navSelectionGlass"
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:clickable="false"
-            android:enabled="false"
-            android:focusable="false"
-            app:bevelWidth="7dp"
-            app:cornerRadius="28dp"
-            app:dispersionStrength="0.05"
-            app:backdropSourceId="@id/homeBackground"
-            app:glassMaterial="clear"
-            app:refractionHeight="18dp" />
 
         <LinearLayout
             android:id="@+id/layoutBottomNav"
@@ -98,7 +79,7 @@
                     android:paddingEnd="2dp"
                     android:text="@string/nav_home"
                     android:textSize="10sp"
-                    android:textStyle="bold"
+                    android:textStyle="normal"
                     android:textColor="@color/green_neon"
                     android:layout_marginTop="4dp"
                     app:autoSizeMaxTextSize="10sp"
@@ -136,7 +117,7 @@
                     android:paddingEnd="2dp"
                     android:text="@string/nav_beta"
                     android:textSize="10sp"
-                    android:textStyle="bold"
+                    android:textStyle="normal"
                     android:textColor="@color/nav_unselected"
                     android:layout_marginTop="4dp"
                     app:autoSizeMaxTextSize="10sp"
@@ -172,7 +153,7 @@
                     android:paddingEnd="2dp"
                     android:text="@string/nav_apps"
                     android:textSize="10sp"
-                    android:textStyle="bold"
+                    android:textStyle="normal"
                     android:textColor="@color/nav_unselected"
                     android:layout_marginTop="4dp"
                     app:autoSizeMaxTextSize="10sp"
@@ -210,7 +191,7 @@
                     android:paddingEnd="2dp"
                     android:text="@string/nav_settings"
                     android:textSize="10sp"
-                    android:textStyle="bold"
+                    android:textStyle="normal"
                     android:textColor="@color/nav_unselected"
                     android:layout_marginTop="4dp"
                     app:autoSizeMaxTextSize="10sp"
@@ -248,7 +229,7 @@
                     android:paddingEnd="1dp"
                     android:text="@string/nav_info"
                     android:textSize="10sp"
-                    android:textStyle="bold"
+                    android:textStyle="normal"
                     android:textColor="@color/nav_unselected"
                     android:layout_marginTop="4dp"
                     app:autoSizeMaxTextSize="10sp"
@@ -258,6 +239,6 @@
             </LinearLayout>
 
         </LinearLayout>
-    </com.example.liquidglass.LiquidGlassView>
+    </FrameLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

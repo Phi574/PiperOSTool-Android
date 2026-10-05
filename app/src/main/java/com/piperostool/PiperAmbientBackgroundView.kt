@@ -67,14 +67,14 @@ class PiperAmbientBackgroundView @JvmOverloads constructor(
             width * (-0.10f + phase * 0.24f),
             height * (0.02f + phase * 0.12f),
             radius,
-            if (darkMode) DARK_BLUE else LIGHT_BLUE
+            if (darkMode) DARK_BLUE else LIGHT_GREY
         )
         drawWash(
             canvas,
             width * (1.08f - phase * 0.18f),
             height * (0.72f + phase * 0.18f),
             radius * 0.92f,
-            if (darkMode) DARK_PINK else LIGHT_PINK
+            if (darkMode) DARK_LIGHT_BLUE else LIGHT_WHITE
         )
     }
 
@@ -98,12 +98,12 @@ class PiperAmbientBackgroundView @JvmOverloads constructor(
     }
 
     private companion object {
-        val LIGHT_BASE = Color.rgb(248, 248, 246)
-        val LIGHT_BLUE = Color.argb(78, 174, 212, 255)
-        val LIGHT_PINK = Color.argb(64, 255, 194, 219)
-        val DARK_BASE = Color.rgb(18, 18, 22)
-        val DARK_BLUE = Color.argb(60, 57, 96, 158)
-        val DARK_PINK = Color.argb(50, 139, 66, 105)
+        val LIGHT_BASE = Color.rgb(250, 251, 252)
+        val LIGHT_GREY = Color.argb(92, 222, 229, 233)
+        val LIGHT_WHITE = Color.argb(85, 255, 255, 255)
+        val DARK_BASE = Color.rgb(7, 25, 41)
+        val DARK_BLUE = Color.argb(92, 21, 65, 103)
+        val DARK_LIGHT_BLUE = Color.argb(68, 77, 153, 208)
         const val HALF_CYCLE_MS = 18_000L
         const val CYCLE_DURATION_MS = HALF_CYCLE_MS * 2L
         const val FRAME_DELAY_MS = 750L

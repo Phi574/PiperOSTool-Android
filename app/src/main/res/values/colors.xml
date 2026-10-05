@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="piper_window_background">#090D10</color>
+    <color name="home_nav_surface">#FFFDFEFF</color>
+    <color name="home_nav_border">#FFDCE3E8</color>
+    <color name="home_nav_selected">#FFE7F2F6</color>
     <color name="purple_200">#FFBB86FC</color>
     <color name="purple_500">#FF6200EE</color>
     <color name="purple_700">#FF3700B3</color>
