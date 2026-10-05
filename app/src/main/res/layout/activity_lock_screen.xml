@@ -193,8 +193,8 @@
                     android:layout_height="54dp"
                     android:layout_marginTop="16dp"
                     android:background="@drawable/bg_auth_primary"
+                    android:textColor="@color/white"
                     android:text="@string/auth_confirm"
-                    android:textColor="#07120B"
                     android:textSize="14sp"
                     android:textStyle="bold"
                     app:backgroundTint="@null" />

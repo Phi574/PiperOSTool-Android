@@ -67,7 +67,6 @@
                 android:contentDescription="@string/remote_stream_settings"
                 android:padding="12dp"
                 android:src="@drawable/ic_remote_settings"
-                app:tint="@color/remote_text_secondary"
                 android:scaleType="centerInside" />
             <ImageButton
                 android:id="@+id/btnRemoteStopToolbar"
@@ -211,17 +210,32 @@
                     app:cardCornerRadius="8dp"
                     app:cardElevation="0dp"
                     app:strokeWidth="1dp">
-                    <TextView
+
+                    <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:drawableStart="@drawable/ic_browser_globe"
-                        android:drawablePadding="14dp"
-                        android:padding="18dp"
-                        android:text="@string/remote_method_lan_share"
-                        android:textColor="@color/remote_text_primary"
-                        android:textSize="15sp"
-                        android:textStyle="bold"
-                        app:drawableTint="@color/remote_accent" />
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:padding="18dp">
+
+                        <ImageView
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:src="@drawable/ic_browser_globe"
+                            android:scaleType="fitCenter"
+                            app:tint="@color/remote_accent" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="14dp"
+                            android:text="@string/remote_method_lan_share"
+                            android:textColor="@color/remote_text_primary"
+                            android:textSize="15sp"
+                            android:textStyle="bold" />
+
+                    </LinearLayout>
+
                 </com.google.android.material.card.MaterialCardView>
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/cardShareQr"
@@ -234,17 +248,32 @@
                     app:cardCornerRadius="8dp"
                     app:cardElevation="0dp"
                     app:strokeWidth="1dp">
-                    <TextView
+
+                    <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:drawableStart="@drawable/ic_remote_qr"
-                        android:drawablePadding="14dp"
-                        android:padding="18dp"
-                        android:text="@string/remote_method_qr_share"
-                        android:textColor="@color/remote_text_primary"
-                        android:textSize="15sp"
-                        android:textStyle="bold"
-                        app:drawableTint="@color/remote_accent" />
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:padding="18dp">
+
+                        <ImageView
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:src="@drawable/ic_remote_qr"
+                            android:scaleType="fitCenter"
+                            app:tint="@color/remote_accent" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="14dp"
+                            android:text="@string/remote_method_qr_share"
+                            android:textColor="@color/remote_text_primary"
+                            android:textSize="15sp"
+                            android:textStyle="bold" />
+
+                    </LinearLayout>
+
                 </com.google.android.material.card.MaterialCardView>
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/cardShareCode"
@@ -257,17 +286,32 @@
                     app:cardCornerRadius="8dp"
                     app:cardElevation="0dp"
                     app:strokeWidth="1dp">
-                    <TextView
+
+                    <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:drawableStart="@drawable/ic_remote_code"
-                        android:drawablePadding="14dp"
-                        android:padding="18dp"
-                        android:text="@string/remote_method_code_share"
-                        android:textColor="@color/remote_text_primary"
-                        android:textSize="15sp"
-                        android:textStyle="bold"
-                        app:drawableTint="@color/remote_accent" />
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:padding="18dp">
+
+                        <ImageView
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:src="@drawable/ic_remote_code"
+                            android:scaleType="fitCenter"
+                            app:tint="@color/remote_accent" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="14dp"
+                            android:text="@string/remote_method_code_share"
+                            android:textColor="@color/remote_text_primary"
+                            android:textSize="15sp"
+                            android:textStyle="bold" />
+
+                    </LinearLayout>
+
                 </com.google.android.material.card.MaterialCardView>
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/cardShareUsb"
@@ -280,17 +324,31 @@
                     app:cardCornerRadius="8dp"
                     app:cardElevation="0dp"
                     app:strokeWidth="1dp">
-                    <TextView
+
+                    <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:drawableStart="@drawable/ic_remote_view"
-                        android:drawablePadding="14dp"
-                        android:padding="18dp"
-                        android:text="@string/remote_method_usb_share"
-                        android:textColor="@color/remote_text_primary"
-                        android:textSize="15sp"
-                        android:textStyle="bold"
-                        app:drawableTint="@color/remote_accent" />
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:padding="18dp">
+
+                        <ImageView
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:src="@drawable/ic_remote_view"
+                            android:scaleType="fitCenter"/>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="14dp"
+                            android:text="@string/remote_method_usb_share"
+                            android:textColor="@color/remote_text_primary"
+                            android:textSize="15sp"
+                            android:textStyle="bold" />
+
+                    </LinearLayout>
+
                 </com.google.android.material.card.MaterialCardView>
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/remoteShareCredentialPanel"

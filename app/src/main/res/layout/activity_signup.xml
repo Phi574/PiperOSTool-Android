@@ -160,7 +160,7 @@
                     android:layout_marginTop="18dp"
                     android:background="@drawable/bg_auth_primary"
                     android:text="@string/auth_signup_action"
-                    android:textColor="#07120B"
+                    android:textColor="#DFFFFFFF"
                     android:textSize="14sp"
                     android:textStyle="bold"
                     app:backgroundTint="@null" />

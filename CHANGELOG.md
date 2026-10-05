@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.5.4.PRE
+
+- Cập nhật bố cục, icon và màu giao diện theo tinh chỉnh mới.
+- Nâng versionCode lên 55 để cập nhật đè từ 3.5.3.PRE.
+
 ## 3.5.3.PRE
 
 - Gỡ module LiquidGlass, mã vẽ kính, tài nguyên và các nhánh giao diện cũ; giao diện Hiện Đại là giao diện duy nhất.

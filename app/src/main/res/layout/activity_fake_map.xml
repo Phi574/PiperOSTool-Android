@@ -358,6 +358,7 @@
                         app:backgroundTint="#8DFFB0"
                         app:cornerRadius="6dp"
                         app:icon="@drawable/ic_location_pin"
+                        app:iconSize="20dp"
                         app:iconTint="#07120B" />
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnStopMock"

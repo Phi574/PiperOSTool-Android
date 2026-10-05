@@ -36,7 +36,7 @@ class InfoFragment : Fragment() {
         val title: String,
         val summary: String,
         val icon: Int,
-        val color: Int,
+        val color: Int? = null,
         val rows: List<InfoRow>
     )
 
@@ -103,7 +103,14 @@ class InfoFragment : Fragment() {
         item.findViewById<TextView>(R.id.tvInfoSectionSummary).text = section.summary
         item.findViewById<ImageView>(R.id.ivInfoSectionIcon).apply {
             setImageResource(section.icon)
-            if (section.icon in setOf(R.drawable.a3tn, R.drawable.browser, R.drawable.nhacvideo)) {
+
+            if (
+                section.icon in setOf(
+                    R.drawable.a3tn,
+                    R.drawable.browser,
+                    R.drawable.nhacvideo
+                ) || section.color == null
+            ) {
                 clearColorFilter()
                 imageTintList = null
             } else {
@@ -377,7 +384,7 @@ class InfoFragment : Fragment() {
                     else -> "Sẵn sàng kết nối trong mạng nội bộ"
                 },
                 icon = R.drawable.ic_remote_view,
-                color = color("#34D399"),
+                color = null,
                 rows = listOf(
                     InfoRow("Phiên bản giao thức", "Piper Remote 3 · JPEG / H.264 / HEVC"),
                     InfoRow("Phương thức", "Wi-Fi nội bộ, QR và mã 6 số"),

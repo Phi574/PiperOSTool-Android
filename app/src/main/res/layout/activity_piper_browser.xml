@@ -246,7 +246,7 @@
                 android:contentDescription="@string/home"
                 android:padding="12dp"
                 android:src="@drawable/ic_browser_home"
-                app:tint="@color/green_neon" />
+                app:tint="@color/white"/>
 
             <ImageButton
                 android:id="@+id/btnBrowserReload"

@@ -23,7 +23,6 @@
             android:id="@+id/archiveEntryIcon"
             android:layout_width="48dp"
             android:layout_height="48dp"
-            android:background="#172127"
             android:clipToOutline="true"
             android:contentDescription="@null"
             android:padding="6dp"

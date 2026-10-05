@@ -395,8 +395,7 @@
                         android:layout_height="38dp"
                         android:layout_gravity="center"
                         android:contentDescription="@null"
-                        android:src="@drawable/ic_remote_view"
-                        app:tint="#75F7AD" />
+                        android:src="@drawable/ic_remote_view"/>
                 </FrameLayout>
 
                 <TextView

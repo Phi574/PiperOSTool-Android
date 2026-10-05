@@ -124,7 +124,7 @@
                         android:layout_width="54dp"
                         android:layout_height="32dp"
                         app:thumbTint="#8DFFB0"
-                        app:trackTint="#66FFFFFF"
+                        app:trackTint="#000000"
                         app:useMaterialThemeColors="false" />
                 </LinearLayout>
 
@@ -155,7 +155,7 @@
                         android:layout_width="54dp"
                         android:layout_height="32dp"
                         app:thumbTint="#8DFFB0"
-                        app:trackTint="#66FFFFFF"
+                        app:trackTint="#000000"
                         app:useMaterialThemeColors="false" />
                 </LinearLayout>
 
@@ -186,7 +186,7 @@
                         android:layout_width="54dp"
                         android:layout_height="32dp"
                         app:thumbTint="#8DFFB0"
-                        app:trackTint="#66FFFFFF"
+                        app:trackTint="#000000"
                         app:useMaterialThemeColors="false" />
                 </LinearLayout>
 
@@ -365,7 +365,7 @@
                     <ImageView
                         style="@style/SettingsRowIcon"
                         android:src="@android:drawable/ic_menu_revert"
-                        app:tint="#B8FFFFFF" />
+                        app:tint="#B8FF0000" />
 
                     <TextView
                         style="@style/SettingsActionTitle"

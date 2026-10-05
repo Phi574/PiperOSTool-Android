@@ -83,20 +83,33 @@
                 android:scaleType="centerInside" />
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
-    <EditText
-        android:id="@+id/fileManagerSearch"
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="48dp"
         android:layout_marginHorizontal="14dp"
-        android:layout_marginBottom="8dp"
-        android:background="@drawable/bg_modern_input"
-        android:drawableStart="@drawable/ic_browser_search"
-        android:drawablePadding="10dp"
-        android:hint="Tìm trong thư mục hiện tại..."
-        android:paddingHorizontal="15dp"
-        android:singleLine="true"
-        android:textColor="@color/white"
-        android:textColorHint="#7FFFFFFF" />
+        android:layout_marginBottom="8dp">
+
+        <EditText
+            android:id="@+id/fileManagerSearch"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@drawable/bg_modern_input"
+            android:hint="Tìm trong thư mục hiện tại..."
+            android:paddingStart="49dp"
+            android:paddingEnd="15dp"
+            android:singleLine="true"
+            android:textColor="@color/white"
+            android:textColorHint="#7FFFFFFF" />
+
+        <ImageView
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_gravity="start|center_vertical"
+            android:layout_marginStart="15dp"
+            android:src="@drawable/ic_browser_search"
+            android:scaleType="fitCenter" />
+
+    </FrameLayout>
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/fileSelectionBar"
         android:layout_width="match_parent"
