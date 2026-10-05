@@ -79,7 +79,7 @@ class AppUpdateActivity : AppCompatActivity() {
         logToggle = findViewById(R.id.updateLogToggle)
         logScroll = findViewById(R.id.updateLogScroll)
         log = findViewById(R.id.updateLog)
-        currentVersion.text = "Bản đang cài: ${AppVersion.name(this)}"
+        currentVersion.text = "Đang có trên máy: ${AppVersion.name(this)}"
         findViewById<View>(R.id.updateBack).setOnClickListener { leave() }
         cancel.setOnClickListener { cancelDownload() }
         logToggle.setOnClickListener {
@@ -176,7 +176,7 @@ class AppUpdateActivity : AppCompatActivity() {
             setTypeface(typeface, android.graphics.Typeface.BOLD)
         })
         root.addView(TextView(this).apply {
-            text = "Hãy sao lưu dữ liệu quan trọng trước khi cài. Không đóng app khi đang tải và cài đặt. Nếu đã bật chạy nền, bạn có thể chuyển sang app khác nhưng đừng vuốt tắt PiperOS khỏi màn đa nhiệm."
+            text = "Từ ${AppVersion.name(this@AppUpdateActivity)} lên ${release?.tag ?: "bản mới"}. Hãy sao lưu dữ liệu quan trọng trước khi cài. Không đóng app khi đang tải và cài đặt. Nếu đã bật chạy nền, bạn có thể chuyển sang app khác nhưng đừng vuốt tắt PiperOS khỏi màn đa nhiệm."
             textSize = 14f
             setTextColor(Color.rgb(203, 215, 231))
             setPadding(0, dp(14), 0, dp(16))
@@ -219,6 +219,7 @@ class AppUpdateActivity : AppCompatActivity() {
         cancel.visibility = View.VISIBLE
         action.visibility = View.GONE
         appendLog("Bắt đầu tải ${target.tag} từ GitHub Releases")
+        appendLog("Tệp cài đặt: ${AppUpdateRepository.apkFileName(target)}")
         downloadJob = lifecycleScope.launch {
             try {
                 val file = AppUpdateRepository.download(this@AppUpdateActivity, target) { bytes, total ->
@@ -238,8 +239,8 @@ class AppUpdateActivity : AppCompatActivity() {
                     AppUpdateRepository.verifyDownloadedApk(this@AppUpdateActivity, target, file)
                 }
                 downloadedApk = file
-                appendLog("Chữ ký, tên gói và phiên bản đều hợp lệ")
-                status.text = "APK đã xác thực · sẵn sàng cài đặt"
+                appendLog("Đã xác thực APK ${target.tag}: chữ ký, tên gói và phiên bản hợp lệ")
+                status.text = "APK ${target.tag} đã xác thực · sẵn sàng cài đặt"
                 setAction("Mở trình cài đặt") { launchInstaller() }
                 launchInstaller()
             } catch (cancelled: CancellationException) {
@@ -285,6 +286,7 @@ class AppUpdateActivity : AppCompatActivity() {
             return
         }
         val uri = FileProvider.getUriForFile(this, "$packageName.files", file)
+        appendLog("Mở trình cài cho ${release?.tag ?: file.name}: ${file.name}")
         val install = Intent(Intent.ACTION_INSTALL_PACKAGE).apply {
             data = uri
             clipData = ClipData.newRawUri("PiperOS update", uri)

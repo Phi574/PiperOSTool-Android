@@ -20,9 +20,14 @@
 
 ## Bản hiện tại
 
-`3.5.1.PRE` (versionCode `52`) sử dụng `minSdk 29 (Android 10)`, `targetSdk 36`, Kotlin `2.4.10`.
+`3.5.2.PRE` (versionCode `53`) sử dụng `minSdk 29 (Android 10)`, `targetSdk 36`, Kotlin `2.4.10`.
 
-**Tải và cài đặt:** [PiperOS-Tool-3.5.1.PRE-debug.apk](https://github.com/Phi574/PiperOSTool-Android/releases/download/v3.5.1.PRE/PiperOS-Tool-3.5.1.PRE-debug.apk) · [Chi tiết bản phát hành](https://github.com/Phi574/PiperOSTool-Android/releases/tag/v3.5.1.PRE). APK được ký bằng khóa debug của dự án; màn Cập nhật chỉ chấp nhận APK có cùng chữ ký với bản đang cài.
+**Tải và cài đặt:** [PiperOS-Tool-3.5.2.PRE-debug.apk](https://github.com/Phi574/PiperOSTool-Android/releases/download/v3.5.2.PRE/PiperOS-Tool-3.5.2.PRE-debug.apk) · [Chi tiết bản phát hành](https://github.com/Phi574/PiperOSTool-Android/releases/tag/v3.5.2.PRE). APK được ký bằng khóa debug của dự án; màn Cập nhật chỉ chấp nhận APK có cùng chữ ký với bản đang cài.
+
+### Sửa luồng cài trên OnePlus trong 3.5.2.PRE
+
+- Tệp tải và URI chuyển cho trình cài đặt nay có tên riêng theo phiên bản và SHA-256, tránh dùng lại `piperos-update.apk` cho mọi bản.
+- Màn Cập nhật hiển thị rõ phiên bản APK đã xác thực trước khi mở trình cài đặt.
 
 ### Cải tiến mới trong 3.5.1.PRE
 

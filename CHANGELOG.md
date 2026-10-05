@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.5.2.PRE
+
+- Mỗi bản cập nhật dùng tên APK và FileProvider URI riêng theo tag/SHA-256 để trình cài của ROM không nhận lại đường dẫn tệp của bản trước.
+- Trên màn Cập nhật, trạng thái và log tải nêu rõ phiên bản APK đã xác thực và tên tệp đưa cho trình cài đặt.
+- Nâng versionCode lên 53; giữ cùng chữ ký APK để cập nhật đè từ 3.5.1.PRE.
+
 ## 3.5.1.PRE
 
 - Thay thanh tab dưới cùng bằng giao diện Hiện Đại bo góc, không còn LiquidGlass hay chỉ báo trượt; tab được chọn hiển thị đậm, tab còn lại xám nhạt.

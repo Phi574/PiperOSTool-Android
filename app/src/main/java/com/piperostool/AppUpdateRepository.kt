@@ -50,6 +50,14 @@ internal object AppUpdateRepository {
             match.groupValues[3].toInt(), match.groupValues[4].lowercase())
     }
 
+    internal fun apkFileName(release: AppRelease): String {
+        val safeTag = release.tag.replace(Regex("[^A-Za-z0-9._-]"), "_").take(48)
+        val digest = release.assetDigest?.removePrefix("sha256:")
+            ?.takeIf { it.matches(Regex("[0-9a-fA-F]{64}")) }
+            ?.take(12) ?: release.assetSize.toString()
+        return "PiperOS-Tool-$safeTag-$digest.apk"
+    }
+
     suspend fun newestRelease(): AppRelease = withContext(Dispatchers.IO) {
         val connection = open(API)
         try {
@@ -93,8 +101,8 @@ internal object AppUpdateRepository {
             if (!url.startsWith(ASSET_PREFIX)) throw IOException("Đường dẫn APK không thuộc kho phát hành chính thức")
             if (release.assetSize <= 0 || release.assetSize > MAX_APK_BYTES) throw IOException("Dung lượng APK không hợp lệ")
             val directory = File(context.cacheDir, "app-update").apply { mkdirs() }
-            val partial = File(directory, "piperos-update.apk.part")
-            val complete = File(directory, "piperos-update.apk")
+            val complete = File(directory, apkFileName(release))
+            val partial = File(directory, "${complete.name}.part")
             partial.delete()
             complete.delete()
             val connection = open(url)
@@ -130,6 +138,9 @@ internal object AppUpdateRepository {
                 if (expected != null && !actual.equals(expected, ignoreCase = true))
                     throw IOException("Mã SHA-256 của APK không khớp với GitHub")
                 if (!partial.renameTo(complete)) throw IOException("Không thể lưu APK đã tải")
+                directory.listFiles()?.filter { candidate ->
+                    candidate != complete && (candidate.name.endsWith(".apk") || candidate.name.endsWith(".apk.part"))
+                }?.forEach { it.delete() }
                 withContext(Dispatchers.Main) { onProgress(bytes, release.assetSize) }
                 complete
             } catch (error: Exception) {
