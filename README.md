@@ -20,9 +20,13 @@
 
 ## Bản hiện tại
 
-`3.5.9.PRE` (versionCode `60`) sử dụng `minSdk 29 (Android 10)`, `targetSdk 36`, Kotlin `2.4.10`.
+`3.5.10.PRE` (versionCode `61`) sử dụng `minSdk 29 (Android 10)`, `targetSdk 36`, Kotlin `2.4.10`.
 
-**Tải và cài đặt:** [Bản phát hành 3.5.9.PRE](https://github.com/Phi574/PiperOSTool-Android/releases/tag/v3.5.9.PRE). APK được ký bằng khóa debug của dự án; màn Cập nhật chỉ chấp nhận APK có cùng chữ ký với bản đang cài.
+**Tải và cài đặt:** [Bản phát hành 3.5.10.PRE](https://github.com/Phi574/PiperOSTool-Android/releases/tag/v3.5.10.PRE). APK được ký bằng khóa debug của dự án; màn Cập nhật chỉ chấp nhận APK có cùng chữ ký với bản đang cài.
+
+### Sửa lỗi trong 3.5.10.PRE
+
+- Tích hợp Firebase App Check với Play Integrity để app gửi token hợp lệ khi gọi Firebase; enforcement chỉ bật lại sau khi kiểm tra request metrics.
 
 ### Sửa lỗi trong 3.5.9.PRE
 

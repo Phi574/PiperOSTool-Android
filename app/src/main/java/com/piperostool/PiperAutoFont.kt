@@ -19,6 +19,8 @@ import android.widget.TextView
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.widget.TextViewCompat
 import androidx.core.widget.doAfterTextChanged
+import com.google.firebase.appcheck.FirebaseAppCheck
+import com.google.firebase.appcheck.playintegrity.PlayIntegrityAppCheckProviderFactory
 import com.google.firebase.auth.FirebaseAuth
 import com.google.android.material.textfield.TextInputLayout
 import java.util.ArrayDeque
@@ -230,6 +232,10 @@ class PiperOsApplication : Application(), Application.ActivityLifecycleCallbacks
         super.onCreate()
         // The isolated PPS process has no FirebaseInitProvider; it only serves local Binder calls.
         if (Application.getProcessName().endsWith(":pps")) return
+        // Install App Check before any Firebase Auth, Firestore, or Database use.
+        FirebaseAppCheck.getInstance().installAppCheckProviderFactory(
+            PlayIntegrityAppCheckProviderFactory.getInstance()
+        )
         deleteSharedPreferences("account_session_guard")
         PiperUiPreferences.initialize(this)
         PiperAutoFont.initialize(this)

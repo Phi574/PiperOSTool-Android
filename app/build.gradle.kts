@@ -25,8 +25,8 @@ android {
         // scoped-storage model and media/remote features.
         minSdk = 29
         targetSdk = 36
-        versionCode = 60
-        versionName = "3.5.9.PRE"
+        versionCode = 61
+        versionName = "3.5.10.PRE"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         ndk {
@@ -72,6 +72,7 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(platform("com.google.firebase:firebase-bom:34.17.0"))
+    implementation("com.google.firebase:firebase-appcheck-playintegrity")
     implementation("com.google.firebase:firebase-auth")
     implementation("androidx.credentials:credentials:1.3.0")
     implementation("androidx.credentials:credentials-play-services-auth:1.3.0")

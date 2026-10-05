@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.5.10.PRE
+
+- Tích hợp Firebase App Check với Play Integrity và khởi tạo trước khi dùng Firebase Auth, Firestore hoặc Realtime Database.
+- Nâng versionCode lên 61 để cập nhật đè từ 3.5.9.PRE.
+
 ## 3.5.9.PRE
 
 - Sửa điều hướng phiên đăng nhập để màn hình xác minh số điện thoại không bị đẩy ngược về Login khi bắt đầu từ Login hoặc Đăng ký.
