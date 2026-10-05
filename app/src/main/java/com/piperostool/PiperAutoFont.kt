@@ -306,6 +306,7 @@ class PiperOsApplication : Application(), Application.ActivityLifecycleCallbacks
                     activity is LoginActivity ||
                     activity is WelcomeActivity ||
                     activity is SignupActivity ||
+                    activity is PhoneAuthActivity ||
                     activity is ForgotPassword ||
                     activity is SplashScreenActivity
                 ) return

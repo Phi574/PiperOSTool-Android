@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.5.9.PRE
+
+- Sửa điều hướng phiên đăng nhập để màn hình xác minh số điện thoại không bị đẩy ngược về Login khi bắt đầu từ Login hoặc Đăng ký.
+- Nâng versionCode lên 60 để cập nhật đè từ 3.5.8.PRE.
+
 ## 3.5.8.PRE
 
 - Thêm đăng nhập Google qua Android Credential Manager và Firebase Authentication; email/password chỉ tiếp tục sau khi email được xác minh.
