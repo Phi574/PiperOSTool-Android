@@ -19,6 +19,7 @@ enum class PiperError {
     READ_ONLY_FILESYSTEM,
     UNSUPPORTED_OPERATION,
     CLIENT_NOT_AUTHORIZED,
+    ADB_DISABLED,
     TIMEOUT,
     CANCELLED,
     IO_ERROR;
@@ -160,6 +161,7 @@ object PiperPrivilegedPreferences {
 
     private const val FILE = "piperos_privileged"
     private const val KEY_METHOD = "method"
+    private const val KEY_ADB_ENABLED = "adb_enabled"
     private const val KEY_ANDROID_RESTRICTED = "android_restricted"
     private const val KEY_SYSTEM_FILES = "system_files"
     private const val KEY_SYSTEM_WRITE = "system_write"
@@ -170,6 +172,9 @@ object PiperPrivilegedPreferences {
 
     fun method(context: Context) = prefs(context).getString(KEY_METHOD, METHOD_AUTO) ?: METHOD_AUTO
     fun setMethod(context: Context, value: String) = prefs(context).edit().putString(KEY_METHOD, value).apply()
+    fun adbEnabled(context: Context) = prefs(context).getBoolean(KEY_ADB_ENABLED, false)
+    fun setAdbEnabled(context: Context, value: Boolean) =
+        prefs(context).edit().putBoolean(KEY_ADB_ENABLED, value).commit()
     fun androidRestricted(context: Context) = prefs(context).getBoolean(KEY_ANDROID_RESTRICTED, false)
     fun setAndroidRestricted(context: Context, value: Boolean) = prefs(context).edit().putBoolean(KEY_ANDROID_RESTRICTED, value).apply()
     fun systemFiles(context: Context) = prefs(context).getBoolean(KEY_SYSTEM_FILES, false)

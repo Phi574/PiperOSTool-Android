@@ -10,7 +10,7 @@ import android.provider.Settings
 import androidx.core.app.NotificationCompat
 import androidx.core.app.RemoteInput
 import com.piperostool.R
-import com.piperostool.privileged.ui.AdvancedAccessActivity
+import com.piperostool.privileged.ui.PiperAdbActivity
 
 object PiperAdbPairingNotifications {
     const val ACTION_SUBMIT_CODE = "com.piperostool.action.PAIR_PIPER_ADB"
@@ -70,7 +70,7 @@ object PiperAdbPairingNotifications {
         val open = PendingIntent.getActivity(
             context,
             3113,
-            Intent(context, AdvancedAccessActivity::class.java),
+            Intent(context, PiperAdbActivity::class.java),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
         notify(

@@ -1,31 +1,21 @@
 package com.piperostool.privileged.ui
 
-import android.Manifest
 import android.content.Intent
-import android.content.pm.PackageManager
-import android.os.Build
 import android.os.Bundle
 import android.os.Environment
-import android.provider.Settings
-import android.text.InputType
 import android.view.View
-import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.switchmaterial.SwitchMaterial
 import com.google.android.material.button.MaterialButton
-import com.piperostool.PiperActionSheet
 import com.piperostool.PiperAutoFont
 import com.piperostool.PiperDialog
 import com.piperostool.PiperModernUi
-import com.piperostool.PiperSheetChoice
 import com.piperostool.R
 import com.piperostool.privileged.PiperCapabilities
 import com.piperostool.privileged.PiperError
@@ -34,20 +24,14 @@ import com.piperostool.privileged.PiperPrivilegedPreferences
 import com.piperostool.privileged.PiperServiceState
 import com.piperostool.privileged.PiperServiceStatus
 import com.piperostool.privileged.client.PiperPrivilegedClient
-import com.piperostool.privileged.adb.PiperAdbBootstrap
-import com.piperostool.privileged.adb.PiperAdbPairingNotifications
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import java.io.File
 import java.text.DateFormat
 import java.util.Date
 
 class AdvancedAccessActivity : AppCompatActivity() {
-    private companion object {
-        const val REQUEST_PAIRING_NOTIFICATIONS = 3111
-    }
-
     private lateinit var client: PiperPrivilegedClient
     private lateinit var methodValue: TextView
     private lateinit var stateView: TextView
@@ -173,8 +157,8 @@ class AdvancedAccessActivity : AppCompatActivity() {
     private fun configureActions() {
         findViewById<View>(R.id.advancedAccessBack).setOnClickListener { finish() }
         refreshButton.setOnClickListener { refreshService() }
-        methodRow.setOnClickListener { showMethodPicker() }
-        startButton.setOnClickListener { startSelectedMethod() }
+        methodRow.setOnClickListener { openPiperAdb() }
+        startButton.setOnClickListener { openPiperAdb() }
         stopButton.setOnClickListener {
             operationJob?.cancel()
             lifecycleScope.launch {
@@ -194,33 +178,9 @@ class AdvancedAccessActivity : AppCompatActivity() {
         findViewById<View>(R.id.ppsExportDiagnostics).setOnClickListener { exportDiagnostics() }
     }
 
-    private fun startSelectedMethod() {
-        if (operationRunning || isPrivilegedActive()) return
-        when (PiperPrivilegedPreferences.method(this)) {
-            PiperPrivilegedPreferences.METHOD_SHIZUKU -> showShizukuGuide()
-            PiperPrivilegedPreferences.METHOD_SU -> refreshService()
-            else -> startAutomaticPiperOs()
-        }
-    }
-
-    private fun startAutomaticPiperOs() {
-        operationJob = lifecycleScope.launch {
-            setOperationRunning(true)
-            try {
-                stateView.text = getString(R.string.pps_auto_connecting)
-                client.refresh()
-                val status = awaitSettledStatus()
-                if (status != null) latestStatus = status
-                if (status?.privilege == PiperPrivilege.ROOT || status?.privilege == PiperPrivilege.SHELL) {
-                    refreshStatus()
-                } else {
-                    refreshStatus()
-                    beginNotificationPairing()
-                }
-            } finally {
-                setOperationRunning(false)
-            }
-        }
+    private fun openPiperAdb() {
+        if (operationRunning) return
+        startActivity(Intent(this, PiperAdbActivity::class.java))
     }
 
     private fun setOperationRunning(running: Boolean) {
@@ -235,158 +195,16 @@ class AdvancedAccessActivity : AppCompatActivity() {
 
     private fun updateControlState() {
         val active = isPrivilegedActive()
-        methodRow.isEnabled = !operationRunning && !active
-        methodRow.alpha = if (active) 0.45f else 1f
-        startButton.setText(if (active) R.string.pps_active else R.string.pps_start)
+        methodRow.isEnabled = !operationRunning
+        methodRow.alpha = 1f
+        startButton.setText(if (active) R.string.pps_active else R.string.pps_open_adb)
         startButton.isEnabled = !operationRunning && !active
         stopButton.isEnabled = active || latestStatus.state == PiperServiceState.STARTING
         refreshButton.isEnabled = !operationRunning
     }
 
-    private fun beginNotificationPairing() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) !=
-            PackageManager.PERMISSION_GRANTED
-        ) {
-            ActivityCompat.requestPermissions(
-                this,
-                arrayOf(Manifest.permission.POST_NOTIFICATIONS),
-                REQUEST_PAIRING_NOTIFICATIONS
-            )
-            return
-        }
-        PiperAdbPairingNotifications.showWaiting(this)
-        openWirelessDebuggingSettings()
-    }
-
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode != REQUEST_PAIRING_NOTIFICATIONS) return
-        if (grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED) {
-            beginNotificationPairing()
-        } else {
-            Toast.makeText(this, R.string.pps_notification_permission_required, Toast.LENGTH_LONG).show()
-            showPiperPairingDialog()
-        }
-    }
-
-    private fun showPiperPairingDialog() {
-        val codeInput = EditText(this).apply {
-            hint = getString(R.string.pps_pairing_code_hint)
-            inputType = InputType.TYPE_CLASS_NUMBER
-            maxLines = 1
-            textSize = 20f
-            setPadding(18, 16, 18, 16)
-        }
-        PiperDialog.showCustom(
-            context = this,
-            title = getString(R.string.pps_pairing_title),
-            message = getString(R.string.pps_pairing_message),
-            content = codeInput,
-            positiveLabel = getString(R.string.pps_pair),
-            neutralLabel = getString(R.string.pps_open_wireless_debugging),
-            onNeutral = { openWirelessDebuggingSettings() },
-            onPositive = {
-                val code = codeInput.text?.toString()?.trim().orEmpty()
-                if (!code.matches(Regex("\\d{6}"))) {
-                    codeInput.error = getString(R.string.pps_pairing_code_invalid)
-                    false
-                } else {
-                    pairPiperOs(code)
-                    true
-                }
-            }
-        )
-    }
-
-    private fun pairPiperOs(code: String) {
-        operationJob = lifecycleScope.launch {
-            stateView.text = getString(R.string.pps_pairing_discovering)
-            val port = PiperAdbBootstrap.discoverPairingPort(this@AdvancedAccessActivity)
-                .getOrElse {
-                    showPairingFailure(it.message)
-                    return@launch
-                }
-            stateView.text = getString(R.string.pps_pairing_in_progress)
-            val paired = PiperAdbBootstrap.pair(this@AdvancedAccessActivity, port, code)
-                .getOrElse {
-                    showPairingFailure(it.message)
-                    return@launch
-                }
-            if (!paired) {
-                showPairingFailure(null)
-                return@launch
-            }
-            Toast.makeText(this@AdvancedAccessActivity, R.string.pps_pairing_success, Toast.LENGTH_SHORT).show()
-            delay(500)
-            refreshService()
-        }
-    }
-
-    private fun showPairingFailure(detail: String?) {
-        stateView.text = getString(R.string.pps_pairing_failed)
-        PiperDialog.showMessage(
-            this,
-            getString(R.string.pps_pairing_failed),
-            detail ?: getString(R.string.pps_pairing_failed_message)
-        )
-    }
-
-    private fun openWirelessDebuggingSettings() {
-        val intent = Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS)
-        runCatching { startActivity(intent) }.onFailure {
-            startActivity(Intent(Settings.ACTION_SETTINGS))
-        }
-        Toast.makeText(this, R.string.pps_keep_pairing_screen_open, Toast.LENGTH_LONG).show()
-    }
-
-    private fun showShizukuGuide() {
-        val launch = packageManager.getLaunchIntentForPackage("moe.shizuku.privileged.api")
-        PiperDialog.showConfirm(
-            context = this,
-            title = getString(R.string.pps_shizuku_title),
-            message = if (launch != null) {
-                getString(R.string.pps_shizuku_installed_message)
-            } else {
-                getString(R.string.pps_shizuku_missing_message)
-            },
-            positiveLabel = if (launch != null) getString(R.string.pps_open_shizuku) else getString(R.string.pps_open_wireless_debugging)
-        ) {
-            if (launch != null) startActivity(launch) else openWirelessDebuggingSettings()
-        }
-    }
-
-    private fun showMethodPicker() {
-        if (operationRunning || isPrivilegedActive()) return
-        val selected = PiperPrivilegedPreferences.method(this)
-        PiperActionSheet.showSingleSelect(
-            context = this,
-            title = getString(R.string.pps_access_method),
-            choices = listOf(
-                PiperSheetChoice(PiperPrivilegedPreferences.METHOD_AUTO, getString(R.string.pps_method_auto), selected == PiperPrivilegedPreferences.METHOD_AUTO),
-                PiperSheetChoice(PiperPrivilegedPreferences.METHOD_SU, getString(R.string.pps_method_su), selected == PiperPrivilegedPreferences.METHOD_SU),
-                PiperSheetChoice(PiperPrivilegedPreferences.METHOD_SHIZUKU, getString(R.string.pps_method_shizuku), selected == PiperPrivilegedPreferences.METHOD_SHIZUKU)
-            ),
-            onSelect = {
-                PiperPrivilegedPreferences.setMethod(this, it)
-                updateMethodLabel()
-                refreshService()
-            },
-            onRemove = {},
-            onAdd = {}
-        )
-    }
-
     private fun updateMethodLabel() {
-        methodValue.text = when (PiperPrivilegedPreferences.method(this)) {
-            PiperPrivilegedPreferences.METHOD_SU -> getString(R.string.pps_method_su)
-            PiperPrivilegedPreferences.METHOD_SHIZUKU -> getString(R.string.pps_method_shizuku)
-            else -> getString(R.string.pps_method_auto)
-        }
+        methodValue.setText(R.string.pps_shared_access_status)
     }
 
     private fun refreshService() {
@@ -437,13 +255,19 @@ class AdvancedAccessActivity : AppCompatActivity() {
             },
             status.privilege.name
         )
-        identityView.text = getString(
+        val identity = getString(
             R.string.pps_identity_format,
             status.uid,
             status.pid,
             status.startupMethod,
             status.selinux,
             if (status.startedAt > 0) DateFormat.getDateTimeInstance().format(Date(status.startedAt)) else "-"
+        )
+        val shizukuInstalled = packageManager.getLaunchIntentForPackage("moe.shizuku.privileged.api") != null
+        identityView.text = getString(
+            R.string.pps_identity_with_shizuku,
+            identity,
+            getString(if (shizukuInstalled) R.string.pps_shizuku_detected else R.string.pps_shizuku_not_detected)
         )
         val available = buildList {
             if (capabilities.canAccessAndroidData) add("Android/data")

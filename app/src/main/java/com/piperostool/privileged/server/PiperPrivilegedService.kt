@@ -130,6 +130,26 @@ class PiperPrivilegedService : Service() {
             requestInitialization()
         }
 
+        override fun isAdbEnabled(): Boolean {
+            enforceClient()
+            return PiperPrivilegedPreferences.adbEnabled(this@PiperPrivilegedService)
+        }
+
+        override fun setAdbEnabled(enabled: Boolean) {
+            enforceClient()
+            PiperPrivilegedPreferences.setAdbEnabled(this@PiperPrivilegedService, enabled)
+            if (enabled) {
+                PiperPrivilegedPreferences.setMethod(this@PiperPrivilegedService, PiperPrivilegedPreferences.METHOD_AUTO)
+                val started = runCatching {
+                    startService(Intent(this@PiperPrivilegedService, PiperPrivilegedService::class.java).setAction(ACTION_ADB_ENABLED))
+                }.isSuccess
+                if (!started) requestInitialization()
+            } else {
+                requestInitialization()
+                stopSelf()
+            }
+        }
+
         override fun shutdown() {
             enforceClient()
             generation.incrementAndGet()
@@ -164,8 +184,8 @@ class PiperPrivilegedService : Service() {
     override fun onBind(intent: Intent?): IBinder = binder
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (intent?.action == ACTION_REFRESH) requestInitialization()
-        return START_NOT_STICKY
+        if (intent?.action == ACTION_REFRESH || intent?.action == ACTION_ADB_ENABLED) requestInitialization()
+        return if (PiperPrivilegedPreferences.adbEnabled(this)) START_STICKY else START_NOT_STICKY
     }
 
     override fun onDestroy() {
@@ -176,14 +196,11 @@ class PiperPrivilegedService : Service() {
 
     private fun initializeBackend() {
         runCatching { backend.close() }
-        val method = PiperPrivilegedPreferences.method(this)
-        if (method == PiperPrivilegedPreferences.METHOD_SHIZUKU) {
-            setNormal(
-                PiperError.UNSUPPORTED_OPERATION,
-                "Shizuku/SUI is a separate method. Start Shizuku or SUI and grant PiperOS permission."
-            )
+        if (PiperPrivilegedPreferences.adbEnabled(this)) {
+            initializeAdbBackend("")
             return
         }
+        val method = PiperPrivilegedPreferences.method(this)
         val root = runCatching { PersistentRootSession.open() }
         if (root.isSuccess) {
             val session = root.getOrThrow()
@@ -209,7 +226,7 @@ class PiperPrivilegedService : Service() {
         } else if (method == PiperPrivilegedPreferences.METHOD_SU) {
             setNormal(PiperError.ROOT_DENIED, root.exceptionOrNull()?.message.orEmpty())
         } else {
-            initializeAdbBackend(root.exceptionOrNull()?.message.orEmpty())
+            setNormal(PiperError.ADB_DISABLED, "PiperOS ADB is turned off")
         }
     }
 
@@ -313,5 +330,6 @@ class PiperPrivilegedService : Service() {
     companion object {
         const val PROTOCOL_VERSION = 1
         const val ACTION_REFRESH = "com.piperostool.privileged.REFRESH"
+        const val ACTION_ADB_ENABLED = "com.piperostool.privileged.ADB_ENABLED"
     }
 }

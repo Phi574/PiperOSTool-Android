@@ -253,6 +253,12 @@
             android:theme="@style/Theme.PiperOSTool"
             android:windowSoftInputMode="adjustResize" />
         <activity
+            android:name=".privileged.ui.PiperAdbActivity"
+            android:screenOrientation="portrait"
+            android:exported="false"
+            android:theme="@style/Theme.PiperOSTool"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
             android:name=".PiperFilePreviewActivity"
             android:configChanges="keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
             android:exported="false"

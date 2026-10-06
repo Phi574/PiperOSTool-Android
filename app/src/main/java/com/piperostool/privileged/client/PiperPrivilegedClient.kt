@@ -98,6 +98,13 @@ class PiperPrivilegedClient(context: Context) : Closeable {
         true
     } ?: false
 
+    suspend fun adbEnabled(): Boolean = withConnected { it.isAdbEnabled() } ?: false
+
+    suspend fun setAdbEnabled(enabled: Boolean): Boolean = withConnected {
+        it.setAdbEnabled(enabled)
+        true
+    } ?: false
+
     suspend fun shutdown(): Boolean = withConnected {
         it.shutdown()
         true

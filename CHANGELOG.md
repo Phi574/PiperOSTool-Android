@@ -1,5 +1,14 @@
 # Changelog
 
+## 3.6.0.PRE
+
+- Thêm PiperOS ADB thành tính năng riêng trong Beta với màn hình trạng thái, kết nối lại, ghép đôi Wireless debugging và hướng dẫn thiết lập.
+- Thêm công tắc bật/tắt PiperOS ADB; khi bật hệ thống kết nối bằng quyền đã lưu, khi không kết nối được công tắc tự tắt và yêu cầu ghép đôi; khi tắt phiên ADB được đóng.
+- Truy cập chuyên sâu dùng lại PiperOS ADB đã ghép đôi, kiểm tra lại quyền trực tiếp và dẫn sang PiperOS ADB nếu chưa kết nối.
+- Hiển thị trạng thái ROOT và nhận diện ứng dụng Shizuku/SUI; không coi việc cài Shizuku là quyền đã được cấp.
+- Dịch vụ ADB giữ kết nối khi công tắc bật, tái kết nối bằng khóa ghép đôi đã lưu và dừng hẳn khi tắt.
+- Nâng versionCode lên 62 để cập nhật đè từ 3.5.10.PRE.
+
 ## 3.5.10.PRE
 
 - Tích hợp Firebase App Check với Play Integrity và khởi tạo trước khi dùng Firebase Auth, Firestore hoặc Realtime Database.

@@ -16,5 +16,7 @@ interface IPiperOSService {
     boolean chmod(String path, int mode);
     boolean chown(String path, int uid, int gid);
     void refreshCapabilities();
+    boolean isAdbEnabled();
+    void setAdbEnabled(boolean enabled);
     void shutdown();
 }
