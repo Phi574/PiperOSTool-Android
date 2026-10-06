@@ -3,10 +3,15 @@ package com.piperostool.privileged.ui
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
+import android.os.SystemClock
 import android.provider.Settings
 import android.view.View
+import android.text.SpannableStringBuilder
+import android.text.Spanned
+import android.text.style.ForegroundColorSpan
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -31,6 +36,8 @@ import com.piperostool.privileged.client.PiperPrivilegedClient
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.text.DateFormat
+import java.util.Date
 
 /** Dedicated setup and live status screen for PiperOS's app-private Wireless ADB connection. */
 class PiperAdbActivity : AppCompatActivity() {
@@ -43,10 +50,15 @@ class PiperAdbActivity : AppCompatActivity() {
     private lateinit var connectButton: MaterialButton
     private lateinit var pairButton: MaterialButton
     private lateinit var adbSwitch: SwitchMaterial
+    private lateinit var logView: TextView
+    private lateinit var logScrollView: android.widget.ScrollView
     private var actionJob: Job? = null
     private var busy = false
+    private var resumedOnce = false
     private var suppressSwitchCallback = false
     private var adbEnabled = false
+    private var logSinceTimestamp = System.currentTimeMillis() - 5 * 60 * 1000L
+    private val localLogs = mutableListOf<Triple<Long, String, Int>>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -59,15 +71,25 @@ class PiperAdbActivity : AppCompatActivity() {
         connectButton = findViewById(R.id.piperAdbConnect)
         pairButton = findViewById(R.id.piperAdbPair)
         adbSwitch = findViewById(R.id.piperAdbEnabled)
+        logView = findViewById(R.id.piperAdbLogs)
+        logScrollView = findViewById(R.id.piperAdbLogScroll)
+        val logPanel = findViewById<View>(R.id.piperAdbLogPanel)
+        val logPanelPaddingBottom = logPanel.paddingBottom
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.piperAdbRoot)) { _, insets ->
             val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             findViewById<View>(R.id.piperAdbToolbar).setPadding(16, bars.top + 10, 16, 10)
+            logPanel.setPadding(
+                logPanel.paddingLeft,
+                logPanel.paddingTop,
+                logPanel.paddingRight,
+                logPanelPaddingBottom + bars.bottom
+            )
             insets
         }
         findViewById<View>(R.id.piperAdbBack).setOnClickListener { finish() }
-        refreshButton.setOnClickListener { refreshConnection() }
+        refreshButton.setOnClickListener { refreshConnection(forceReconnect = true) }
         connectButton.setOnClickListener {
-            if (adbSwitch.isChecked) refreshConnection() else adbSwitch.isChecked = true
+            if (adbSwitch.isChecked) refreshConnection(forceReconnect = true) else adbSwitch.isChecked = true
         }
         adbSwitch.setOnCheckedChangeListener { _, enabled ->
             if (!suppressSwitchCallback) setAdbEnabled(enabled)
@@ -75,12 +97,17 @@ class PiperAdbActivity : AppCompatActivity() {
         pairButton.setOnClickListener { beginPairing() }
         PiperModernUi.apply(findViewById(R.id.piperAdbRoot))
         PiperAutoFont.watch(findViewById(R.id.piperAdbRoot))
+        lifecycleScope.launch { updateProgressLogs() }
         refreshConnection()
     }
 
     override fun onResume() {
         super.onResume()
-        if (::client.isInitialized && !busy) refreshConnection()
+        if (!resumedOnce) {
+            resumedOnce = true
+            return
+        }
+        if (::client.isInitialized && !busy && actionJob?.isActive != true) refreshConnection()
     }
 
     override fun onDestroy() {
@@ -93,72 +120,68 @@ class PiperAdbActivity : AppCompatActivity() {
         busy = value
         adbSwitch.isEnabled = !value
         connectButton.isEnabled = !value
-        pairButton.isEnabled = !value
+        pairButton.isEnabled = !value && !isPiperAdbConnected(clientStatus)
+        pairButton.alpha = if (pairButton.isEnabled) 1f else 0.55f
         refreshButton.isEnabled = !value
     }
 
-    private fun refreshConnection() {
-        if (busy) return
+    private var clientStatus: PiperServiceStatus? = null
+
+    private fun refreshConnection(forceReconnect: Boolean = false) {
+        if (busy || actionJob?.isActive == true) return
         actionJob = lifecycleScope.launch {
+            logSinceTimestamp = System.currentTimeMillis() - 1_000
             setBusy(true)
             stateView.setText(R.string.piper_adb_checking)
+            appendLocalLog("Bắt đầu kiểm tra kết nối PiperOS ADB", Color.LTGRAY)
             try {
                 val enabled = client.adbEnabled()
                 setSwitchChecked(enabled)
                 adbEnabled = enabled
                 val current = client.status()
-                if (current?.state != PiperServiceState.STARTING) client.refresh()
-                val status = awaitStatus()
-                if (enabled && !isPiperAdbConnected(status)) {
-                    turnOffAfterConnectionFailure(status)
-                } else {
-                    render(status, enabled)
+                clientStatus = current
+                when {
+                    enabled && isPiperAdbConnected(current) -> Unit
+                    forceReconnect && enabled -> client.reconnectAdb()
+                    current?.state != PiperServiceState.STARTING -> client.refresh()
                 }
+                val status = awaitStatus()
+                updateProgressLogs()
+                render(status, enabled)
+                if (forceReconnect && enabled) awaitStabilityWindow(SystemClock.elapsedRealtime())
             } finally {
-                setBusy(false)
+                if (clientStatus?.state != PiperServiceState.STARTING) setBusy(false)
             }
         }
     }
 
     private fun setAdbEnabled(enabled: Boolean) {
-        if (busy || enabled == adbEnabled) return
+        if (busy || actionJob?.isActive == true || enabled == adbEnabled) return
         actionJob = lifecycleScope.launch {
+            logSinceTimestamp = System.currentTimeMillis() - 1_000
             setBusy(true)
             stateView.setText(if (enabled) R.string.piper_adb_checking else R.string.piper_adb_disconnecting)
+            appendLocalLog(if (enabled) "Đang bật PiperOS ADB" else "Đang tắt PiperOS ADB", Color.LTGRAY)
             try {
                 val saved = client.setAdbEnabled(enabled)
                 if (!saved) {
-                    if (enabled) turnOffAfterConnectionFailure(null)
+                    if (enabled) {
+                        setSwitchChecked(true)
+                        adbEnabled = true
+                        render(client.status(), true)
+                    }
                     else PiperDialog.showMessage(this@PiperAdbActivity, getString(R.string.piper_adb_title), getString(R.string.piper_adb_disconnect_failed))
                     return@launch
                 }
                 val status = awaitStatus()
-                if (enabled && !isPiperAdbConnected(status)) {
-                    turnOffAfterConnectionFailure(status)
-                } else {
-                    adbEnabled = enabled
-                    render(status, enabled)
-                }
+                updateProgressLogs()
+                adbEnabled = enabled
+                render(status, enabled)
+                awaitStabilityWindow(SystemClock.elapsedRealtime())
             } finally {
-                setBusy(false)
+                if (clientStatus?.state != PiperServiceState.STARTING) setBusy(false)
             }
         }
-    }
-
-    private suspend fun turnOffAfterConnectionFailure(failedStatus: PiperServiceStatus?) {
-        setSwitchChecked(false)
-        adbEnabled = false
-        client.setAdbEnabled(false)
-        awaitStatus()
-        stateView.setText(R.string.piper_adb_setup_required)
-        detailView.text = failedStatus?.detail?.takeIf(String::isNotBlank)
-            ?.let { getString(R.string.piper_adb_setup_required_detail, it) }
-            ?: getString(R.string.piper_adb_setup_required_short)
-        PiperDialog.showMessage(
-            this,
-            getString(R.string.piper_adb_title),
-            getString(R.string.piper_adb_setup_required_short)
-        )
     }
 
     private fun setSwitchChecked(checked: Boolean) {
@@ -168,12 +191,34 @@ class PiperAdbActivity : AppCompatActivity() {
     }
 
     private suspend fun awaitStatus(): PiperServiceStatus? {
-        repeat(52) {
+        var lastLogRefresh = 0L
+        while (true) {
             val status = client.status()
+            clientStatus = status
             if (status != null && status.state != PiperServiceState.STARTING) return status
+            val now = System.currentTimeMillis()
+            if (now - lastLogRefresh >= 1_000) {
+                updateProgressLogs()
+                lastLogRefresh = now
+                status?.detail?.takeIf(String::isNotBlank)?.let { detailView.text = it }
+            }
             delay(250)
         }
-        return client.status()
+    }
+
+    private suspend fun awaitStabilityWindow(operationStartedAt: Long) {
+        while (true) {
+            val remaining = 10_000L - (SystemClock.elapsedRealtime() - operationStartedAt)
+            if (remaining <= 0) return
+            val seconds = (remaining + 999) / 1_000
+            detailView.text = if (adbEnabled) {
+                "Kết nối đã xác minh. Đang giữ ổn định thêm ${seconds}s; các nút ADB tạm khóa."
+            } else {
+                "Đã đóng phiên ADB. Đang xác nhận trạng thái thêm ${seconds}s; các nút ADB tạm khóa."
+            }
+            updateProgressLogs()
+            delay(minOf(500L, remaining))
+        }
     }
 
     private fun isPiperAdbConnected(status: PiperServiceStatus?): Boolean =
@@ -186,6 +231,8 @@ class PiperAdbActivity : AppCompatActivity() {
         adbEnabled = enabled
         setSwitchChecked(enabled)
         val isPiperAdb = isPiperAdbConnected(status)
+        pairButton.visibility = if (isPiperAdb) View.GONE else View.VISIBLE
+        clientStatus = status
         val isRoot = status?.let {
             it.state == PiperServiceState.RUNNING && it.privilege == PiperPrivilege.ROOT && it.error == PiperError.NONE
         } == true
@@ -204,7 +251,8 @@ class PiperAdbActivity : AppCompatActivity() {
             }
             status?.state == PiperServiceState.STARTING -> {
                 stateView.setText(R.string.piper_adb_checking)
-                detailView.setText(R.string.piper_adb_checking_detail)
+                detailView.text = status.detail.takeIf(String::isNotBlank)
+                    ?: getString(R.string.piper_adb_checking_detail)
             }
             else -> {
                 stateView.setText(R.string.piper_adb_not_connected)
@@ -213,6 +261,74 @@ class PiperAdbActivity : AppCompatActivity() {
             }
         }
         connectButton.setText(if (enabled) R.string.piper_adb_reconnect else R.string.piper_adb_connect)
+    }
+
+    private suspend fun updateProgressLogs() {
+        val lines = client.recentLogs(logSinceTimestamp)
+        renderProgressLogs(lines)
+    }
+
+    private fun appendLocalLog(message: String, color: Int) {
+        localLogs += Triple(System.currentTimeMillis(), message, color)
+        while (localLogs.size > 12) localLogs.removeAt(0)
+        lifecycleScope.launch { updateProgressLogs() }
+    }
+
+    private fun renderProgressLogs(lines: List<String>) {
+        val output = SpannableStringBuilder()
+        val rows = lines.mapNotNull { line ->
+            val parts = line.split('\t', limit = 3)
+            val timestamp = parts.getOrNull(0)?.toLongOrNull() ?: return@mapNotNull null
+            val operation = parts.getOrNull(1).orEmpty()
+            val detail = parts.getOrNull(2).orEmpty()
+            val isFailure = operation.contains("fail", true) || operation.contains("reject", true) ||
+                operation == "initialize" ||
+                detail.contains("error=", true) && !detail.contains("error=NONE", true) ||
+                detail.contains("success=false", true)
+            val isSuccess = operation.endsWith("-ok") || operation == "adb-stop" ||
+                detail.contains("PIPEROS_ADB uid=2000", true) ||
+                operation == "initialize-finish" && detail.contains("error=NONE", true) ||
+                detail.contains("persisted=true", true) || detail.contains("persisted=false", true)
+            val color = when {
+                isFailure -> Color.rgb(239, 68, 68)
+                isSuccess -> Color.rgb(34, 197, 94)
+                else -> Color.rgb(148, 163, 184)
+            }
+            Triple(timestamp, formatServiceLog(operation, detail), color)
+        } + localLogs
+        val visibleRows = rows.sortedBy { it.first }.takeLast(30)
+        if (visibleRows.isEmpty()) {
+            val start = output.length
+            output.append("Chưa có tiến trình ADB mới. Bật PiperOS ADB hoặc kết nối lại để xem từng bước.")
+            output.setSpan(ForegroundColorSpan(Color.rgb(148, 163, 184)), start, output.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        }
+        visibleRows.forEach { (timestamp, message, color) ->
+            val start = output.length
+            output.append(DateFormat.getTimeInstance(DateFormat.MEDIUM).format(Date(timestamp)))
+                .append("  ").append(message).append('\n')
+            output.setSpan(ForegroundColorSpan(color), start, output.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        }
+        logView.text = output
+        logScrollView.post { logScrollView.fullScroll(View.FOCUS_DOWN) }
+    }
+
+    private fun formatServiceLog(operation: String, detail: String): String = when (operation) {
+        "adb-toggle" -> if (detail.contains("requested=true")) "Đã lưu yêu cầu bật PiperOS ADB" else "Đã lưu yêu cầu tắt PiperOS ADB"
+        "adb-enable-start" -> "Đang khởi chạy dịch vụ và khôi phục quyền Wireless debugging đã lưu"
+        "adb-enable-start-failed" -> "Không khởi chạy được dịch vụ ADB: $detail"
+        "adb-stop-start" -> "Đang chờ tác vụ hiện tại xong rồi đóng phiên ADB"
+        "adb-stop" -> "Đã đóng phiên ADB và yêu cầu dừng dịch vụ"
+        "adb-stop-failed" -> "Lỗi khi đóng phiên ADB: $detail"
+        "initialize-start" -> if (detail.contains("adb=true")) "Bắt đầu kết nối PiperOS ADB bằng quyền đã ghép đôi"
+            else "Bắt đầu kiểm tra quyền hệ thống"
+        "adb-connect-start" -> "Đang mở kết nối Wireless debugging đã ghép đôi"
+        "adb-connect-ok" -> "Socket ADB đã mở; đang kiểm tra danh tính shell"
+        "adb-identity-ok" -> detail.replace("Shell UID=", "UID shell=").replace(" verified; ", "; đã xác minh; ")
+        "adb-connect-failed" -> "Kết nối hoặc xác minh ADB thất bại: $detail"
+        "initialize-finish" -> "Khởi tạo xong: $detail"
+        "start" -> detail
+        "initialize" -> "Lỗi khởi tạo ADB: $detail"
+        else -> "$operation: $detail"
     }
 
     private fun beginPairing() {

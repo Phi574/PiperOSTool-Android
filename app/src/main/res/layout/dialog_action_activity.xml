@@ -29,6 +29,7 @@
         android:layout_marginBottom="6dp"/>
 
     <TextView
+        android:id="@+id/tvActionSubtitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:textColor="#888888"

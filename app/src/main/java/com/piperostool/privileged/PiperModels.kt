@@ -186,3 +186,43 @@ object PiperPrivilegedPreferences {
     fun showHidden(context: Context) = prefs(context).getBoolean(KEY_HIDDEN, false)
     fun setShowHidden(context: Context, value: Boolean) = prefs(context).edit().putBoolean(KEY_HIDDEN, value).apply()
 }
+
+object PiperAppActionPolicy {
+    const val LAUNCH_ACTIVITY = "launch_activity"
+    const val DISABLE_USER_APP = "disable_user_app"
+    const val ENABLE_USER_APP = "enable_user_app"
+    const val UNINSTALL_USER_APP = "uninstall_user_app"
+
+    private val packagePattern = Regex("[A-Za-z0-9_]+(?:\\.[A-Za-z0-9_]+)+")
+    private val activityPattern = Regex("[A-Za-z0-9_.$]+")
+
+    fun command(action: String, packageName: String, activityName: String = ""): String {
+        require(packagePattern.matches(packageName)) { "Tên gói ứng dụng không hợp lệ" }
+        val quotedPackage = PiperPathPolicy.shellQuote(packageName)
+        return when (action) {
+            LAUNCH_ACTIVITY -> {
+                require(activityPattern.matches(activityName)) { "Tên Activity không hợp lệ" }
+                val component = PiperPathPolicy.shellQuote("$packageName/$activityName")
+                "am start --user current -n $component"
+            }
+            DISABLE_USER_APP -> "pm disable-user --user current $quotedPackage"
+            ENABLE_USER_APP -> "pm enable --user current $quotedPackage"
+            UNINSTALL_USER_APP -> "pm uninstall --user current $quotedPackage"
+            else -> throw IllegalArgumentException("Thao tác ứng dụng không được hỗ trợ")
+        }
+    }
+
+    /** Convert Package Manager shell output into useful UI text instead of exposing a Java trace. */
+    fun failureMessage(action: String, packageName: String, output: String): String {
+        val normalized = output.lowercase()
+        if ("securityexception" in normalized && "cannot change component state" in normalized) {
+            val verb = if (action == ENABLE_USER_APP) "bật" else "thay đổi trạng thái"
+            return "Android/ColorOS đã chặn PiperOS ADB $verb ứng dụng $packageName. ADB vẫn kết nối; ROM đang bảo vệ ứng dụng này (thường là ứng dụng hệ thống do OEM quản lý). Hãy thử bật thủ công trong Cài đặt > Ứng dụng > Quản lý ứng dụng."
+        }
+
+        return output.lineSequence()
+            .map(String::trim)
+            .firstOrNull { it.isNotEmpty() && !it.startsWith("at ") && !it.startsWith("at\t") }
+            ?: "Android không thực hiện được thao tác với $packageName"
+    }
+}

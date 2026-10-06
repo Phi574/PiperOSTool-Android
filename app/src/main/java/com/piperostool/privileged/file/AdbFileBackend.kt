@@ -2,6 +2,7 @@ package com.piperostool.privileged.file
 
 import android.os.ParcelFileDescriptor
 import com.piperostool.privileged.PiperCapabilities
+import com.piperostool.privileged.PiperAppActionPolicy
 import com.piperostool.privileged.PiperFileEntry
 import com.piperostool.privileged.PiperPathPolicy
 import com.piperostool.privileged.PiperPrivilege
@@ -15,6 +16,29 @@ internal class AdbFileBackend(
 ) : PrivilegedFileBackend {
     private val transferWorker = Executors.newCachedThreadPool()
     override val privilege = PiperPrivilege.SHELL
+
+    fun isConnected(): Boolean = session.isConnected()
+
+    fun runAppAction(action: String, packageName: String, activityName: String): Pair<Boolean, String> {
+        val command = PiperAppActionPolicy.command(action, packageName, activityName)
+        val result = session.execute(command)
+        val failedOutput = result.output.contains("error", ignoreCase = true) ||
+            result.output.contains("exception", ignoreCase = true)
+        val expectedResult = when (action) {
+            PiperAppActionPolicy.UNINSTALL_USER_APP -> result.output.contains("Success", ignoreCase = true)
+            PiperAppActionPolicy.DISABLE_USER_APP -> result.output.contains("new state: disabled-user", ignoreCase = true)
+            PiperAppActionPolicy.ENABLE_USER_APP -> result.output.contains("new state: enabled", ignoreCase = true)
+            else -> true
+        }
+        val success = result.exitCode == 0 && !failedOutput && expectedResult
+        val message = if (success) {
+            result.output.ifBlank { "Hoàn tất" }
+        } else {
+            PiperAppActionPolicy.failureMessage(action, packageName, result.output)
+                .ifBlank { "Lệnh thất bại (exit ${result.exitCode})" }
+        }
+        return success to message
+    }
 
     override fun capabilities() = PiperCapabilities(
         privilege = PiperPrivilege.SHELL,
@@ -142,6 +166,7 @@ internal class AdbFileBackend(
 
     override fun close() {
         transferWorker.shutdownNow()
+        session.close()
     }
 
     private inline fun write(path: String, command: (String) -> String): Boolean {

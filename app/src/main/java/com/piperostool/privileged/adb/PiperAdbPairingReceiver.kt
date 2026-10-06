@@ -54,7 +54,8 @@ class PiperAdbPairingReceiver : BroadcastReceiver() {
         val connection = object : ServiceConnection {
             override fun onServiceConnected(name: ComponentName?, binder: IBinder?) {
                 runCatching {
-                    IPiperOSService.Stub.asInterface(binder).refreshCapabilities()
+                    val service = IPiperOSService.Stub.asInterface(binder)
+                    if (service.isAdbEnabled()) service.reconnectAdb()
                 }
                 runCatching { context.unbindService(this) }
             }

@@ -4,6 +4,7 @@ import android.content.Context
 import io.github.muntashirakon.adb.AdbStream
 import java.io.ByteArrayOutputStream
 import java.nio.charset.StandardCharsets
+import java.util.concurrent.ExecutionException
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
@@ -13,16 +14,31 @@ data class AdbShellResult(val output: String, val exitCode: Int)
 class AdbShellSession(context: Context) : AutoCloseable {
     private val appContext = context.applicationContext
     private val manager = PiperAdbConnectionManager.getInstance(appContext)
+    private val commandReader = Executors.newSingleThreadExecutor()
 
     fun connect(timeoutMs: Long = 8_000L): Boolean = synchronized(manager) {
         manager.isConnected || manager.autoConnect(appContext, timeoutMs)
     }
 
+    fun isConnected(): Boolean = synchronized(manager) { manager.isConnected }
+
     fun execute(command: String): AdbShellResult = synchronized(manager) {
         check(manager.isConnected) { "PiperOS ADB is not connected" }
         val marker = "__PIPER_EXIT_${System.nanoTime()}__"
         val wrapped = "$command; printf '\\n$marker%d\\n' $?"
-        val output = read(manager.openStream("shell:$wrapped"))
+        val stream = manager.openStream("shell:$wrapped")
+        val pendingRead = commandReader.submit<String> { read(stream, marker) }
+        val output = try {
+            pendingRead.get(COMMAND_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+        } catch (_: TimeoutException) {
+            runCatching { stream.close() }
+            pendingRead.cancel(true)
+            throw TimeoutException("ADB shell command timed out after ${COMMAND_TIMEOUT_MS}ms")
+        } catch (error: ExecutionException) {
+            throw (error.cause ?: error)
+        } finally {
+            pendingRead.cancel(true)
+        }
         val markerIndex = output.lastIndexOf(marker)
         if (markerIndex < 0) return@synchronized AdbShellResult(output.trimEnd(), -1)
         val code = output.substring(markerIndex + marker.length).trim().lineSequence().firstOrNull()?.toIntOrNull() ?: -1
@@ -36,9 +52,10 @@ class AdbShellSession(context: Context) : AutoCloseable {
 
     override fun close() {
         synchronized(manager) { runCatching { manager.disconnect() } }
+        commandReader.shutdownNow()
     }
 
-    private fun read(stream: AdbStream): String {
+    private fun read(stream: AdbStream, stopMarker: String? = null): String {
         stream.use { adbStream ->
             val output = ByteArrayOutputStream()
             val input = adbStream.openInputStream()
@@ -48,10 +65,17 @@ class AdbShellSession(context: Context) : AutoCloseable {
                     if (adbStream.isClosed) -1 else throw it
                 }
                 if (count < 0) break
-                if (count > 0) output.write(buffer, 0, count)
+                if (count > 0) {
+                    output.write(buffer, 0, count)
+                    if (stopMarker != null && output.toString(StandardCharsets.UTF_8.name()).contains(stopMarker)) break
+                }
             }
             return output.toString(StandardCharsets.UTF_8.name())
         }
+    }
+
+    private companion object {
+        const val COMMAND_TIMEOUT_MS = 30_000L
     }
 
 }

@@ -1,5 +1,26 @@
 # Changelog
 
+## 3.6.5.PRE
+- Sửa PiperOS ADB bị ngắt khi rời màn hình trong trường hợp service chỉ được khởi tạo bằng binding; khi người dùng đã bật ADB, service được chuyển sang trạng thái chạy bền để giữ kết nối dùng chung qua các Activity.
+- Trạng thái tắt vẫn không tự khởi động lại ADB; chỉ khôi phục kết nối khi tùy chọn bật đã được người dùng lưu.
+- Làm rõ lỗi khi Android/ColorOS bảo vệ một ứng dụng hệ thống khỏi thao tác bật qua ADB, đồng thời ẩn stack trace khỏi hộp thoại.
+- Nâng versionCode lên 68 để cập nhật đè từ 3.6.4.PRE.
+
+## 3.6.4.PRE
+- Bổ sung tiến trình và log có timestamp cho thao tác bật/tắt app bằng PiperOS ADB, ghi thời gian xử lý Package Manager và phản hồi thật từ Android.
+- Cập nhật trạng thái app ngay sau xác nhận của Android để không phải chờ quét lại toàn bộ danh sách ứng dụng.
+- Sửa công tắc **Tùy chọn sâu ứng dụng** đọc nhầm trạng thái ADB cũ giữa các process; lấy trạng thái bật và kết nối trực tiếp từ dịch vụ PiperOS ADB.
+- Đổi thao tác **Tắt ứng dụng** thành vô hiệu hóa package qua PiperOS ADB; ứng dụng đã tắt có thể bật lại ngay từ cửa sổ chi tiết.
+- Chỉ PiperOS ADB được phép khởi tạo/kết nối lại ADB; các trang khác chỉ dùng phiên shell đang hoạt động và dẫn người dùng về PiperOS ADB khi cần.
+- Sửa nhận diện kết nối PiperOS ADB cho **Tùy chọn sâu ứng dụng**, chờ dịch vụ khởi tạo đủ lâu và đồng bộ trạng thái trước khi báo lỗi.
+
+- Sửa trạng thái cài PiperOS Runtime bị treo ở bước chuẩn bị: lỗi khởi động foreground service được báo thành lỗi, thao tác hủy ngắt kết nối đang tải và trạng thái cài đặt luôn được giải phóng.
+- PiperOS Media theo dõi theme hiện hành; nhóm lọc Tất cả/Âm thanh/Video/Danh sách riêng dùng màu bề mặt, viền và màu nhấn đúng với theme sáng/tối.
+- Thêm công tắc ép mở Activity riêng tư bằng PiperOS ADB, chỉ bật được khi dịch vụ ADB thật sự kết nối.
+- Cửa sổ chi tiết ứng dụng có thao tác xác nhận dừng ứng dụng và gỡ ứng dụng người dùng qua các lệnh ADB giới hạn; làm mới danh sách sau thao tác.
+- Cửa sổ chọn Activity dùng hộp thoại PiperOS và giải thích khi Android chặn Activity không export.
+- Nâng versionCode lên 67 để cập nhật đè từ 3.6.3.PRE.
+
 ## 3.6.3.PRE
 
 - Thêm bước kiểm tra khởi động theo thứ tự Internet, GitHub, Firebase Auth và bản cập nhật; hiển thị trạng thái từng bước ngay trên màn hình khởi động.

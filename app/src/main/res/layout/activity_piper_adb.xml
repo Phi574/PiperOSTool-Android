@@ -66,8 +66,8 @@
         android:fillViewport="true"
         android:paddingStart="18dp"
         android:paddingEnd="18dp"
-        android:paddingBottom="24dp"
-        app:layout_constraintBottom_toBottomOf="parent"
+        android:paddingBottom="20dp"
+        app:layout_constraintBottom_toTopOf="@id/piperAdbLogPanel"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/piperAdbToolbar">
@@ -163,6 +163,47 @@
                 android:padding="18dp"
                 android:text="@string/piper_adb_how_detail"
                 android:textSize="14sp" />
+
         </LinearLayout>
     </ScrollView>
+
+    <LinearLayout
+        android:id="@+id/piperAdbLogPanel"
+        android:layout_width="0dp"
+        android:layout_height="210dp"
+        android:orientation="vertical"
+        android:paddingStart="18dp"
+        android:paddingTop="6dp"
+        android:paddingEnd="18dp"
+        android:paddingBottom="12dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <TextView
+            style="@style/SettingsSectionTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="TIẾN TRÌNH ADB" />
+
+        <ScrollView
+            android:id="@+id/piperAdbLogScroll"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_marginTop="6dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_settings_surface"
+            android:fillViewport="true"
+            android:scrollbars="vertical">
+
+            <TextView
+                android:id="@+id/piperAdbLogs"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="monospace"
+                android:padding="14dp"
+                android:text="Đang tải nhật ký tiến trình…"
+                android:textSize="12sp" />
+        </ScrollView>
+    </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

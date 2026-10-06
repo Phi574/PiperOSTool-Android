@@ -75,8 +75,16 @@ class AdvancedAccessActivity : AppCompatActivity() {
         super.onResume()
         if (!::client.isInitialized) return
         lifecycleScope.launch {
-            awaitSettledStatus()
-            refreshStatus()
+            val current = client.status()
+            val settled = if (current?.state == PiperServiceState.STARTING || current == null) {
+                awaitSettledStatus() ?: current
+            } else current
+            val capabilities = client.capabilities() ?: PiperCapabilities()
+            latestCapabilities = capabilities
+            render(settled ?: PiperServiceStatus(
+                state = PiperServiceState.ERROR,
+                error = PiperError.SERVICE_NOT_RUNNING
+            ), capabilities)
         }
     }
 
@@ -160,6 +168,10 @@ class AdvancedAccessActivity : AppCompatActivity() {
         methodRow.setOnClickListener { openPiperAdb() }
         startButton.setOnClickListener { openPiperAdb() }
         stopButton.setOnClickListener {
+            if (latestStatus.startupMethod == "PIPEROS_ADB") {
+                openPiperAdb()
+                return@setOnClickListener
+            }
             operationJob?.cancel()
             lifecycleScope.launch {
                 setOperationRunning(true)
@@ -213,8 +225,16 @@ class AdvancedAccessActivity : AppCompatActivity() {
             setOperationRunning(true)
             try {
                 stateView.text = getString(R.string.pps_state_starting)
-                client.refresh()
-                awaitSettledStatus()?.let { latestStatus = it }
+                val current = client.status()
+                val settled = if (current?.state == PiperServiceState.STARTING || current == null) {
+                    awaitSettledStatus() ?: current
+                } else {
+                    current
+                }
+                latestStatus = settled ?: PiperServiceStatus(
+                    state = PiperServiceState.ERROR,
+                    error = PiperError.SERVICE_NOT_RUNNING
+                )
                 refreshStatus()
             } finally {
                 setOperationRunning(false)
@@ -226,7 +246,7 @@ class AdvancedAccessActivity : AppCompatActivity() {
         repeat(60) {
             delay(250)
             val status = client.status()
-            if (status?.state != PiperServiceState.STARTING) return status
+            if (status != null && status.state != PiperServiceState.STARTING) return status
         }
         return client.status()
     }

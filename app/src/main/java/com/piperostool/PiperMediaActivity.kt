@@ -178,6 +178,7 @@ class PiperMediaActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        PiperModernUi.watch(this)
         WindowCompat.setDecorFitsSystemWindows(window, false)
         window.statusBarColor = Color.BLACK
         window.navigationBarColor = Color.BLACK
@@ -863,6 +864,11 @@ class PiperMediaActivity : AppCompatActivity() {
     }
 
     private fun showSelectedFilter() {
+        val accent = PiperModernUi.accentColor(this)
+        val surface = PiperModernUi.surfaceColor(this)
+        val border = PiperModernUi.borderColor(this)
+        val text = PiperModernUi.textColor(this)
+        val onAccent = PiperModernUi.onAccentColor(this)
         val mapping = mapOf(
             R.id.mediaFilterAll to LibraryFilter.ALL,
             R.id.mediaFilterAudio to LibraryFilter.AUDIO,
@@ -872,13 +878,12 @@ class PiperMediaActivity : AppCompatActivity() {
         mapping.forEach { (buttonId, filter) ->
             findViewById<MaterialButton>(buttonId).apply {
                 backgroundTintList = ColorStateList.valueOf(
-                    if (filter == currentFilter) Color.rgb(35, 89, 60)
-                    else Color.rgb(16, 23, 27)
+                    if (filter == currentFilter) accent else surface
                 )
                 strokeColor = ColorStateList.valueOf(
-                    if (filter == currentFilter) Color.rgb(57, 229, 140)
-                    else Color.argb(85, 255, 255, 255)
+                    if (filter == currentFilter) accent else border
                 )
+                setTextColor(if (filter == currentFilter) onAccent else text)
             }
         }
     }

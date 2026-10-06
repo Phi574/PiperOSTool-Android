@@ -70,6 +70,10 @@ class PiperPrivilegedClient(context: Context) : Closeable {
         PiperServiceStatus.fromBundle(it.status)
     }
 
+    suspend fun recentLogs(sinceTimestamp: Long): List<String> = withConnected {
+        it.getRecentLogs(sinceTimestamp).orEmpty().toList()
+    }.orEmpty()
+
     suspend fun capabilities(): PiperCapabilities? = withConnected {
         PiperCapabilities.fromBundle(it.capabilities)
     }
@@ -98,12 +102,29 @@ class PiperPrivilegedClient(context: Context) : Closeable {
         true
     } ?: false
 
+    suspend fun reconnectAdb(): Boolean = withConnected {
+        it.reconnectAdb()
+        true
+    } ?: false
+
     suspend fun adbEnabled(): Boolean = withConnected { it.isAdbEnabled() } ?: false
 
     suspend fun setAdbEnabled(enabled: Boolean): Boolean = withConnected {
         it.setAdbEnabled(enabled)
         true
     } ?: false
+
+    suspend fun runAppAction(
+        action: String,
+        packageName: String,
+        activityName: String = ""
+    ): PiperAppActionResult? = withConnected {
+        val result = it.runAppAction(action, packageName, activityName)
+        PiperAppActionResult(
+            success = result.getBoolean("success"),
+            message = result.getString("message").orEmpty()
+        )
+    }
 
     suspend fun shutdown(): Boolean = withConnected {
         it.shutdown()
@@ -166,3 +187,5 @@ class PiperPrivilegedClient(context: Context) : Closeable {
             }.filterNotNull().toList()
         }
 }
+
+data class PiperAppActionResult(val success: Boolean, val message: String)

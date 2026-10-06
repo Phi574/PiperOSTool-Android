@@ -29,9 +29,20 @@ PiperOS Tool.
 
 ## Bản hiện tại
 
-`3.6.3.PRE` (versionCode `66`) sử dụng `minSdk 29 (Android 10)`, `targetSdk 36`, Kotlin `2.4.10`.
+`3.6.5.PRE` (versionCode `68`) sử dụng `minSdk 29 (Android 10)`, `targetSdk 36`, Kotlin `2.4.10`.
 
-**Tải và cài đặt:** [Bản phát hành 3.6.3.PRE](https://github.com/Phi574/PiperOSTool-Android/releases/tag/v3.6.3.PRE). APK được ký bằng khóa debug của dự án; màn Cập nhật chỉ chấp nhận APK có cùng chữ ký với bản đang cài.
+**Tải và cài đặt:** [Bản phát hành 3.6.5.PRE](https://github.com/Phi574/PiperOSTool-Android/releases/tag/v3.6.5.PRE). APK được ký bằng khóa debug của dự án; màn Cập nhật chỉ chấp nhận APK có cùng chữ ký với bản đang cài.
+
+### Cải tiến trong 3.6.5.PRE
+
+- PiperOS ADB giữ kết nối dùng chung sau khi rời Activity nếu công tắc đã được bật; khi người dùng tắt, dịch vụ vẫn dừng hoàn toàn.
+- Lỗi package bị Android/ColorOS bảo vệ hiển thị hướng dẫn thay vì Java stack trace.
+
+### Cải tiến trong 3.6.4.PRE
+
+- PiperOS Runtime báo lỗi khởi động dịch vụ thay vì để giao diện mắc ở “Đang chuẩn bị”; thao tác hủy đóng kết nối tải đang hoạt động.
+- PiperOS Media đồng bộ bộ lọc với bảng màu sáng/tối.
+- Trang Ứng dụng có công tắc ép mở Activity riêng tư bằng PiperOS ADB và nút dừng/gỡ ứng dụng với xác nhận.
 
 ### Cải tiến trong 3.6.3.PRE
 

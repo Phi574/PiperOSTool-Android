@@ -664,15 +664,29 @@ class PiperTerminalActivity : AppCompatActivity(), TerminalSessionManager.Listen
         release: TerminalRuntimeCatalog.Release,
         mode: TerminalRuntimeInstallService.InstallMode
     ) {
-        ContextCompat.startForegroundService(
-            this,
-            Intent(this, TerminalRuntimeInstallService::class.java)
-                .setAction(TerminalRuntimeInstallService.ACTION_INSTALL)
-                .putExtra(TerminalRuntimeInstallService.EXTRA_RELEASE_TAG, release.tag)
-                .putExtra(TerminalRuntimeInstallService.EXTRA_RUNTIME_VERSION, release.version)
-                .putExtra(TerminalRuntimeInstallService.EXTRA_INSTALL_MODE, mode.name)
-        )
-        mainHandler.postDelayed({ renderRuntimeStatus() }, 150)
+        runCatching {
+            ContextCompat.startForegroundService(
+                this,
+                Intent(this, TerminalRuntimeInstallService::class.java)
+                    .setAction(TerminalRuntimeInstallService.ACTION_INSTALL)
+                    .putExtra(TerminalRuntimeInstallService.EXTRA_RELEASE_TAG, release.tag)
+                    .putExtra(TerminalRuntimeInstallService.EXTRA_RUNTIME_VERSION, release.version)
+                    .putExtra(TerminalRuntimeInstallService.EXTRA_INSTALL_MODE, mode.name)
+            )
+        }.onSuccess {
+            mainHandler.postDelayed({ renderRuntimeStatus() }, 150)
+        }.onFailure { error ->
+            runtimeDetailView.text = getString(
+                R.string.terminal_runtime_failed,
+                error.message?.take(180) ?: error.javaClass.simpleName
+            )
+            renderRuntimeStatus()
+            PiperDialog.showMessage(
+                this,
+                getString(R.string.terminal_runtime_catalog_error_title),
+                runtimeDetailView.text.toString()
+            )
+        }
     }
 
     private fun confirmRuntimeRemoval() {

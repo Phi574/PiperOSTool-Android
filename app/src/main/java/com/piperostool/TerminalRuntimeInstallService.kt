@@ -32,6 +32,7 @@ import java.net.HttpURLConnection
 import java.net.URL
 import java.security.MessageDigest
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicReference
 import java.util.zip.ZipInputStream
 
 class TerminalRuntimeInstallService : Service() {
@@ -49,57 +50,80 @@ class TerminalRuntimeInstallService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent?.action == ACTION_CANCEL) {
             cancelRequested.set(true)
+            activeConnection.getAndSet(null)?.disconnect()
             installJob?.cancel(CancellationException("Cancelled by user"))
+            if (installJob == null && currentState.running) {
+                finishInstall(Phase.CANCELLED, getString(R.string.terminal_runtime_cancelled))
+                stopForeground(STOP_FOREGROUND_REMOVE)
+                stopSelf(startId)
+            }
             return START_NOT_STICKY
         }
+        if (intent?.action != ACTION_INSTALL) return START_NOT_STICKY
         if (!installing.compareAndSet(false, true)) return START_NOT_STICKY
 
-        requestedTag = intent?.getStringExtra(EXTRA_RELEASE_TAG)
+        requestedTag = intent.getStringExtra(EXTRA_RELEASE_TAG)
             ?.takeIf { it.matches(Regex("runtime-v[0-9][0-9A-Za-z._-]*")) }
             ?: TerminalRuntime.RUNTIME_RELEASE_TAG
-        requestedVersion = intent?.getStringExtra(EXTRA_RUNTIME_VERSION)
+        requestedVersion = intent.getStringExtra(EXTRA_RUNTIME_VERSION)
             ?.takeIf { requestedTag == "runtime-v$it" }
             ?: requestedTag.removePrefix("runtime-v")
-        requestedMode = intent?.getStringExtra(EXTRA_INSTALL_MODE)
+        requestedMode = intent.getStringExtra(EXTRA_INSTALL_MODE)
             ?.let { runCatching { InstallMode.valueOf(it) }.getOrNull() }
             ?: InstallMode.NORMAL
 
         cancelRequested.set(false)
         publish(State(Phase.PREPARING, 0, getString(R.string.terminal_runtime_preparing)))
-        startAsForeground(buildNotification(currentState))
-        installJob = serviceScope.launch {
-            runCatching { installRuntime() }
-                .onSuccess {
-                    publish(State(Phase.COMPLETE, 100, getString(R.string.terminal_runtime_complete)))
-                    TerminalSessionManager.closeAll()
-                    TerminalSessionManager.ensureSession(this@TerminalRuntimeInstallService)
-                    startService(Intent(this@TerminalRuntimeInstallService, PiperTerminalService::class.java))
-                }
-                .onFailure { error ->
-                    val cancelled = error is CancellationException || cancelRequested.get()
-                    publish(
-                        State(
-                            if (cancelled) Phase.CANCELLED else Phase.ERROR,
-                            currentState.progress,
-                            if (cancelled) {
-                                getString(R.string.terminal_runtime_cancelled)
-                            } else {
-                                getString(
-                                    R.string.terminal_runtime_failed,
-                                    error.message?.take(180) ?: error.javaClass.simpleName
-                                )
-                            }
-                        )
-                    )
-                }
+        try {
+            startAsForeground(buildNotification(currentState))
+        } catch (error: Exception) {
             installing.set(false)
-            stopForeground(STOP_FOREGROUND_REMOVE)
-            stopSelf()
+            finishInstall(
+                Phase.ERROR,
+                getString(
+                    R.string.terminal_runtime_failed,
+                    error.message?.take(180) ?: error.javaClass.simpleName
+                )
+            )
+            stopSelf(startId)
+            return START_NOT_STICKY
+        }
+        installJob = serviceScope.launch {
+            try {
+                installRuntime()
+                if (cancelRequested.get()) throw CancellationException("Cancelled by user")
+                publish(State(Phase.COMPLETE, 100, getString(R.string.terminal_runtime_complete)))
+                TerminalSessionManager.closeAll()
+                TerminalSessionManager.ensureSession(this@TerminalRuntimeInstallService)
+                startService(Intent(this@TerminalRuntimeInstallService, PiperTerminalService::class.java))
+            } catch (error: Exception) {
+                val cancelled = error is CancellationException || cancelRequested.get()
+                finishInstall(
+                    if (cancelled) Phase.CANCELLED else Phase.ERROR,
+                    if (cancelled) getString(R.string.terminal_runtime_cancelled) else getString(
+                        R.string.terminal_runtime_failed,
+                        error.message?.take(180) ?: error.javaClass.simpleName
+                    )
+                )
+            } finally {
+                activeConnection.getAndSet(null)?.disconnect()
+                installing.set(false)
+                installJob = null
+                stopForeground(STOP_FOREGROUND_REMOVE)
+                stopSelf()
+            }
         }
         return START_NOT_STICKY
     }
 
     override fun onDestroy() {
+        if (installJob?.isActive == true) {
+            cancelRequested.set(true)
+            activeConnection.getAndSet(null)?.disconnect()
+            installJob?.cancel(CancellationException("Installer service was stopped"))
+        } else if (currentState.running) {
+            finishInstall(Phase.CANCELLED, getString(R.string.terminal_runtime_cancelled))
+        }
         serviceScope.cancel()
         super.onDestroy()
     }
@@ -190,6 +214,7 @@ class TerminalRuntimeInstallService : Service() {
 
     private fun downloadBytes(url: String, maximumSize: Long): ByteArray {
         val connection = openConnection(url)
+        activeConnection.set(connection)
         return try {
             require(connection.responseCode in 200..299) {
                 "HTTP ${connection.responseCode} for $url"
@@ -211,12 +236,14 @@ class TerminalRuntimeInstallService : Service() {
                 output.toByteArray()
             }
         } finally {
+            activeConnection.compareAndSet(connection, null)
             connection.disconnect()
         }
     }
 
     private fun downloadArchive(selection: RuntimeSelection, destination: File) {
         val connection = openConnection(selection.url)
+        activeConnection.set(connection)
         try {
             require(connection.responseCode in 200..299) {
                 "HTTP ${connection.responseCode} while downloading runtime"
@@ -260,6 +287,7 @@ class TerminalRuntimeInstallService : Service() {
                 }
             }
         } finally {
+            activeConnection.compareAndSet(connection, null)
             connection.disconnect()
         }
     }
@@ -653,6 +681,11 @@ class TerminalRuntimeInstallService : Service() {
         )
     }
 
+    private fun finishInstall(phase: Phase, message: String) {
+        runCatching { publish(State(phase, currentState.progress, message)) }
+        installing.set(false)
+    }
+
     private fun buildNotification(state: State): Notification {
         val openIntent = PendingIntent.getActivity(
             this,
@@ -849,4 +882,6 @@ class TerminalRuntimeInstallService : Service() {
         var currentState = State(Phase.IDLE, 0, "")
             private set
     }
+
+    private val activeConnection = AtomicReference<HttpURLConnection?>(null)
 }

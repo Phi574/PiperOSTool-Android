@@ -1,6 +1,7 @@
 package com.piperostool
 
 import android.app.ActivityManager
+import android.app.Dialog
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
@@ -15,6 +16,7 @@ import android.graphics.drawable.Icon
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
+import android.os.SystemClock
 import android.text.Editable
 import android.text.TextWatcher
 import android.text.format.Formatter
@@ -28,16 +30,26 @@ import android.widget.EditText
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ProgressBar
+import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
-import androidx.appcompat.app.AlertDialog
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomsheet.BottomSheetDialog
+import com.google.android.material.switchmaterial.SwitchMaterial
+import com.piperostool.privileged.PiperAppActionPolicy
+import com.piperostool.privileged.PiperError
+import com.piperostool.privileged.PiperPrivilege
+import com.piperostool.privileged.PiperServiceState
+import com.piperostool.privileged.PiperServiceStatus
+import com.piperostool.privileged.client.PiperAppActionResult
+import com.piperostool.privileged.client.PiperPrivilegedClient
+import com.piperostool.privileged.ui.PiperAdbActivity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -55,6 +67,8 @@ class AppsFragment : Fragment() {
     private lateinit var btnSortApps: View
     private lateinit var tvAppsOverview: TextView
     private lateinit var tvAppsVisibleCount: TextView
+    private lateinit var forceAccessSwitch: SwitchMaterial
+    private lateinit var tvForceAccessSummary: TextView
 
     private lateinit var tabUser: TextView
     private lateinit var tabSystem: TextView
@@ -66,6 +80,9 @@ class AppsFragment : Fragment() {
     private var currentTabFilter = 0
     private var currentSearchQuery = ""
     private var sortMode = AppSortMode.NAME
+    private var forceAccessEnabled = false
+    private var updatingForceAccessSwitch = false
+    private var forceAccessSyncToken = 0
 
     private val apkPicker = registerForActivityResult(
         ActivityResultContracts.OpenDocument()
@@ -87,6 +104,8 @@ class AppsFragment : Fragment() {
     // BỘ NHỚ ĐỆM TĨNH (CACHE)
     companion object {
         private var cachedAllApps: List<AppInfoModel>? = null
+        private const val APPS_PREFS = "piperos_apps_preferences"
+        private const val KEY_FORCE_ACCESS = "force_private_activity_access"
     }
 
     override fun onCreateView(
@@ -107,6 +126,8 @@ class AppsFragment : Fragment() {
         btnSortApps = view.findViewById(R.id.btnSortApps)
         tvAppsOverview = view.findViewById(R.id.tvAppsOverview)
         tvAppsVisibleCount = view.findViewById(R.id.tvAppsVisibleCount)
+        forceAccessSwitch = view.findViewById(R.id.switchForceAccess)
+        tvForceAccessSummary = view.findViewById(R.id.tvForceAccessSummary)
         tabUser = view.findViewById(R.id.tabUser)
         tabSystem = view.findViewById(R.id.tabSystem)
         tabDisabled = view.findViewById(R.id.tabDisabled)
@@ -158,6 +179,7 @@ class AppsFragment : Fragment() {
             ))
         }
         btnSortApps.setOnClickListener { showSortOptions() }
+        setupForceAccessToggle(view)
 
         rvApps.addOnScrollListener(object : RecyclerView.OnScrollListener() {
             override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
@@ -184,6 +206,123 @@ class AppsFragment : Fragment() {
         // Apply the selected surface style to the fragment immediately;
         // RecyclerView items are styled again when they are rebound below.
         PiperModernUi.apply(view)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (::forceAccessSwitch.isInitialized) syncForceAccessSwitch()
+    }
+
+    private fun setupForceAccessToggle(root: View) {
+        forceAccessSwitch.setOnCheckedChangeListener { _, checked ->
+            if (!updatingForceAccessSwitch) setForceAccessEnabled(checked)
+        }
+        root.findViewById<View>(R.id.rowForceAccess).setOnClickListener {
+            if (forceAccessSwitch.isEnabled) {
+                forceAccessSwitch.isChecked = !forceAccessSwitch.isChecked
+            }
+        }
+        syncForceAccessSwitch()
+    }
+
+    private fun syncForceAccessSwitch() {
+        val safeContext = context ?: return
+        val saved = safeContext.getSharedPreferences(APPS_PREFS, Context.MODE_PRIVATE)
+            .getBoolean(KEY_FORCE_ACCESS, false)
+        val token = ++forceAccessSyncToken
+        updatingForceAccessSwitch = true
+        forceAccessSwitch.isEnabled = false
+        forceAccessSwitch.isChecked = false
+        updatingForceAccessSwitch = false
+        tvForceAccessSummary.text = "Đang kiểm tra PiperOS ADB…"
+
+        CoroutineScope(Dispatchers.IO).launch {
+            val client = PiperPrivilegedClient(safeContext.applicationContext)
+            val adbReady = try {
+                client.connect() && client.adbEnabled() && isPiperAdbStatus(client.status())
+            } catch (_: Exception) {
+                false
+            } finally {
+                client.close()
+            }
+            withContext(Dispatchers.Main) {
+                if (!isAdded || token != forceAccessSyncToken) return@withContext
+                forceAccessEnabled = adbReady && saved
+                updatingForceAccessSwitch = true
+                forceAccessSwitch.isChecked = forceAccessEnabled
+                forceAccessSwitch.isEnabled = true
+                updatingForceAccessSwitch = false
+                tvForceAccessSummary.text = when {
+                    !adbReady -> "Bật và kết nối ADB trong PiperOS ADB để sử dụng"
+                    forceAccessEnabled -> "Activity riêng tư sẽ mở qua PiperOS ADB"
+                    else -> "Dùng phiên PiperOS ADB đang hoạt động"
+                }
+            }
+        }
+    }
+
+    private fun setForceAccessEnabled(enabled: Boolean) {
+        val safeContext = context ?: return
+        if (!enabled) {
+            forceAccessEnabled = false
+            safeContext.getSharedPreferences(APPS_PREFS, Context.MODE_PRIVATE)
+                .edit().putBoolean(KEY_FORCE_ACCESS, false).apply()
+            syncForceAccessSwitch()
+            return
+        }
+        forceAccessSwitch.isEnabled = false
+        tvForceAccessSummary.text = "Đang kiểm tra kết nối PiperOS ADB…"
+        CoroutineScope(Dispatchers.IO).launch {
+            val client = PiperPrivilegedClient(safeContext.applicationContext)
+            val connected = try {
+                awaitPiperAdbReady(client)
+            } catch (_: Exception) {
+                false
+            } finally {
+                client.close()
+            }
+            withContext(Dispatchers.Main) {
+                if (!isAdded) return@withContext
+                forceAccessSwitch.isEnabled = true
+                if (connected) {
+                    forceAccessEnabled = true
+                    safeContext.getSharedPreferences(APPS_PREFS, Context.MODE_PRIVATE)
+                        .edit().putBoolean(KEY_FORCE_ACCESS, true).apply()
+                } else {
+                    updatingForceAccessSwitch = true
+                    forceAccessSwitch.isChecked = false
+                    updatingForceAccessSwitch = false
+                    Toast.makeText(safeContext, "PiperOS ADB chưa kết nối. Hãy hoàn tất thiết lập rồi bật lại công tắc.", Toast.LENGTH_LONG).show()
+                    openPiperAdb()
+                }
+                syncForceAccessSwitch()
+            }
+        }
+    }
+
+    private suspend fun awaitPiperAdbReady(client: PiperPrivilegedClient): Boolean {
+        if (!client.connect() || !client.adbEnabled()) return false
+        // Only PiperOS ADB may start or refresh this connection. Consumer screens
+        // can reuse a live shell session but cannot reconnect it themselves.
+        repeat(52) {
+            val status = client.status()
+            if (isPiperAdbStatus(status)) return true
+            if (status != null && status.state != PiperServiceState.STARTING) return false
+            delay(250)
+        }
+        return false
+    }
+
+    private fun isPiperAdbStatus(status: PiperServiceStatus?): Boolean =
+        status?.let {
+            it.state == PiperServiceState.RUNNING &&
+                it.privilege == PiperPrivilege.SHELL &&
+                it.startupMethod == "PIPEROS_ADB" &&
+                it.error == PiperError.NONE
+        } == true
+
+    private fun openPiperAdb() {
+        context?.let { startActivity(Intent(it, PiperAdbActivity::class.java)) }
     }
 
     private fun switchTab(tabIndex: Int) {
@@ -373,6 +512,8 @@ class AppsFragment : Fragment() {
         val tvInfoPerms = dialogView.findViewById<TextView>(R.id.tvInfoPerms)
         val btnDialogBackup = dialogView.findViewById<LinearLayout>(R.id.btnDialogBackup)
         val btnDialogEditApk = dialogView.findViewById<LinearLayout>(R.id.btnDialogEditApk)
+        val btnDialogForceStop = dialogView.findViewById<LinearLayout>(R.id.btnDialogForceStop)
+        val btnDialogUninstall = dialogView.findViewById<LinearLayout>(R.id.btnDialogUninstall)
 
         val btnLaunch = dialogView.findViewById<LinearLayout>(R.id.btnLaunch)
         val btnDetails = dialogView.findViewById<LinearLayout>(R.id.btnDetails)
@@ -381,7 +522,14 @@ class AppsFragment : Fragment() {
         tvName.text = app.name
         tvVersionTop.text = "Phiên bản ${app.versionName}"
 
-        if (app.isRunning) {
+        if (!app.isEnabled) {
+            ivStatusIcon.setImageResource(R.drawable.sleep)
+            ivStatusIcon.setColorFilter(Color.parseColor("#BDBDBD"))
+            tvQuickStatus.text = "Đã tắt"
+            tvQuickStatus.setTextColor(Color.parseColor("#BDBDBD"))
+            tvInfoStatus.text = "Đã vô hiệu hóa"
+            tvInfoStatus.setTextColor(Color.parseColor("#BDBDBD"))
+        } else if (app.isRunning) {
             ivStatusIcon.setImageResource(R.drawable.status)
             ivStatusIcon.setColorFilter(Color.parseColor("#00E5FF"))
             tvQuickStatus.text = "Đang chạy"
@@ -447,6 +595,72 @@ class AppsFragment : Fragment() {
             )
         }
 
+        btnDialogForceStop.visibility = if (app.packageName == requireContext().packageName) View.GONE else View.VISIBLE
+        btnDialogUninstall.visibility = if (!app.isSystem && app.packageName != requireContext().packageName) {
+            View.VISIBLE
+        } else {
+            View.GONE
+        }
+        val toggleAppAction = if (app.isEnabled) {
+            PiperAppActionPolicy.DISABLE_USER_APP
+        } else {
+            PiperAppActionPolicy.ENABLE_USER_APP
+        }
+        dialogView.findViewById<TextView>(R.id.tvDialogToggleAppState).apply {
+            text = if (app.isEnabled) "Tắt ứng dụng" else "Bật ứng dụng"
+            setTextColor(
+                Color.parseColor(if (app.isEnabled) "#E97927" else "#31966A")
+            )
+        }
+        btnDialogForceStop.findViewById<ImageView>(R.id.ivDialogToggleAppState)
+            .setImageResource(if (app.isEnabled) R.drawable.ic_stop else R.drawable.play)
+        btnDialogForceStop.setOnClickListener {
+            PiperDialog.showConfirm(
+                requireContext(),
+                if (app.isEnabled) "Tắt ứng dụng?" else "Bật ứng dụng?",
+                if (app.isEnabled) {
+                    "PiperOS ADB sẽ vô hiệu hóa ${app.name} cho người dùng hiện tại. Ứng dụng sẽ chuyển sang mục Đã tắt và không thể mở cho đến khi bạn bật lại."
+                } else {
+                    "PiperOS ADB sẽ bật lại ${app.name} cho người dùng hiện tại."
+                },
+                positiveLabel = if (app.isEnabled) "Tắt ứng dụng" else "Bật ứng dụng",
+                destructive = app.isEnabled
+            ) {
+                runPiperAdbAction(toggleAppAction, app.packageName, displayName = app.name) { result ->
+                    if (result.success) {
+                        bottomSheetDialog.dismiss()
+                        updateAppEnabledInMemory(app.packageName, !app.isEnabled)
+                    } else {
+                        Toast.makeText(requireContext(), result.message, Toast.LENGTH_LONG).show()
+                    }
+                }
+            }
+        }
+        btnDialogUninstall.setOnClickListener {
+            PiperDialog.showConfirm(
+                requireContext(),
+                "Gỡ ${app.name}?",
+                "Gỡ ứng dụng khỏi người dùng hiện tại bằng PiperOS ADB. Dữ liệu riêng của app có thể bị xóa.",
+                positiveLabel = "Gỡ ứng dụng",
+                destructive = true
+            ) {
+                bottomSheetDialog.dismiss()
+                runPiperAdbAction(
+                    PiperAppActionPolicy.UNINSTALL_USER_APP,
+                    app.packageName,
+                    displayName = app.name
+                ) { result ->
+                    if (result.success) {
+                        removeAppFromMemory(app.packageName)
+                    } else {
+                        Toast.makeText(requireContext(), result.message, Toast.LENGTH_LONG).show()
+                    }
+                }
+            }
+        }
+
+        PiperModernUi.apply(dialogView)
+
         bottomSheetDialog.window?.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
         bottomSheetDialog.window?.setDimAmount(0.6f)
 
@@ -464,11 +678,7 @@ class AppsFragment : Fragment() {
 
         val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_activities_list, null)
         PiperAutoFont.watch(dialogView)
-        val dialog = AlertDialog.Builder(requireContext(), android.R.style.Theme_Material_Dialog_NoActionBar)
-            .setView(dialogView).create()
-
-        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
-        dialog.window?.setDimAmount(0.7f) // Làm mờ nền sau 70%
+        val dialog = PiperDialog.createContent(requireContext(), dialogView)
 
         val tvActCount = dialogView.findViewById<TextView>(R.id.tvActCount)
         val rvActivities = dialogView.findViewById<RecyclerView>(R.id.rvActivities)
@@ -521,32 +731,58 @@ class AppsFragment : Fragment() {
         // Khởi tạo Custom Dialog
         val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_action_activity, null)
         PiperAutoFont.watch(dialogView)
-        val dialog = AlertDialog.Builder(requireContext(), android.R.style.Theme_Material_Dialog_NoActionBar)
-            .setView(dialogView).create()
-
-        // Làm trong suốt viền dư và mờ màn hình phía sau
-        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
-        dialog.window?.setDimAmount(0.6f)
+        val dialog = PiperDialog.createContent(requireContext(), dialogView)
 
         // Ánh xạ
         val tvActionTitle = dialogView.findViewById<TextView>(R.id.tvActionTitle)
+        val tvActionSubtitle = dialogView.findViewById<TextView>(R.id.tvActionSubtitle)
         val btnActionLaunch = dialogView.findViewById<LinearLayout>(R.id.btnActionLaunch)
         val btnActionShortcut = dialogView.findViewById<LinearLayout>(R.id.btnActionShortcut)
 
         // Set Tên Rút Gọn lên thanh tiêu đề
         tvActionTitle.text = shortName
+        tvActionSubtitle.text = when {
+            !activityInfo.exported && forceAccessEnabled -> "Dùng PiperOS ADB để thử mở Activity riêng tư. Một số ROM vẫn chặn thao tác này."
+            !activityInfo.exported -> "Android chặn Activity riêng tư. Bật PiperOS ADB và công tắc ép mở ở trang Ứng dụng để thử."
+            forceAccessEnabled -> "Đang bật chế độ mở bằng PiperOS ADB."
+            else -> "Mở Activity bằng Android hoặc tạo lối tắt."
+        }
+        PiperModernUi.apply(dialogView)
 
         // Sự kiện: Bấm Nút Trái (Ép Khởi Chạy)
         btnActionLaunch.setOnClickListener {
             dialog.dismiss()
-            launchActivity(app.packageName, activityInfo.name)
+            if (!activityInfo.exported && !forceAccessEnabled) {
+                PiperDialog.showMessage(
+                    requireContext(),
+                    "Activity bị Android chặn",
+                    "Bật PiperOS ADB, sau đó bật ‘Tùy chọn sâu ứng dụng’ ở đầu trang Ứng dụng."
+                )
+            } else if (forceAccessEnabled) {
+                runPiperAdbAction(
+                    PiperAppActionPolicy.LAUNCH_ACTIVITY,
+                    app.packageName,
+                    activityInfo.name
+                ) { result ->
+                    if (!result.success) Toast.makeText(requireContext(), result.message, Toast.LENGTH_LONG).show()
+                }
+            } else {
+                launchActivity(app.packageName, activityInfo.name)
+            }
         }
 
         // Sự kiện: Bấm Nút Phải (Ghim Lối Tắt)
         btnActionShortcut.setOnClickListener {
             dialog.dismiss()
-            createShortcut(app, shortName, activityInfo.name)
+            if (!activityInfo.exported) {
+                Toast.makeText(requireContext(), "Launcher không thể mở Activity riêng tư bằng lối tắt", Toast.LENGTH_LONG).show()
+            } else {
+                createShortcut(app, shortName, activityInfo.name)
+            }
         }
+
+        btnActionShortcut.isEnabled = activityInfo.exported
+        btnActionShortcut.alpha = if (activityInfo.exported) 1f else 0.45f
 
         // Hiển thị ra màn hình
         dialog.show()
@@ -574,6 +810,155 @@ class AppsFragment : Fragment() {
         } catch (e: Exception) {
             Toast.makeText(requireContext(), "Bị chặn bảo mật Android (Exported=false) hoặc cần quyền Root!", Toast.LENGTH_LONG).show()
         }
+    }
+
+    private fun runPiperAdbAction(
+        action: String,
+        packageName: String,
+        activityName: String = "",
+        displayName: String = packageName,
+        onResult: (PiperAppActionResult) -> Unit
+    ) {
+        val safeContext = context ?: return
+        val startedAt = SystemClock.elapsedRealtime()
+        val actionLabel = when (action) {
+            PiperAppActionPolicy.DISABLE_USER_APP -> "Tắt ứng dụng"
+            PiperAppActionPolicy.ENABLE_USER_APP -> "Bật ứng dụng"
+            PiperAppActionPolicy.UNINSTALL_USER_APP -> "Gỡ ứng dụng"
+            PiperAppActionPolicy.LAUNCH_ACTIVITY -> "Mở Activity"
+            else -> "Thao tác ứng dụng"
+        }
+        val progressUi = createAppActionProgressUi(actionLabel, displayName, packageName)
+        progressUi.record("Bắt đầu: $actionLabel • $displayName ($packageName)")
+        progressUi.setStatus("Đang xác nhận PiperOS ADB…")
+        val timer = CoroutineScope(Dispatchers.Main).launch {
+            while (true) {
+                delay(1_000)
+                val elapsed = (SystemClock.elapsedRealtime() - startedAt) / 1_000
+                progressUi.setStatus("Đang chờ Android xử lý • ${elapsed}s")
+            }
+        }
+        CoroutineScope(Dispatchers.IO).launch {
+            val client = PiperPrivilegedClient(safeContext.applicationContext)
+            val result = try {
+                check(client.connect()) { "Không kết nối được dịch vụ PiperOS ADB" }
+                withContext(Dispatchers.Main) {
+                    progressUi.record("Đã kết nối dịch vụ PiperOS ADB; đang xác minh quyền shell.")
+                }
+                check(awaitPiperAdbReady(client)) {
+                    "PiperOS ADB chưa kết nối. Hãy mở trang PiperOS ADB để kiểm tra."
+                }
+                withContext(Dispatchers.Main) {
+                    progressUi.record("Đã xác nhận phiên ADB shell UID 2000.")
+                    progressUi.record("Đã gửi yêu cầu tới Android Package Manager.")
+                    progressUi.setStatus("Android đang áp dụng thay đổi package…")
+                }
+                client.runAppAction(action, packageName, activityName)
+                    ?: error("PiperOS ADB không trả kết quả")
+            } catch (error: Exception) {
+                PiperAppActionResult(false, error.message ?: "Không thực hiện được thao tác")
+            } finally {
+                client.close()
+            }
+            withContext(Dispatchers.Main) {
+                timer.cancel()
+                val elapsed = (SystemClock.elapsedRealtime() - startedAt) / 1_000.0
+                progressUi.record(
+                    if (result.success) "Android xác nhận: ${result.message.ifBlank { "Thành công" }}"
+                    else "Android trả lỗi: ${result.message}"
+                )
+                progressUi.record(String.format(Locale.getDefault(), "Thời gian thực: %.1f giây", elapsed))
+                progressUi.dialog.dismiss()
+                if (!isAdded) return@withContext
+                if (!result.success && result.message.contains("PiperOS ADB", ignoreCase = true)) {
+                    Toast.makeText(safeContext, result.message, Toast.LENGTH_LONG).show()
+                    openPiperAdb()
+                } else {
+                    onResult(result)
+                }
+                if (action in setOf(
+                        PiperAppActionPolicy.DISABLE_USER_APP,
+                        PiperAppActionPolicy.ENABLE_USER_APP,
+                        PiperAppActionPolicy.UNINSTALL_USER_APP
+                    )
+                ) {
+                    PiperDialog.showMessage(
+                        safeContext,
+                        if (result.success) "$actionLabel hoàn tất" else "$actionLabel thất bại",
+                        progressUi.logText()
+                    )
+                }
+            }
+        }
+    }
+
+    private fun createAppActionProgressUi(
+        actionLabel: String,
+        displayName: String,
+        packageName: String
+    ): AppActionProgressUi {
+        val safeContext = requireContext()
+        val status = TextView(safeContext).apply {
+            textSize = 14f
+            setTextColor(PiperModernUi.accentColor(safeContext))
+            setPadding(0, 0, 0, dp(safeContext, 8))
+        }
+        val log = TextView(safeContext).apply {
+            textSize = 12f
+            setTextColor(PiperModernUi.secondaryTextColor(safeContext))
+            setPadding(dp(safeContext, 10), dp(safeContext, 8), dp(safeContext, 10), dp(safeContext, 8))
+            setBackgroundColor(PiperModernUi.surfaceColor(safeContext))
+        }
+        val scroll = ScrollView(safeContext).apply {
+            isFillViewport = true
+            addView(log)
+        }
+        val content = LinearLayout(safeContext).apply {
+            orientation = LinearLayout.VERTICAL
+            addView(ProgressBar(safeContext).apply {
+                isIndeterminate = true
+                indeterminateTintList = android.content.res.ColorStateList.valueOf(
+                    PiperModernUi.accentColor(safeContext)
+                )
+            }, LinearLayout.LayoutParams(dp(safeContext, 28), dp(safeContext, 28)).apply {
+                gravity = Gravity.CENTER_HORIZONTAL
+                bottomMargin = dp(safeContext, 12)
+            })
+            addView(status)
+            addView(scroll, LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                dp(safeContext, 132)
+            ))
+        }
+        val dialog = PiperDialog.showCustom(
+            context = safeContext,
+            title = "$actionLabel: $displayName",
+            message = "Package: $packageName",
+            content = content,
+            positiveLabel = "Đang chạy",
+            neutralLabel = "Ẩn",
+            negativeLabel = null,
+            onPositive = { false }
+        )
+        return AppActionProgressUi(dialog, status, log, scroll)
+    }
+
+    private fun updateAppEnabledInMemory(packageName: String, enabled: Boolean) {
+        val updated = allApps.map { app ->
+            if (app.packageName == packageName) app.copy(isEnabled = enabled, isRunning = false) else app
+        }
+        allApps = updated
+        cachedAllApps = updated
+        updateTabCounts()
+        applyFilters()
+    }
+
+    private fun removeAppFromMemory(packageName: String) {
+        val updated = allApps.filterNot { it.packageName == packageName }
+        allApps = updated
+        cachedAllApps = updated
+        updateTabCounts()
+        applyFilters()
     }
 
     private fun createShortcut(app: AppInfoModel, shortName: String, activityFullName: String) {
@@ -665,6 +1050,31 @@ sealed class AppListItem {
 }
 
 private enum class AppSortMode { NAME, SIZE, UPDATED }
+
+private class AppActionProgressUi(
+    val dialog: Dialog,
+    private val statusView: TextView,
+    private val logView: TextView,
+    private val scrollView: ScrollView
+) {
+    private val events = mutableListOf<String>()
+
+    fun setStatus(value: String) {
+        statusView.text = value
+    }
+
+    fun record(value: String) {
+        val timestamp = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
+        events += "$timestamp  $value"
+        logView.text = events.joinToString("\n")
+        scrollView.post { scrollView.fullScroll(View.FOCUS_DOWN) }
+    }
+
+    fun logText(): String = events.joinToString("\n")
+}
+
+private fun dp(context: Context, value: Int): Int =
+    (value * context.resources.displayMetrics.density).toInt()
 
 // =========================================================
 // ADAPTER CHO LƯỚI GRID MÀN HÌNH CHÍNH
