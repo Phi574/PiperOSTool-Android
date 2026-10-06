@@ -1,5 +1,27 @@
 # Changelog
 
+## 3.6.1 — Bản chính thức
+
+Bản chính thức tổng hợp các tính năng đã qua thử nghiệm và đã được phát hành trong nhánh 3.4.5.PRE–3.6.1.PRE. Các mục chỉ xuất hiện dưới dạng giới thiệu/thử nghiệm nhưng không có trong ứng dụng hoàn thiện được lược bỏ.
+
+### Tính năng và cải tiến được giữ lại
+
+- **Cập nhật trong ứng dụng (3.4.5–3.5.2):** Kiểm tra GitHub Releases, xem mô tả phiên bản, tải APK có phần trăm và log, hủy tải, rồi kiểm tra SHA-256 nếu có, chữ ký, package và version trước khi mở trình cài. Sửa việc ROM OnePlus chuyển nhầm APK cũ bằng tên tệp và URI riêng theo release.
+- **Giao diện Hiện Đại (3.5.1–3.5.5):** Thanh tab dưới cùng dùng trạng thái chọn rõ ràng; có màu Theo hệ thống, Sáng và Tối; thẻ, nút và ô nhập được bo góc. Hình nền tùy chỉnh áp dụng trên Home, Beta, Ứng dụng, Cài đặt và Thông tin. Chỉ dùng font tích hợp và hộp thoại trong app.
+- **PiperOS Fake Map GPS (3.5.6):** Chuyển từ Beta sang Home; tiếp tục hỗ trợ đặt vị trí và hành trình giả lập trên bản đồ.
+- **PiperOS QR (3.5.7, 3.6.1):** Tạo và quét QR theo hai tab; hỗ trợ văn bản, URL, Wi‑Fi, điện thoại, SMS, email, vCard, vị trí, sự kiện, mạng xã hội, deep link, thanh toán, sản phẩm, vé, hồ sơ nhân viên/sinh viên, tài liệu và JSON. Có thể lưu hoặc chia sẻ ảnh QR. Khi quét, xác nhận trước khi mở nội dung ngoài app bằng hộp thoại PiperOS Tool.
+- **Tài khoản (3.5.8–3.5.10):** Đăng nhập email, Google và số điện thoại; xác minh email và SMS, gửi lại email xác minh, đặt lại mật khẩu và sửa điều hướng xác minh số điện thoại. Tích hợp Firebase App Check với Play Integrity trong ứng dụng.
+- **PiperOS ADB và Truy cập chuyên sâu (3.6.0):** Thiết lập Wireless debugging một lần, lưu cặp ghép và dùng công tắc để tự kết nối lại. Nếu chưa ghép đôi, công tắc tự tắt và hướng dẫn thiết lập; tắt công tắc sẽ đóng phiên ADB. Trình quản lý tệp dùng lại kết nối chung và kiểm tra quyền shell trước khi thao tác chuyên sâu.
+- **Hoàn thiện giao diện (3.6.1):** Đặt thanh tiêu đề PiperOS View Remote và Trình quản lý tệp dưới vùng status bar, chuẩn hóa tên hiển thị thành **PiperOS Tool**.
+
+### Tính năng đã loại bỏ
+
+- Gỡ LiquidGlass và lựa chọn kiểu giao diện; chỉ giữ giao diện Hiện Đại.
+- Gỡ chức năng thêm font thủ công; người dùng chỉ chọn font được tích hợp.
+- Gỡ Trung tâm VPN, Quản lý Tài khoản trong Browser và Xóa rác ứng dụng.
+
+- Nâng versionCode lên 64 để cập nhật đè từ 3.6.1.PRE.
+
 ## 3.6.1.PRE
 
 - Sửa khoảng cách thanh tiêu đề PiperOS View Remote và Trình quản lý tệp PiperOS với thanh trạng thái.
@@ -36,7 +58,6 @@
 
 ## 3.5.7.PRE
 
-- Bỏ khóa truy cập thử nghiệm PiperOS QR; thẻ Beta hoạt động như các thẻ tính năng khác.
 - Thêm Activity PiperOS QR đồng bộ giao diện và theme, gồm hai tab Tạo và Quét.
 - Hỗ trợ tạo mã Văn bản, URL, Wi-Fi, Điện thoại, SMS, Email, vCard, Vị trí, Sự kiện, Mạng xã hội, Deep Link, Thanh toán, Sản phẩm, Vé, Nhân viên/Sinh viên, Tài liệu và JSON tùy chỉnh.
 - Thêm menu PiperOS để chọn loại nội dung, lưu/chia sẻ ảnh QR và đọc kết quả quét; Activity quét chỉ chạy dọc, các liên kết ngoài cần người dùng xác nhận trước khi mở.
@@ -46,7 +67,6 @@
 ## 3.5.6.PRE
 
 - Chuyển PiperOS Fake Map GPS sang Trang chủ và gỡ thẻ khỏi Beta.
-- Thêm thẻ PiperOS QR vào Beta theo cùng bố cục các thẻ khác; thẻ xám, không thể bấm và có nhãn PREVIEW màu đỏ.
 - Nâng versionCode lên 57 để cập nhật đè từ 3.5.5.PRE.
 
 ## 3.5.5.PRE
@@ -55,7 +75,6 @@
 - Hiển thị hình nền tùy chỉnh xuyên suốt Home, Beta, Ứng dụng, Cài đặt và Thông tin bằng các thẻ nền trong suốt nhẹ.
 - Sửa cửa sổ chọn loại khóa để nội dung tương phản, đọc được và dùng giao diện hộp thoại PiperOS.
 - Chuyển xác nhận khởi động lại sau khi đổi hình nền sang hộp thoại trong ứng dụng.
-- Thêm thông báo FCM PiperOS sắp ra mắt trên Home và thẻ Beta bị làm mờ, không thể bấm, kèm nhãn “Chưa phát hành”.
 - Nâng versionCode lên 56 để cập nhật đè từ 3.5.4.PRE.
 
 ## 3.5.4.PRE
@@ -82,12 +101,6 @@
 - Gỡ thông báo dự án 3.5.0.Beta khỏi Trang chủ.
 - Đổi nền Hiện Đại: chế độ Sáng dùng trắng và xám nhẹ, chế độ Tối dùng xanh đậm và xanh nhạt; Theo hệ thống bám màu thiết bị.
 - Tăng bo góc các thẻ, nút và ô nhập của giao diện Hiện Đại; nâng versionCode lên 52.
-
-## 3.5.0.Beta
-
-- Hiển thị thông báo dự án tại Trang chủ: dự kiến dừng LiquidGlass và chuyển toàn bộ về giao diện Hiện Đại ở bản tiếp theo.
-- Bản này chỉ công bố kế hoạch; chưa xóa Kiểu Giao Diện, LiquidGlass hoặc thay đổi các tính năng hiện tại.
-- Nâng versionCode lên 51 và versionName lên 3.5.0.Beta để hỗ trợ cập nhật trong ứng dụng.
 
 ## 3.4.5.PRE
 
