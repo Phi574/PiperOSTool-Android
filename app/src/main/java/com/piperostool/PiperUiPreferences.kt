@@ -402,7 +402,7 @@ object PiperModernUi {
     private fun isSettingsRow(name: String): Boolean = name in setOf(
         "layoutDeviceAdmin", "layoutFingerprint", "layoutPasswordToggle", "btnChangeLock",
         "btnPermissions", "layoutColorMode", "layoutLanguage", "layoutFont",
-        "layoutChangeBackground", "layoutResetBackground", "btnAndroidSource", "btnRuntimeSource"
+        "layoutChangeBackground", "layoutResetBackground"
     )
 
     private fun installAmbientBackground(activity: Activity, dark: Boolean) {

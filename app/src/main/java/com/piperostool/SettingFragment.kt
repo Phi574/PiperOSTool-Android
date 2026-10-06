@@ -29,11 +29,6 @@ import kotlin.system.exitProcess
 
 
 class SettingFragment : Fragment() {
-    private companion object {
-        const val ANDROID_SOURCE_URL = "https://github.com/Phi574/PiperOSTool-Android"
-        const val RUNTIME_SOURCE_URL = "https://github.com/Phi574/Piperos_termux"
-    }
-
     private lateinit var layoutAdmin: LinearLayout
     private lateinit var switchAdmin: SwitchMaterial
     private lateinit var layoutFingerprint: LinearLayout
@@ -127,12 +122,6 @@ class SettingFragment : Fragment() {
         view.findViewById<View>(R.id.btnCheckUpdate).setOnClickListener {
             startActivity(Intent(requireContext(), AppUpdateActivity::class.java))
         }
-        view.findViewById<View>(R.id.btnAndroidSource).setOnClickListener {
-            openProjectUrl(ANDROID_SOURCE_URL)
-        }
-        view.findViewById<View>(R.id.btnRuntimeSource).setOnClickListener {
-            openProjectUrl(RUNTIME_SOURCE_URL)
-        }
         NetworkAccess.observe(viewLifecycleOwner, requireContext()) { online ->
             layoutPasswordToggle.visibility = if (online) View.VISIBLE else View.GONE
             btnChangeLock.visibility = if (online) View.VISIBLE else View.GONE
@@ -201,10 +190,6 @@ class SettingFragment : Fragment() {
 
     }
 
-    private fun openProjectUrl(url: String) {
-        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
-    }
-
     private fun showLogoutConfirmation() {
         PiperDialog.showConfirm(
             context = requireContext(),
@@ -242,8 +227,6 @@ class SettingFragment : Fragment() {
             R.id.layoutChangeBackground,
             R.id.layoutResetBackground,
             R.id.btnSettingLogout,
-            R.id.btnAndroidSource,
-            R.id.btnRuntimeSource
         )
         rowIds.forEach { id ->
             view.findViewById<View>(id)?.setBackgroundColor(Color.TRANSPARENT)

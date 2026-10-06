@@ -8,6 +8,8 @@ import android.os.Looper
 import com.google.android.gms.tasks.Tasks
 import com.google.firebase.FirebaseApp
 import com.google.firebase.appcheck.FirebaseAppCheck
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
@@ -42,7 +44,7 @@ internal object InfoConnectivityChecker {
     fun check(context: Context, callback: (List<InfoHealthItem>) -> Unit) {
         val appContext = context.applicationContext
         executor.execute {
-            val internet = checkInternet(appContext)
+            val internet = checkInternetBlocking(appContext)
             if (internet.state == InfoHealthState.UNAVAILABLE) {
                 val offline = listOf(
                     internet,
@@ -53,8 +55,8 @@ internal object InfoConnectivityChecker {
                 return@execute
             }
 
-            val githubFuture = executor.submit<InfoHealthItem> { checkGitHub() }
-            val firebaseFuture = executor.submit<InfoHealthItem> { checkFirebaseAuth() }
+            val githubFuture = executor.submit<InfoHealthItem> { checkGitHubBlocking() }
+            val firebaseFuture = executor.submit<InfoHealthItem> { checkFirebaseAuthBlocking() }
             val github = runCatching { githubFuture.get() }
                 .getOrElse { unavailable("github", "GitHub", "Không thể kiểm tra lúc này") }
             val firebase = runCatching { firebaseFuture.get() }
@@ -64,7 +66,19 @@ internal object InfoConnectivityChecker {
         }
     }
 
-    private fun checkInternet(context: Context): InfoHealthItem {
+    suspend fun checkInternetNow(context: Context): InfoHealthItem = withContext(Dispatchers.IO) {
+        checkInternetBlocking(context.applicationContext)
+    }
+
+    suspend fun checkGitHubNow(): InfoHealthItem = withContext(Dispatchers.IO) {
+        checkGitHubBlocking()
+    }
+
+    suspend fun checkFirebaseAuthNow(): InfoHealthItem = withContext(Dispatchers.IO) {
+        checkFirebaseAuthBlocking()
+    }
+
+    private fun checkInternetBlocking(context: Context): InfoHealthItem {
         val manager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val network = manager.activeNetwork
         val capabilities = network?.let(manager::getNetworkCapabilities)
@@ -82,7 +96,7 @@ internal object InfoConnectivityChecker {
         )
     }
 
-    private fun checkGitHub(): InfoHealthItem = probe(
+    private fun checkGitHubBlocking(): InfoHealthItem = probe(
         id = "github",
         title = "GitHub",
         url = "https://api.github.com/repos/Phi574/PiperOSTool-Android",
@@ -90,7 +104,7 @@ internal object InfoConnectivityChecker {
         failureDetail = "GitHub API không phản hồi bình thường"
     )
 
-    private fun checkFirebaseAuth(): InfoHealthItem {
+    private fun checkFirebaseAuthBlocking(): InfoHealthItem {
         val appCheckToken = runCatching {
             Tasks.await(
                 FirebaseAppCheck.getInstance().getAppCheckToken(false),

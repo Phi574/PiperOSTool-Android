@@ -1,5 +1,13 @@
 # Changelog
 
+## 3.6.3.PRE
+
+- Thêm bước kiểm tra khởi động theo thứ tự Internet, GitHub, Firebase Auth và bản cập nhật; hiển thị trạng thái từng bước ngay trên màn hình khởi động.
+- Khi mất Internet, cho phép tiếp tục Offline hoặc thử lại toàn bộ quy trình. Khi có bản mới, người dùng chọn bỏ qua hoặc mở trình cập nhật.
+- Chuyển các dự án mã nguồn mở từ Cài đặt sang Thông tin; thêm PiperOS Tool PC và Module PiperOS Tool.
+- Thêm thông tin liên hệ Email, ba số điện thoại và các trang Facebook; hỗ trợ mở email, trình gọi và liên kết trực tiếp.
+- Nâng versionCode lên 66 để cập nhật đè từ 3.6.2.PRE.
+
 ## 3.6.2.PRE
 
 - Tối ưu thanh menu dưới cùng theo vùng điều hướng hệ thống; tự thêm khoảng cách khi thiết bị dùng thanh điều hướng ba nút để menu không đè lên các phím hệ thống.

@@ -102,11 +102,6 @@
     <string name="home_screen_title">Trang chủ</string>
     <string name="home_screen_summary">Các công cụ PiperOS đã sẵn sàng trên thiết bị của bạn.</string>
     <string name="app_name">PiperOS Tool</string>
-    <string name="settings_project_section">DỰ ÁN MÃ NGUỒN MỞ</string>
-    <string name="settings_android_source">PiperOS Android trên GitHub</string>
-    <string name="settings_android_source_summary">Mã nguồn ứng dụng · GPLv3</string>
-    <string name="settings_runtime_source">PiperOS Termux Runtime</string>
-    <string name="settings_runtime_source_summary">Bootstrap và package cho ba ABI</string>
     <string name="progress_notification_text">%1$d%% hoàn thành</string>
     <string name="cancel">Hủy</string>
 

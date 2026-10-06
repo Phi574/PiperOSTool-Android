@@ -4,6 +4,7 @@ import android.animation.AnimatorSet
 import android.animation.ObjectAnimator
 import android.content.Context
 import android.content.Intent
+import android.graphics.Color
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -20,11 +21,16 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
 import java.util.concurrent.Executor
 
 class SplashScreenActivity : AppCompatActivity() {
@@ -35,6 +41,14 @@ class SplashScreenActivity : AppCompatActivity() {
     private var navigating = false
     private var sessionResolved = false
     private var passwordResolved = false
+    private var startupCheckInProgress = false
+    private var startupChecksResolved = false
+
+    private val updateActivityLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) {
+        if (!navigating) continueToApp()
+    }
 
     // --- Biometric Variables ---
     private lateinit var executor: Executor
@@ -105,6 +119,167 @@ class SplashScreenActivity : AppCompatActivity() {
         } else {
             checkNavigation()
         }
+    }
+
+    private fun startStartupChecks() {
+        if (startupCheckInProgress || startupChecksResolved || navigating) return
+        startupCheckInProgress = true
+        findViewById<ViewGroup>(R.id.startupCheckPanel).visibility = android.view.View.VISIBLE
+        findViewById<android.widget.ProgressBar>(R.id.startupCheckProgress).visibility = android.view.View.VISIBLE
+        setStartupStep("Đang kiểm tra Internet…")
+        setStartupLine(R.id.startupInternetStatus, "Internet", InfoHealthState.CHECKING, "Đang kiểm tra")
+        setStartupLine(R.id.startupGithubStatus, "GitHub", InfoHealthState.CHECKING, "Chờ kiểm tra")
+        setStartupLine(R.id.startupFirebaseStatus, "Firebase Auth", InfoHealthState.CHECKING, "Chờ kiểm tra")
+        setStartupLine(R.id.startupUpdateStatus, "Bản cập nhật", InfoHealthState.CHECKING, "Chờ kiểm tra")
+
+        lifecycleScope.launch {
+            try {
+                val internet = InfoConnectivityChecker.checkInternetNow(this@SplashScreenActivity)
+                showStartupResult(R.id.startupInternetStatus, internet)
+                if (internet.state == InfoHealthState.UNAVAILABLE) {
+                    startupCheckInProgress = false
+                    findViewById<android.widget.ProgressBar>(R.id.startupCheckProgress).visibility = android.view.View.GONE
+                    setStartupStep("Không có kết nối Internet")
+                    showOfflineChoice()
+                    return@launch
+                }
+
+                setStartupStep("Đang kiểm tra GitHub…")
+                showStartupResult(
+                    R.id.startupGithubStatus,
+                    InfoConnectivityChecker.checkGitHubNow()
+                )
+
+                setStartupStep("Đang kiểm tra Firebase Auth…")
+                showStartupResult(
+                    R.id.startupFirebaseStatus,
+                    InfoConnectivityChecker.checkFirebaseAuthNow()
+                )
+
+                setStartupStep("Đang kiểm tra phiên bản cập nhật…")
+                val latest = try {
+                    withTimeout(20_000L) { AppUpdateRepository.newestRelease() }
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (_: Exception) {
+                    null
+                }
+                val localVersion = AppUpdateRepository.version(AppVersion.name(this@SplashScreenActivity))
+                val latestVersion = latest?.let { AppUpdateRepository.version(it.tag) }
+                val hasUpdate = latest != null && localVersion != null && latestVersion != null && latestVersion > localVersion
+                when {
+                    latest == null -> setStartupLine(
+                        R.id.startupUpdateStatus,
+                        "Bản cập nhật",
+                        InfoHealthState.UNAVAILABLE,
+                        "Không lấy được danh sách GitHub Releases"
+                    )
+                    hasUpdate -> setStartupLine(
+                        R.id.startupUpdateStatus,
+                        "Bản cập nhật",
+                        InfoHealthState.SLOW,
+                        "Có phiên bản mới ${latest.tag}"
+                    )
+                    else -> setStartupLine(
+                        R.id.startupUpdateStatus,
+                        "Bản cập nhật",
+                        InfoHealthState.HEALTHY,
+                        "Đang dùng bản mới nhất"
+                    )
+                }
+
+                startupCheckInProgress = false
+                if (hasUpdate) {
+                    findViewById<android.widget.ProgressBar>(R.id.startupCheckProgress).visibility = android.view.View.GONE
+                    setStartupStep("Đã kiểm tra xong")
+                    showUpdateAvailable(latest)
+                } else {
+                    setStartupStep("Đã kiểm tra xong")
+                    delay(750L)
+                    continueToApp()
+                }
+            } catch (cancelled: CancellationException) {
+                startupCheckInProgress = false
+                throw cancelled
+            } catch (_: Exception) {
+                startupCheckInProgress = false
+                delay(750L)
+                continueToApp()
+            }
+        }
+    }
+
+    private fun showStartupResult(viewId: Int, result: InfoHealthItem) {
+        setStartupLine(viewId, result.title, result.state, result.detail)
+    }
+
+    private fun setStartupLine(viewId: Int, title: String, state: InfoHealthState, detail: String) {
+        val color = when (state) {
+            InfoHealthState.HEALTHY -> Color.rgb(34, 197, 94)
+            InfoHealthState.SLOW, InfoHealthState.WARNING -> Color.rgb(245, 158, 11)
+            InfoHealthState.UNAVAILABLE -> Color.rgb(239, 68, 68)
+            InfoHealthState.CHECKING -> Color.argb(210, 255, 255, 255)
+        }
+        val dot = when (state) {
+            InfoHealthState.HEALTHY -> "●"
+            InfoHealthState.SLOW, InfoHealthState.WARNING -> "●"
+            InfoHealthState.UNAVAILABLE -> "●"
+            InfoHealthState.CHECKING -> "○"
+        }
+        findViewById<TextView>(viewId).apply {
+            text = "$dot  $title · $detail"
+            setTextColor(color)
+        }
+    }
+
+    private fun setStartupStep(message: String) {
+        findViewById<TextView>(R.id.startupCurrentStep).text = message
+    }
+
+    private fun showOfflineChoice() {
+        PiperDialog.showCustom(
+            context = this,
+            title = "Không có kết nối Internet",
+            message = "Bạn muốn tiếp tục Offline hay thử lại toàn bộ quy trình kiểm tra?",
+            icon = R.drawable.ic_browser_globe,
+            positiveLabel = "Thử lại",
+            negativeLabel = "Tiếp tục Offline",
+            onPositive = {
+                startStartupChecks()
+                true
+            },
+            onNegative = { continueToApp() }
+        ).setCanceledOnTouchOutside(false)
+    }
+
+    private fun showUpdateAvailable(release: AppRelease) {
+        val notes = release.description
+            .replace(Regex("(?m)^#{1,6}\\s*"), "")
+            .replace(Regex("(?m)^\\s*-\\s+"), "• ")
+            .replace("**", "")
+            .replace("`", "")
+            .trim()
+            .take(420)
+        PiperDialog.showCustom(
+            context = this,
+            title = "Có phiên bản mới ${release.tag}",
+            message = notes.ifBlank { "Đã có phiên bản PiperOS Tool mới trên GitHub Releases." },
+            icon = R.drawable.details,
+            positiveLabel = "Cập nhật",
+            negativeLabel = "Bỏ qua",
+            onPositive = {
+                updateActivityLauncher.launch(Intent(this, AppUpdateActivity::class.java))
+                true
+            },
+            onNegative = { continueToApp() }
+        ).setCanceledOnTouchOutside(false)
+    }
+
+    private fun continueToApp() {
+        if (startupChecksResolved || navigating) return
+        startupChecksResolved = true
+        startupCheckInProgress = false
+        checkAndRequestStoragePermission()
     }
 
     // --- LOGIC ĐIỀU HƯỚNG ---
@@ -290,9 +465,8 @@ class SplashScreenActivity : AppCompatActivity() {
         animatorSet.addListener(object : android.animation.Animator.AnimatorListener {
             override fun onAnimationStart(animation: android.animation.Animator) {}
             override fun onAnimationEnd(animation: android.animation.Animator) {
-                // Giữ logo một nhịp ngắn rồi điều hướng, kể cả khi offline.
                 handler.postDelayed({
-                    checkAndRequestStoragePermission()
+                    startStartupChecks()
                 }, 250)
             }
             override fun onAnimationCancel(animation: android.animation.Animator) {}

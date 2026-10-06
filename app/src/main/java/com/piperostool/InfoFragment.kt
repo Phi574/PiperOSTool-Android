@@ -4,6 +4,7 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
@@ -21,7 +22,7 @@ import java.util.Date
 import java.util.Locale
 
 class InfoFragment : Fragment() {
-    private data class InfoRow(val label: String, val value: String)
+    private data class InfoRow(val label: String, val value: String, val actionUri: String? = null)
 
     private data class InfoSection(
         val title: String,
@@ -110,7 +111,16 @@ class InfoFragment : Fragment() {
         section.rows.forEachIndexed { index, row ->
             val rowView = layoutInflater.inflate(R.layout.item_device_info, rows, false)
             rowView.findViewById<TextView>(R.id.tvDeviceLabel).text = row.label
-            rowView.findViewById<TextView>(R.id.tvDeviceValue).text = row.value
+            rowView.findViewById<TextView>(R.id.tvDeviceValue).apply {
+                text = row.value
+                if (row.actionUri != null) setTextColor(PiperModernUi.accentColor(requireContext()))
+            }
+            row.actionUri?.let { uri ->
+                rowView.isClickable = true
+                rowView.isFocusable = true
+                rowView.contentDescription = "${row.label}: ${row.value}"
+                rowView.setOnClickListener { openContactOrProject(uri) }
+            }
             rows.addView(rowView)
             if (index < section.rows.lastIndex) {
                 rows.addView(View(requireContext()).apply {
@@ -181,8 +191,46 @@ class InfoFragment : Fragment() {
                     InfoRow("PiperOS ADB", "Thiết lập và quản lý kết nối ADB"),
                     InfoRow("PiperOS QR", "Tạo và quét mã QR")
                 )
+            ),
+            InfoSection(
+                title = "DỰ ÁN MÃ NGUỒN MỞ",
+                summary = "Mã nguồn và công cụ PiperOS trên GitHub",
+                icon = R.drawable.ic_browser_globe,
+                color = color("#86EFAC"),
+                rows = listOf(
+                    InfoRow("PiperOS Android", "github.com/Phi574/PiperOSTool-Android", "https://github.com/Phi574/PiperOSTool-Android"),
+                    InfoRow("PiperOS Termux Runtime", "github.com/Phi574/Piperos_termux", "https://github.com/Phi574/Piperos_termux"),
+                    InfoRow("PiperOS Tool PC", "github.com/Phi574/PiperOSTool-PC", "https://github.com/Phi574/PiperOSTool-PC"),
+                    InfoRow("Module PiperOS Tool", "github.com/Phi574/module_piper-os-tool", "https://github.com/Phi574/module_piper-os-tool")
+                )
+            ),
+            InfoSection(
+                title = "THÔNG TIN LIÊN HỆ",
+                summary = "Email, số điện thoại và Facebook",
+                icon = R.drawable.details,
+                color = color("#FBBF24"),
+                rows = listOf(
+                    InfoRow("Email contact", "gayivt@gmail.com", "mailto:gayivt@gmail.com"),
+                    InfoRow("Phone contact 1", "0339434112", "tel:0339434112"),
+                    InfoRow("Phone contact 2", "0339434148", "tel:0339434148"),
+                    InfoRow("Phone contact 3", "0979709485", "tel:0979709485"),
+                    InfoRow("Facebook Page", "facebook.com/PiperOS.Tool", "https://www.facebook.com/PiperOS.Tool"),
+                    InfoRow("Facebook contact", "facebook.com/username.nothings", "https://www.facebook.com/username.nothings/"),
+                    InfoRow("Facebook contact", "facebook.com/username.nothing.ok", "https://www.facebook.com/username.nothing.ok/")
+                )
             )
         )
+    }
+
+    private fun openContactOrProject(uriValue: String) {
+        val uri = Uri.parse(uriValue)
+        val intent = when (uri.scheme) {
+            "tel" -> Intent(Intent.ACTION_DIAL, uri)
+            "mailto" -> Intent(Intent.ACTION_SENDTO, uri)
+            else -> Intent(Intent.ACTION_VIEW, uri)
+        }
+        runCatching { startActivity(intent) }
+            .onFailure { Toast.makeText(requireContext(), "Không tìm thấy ứng dụng phù hợp", Toast.LENGTH_SHORT).show() }
     }
 
     private fun refreshHealth(root: View) {

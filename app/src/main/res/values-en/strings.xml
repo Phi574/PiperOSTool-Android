@@ -102,11 +102,6 @@
     <string name="home_screen_title">Home</string>
     <string name="home_screen_summary">Your PiperOS tools are ready on this device.</string>
     <string name="app_name">PiperOS Tool</string>
-    <string name="settings_project_section">OPEN SOURCE PROJECTS</string>
-    <string name="settings_android_source">PiperOS Android on GitHub</string>
-    <string name="settings_android_source_summary">Application source · GPLv3</string>
-    <string name="settings_runtime_source">PiperOS Termux Runtime</string>
-    <string name="settings_runtime_source_summary">Bootstrap and packages for three ABIs</string>
     <string name="progress_notification_text">%1$d%% complete</string>
     <string name="cancel">Cancel</string>
 
