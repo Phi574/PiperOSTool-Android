@@ -247,7 +247,7 @@ class SplashScreenActivity : AppCompatActivity() {
 
         promptInfo = BiometricPrompt.PromptInfo.Builder()
             .setTitle("Xác thực vân tay")
-            .setSubtitle("Mở khóa Piper OS Tool")
+            .setSubtitle("Mở khóa PiperOS Tool")
             .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG)
             .setNegativeButtonText("Thoát")
             .build()

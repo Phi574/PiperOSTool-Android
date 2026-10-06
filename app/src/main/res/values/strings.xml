@@ -101,7 +101,7 @@
     <string name="home_press_again_to_exit">Nhấn lần nữa để thoát</string>
     <string name="home_screen_title">Trang chủ</string>
     <string name="home_screen_summary">Các công cụ PiperOS đã sẵn sàng trên thiết bị của bạn.</string>
-    <string name="app_name">Piper OS Tool</string>
+    <string name="app_name">PiperOS Tool</string>
     <string name="settings_project_section">DỰ ÁN MÃ NGUỒN MỞ</string>
     <string name="settings_android_source">PiperOS Android trên GitHub</string>
     <string name="settings_android_source_summary">Mã nguồn ứng dụng · GPLv3</string>
@@ -260,7 +260,7 @@
     <string name="fake_map_stop">DỪNG</string>
     <string name="fake_map_pause">Tạm dừng</string>
     <string name="fake_map_resume">Tiếp tục</string>
-    <string name="fake_map_mock_not_selected">Hãy chọn Piper OS Tool trong “Ứng dụng vị trí mô phỏng” rồi quay lại.</string>
+    <string name="fake_map_mock_not_selected">Hãy chọn PiperOS Tool trong “Ứng dụng vị trí mô phỏng” rồi quay lại.</string>
     <string name="fake_map_permission_needed">Cần quyền vị trí chính xác để chạy dịch vụ mô phỏng.</string>
     <string name="fake_map_select_point">Hãy chọn một vị trí trên bản đồ.</string>
     <string name="fake_map_select_route_points">Hãy chọn đủ điểm bắt đầu và điểm kết thúc.</string>

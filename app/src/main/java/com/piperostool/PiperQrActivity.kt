@@ -29,7 +29,6 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.button.MaterialButtonToggleGroup
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import com.google.zxing.BarcodeFormat
@@ -493,12 +492,16 @@ class PiperQrActivity : AppCompatActivity() {
             }
         }
         if (item.confirmation) {
-            MaterialAlertDialogBuilder(this)
-                .setTitle(item.title)
-                .setMessage(if (intent.action == Settings.ACTION_WIFI_SETTINGS) item.body else getString(R.string.qr_confirm_external))
-                .setNegativeButton(android.R.string.cancel, null)
-                .setPositiveButton(if (intent.action == Settings.ACTION_WIFI_SETTINGS) R.string.qr_wifi_settings else R.string.qr_open_action) { _, _ -> run() }
-                .show()
+            PiperDialog.showConfirm(
+                context = this,
+                title = item.title,
+                message = if (intent.action == Settings.ACTION_WIFI_SETTINGS) item.body
+                    else getString(R.string.qr_confirm_external),
+                positiveLabel = getString(
+                    if (intent.action == Settings.ACTION_WIFI_SETTINGS) R.string.qr_wifi_settings
+                    else R.string.qr_open_action
+                )
+            ) { run() }
         } else run()
     }
 

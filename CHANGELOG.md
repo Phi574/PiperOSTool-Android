@@ -1,5 +1,12 @@
 # Changelog
 
+## 3.6.1.PRE
+
+- Sửa khoảng cách thanh tiêu đề PiperOS View Remote và Trình quản lý tệp PiperOS với thanh trạng thái.
+- Dùng hộp thoại xác nhận theo giao diện PiperOS Tool khi quét QR cần mở Wi-Fi, số điện thoại hoặc ứng dụng ngoài.
+- Chuẩn hóa tên ứng dụng thành PiperOS Tool trên màn hình khởi động, launcher và các thông báo liên quan.
+- Nâng versionCode lên 63 để cập nhật đè từ 3.6.0.PRE.
+
 ## 3.6.0.PRE
 
 - Thêm PiperOS ADB thành tính năng riêng trong Beta với màn hình trạng thái, kết nối lại, ghép đôi Wireless debugging và hướng dẫn thiết lập.

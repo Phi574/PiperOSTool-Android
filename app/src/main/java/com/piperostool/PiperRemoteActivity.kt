@@ -167,13 +167,25 @@ class PiperRemoteActivity : AppCompatActivity(), PiperRemoteClient.Listener {
     }
 
     private fun applyInsets() {
+        val root = findViewById<View>(R.id.remoteRoot)
         val toolbar = findViewById<View>(R.id.remoteToolbar)
         val scroll = findViewById<View>(R.id.remoteScroll)
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.remoteRoot)) { _, insets ->
+        val rootPaddingLeft = root.paddingLeft
+        val rootPaddingRight = root.paddingRight
+        val rootPaddingBottom = root.paddingBottom
+        val scrollPaddingBottom = scroll.paddingBottom
+        ViewCompat.setOnApplyWindowInsetsListener(root) { _, insets ->
             val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            toolbar.setPadding(toolbar.paddingLeft, bars.top, toolbar.paddingRight, toolbar.paddingBottom)
-            toolbar.layoutParams = toolbar.layoutParams.apply { height = dp(56) + bars.top }
-            scroll.setPadding(scroll.paddingLeft, scroll.paddingTop, scroll.paddingRight, bars.bottom + dp(18))
+            // Keep the whole toolbar below the status bar so its rounded card never
+            // draws behind the clock, battery and notification icons.
+            root.setPadding(rootPaddingLeft, bars.top + dp(8), rootPaddingRight, rootPaddingBottom)
+            toolbar.layoutParams = toolbar.layoutParams.apply { height = dp(56) }
+            scroll.setPadding(
+                scroll.paddingLeft,
+                scroll.paddingTop,
+                scroll.paddingRight,
+                scrollPaddingBottom + bars.bottom
+            )
             insets
         }
     }

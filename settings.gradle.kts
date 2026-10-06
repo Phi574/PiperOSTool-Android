@@ -19,5 +19,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Piper OS Tool"
+rootProject.name = "PiperOS Tool"
 include(":app")

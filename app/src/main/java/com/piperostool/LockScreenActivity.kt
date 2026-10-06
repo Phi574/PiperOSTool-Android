@@ -368,7 +368,7 @@ class LockScreenActivity : AppCompatActivity() {
                 startHomeActivity()
             } else {
                 startVerifyOldFlow()
-                tvTitle.text = "Piper OS Locked"
+                tvTitle.text = "PiperOS Locked"
                 tvSubTitle.text = "Nhập mã khóa để truy cập"
                 btnConfirm.text = "Mở khóa"
             }
@@ -630,7 +630,7 @@ class LockScreenActivity : AppCompatActivity() {
 
         promptInfo = BiometricPrompt.PromptInfo.Builder()
             .setTitle("Xác thực")
-            .setSubtitle(if(isUnlockAppMode) "Mở khóa Piper OS Tool" else "Xác nhận bảo mật")
+            .setSubtitle(if(isUnlockAppMode) "Mở khóa PiperOS Tool" else "Xác nhận bảo mật")
             .setNegativeButtonText("Sử dụng mật khẩu")
             .build()
     }

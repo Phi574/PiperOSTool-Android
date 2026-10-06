@@ -16,11 +16,11 @@ class MyDeviceAdminReceiver : DeviceAdminReceiver() {
         // CHỈ TRẢ VỀ TEXT (Không gọi khóa màn hình ở đây để tránh lỗi mất Dialog)
 
         val warningMessage = """
-            ⚠️ CẢNH BÁO BẢO MẬT TỪ PIPER OS TOOL ⚠️
+            ⚠️ CẢNH BÁO BẢO MẬT TỪ PIPEROS TOOL ⚠️
 
             Hành động hủy kích hoạt quyền Quản trị viên (Device Admin) sẽ ngay lập tức dẫn đến các rủi ro nghiêm trọng:
 
-            1. Vô hiệu hóa hệ thống bảo vệ: Các tính năng cốt lõi của Piper OS Tool sẽ ngừng hoạt động, khiến thiết bị mất đi lớp phòng thủ an toàn nhất.
+            1. Vô hiệu hóa hệ thống bảo vệ: Các tính năng cốt lõi của PiperOS Tool sẽ ngừng hoạt động, khiến thiết bị mất đi lớp phòng thủ an toàn nhất.
             2. Nguy cơ rò rỉ dữ liệu: Hệ thống chống trộm và bảo vệ thông tin cá nhân sẽ bị tắt hoàn toàn.
             3. Cảnh báo xâm nhập: Nếu hành động này không phải do bạn thực hiện, rất có thể thiết bị đang bị kẻ gian cố gắng chiếm quyền kiểm soát.
 
@@ -38,7 +38,7 @@ class MyDeviceAdminReceiver : DeviceAdminReceiver() {
         AccountDataScope.preferences(context, "PiperPrefs").edit().clear().apply()
         android.widget.Toast.makeText(
             context,
-            "⚠️ CẢNH BÁO: Đã hủy quyền Admin! Toàn bộ dữ liệu của Piper OS tự xóa để bảo mật!",
+            "⚠️ CẢNH BÁO: Đã hủy quyền Admin! Toàn bộ dữ liệu của PiperOS tự xóa để bảo mật!",
             android.widget.Toast.LENGTH_LONG
         ).show()
     }

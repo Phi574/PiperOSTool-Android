@@ -196,13 +196,15 @@ class PiperFileManagerActivity : AppCompatActivity() {
     }
 
     private fun applyInsets() {
-        val top = toolbar.paddingTop
+        val left = root.paddingLeft
+        val right = root.paddingRight
         val bottom = root.paddingBottom
         ViewCompat.setOnApplyWindowInsetsListener(root) { _, insets ->
             val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            toolbar.setPadding(toolbar.paddingLeft, top + bars.top, toolbar.paddingRight, toolbar.paddingBottom)
-            toolbar.layoutParams = toolbar.layoutParams.apply { height = dp(56) + bars.top }
-            root.setPadding(root.paddingLeft, root.paddingTop, root.paddingRight, bottom + bars.bottom)
+            // Place the toolbar itself below the status bar instead of extending its
+            // card underneath system icons and compensating with internal padding.
+            root.setPadding(left, bars.top + dp(8), right, bottom + bars.bottom)
+            toolbar.layoutParams = toolbar.layoutParams.apply { height = dp(56) }
             insets
         }
     }
