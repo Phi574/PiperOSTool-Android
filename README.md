@@ -18,6 +18,15 @@
 > PiperOS Tool đang ở giai đoạn beta. Một số tính năng cần quyền hệ thống
 > nhạy cảm và có thể không hoạt động trên mọi ROM Android.
 
+## Giấy phép và bản quyền
+
+Mã nguồn do dự án phát triển được cấp phép theo **GNU GPL-3.0-only**; xem
+[`LICENSE`](LICENSE) và [`COPYRIGHT`](COPYRIGHT). Các thành phần bên thứ ba
+giữ giấy phép riêng của chúng, được liệt kê trong
+[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md). MIT áp dụng cho thành phần
+LiquidGlass từng có trong các bản cũ, không phải giấy phép thứ hai cho toàn bộ
+PiperOS Tool.
+
 ## Bản hiện tại
 
 `3.6.3.PRE` (versionCode `66`) sử dụng `minSdk 29 (Android 10)`, `targetSdk 36`, Kotlin `2.4.10`.

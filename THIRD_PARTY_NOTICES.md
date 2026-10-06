@@ -1,6 +1,21 @@
 # Third-party notices
 
+PiperOS Tool's original application source is licensed under GPL-3.0-only; see
+the repository-level `LICENSE` and `COPYRIGHT`. This does not relicense the
+separately identified components below. Each component keeps its own license
+and required notices. GPL-3.0-only is the license for this project; MIT is not
+a second license for the whole application.
+
+## REAndroid APK Editor libraries
+
+The bundled `app/libs/reandroid-*.jar` artifacts are from REAndroid APK Editor
+and are licensed under Apache License 2.0. The accompanying license text is at
+`third_party/REAndroid-APKEditor/LICENSE`.
+
 ## LiquidGlass for Android
+
+Historical component used in earlier PiperOS Tool releases; it is not included
+in the current 3.6.3.PRE source tree or APK.
 
 Source: https://github.com/QWEA0/Liquid-Glass-Android
 
@@ -64,3 +79,17 @@ Flaticon Free License (attribution required):
 - Stop: https://www.flaticon.com/free-icon/stop_61112
 
 Flaticon license: https://www.flaticon.com/license/license.pdf
+
+## AirPlay receiver
+
+The AirPlay receiver sources and native libraries are derived from
+`jqssun/android-airplay-server` v0.0.31 and are licensed under GPL-3.0. See
+`third_party/airplay_receiver/NOTICE.md` for upstream attribution and source
+references, and `third_party/airplay_receiver/LICENSE` for the license text.
+
+## Other build dependencies
+
+External libraries declared in `app/build.gradle.kts` and
+`gradle/libs.versions.toml` remain subject to their respective upstream
+licenses and terms. Those files identify the declared dependencies and
+versions; this notice does not change their licenses.
