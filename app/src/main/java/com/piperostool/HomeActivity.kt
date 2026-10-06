@@ -16,6 +16,10 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
+import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updateLayoutParams
 import androidx.fragment.app.Fragment
 import com.google.firebase.auth.FirebaseAuth
 
@@ -59,6 +63,7 @@ class HomeActivity : AppCompatActivity() {
         setupListeners()
         setupBackPressHandler()
         setupKeyboardAwareBottomNav()
+        setupNavigationBarAwareBottomNav()
 
         replaceFragment(homeFragment())
         currentTab = 0
@@ -159,6 +164,20 @@ class HomeActivity : AppCompatActivity() {
                 isNavHiddenByKeyboard = false
             }
         }
+    }
+
+    private fun setupNavigationBarAwareBottomNav() {
+        val root = findViewById<View>(R.id.homeRoot)
+        val bottomBar = findViewById<View>(R.id.bottomNavCard)
+        val baseBottomMargin = dp(16)
+        ViewCompat.setOnApplyWindowInsetsListener(root) { _, insets ->
+            val navigationInset = insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom
+            bottomBar.updateLayoutParams<ConstraintLayout.LayoutParams> {
+                bottomMargin = baseBottomMargin + navigationInset
+            }
+            insets
+        }
+        ViewCompat.requestApplyInsets(root)
     }
 
     private fun setupBackPressHandler() {

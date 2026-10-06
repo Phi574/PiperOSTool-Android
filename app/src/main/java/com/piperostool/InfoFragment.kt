@@ -1,32 +1,23 @@
 package com.piperostool
 
-import android.Manifest
-import android.animation.Animator
-import android.animation.AnimatorListenerAdapter
-import android.animation.ValueAnimator
-import android.app.ActivityManager
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
-import android.content.pm.ApplicationInfo
-import android.media.MediaCodecList
-import android.os.Build
+import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.view.animation.DecelerateInterpolator
-import android.webkit.CookieManager
-import android.webkit.WebView
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
-import androidx.core.content.ContextCompat
-import androidx.core.content.pm.PackageInfoCompat
 import androidx.fragment.app.Fragment
+import com.google.android.material.button.MaterialButton
+import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
 
 class InfoFragment : Fragment() {
@@ -36,9 +27,12 @@ class InfoFragment : Fragment() {
         val title: String,
         val summary: String,
         val icon: Int,
-        val color: Int? = null,
+        val color: Int,
         val rows: List<InfoRow>
     )
+
+    private var latestHealthItems: List<InfoHealthItem> = emptyList()
+    private var healthCheckRunning = false
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -48,30 +42,41 @@ class InfoFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        val sections = createSections(requireContext())
+        val context = requireContext()
+        val sections = createSections(context)
         view.findViewById<TextView>(R.id.tvInfoHeadline).text =
-            "PiperOS Tool ${AppVersion.name(requireContext())}"
+            "PiperOS Tool ${AppVersion.name(context)}"
+
         val actions = view.findViewById<LinearLayout>(R.id.infoAccountActions)
         addAction(
             actions,
             R.drawable.details,
             getString(R.string.info_account_profile),
             getString(R.string.info_account_profile_summary)
-        ) { startActivity(Intent(requireContext(), AccountProfileActivity::class.java)) }
+        ) { startActivity(Intent(context, AccountProfileActivity::class.java)) }
         addAction(
             actions,
             R.drawable.devices,
             getString(R.string.info_device_sessions),
             getString(R.string.info_device_sessions_summary)
-        ) { startActivity(Intent(requireContext(), DeviceSessionsActivity::class.java)) }
-        val container = view.findViewById<LinearLayout>(R.id.infoSections)
-        sections.forEach { section ->
-            addSection(container, section, expanded = false)
-        }
+        ) { startActivity(Intent(context, DeviceSessionsActivity::class.java)) }
+
+        val sectionContainer = view.findViewById<LinearLayout>(R.id.infoSections)
+        sections.forEach { section -> addSection(sectionContainer, section) }
         view.findViewById<View>(R.id.btnCopyAllInfo).setOnClickListener {
-            copyAllInformation(sections)
+            copyBasicInformation(sections)
         }
+        view.findViewById<MaterialButton>(R.id.btnRefreshInfoHealth).setOnClickListener {
+            refreshHealth(view)
+        }
+
         PiperModernUi.apply(view)
+        showHealthItems(view, listOf(
+            InfoHealthItem("internet", "Internet", "Chạm Kiểm tra để bắt đầu", InfoHealthState.CHECKING),
+            InfoHealthItem("github", "GitHub", "Chưa kiểm tra", InfoHealthState.CHECKING),
+            InfoHealthItem("firebase", "Firebase Authentication", "Chưa kiểm tra", InfoHealthState.CHECKING)
+        ))
+        refreshHealth(view)
     }
 
     private fun addAction(
@@ -89,36 +94,19 @@ class InfoFragment : Fragment() {
         item.findViewById<TextView>(R.id.tvInfoActionTitle).text = title
         item.findViewById<TextView>(R.id.tvInfoActionSummary).text = summary
         item.setOnClickListener { action() }
-        PiperModernUi.apply(item)
         container.addView(item)
     }
 
-    private fun addSection(
-        container: LinearLayout,
-        section: InfoSection,
-        expanded: Boolean
-    ) {
+    private fun addSection(container: LinearLayout, section: InfoSection) {
         val item = layoutInflater.inflate(R.layout.item_info_section, container, false)
         item.findViewById<TextView>(R.id.tvInfoSectionTitle).text = section.title
         item.findViewById<TextView>(R.id.tvInfoSectionSummary).text = section.summary
         item.findViewById<ImageView>(R.id.ivInfoSectionIcon).apply {
             setImageResource(section.icon)
-
-            if (
-                section.icon in setOf(
-                    R.drawable.a3tn,
-                    R.drawable.browser,
-                    R.drawable.nhacvideo
-                ) || section.color == null
-            ) {
-                clearColorFilter()
-                imageTintList = null
-            } else {
-                setColorFilter(section.color)
-            }
+            imageTintList = null
+            if (section.title == "ỨNG DỤNG") clearColorFilter() else setColorFilter(section.color)
         }
         val rows = item.findViewById<LinearLayout>(R.id.infoSectionRows)
-        val chevron = item.findViewById<ImageView>(R.id.ivInfoSectionChevron)
         section.rows.forEachIndexed { index, row ->
             val rowView = layoutInflater.inflate(R.layout.item_device_info, rows, false)
             rowView.findViewById<TextView>(R.id.tvDeviceLabel).text = row.label
@@ -130,403 +118,183 @@ class InfoFragment : Fragment() {
                         LinearLayout.LayoutParams.MATCH_PARENT,
                         dp(1)
                     ).apply {
-                        marginStart = dp(16)
-                        marginEnd = dp(16)
+                        marginStart = dp(14)
+                        marginEnd = dp(14)
                     }
-                    setBackgroundColor(0x20FFFFFF)
+                    setBackgroundColor(0x20000000)
                 })
             }
         }
-        fun setExpanded(value: Boolean, animate: Boolean) {
-            if (!animate) {
-                rows.visibility = if (value) View.VISIBLE else View.GONE
-                chevron.rotation = if (value) 90f else 0f
-                return
-            }
-            val startHeight = rows.height
-            if (value) {
-                rows.visibility = View.VISIBLE
-                rows.measure(
-                    View.MeasureSpec.makeMeasureSpec(rows.width, View.MeasureSpec.EXACTLY),
-                    View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
-                )
-                val targetHeight = rows.measuredHeight
-                rows.layoutParams.height = 0
-                rows.alpha = 0.6f
-                rows.translationY = -dp(5).toFloat()
-                ValueAnimator.ofInt(0, targetHeight).apply {
-                    duration = 220L
-                    interpolator = DecelerateInterpolator()
-                    addUpdateListener { animator ->
-                        rows.layoutParams.height = animator.animatedValue as Int
-                        rows.requestLayout()
-                    }
-                    addListener(object : AnimatorListenerAdapter() {
-                        override fun onAnimationEnd(animation: Animator) {
-                            rows.layoutParams.height = ViewGroup.LayoutParams.WRAP_CONTENT
-                            rows.alpha = 1f
-                            rows.translationY = 0f
-                        }
-                    })
-                    start()
-                }
-            } else {
-                ValueAnimator.ofInt(startHeight, 0).apply {
-                    duration = 180L
-                    interpolator = DecelerateInterpolator()
-                    addUpdateListener { animator ->
-                        rows.layoutParams.height = animator.animatedValue as Int
-                        rows.requestLayout()
-                    }
-                    addListener(object : AnimatorListenerAdapter() {
-                        override fun onAnimationEnd(animation: Animator) {
-                            rows.visibility = View.GONE
-                            rows.layoutParams.height = ViewGroup.LayoutParams.WRAP_CONTENT
-                        }
-                    })
-                    start()
-                }
-            }
-            chevron.animate()
-                .rotation(if (value) 90f else 0f)
-                .setDuration(200L)
-                .setInterpolator(DecelerateInterpolator())
-                .start()
-        }
-        setExpanded(expanded, animate = false)
+        val chevron = item.findViewById<ImageView>(R.id.ivInfoSectionChevron)
+        rows.visibility = View.GONE
         item.findViewById<View>(R.id.infoSectionHeader).setOnClickListener {
-            setExpanded(rows.visibility != View.VISIBLE, animate = true)
+            val expanded = rows.visibility != View.VISIBLE
+            rows.visibility = if (expanded) View.VISIBLE else View.GONE
+            chevron.animate().rotation(if (expanded) 90f else 0f).setDuration(160L).start()
         }
         container.addView(item)
     }
 
     private fun createSections(context: Context): List<InfoSection> {
-        val manufacturer = Build.MANUFACTURER.replaceFirstChar {
-            if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString()
-        }
-        val model = "$manufacturer ${Build.MODEL}".trim()
-        val runtime = TerminalRuntime.inspect(context)
+        val manufacturer = BuildLabel.manufacturer()
+        val model = listOf(manufacturer, android.os.Build.MODEL)
+            .filter(String::isNotBlank)
+            .distinct()
+            .joinToString(" ")
         val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
-        val applicationInfo = context.applicationInfo
-        val webViewPackage = currentWebViewPackage(context)
-        val codecs = runCatching { MediaCodecList(MediaCodecList.ALL_CODECS).codecInfos }
-            .getOrDefault(emptyArray())
-        val videoDecoders = codecs.count {
-            !it.isEncoder && it.supportedTypes.any { type -> type.startsWith("video/") }
-        }
-        val audioDecoders = codecs.count {
-            !it.isEncoder && it.supportedTypes.any { type -> type.startsWith("audio/") }
-        }
-        val sessions = TerminalSessionManager.listSessions()
-        val mockScenario = MockRouteStore.load(context)
-        val mockState = MockLocationService.snapshot
-        val mockPermissionGranted =
-            ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ) == PackageManager.PERMISSION_GRANTED
-        val mockAppSelected = MockLocationService.isMockLocationEnabled(context)
+        val debugBuild = context.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE != 0
 
         return listOf(
             InfoSection(
-                title = "INFO DEVICE",
-                summary = "$model • Android ${Build.VERSION.RELEASE}",
+                title = "THIẾT BỊ",
+                summary = "$model • Android ${android.os.Build.VERSION.RELEASE}",
                 icon = R.drawable.devices,
-                color = color("#7DD3FC"),
-                rows = listOf(
-                    InfoRow("Thiết bị", model),
-                    InfoRow("Android", Build.VERSION.RELEASE),
-                    InfoRow("API Level", Build.VERSION.SDK_INT.toString()),
-                    InfoRow("Kiến trúc", Build.SUPPORTED_ABIS.joinToString()),
-                    InfoRow("Phần cứng", Build.HARDWARE),
-                    InfoRow("CPU", "${Runtime.getRuntime().availableProcessors()} nhân"),
-                    InfoRow("RAM", totalRam(context)),
-                    InfoRow("Kernel", System.getProperty("os.version") ?: "Không xác định")
-                )
-            ),
-            InfoSection(
-                title = "INFO APP",
-                summary = "PiperOS Tool ${AppVersion.name(context)}",
-                icon = R.drawable.a3tn,
-                color = color("#8DFFB0"),
-                rows = listOf(
-                    InfoRow("Tên ứng dụng", "PiperOS Tool"),
-                    InfoRow("Phiên bản", packageInfo.versionName ?: "-"),
-                    InfoRow(
-                        "Version code",
-                        PackageInfoCompat.getLongVersionCode(packageInfo).toString()
-                    ),
-                    InfoRow("Package", context.packageName),
-                    InfoRow("Target SDK", applicationInfo.targetSdkVersion.toString()),
-                    InfoRow("Minimum SDK", applicationInfo.minSdkVersion.toString()),
-                    InfoRow(
-                        "Kiểu bản dựng",
-                        if (applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0) {
-                            "Debug"
-                        } else {
-                            "Release"
-                        }
-                    ),
-                    InfoRow("Nguồn cài đặt", installerSource(context))
-                )
-            ),
-            InfoSection(
-                title = "INFO APK EDITOR",
-                summary = "Duyệt, trích xuất, chỉnh tệp và ký APK",
-                icon = R.drawable.apk,
-                color = color("#F59E0B"),
-                rows = listOf(
-                    InfoRow("Nguồn APK", "Ứng dụng đã cài hoặc tệp trên thiết bị"),
-                    InfoRow("Giải nén", "Theo tệp, nhóm hoặc toàn bộ archive"),
-                    InfoRow("Backup", "Chọn nhiều tệp/thư mục và vị trí lưu"),
-                    InfoRow("Xem tệp", "Ảnh, GIF, video, audio, PDF và văn bản"),
-                    InfoRow("Manifest", "Báo cáo package và quyền từ PackageManager"),
-                    InfoRow("Strings", "Chỉnh XML khi tài nguyên đang ở dạng văn bản"),
-                    InfoRow("Xây dựng", "Ghép thay đổi, căn chỉnh ZIP và ký lại APK"),
-                    InfoRow("Chữ ký đầu ra", "PiperOS Editor test key (v1/v2/v3)"),
-                    InfoRow("Thư mục kết quả", "Downloads/PiperOS_APK_Editor")
-                )
-            ),
-            InfoSection(
-                title = "INFO FILE MANAGER",
-                summary = "Preview media • Archive đa định dạng • Chạy nền",
-                icon = R.drawable.packaget,
                 color = color("#38BDF8"),
                 rows = listOf(
-                    InfoRow("Phạm vi", "Bộ nhớ dùng chung do người dùng cấp quyền"),
-                    InfoRow("Thumbnail", "Ảnh, video, APK, app data và thư mục hệ thống"),
-                    InfoRow("Gallery", "Vuốt ngang ảnh/video trong cùng thư mục"),
-                    InfoRow("Archive", "ZIP, 7Z, TAR, GZIP, BZIP2, XZ, LZ4 và ZSTD"),
-                    InfoRow("Mã hóa", "ZIP AES-256 có mật khẩu"),
-                    InfoRow("Mức nén", "Nhanh nhất tới Super nén"),
-                    InfoRow("Chạy nền", "Foreground service + WakeLock + tiến độ"),
-                    InfoRow("Công cụ", "Tìm kiếm, đổi tên, xóa, nén và giải nén"),
-                    InfoRow("APK", "Mở trực tiếp bằng PiperOS APK Editor"),
-                    InfoRow("Bảo vệ", "Chặn path traversal khi giải nén")
+                    InfoRow("Thiết bị", model),
+                    InfoRow("Android", "${android.os.Build.VERSION.RELEASE} (API ${android.os.Build.VERSION.SDK_INT})")
                 )
             ),
             InfoSection(
-                title = "INFO TRÌNH DUYỆT",
-                summary = webViewPackage?.versionName ?: "Android System WebView",
-                icon = R.drawable.browser,
-                color = color("#C4B5FD"),
-                rows = listOf(
-                    InfoRow("Engine", "Android WebView"),
-                    InfoRow("WebView package", webViewPackage?.packageName ?: "Không xác định"),
-                    InfoRow("WebView version", webViewPackage?.versionName ?: "Không xác định"),
-                    InfoRow(
-                        "Cookie phiên",
-                        if (CookieManager.getInstance().hasCookies()) "Đang có dữ liệu" else "Trống"
-                    ),
-                    InfoRow("Tab ẩn danh", "Hỗ trợ, xóa dữ liệu khi đóng"),
-                    InfoRow("Tải xuống", "DownloadManager + nhận dạng MIME"),
-                    InfoRow("Thông báo", notificationMode())
-                )
-            ),
-            InfoSection(
-                title = "INFO TRÌNH MEDIA",
-                summary = "$videoDecoders video decoder • $audioDecoders audio decoder",
-                icon = R.drawable.nhacvideo,
-                color = color("#FB7185"),
-                rows = listOf(
-                    InfoRow("Playback engine", "AndroidX Media3"),
-                    InfoRow("Video decoder", videoDecoders.toString()),
-                    InfoRow("Audio decoder", audioDecoders.toString()),
-                    InfoRow(
-                        "Picture-in-Picture",
-                        if (
-                            context.packageManager.hasSystemFeature(
-                                PackageManager.FEATURE_PICTURE_IN_PICTURE
-                            )
-                        ) "Hỗ trợ" else "Không hỗ trợ"
-                    ),
-                    InfoRow("Phát nền", "Hỗ trợ"),
-                    InfoRow("Nguồn media", "MediaStore thiết bị"),
-                    InfoRow("Thông báo", notificationMode())
-                )
-            ),
-            InfoSection(
-                title = "INFO TRÌNH TERMINAL",
-                summary = if (runtime.installed) {
-                    "Linux ${runtime.installedVersion ?: "không rõ phiên bản"}"
-                } else {
-                    "Android Shell • Runtime chưa cài"
-                },
-                icon = R.drawable.ic_terminal,
-                color = color("#FFFFC46B"),
-                rows = listOf(
-                    InfoRow(
-                        "Runtime",
-                        if (runtime.installed) "Đã cài" else "Chưa cài"
-                    ),
-                    InfoRow("Runtime hiện tại", runtime.installedVersion ?: "-"),
-                    InfoRow("Runtime mục tiêu", TerminalRuntime.RUNTIME_VERSION),
-                    InfoRow(
-                        "Cập nhật",
-                        if (runtime.updateAvailable) "Có bản mới" else "Đã mới nhất"
-                    ),
-                    InfoRow("Phiên đang mở", sessions.size.toString()),
-                    InfoRow(
-                        "Linux / Shell",
-                        "${sessions.count { it.mode == TerminalSessionManager.SessionMode.LINUX }} / " +
-                            sessions.count {
-                                it.mode == TerminalSessionManager.SessionMode.ANDROID_SHELL
-                            }
-                    ),
-                    InfoRow("PREFIX", runtime.prefixDirectory.absolutePath),
-                    InfoRow("HOME", runtime.homeDirectory.absolutePath)
-                )
-            ),
-            InfoSection(
-                title = "INFO PIPEROS VIEW REMOTE",
-                summary = when {
-                    PiperRemoteShareService.currentSession != null -> "Đang chia sẻ màn hình"
-                    else -> "Sẵn sàng kết nối trong mạng nội bộ"
-                },
-                icon = R.drawable.ic_remote_view,
-                color = null,
-                rows = listOf(
-                    InfoRow("Phiên bản giao thức", "Piper Remote 3 · JPEG / H.264 / HEVC"),
-                    InfoRow("Phương thức", "Wi-Fi nội bộ, QR và mã 6 số"),
-                    InfoRow("Xác nhận kết nối", "Bắt buộc phía thiết bị chia sẻ cho phép"),
-                    InfoRow("Độ phân giải", "480p / 720p / 1080p / gốc toàn màn hình"),
-                    InfoRow("Tốc độ khung hình", "24 / 30 / 60 / tối đa theo thiết bị"),
-                    InfoRow("Điều khiển cảm ứng", if (PiperRemoteAccessibilityService.isRunning()) "Đã bật" else "Chưa bật"),
-                    InfoRow("Chế độ xem", "Toàn màn hình, giữ đúng tỷ lệ"),
-                    InfoRow("Truyền dữ liệu", "Trực tiếp giữa hai thiết bị trong LAN"),
-                    InfoRow("Chạy nền khi chia sẻ", "MediaProjection foreground service")
-                )
-            ),
-            InfoSection(
-                title = "INFO FAKE MAP GPS",
-                summary = fakeMapSummary(mockState, mockScenario, mockAppSelected),
-                icon = R.drawable.ic_location_pin,
+                title = "ỨNG DỤNG",
+                summary = "PiperOS Tool ${AppVersion.name(context)}",
+                icon = R.drawable.a3tn,
                 color = color("#34D399"),
                 rows = listOf(
-                    InfoRow("Trạng thái", fakeMapStatus(mockState)),
-                    InfoRow(
-                        "Chế độ",
-                        when (mockScenario?.mode) {
-                            MockScenarioMode.FIXED -> "Vị trí cố định"
-                            MockScenarioMode.ROUTE -> "Hành trình di chuyển"
-                            null -> "Chưa cấu hình"
-                        }
-                    ),
-                    InfoRow(
-                        "Ứng dụng vị trí mô phỏng",
-                        if (mockAppSelected) "Đã chọn PiperOS Tool" else "Chưa chọn"
-                    ),
-                    InfoRow(
-                        "Quyền vị trí chính xác",
-                        if (mockPermissionGranted) "Đã cấp" else "Chưa cấp"
-                    ),
-                    InfoRow(
-                        "Provider",
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                            "GPS + Network + Fused"
-                        } else {
-                            "GPS + Network"
-                        }
-                    ),
-                    InfoRow("Chu kỳ cập nhật", "500 ms"),
-                    InfoRow("Chạy nền", "Foreground service + WakeLock"),
-                    InfoRow("Thông báo", notificationMode()),
-                    InfoRow(
-                        "Điểm tuyến đã lưu",
-                        mockScenario?.points?.size?.toString() ?: "0"
-                    ),
-                    InfoRow(
-                        "Tốc độ cấu hình",
-                        mockScenario?.let {
-                            String.format(Locale.US, "%.1f km/h", it.speedKmh)
-                        } ?: "-"
-                    ),
-                    InfoRow(
-                        "Lặp hành trình",
-                        when {
-                            mockScenario?.mode != MockScenarioMode.ROUTE -> "-"
-                            mockScenario.loop -> "Bật"
-                            else -> "Tắt"
-                        }
-                    )
+                    InfoRow("Phiên bản", packageInfo.versionName ?: AppVersion.name(context)),
+                    InfoRow("Bản dựng", if (debugBuild) "Debug" else "Release"),
+                    InfoRow("Package", context.packageName)
+                )
+            ),
+            InfoSection(
+                title = "CÔNG CỤ PIPEROS",
+                summary = "Các tính năng chính trong ứng dụng",
+                icon = R.drawable.apps,
+                color = color("#A78BFA"),
+                rows = listOf(
+                    InfoRow("PiperOS Browser", "Trình duyệt tích hợp"),
+                    InfoRow("PiperOS Media", "Phát nhạc và video"),
+                    InfoRow("PiperOS Terminal", "Terminal Android và Linux"),
+                    InfoRow("PiperOS Fake Map GPS", "Mô phỏng vị trí và hành trình"),
+                    InfoRow("Trình quản lý tệp PiperOS", "Duyệt và quản lý tệp"),
+                    InfoRow("PiperOS View Remote", "Xem và điều khiển từ xa"),
+                    InfoRow("PiperOS ADB", "Thiết lập và quản lý kết nối ADB"),
+                    InfoRow("PiperOS QR", "Tạo và quét mã QR")
                 )
             )
         )
     }
 
-    private fun currentWebViewPackage(context: Context) =
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            WebView.getCurrentWebViewPackage()
-        } else {
-            runCatching {
-                context.packageManager.getPackageInfo("com.google.android.webview", 0)
-            }.getOrNull()
+    private fun refreshHealth(root: View) {
+        if (healthCheckRunning || !isAdded) return
+        healthCheckRunning = true
+        val button = root.findViewById<MaterialButton>(R.id.btnRefreshInfoHealth)
+        button.isEnabled = false
+        button.text = "Đang kiểm tra…"
+        InfoConnectivityChecker.check(requireContext()) { items ->
+            if (!isAdded || view !== root) return@check
+            healthCheckRunning = false
+            button.isEnabled = true
+            button.text = "Kiểm tra lại"
+            latestHealthItems = items
+            root.findViewById<TextView>(R.id.tvInfoHealthCheckedAt).text =
+                "Cập nhật lúc ${SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())}"
+            showHealthItems(root, items)
         }
-
-    private fun installerSource(context: Context): String = runCatching {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            context.packageManager.getInstallSourceInfo(context.packageName)
-                .installingPackageName
-        } else {
-            @Suppress("DEPRECATION")
-            context.packageManager.getInstallerPackageName(context.packageName)
-        }
-    }.getOrNull() ?: "Cài thủ công / ADB"
-
-    private fun totalRam(context: Context): String {
-        val manager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
-        val info = ActivityManager.MemoryInfo()
-        manager.getMemoryInfo(info)
-        return String.format(Locale.US, "%.2f GB", info.totalMem / 1073741824.0)
     }
 
-    private fun notificationMode(): String =
-        if (Build.VERSION.SDK_INT >= 36) "Android 16 Live Update" else "Thông báo tiêu chuẩn"
-
-    private fun fakeMapStatus(state: MockLocationService.State): String = when {
-        !state.running -> "Đã dừng"
-        state.paused -> "Đang tạm dừng"
-        state.arrived -> "Đã đến điểm cuối"
-        else -> "Đang mô phỏng"
-    }
-
-    private fun fakeMapSummary(
-        state: MockLocationService.State,
-        scenario: MockScenario?,
-        mockAppSelected: Boolean
-    ): String {
-        if (state.running) {
-            val mode = if (scenario?.mode == MockScenarioMode.ROUTE) {
-                "Hành trình"
-            } else {
-                "Cố định"
+    private fun showHealthItems(root: View, items: List<InfoHealthItem>) {
+        val container = root.findViewById<LinearLayout>(R.id.infoHealthRows)
+        container.removeAllViews()
+        items.forEach { item ->
+            val row = LinearLayout(requireContext()).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = android.view.Gravity.CENTER_VERTICAL
+                setPadding(0, dp(7), 0, dp(7))
             }
-            return "${fakeMapStatus(state)} • $mode"
-        }
-        return if (mockAppSelected) {
-            "Sẵn sàng • Chưa chạy mô phỏng"
-        } else {
-            "Cần chọn PiperOS Tool làm ứng dụng vị trí mô phỏng"
+            val dot = View(requireContext()).apply {
+                layoutParams = LinearLayout.LayoutParams(dp(9), dp(9)).apply {
+                    marginEnd = dp(10)
+                }
+                background = GradientDrawable().apply {
+                    shape = GradientDrawable.OVAL
+                    setColor(stateColor(item.state))
+                }
+            }
+            val labels = LinearLayout(requireContext()).apply {
+                orientation = LinearLayout.VERTICAL
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+            }
+            val title = TextView(requireContext()).apply {
+                text = item.title
+                textSize = 13f
+                setTextColor(if (isDarkTheme()) Color.WHITE else color("#17212B"))
+            }
+            val detail = TextView(requireContext()).apply {
+                text = item.detail
+                textSize = 11f
+                setTextColor(if (isDarkTheme()) color("#AAB8C4") else color("#66737F"))
+            }
+            labels.addView(title)
+            labels.addView(detail)
+            val stateLabel = TextView(requireContext()).apply {
+                text = when (item.state) {
+                    InfoHealthState.CHECKING -> "ĐANG KIỂM TRA"
+                    InfoHealthState.HEALTHY -> "BÌNH THƯỜNG"
+                    InfoHealthState.SLOW -> "CHẬM"
+                    InfoHealthState.WARNING -> "CÓ CẢNH BÁO"
+                    InfoHealthState.UNAVAILABLE -> "MẤT KẾT NỐI"
+                }
+                textSize = 9f
+                setTypeface(typeface, android.graphics.Typeface.BOLD)
+                setTextColor(stateColor(item.state))
+            }
+            row.addView(dot)
+            row.addView(labels)
+            row.addView(stateLabel)
+            container.addView(row)
         }
     }
 
-    private fun copyAllInformation(sections: List<InfoSection>) {
+    private fun copyBasicInformation(sections: List<InfoSection>) {
         val text = buildString {
-            appendLine("PiperOS Info")
+            appendLine("PiperOS Tool ${AppVersion.name(requireContext())}")
             sections.forEach { section ->
                 appendLine()
                 appendLine(section.title)
                 section.rows.forEach { appendLine("${it.label}: ${it.value}") }
             }
+            if (latestHealthItems.isNotEmpty()) {
+                appendLine()
+                appendLine("KẾT NỐI")
+                latestHealthItems.forEach { appendLine("${it.title}: ${it.detail}") }
+            }
         }.trim()
         val clipboard = requireContext()
             .getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
         clipboard.setPrimaryClip(ClipData.newPlainText("PiperOS Info", text))
-        Toast.makeText(requireContext(), "Đã sao chép thông tin", Toast.LENGTH_SHORT).show()
+        Toast.makeText(requireContext(), "Đã sao chép thông tin cơ bản", Toast.LENGTH_SHORT).show()
     }
 
-    private fun color(value: String): Int = android.graphics.Color.parseColor(value)
+    private fun stateColor(state: InfoHealthState): Int = when (state) {
+        InfoHealthState.CHECKING -> color("#94A3B8")
+        InfoHealthState.HEALTHY -> color("#22C55E")
+        InfoHealthState.SLOW -> color("#F59E0B")
+        InfoHealthState.WARNING -> color("#F59E0B")
+        InfoHealthState.UNAVAILABLE -> color("#EF4444")
+    }
 
-    private fun dp(value: Int): Int =
-        (value * resources.displayMetrics.density).toInt()
+    private fun isDarkTheme(): Boolean =
+        resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK ==
+            android.content.res.Configuration.UI_MODE_NIGHT_YES
+
+    private fun color(value: String): Int = Color.parseColor(value)
+
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
+}
+
+private object BuildLabel {
+    fun manufacturer(): String = android.os.Build.MANUFACTURER.replaceFirstChar {
+        if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString()
+    }
 }

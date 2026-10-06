@@ -1,5 +1,14 @@
 # Changelog
 
+## 3.6.2.PRE
+
+- Tối ưu thanh menu dưới cùng theo vùng điều hướng hệ thống; tự thêm khoảng cách khi thiết bị dùng thanh điều hướng ba nút để menu không đè lên các phím hệ thống.
+- Làm gọn trang Thông tin, chỉ giữ thông tin thiết bị, phiên bản ứng dụng và danh sách các công cụ PiperOS chính.
+- Thêm PiperOS ADB và PiperOS QR vào danh sách tính năng trên trang Thông tin.
+- Thêm kiểm tra theo yêu cầu cho kết nối Internet, GitHub API và Firebase Authentication, hiển thị chấm trạng thái cùng thời gian phản hồi; kiểm tra Firebase đính kèm App Check token từ Play Integrity.
+- Không thử phương thức đăng nhập Google/email, không gửi SMS; trạng thái Firebase chỉ phản ánh phản hồi của Auth backend và App Check.
+- Nâng versionCode lên 65 để cập nhật đè từ 3.6.1.
+
 ## 3.6.1 — Bản chính thức
 
 Bản chính thức tổng hợp các tính năng đã qua thử nghiệm và đã được phát hành trong nhánh 3.4.5.PRE–3.6.1.PRE. Các mục chỉ xuất hiện dưới dạng giới thiệu/thử nghiệm nhưng không có trong ứng dụng hoàn thiện được lược bỏ.
