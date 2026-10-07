@@ -8,6 +8,8 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.animation.DecelerateInterpolator
 import androidx.fragment.app.Fragment
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import com.google.firebase.auth.FirebaseAuth
 
 class homeFragment : Fragment() {
@@ -49,6 +51,30 @@ class homeFragment : Fragment() {
         view.findViewById<View>(R.id.btnHomeWindowLogout).setOnClickListener {
             closeWindowDrawer(view) { confirmLogout() }
         }
+
+        val homeScroll = view.findViewById<androidx.core.widget.NestedScrollView>(R.id.homeContentScroll)
+        val baseTopPadding = homeScroll.paddingTop
+        val drawerPanel = view.findViewById<View>(R.id.homeWindowPanel)
+        val baseDrawerVerticalMargin = (12 * resources.displayMetrics.density).toInt()
+        ViewCompat.setOnApplyWindowInsetsListener(view) { _, insets ->
+            val safeTop = insets.getInsets(
+                WindowInsetsCompat.Type.statusBars() or WindowInsetsCompat.Type.displayCutout()
+            ).top
+            val safeBottom = insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom
+            homeScroll.setPadding(
+                homeScroll.paddingLeft,
+                baseTopPadding + safeTop,
+                homeScroll.paddingRight,
+                homeScroll.paddingBottom
+            )
+            (drawerPanel.layoutParams as? android.widget.FrameLayout.LayoutParams)?.let { params ->
+                params.topMargin = baseDrawerVerticalMargin + safeTop
+                params.bottomMargin = baseDrawerVerticalMargin + safeBottom
+                drawerPanel.layoutParams = params
+            }
+            insets
+        }
+        ViewCompat.requestApplyInsets(view)
     }
 
     fun closeWindowDrawer(): Boolean {

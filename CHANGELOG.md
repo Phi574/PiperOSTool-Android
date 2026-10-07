@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.6.9.PRE
+
+- Thu nhỏ ảnh tiến trình tải/xác minh APK trong màn hình Cập nhật từ 112dp xuống 48dp để gọn hơn.
+- Chừa vùng an toàn theo thanh trạng thái cho trang chủ/bảng tài khoản; thu nhỏ icon bảng `window` và giữ nguyên màu gốc icon tính năng trang chủ.
+- Nâng versionCode lên 72 để cập nhật đè từ 3.6.8.PRE.
+
 ## 3.6.8.PRE
 
 - Cập nhật compileSdk/targetSdk lên Android 17 (API 37) và nâng versionCode lên 71.

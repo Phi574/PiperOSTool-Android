@@ -57,7 +57,7 @@
                     android:layout_height="48dp"
                     android:background="@drawable/bg_modern_pill"
                     android:contentDescription="@string/home_window_title"
-                    android:padding="12dp"
+                    android:padding="15dp"
                     android:src="@drawable/window"
                     app:tint="@color/white" />
             </LinearLayout>
@@ -90,7 +90,7 @@
                     android:gravity="center_vertical"
                     android:orientation="horizontal"
                     android:paddingHorizontal="16dp">
-                    <ImageView android:id="@+id/iconHomeBrowser" android:layout_width="30dp" android:layout_height="30dp"
+                    <ImageView android:layout_width="30dp" android:layout_height="30dp"
                         android:contentDescription="@null" android:src="@drawable/browser" />
                     <TextView android:layout_width="0dp" android:layout_height="wrap_content"
                         android:layout_marginStart="14dp" android:layout_weight="1"
@@ -120,7 +120,7 @@
                     android:gravity="center_vertical"
                     android:orientation="horizontal"
                     android:paddingHorizontal="16dp">
-                    <ImageView android:id="@+id/iconHomeFakeMap" android:layout_width="30dp" android:layout_height="30dp"
+                    <ImageView android:layout_width="30dp" android:layout_height="30dp"
                         android:contentDescription="@null" android:src="@drawable/ic_location_pin" />
                     <TextView android:layout_width="0dp" android:layout_height="wrap_content"
                         android:layout_marginStart="14dp" android:layout_weight="1"
@@ -150,7 +150,7 @@
                     android:gravity="center_vertical"
                     android:orientation="horizontal"
                     android:paddingHorizontal="16dp">
-                    <ImageView android:id="@+id/iconHomeQr" android:layout_width="30dp" android:layout_height="30dp"
+                    <ImageView android:layout_width="30dp" android:layout_height="30dp"
                         android:contentDescription="@null" android:src="@drawable/ic_piperos_qr" />
                     <TextView android:layout_width="0dp" android:layout_height="wrap_content"
                         android:layout_marginStart="14dp" android:layout_weight="1"
@@ -203,7 +203,7 @@
                         android:layout_width="42dp" android:layout_height="42dp"
                         android:background="?attr/selectableItemBackgroundBorderless"
                         android:contentDescription="@string/close_browser"
-                        android:padding="11dp" android:src="@drawable/cancel_circle"
+                        android:padding="13dp" android:src="@drawable/cancel_circle"
                         app:tint="@color/white" />
                 </LinearLayout>
                 <View android:layout_width="match_parent" android:layout_height="1dp"
@@ -211,7 +211,8 @@
                 <LinearLayout android:id="@+id/homeWindowProfile"
                     style="@style/SettingsRow" android:layout_marginTop="12dp">
                     <ImageView android:id="@+id/iconHomeWindowProfile"
-                        style="@style/SettingsRowIcon" android:src="@drawable/user" />
+                        style="@style/SettingsRowIcon" android:layout_width="20dp"
+                        android:layout_height="20dp" android:src="@drawable/user" />
                     <LinearLayout style="@style/SettingsRowTextGroup">
                         <TextView style="@style/SettingsRowTitle" android:text="@string/home_personal_info" />
                         <TextView style="@style/SettingsRowSubtitle" android:text="@string/home_personal_info_summary" />
@@ -222,7 +223,8 @@
                 <LinearLayout android:id="@+id/homeWindowSecurity"
                     style="@style/SettingsRow">
                     <ImageView android:id="@+id/iconHomeWindowSecurity"
-                        style="@style/SettingsRowIcon" android:src="@drawable/security" />
+                        style="@style/SettingsRowIcon" android:layout_width="20dp"
+                        android:layout_height="20dp" android:src="@drawable/security" />
                     <LinearLayout style="@style/SettingsRowTextGroup">
                         <TextView style="@style/SettingsRowTitle" android:text="@string/home_security" />
                         <TextView style="@style/SettingsRowSubtitle" android:text="@string/home_security_summary" />
@@ -233,7 +235,8 @@
                 <LinearLayout android:id="@+id/homeWindowSupport"
                     style="@style/SettingsRow">
                     <ImageView android:id="@+id/iconHomeWindowSupport"
-                        style="@style/SettingsRowIcon" android:src="@drawable/error_bug" />
+                        style="@style/SettingsRowIcon" android:layout_width="20dp"
+                        android:layout_height="20dp" android:src="@drawable/error_bug" />
                     <LinearLayout style="@style/SettingsRowTextGroup">
                         <TextView style="@style/SettingsRowTitle" android:text="@string/home_support" />
                         <TextView style="@style/SettingsRowSubtitle" android:text="@string/home_support_summary" />
@@ -247,6 +250,7 @@
                     android:layout_height="52dp"
                     android:text="@string/auth_logout"
                     app:icon="@drawable/exit"
+                    app:iconSize="18dp"
                     app:iconPadding="10dp" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
