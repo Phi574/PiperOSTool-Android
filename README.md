@@ -29,9 +29,15 @@ PiperOS Tool.
 
 ## Bản hiện tại
 
-`3.6.5.PRE` (versionCode `68`) sử dụng `minSdk 29 (Android 10)`, `targetSdk 36`, Kotlin `2.4.10`.
+`3.6.6.PRE` (versionCode `69`) sử dụng `minSdk 29 (Android 10)`, `targetSdk 36`, Kotlin `2.4.10`.
 
-**Tải và cài đặt:** [Bản phát hành 3.6.5.PRE](https://github.com/Phi574/PiperOSTool-Android/releases/tag/v3.6.5.PRE). APK được ký bằng khóa debug của dự án; màn Cập nhật chỉ chấp nhận APK có cùng chữ ký với bản đang cài.
+**Tải và cài đặt:** [Bản phát hành 3.6.6.PRE](https://github.com/Phi574/PiperOSTool-Android/releases/tag/v3.6.6.PRE). APK được ký bằng khóa debug của dự án; màn Cập nhật chỉ chấp nhận APK có cùng chữ ký với bản đang cài.
+
+### Cải tiến trong 3.6.6.PRE
+
+- Bổ sung bảng chẩn đoán Receiver AirPlay, gồm đăng ký dịch vụ, kết nối iPhone/iPad, luồng video và tốc độ nhận dữ liệu; kết quả tốt và lỗi có màu riêng.
+- Căn giữa bảng kiểm tra khởi động theo chiều dọc và đặt log trong thẻ dễ đọc.
+- Tự mở lại xác thực vân tay khi quay về app sau khi khóa màn hình hoặc chuyển sang ứng dụng khác.
 
 ### Cải tiến trong 3.6.5.PRE
 

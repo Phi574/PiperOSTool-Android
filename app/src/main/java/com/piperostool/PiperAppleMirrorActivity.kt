@@ -10,11 +10,16 @@ import android.content.pm.ActivityInfo
 import android.hardware.display.DisplayManager
 import android.os.Bundle
 import android.os.IBinder
+import android.graphics.Color
+import android.text.SpannableStringBuilder
+import android.text.Spanned
+import android.text.style.ForegroundColorSpan
 import android.view.SurfaceHolder
 import android.view.SurfaceView
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import android.widget.ScrollView
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
@@ -34,6 +39,9 @@ class PiperAppleMirrorActivity : AppCompatActivity(), SurfaceHolder.Callback {
     private lateinit var status: TextView
     private lateinit var startButton: MaterialButton
     private lateinit var nameInput: TextInputEditText
+    private lateinit var diagnosticsView: TextView
+    private lateinit var diagnosticsScroll: ScrollView
+    private val diagnosticEntries = mutableListOf<PiperAppleMirrorService.AirPlayDiagnostic>()
     private var service: PiperAppleMirrorService? = null
     private var bound = false
     private var sourceWidth = 0
@@ -44,6 +52,7 @@ class PiperAppleMirrorActivity : AppCompatActivity(), SurfaceHolder.Callback {
             service = (binder as? PiperAppleMirrorService.LocalBinder)?.service
             bound = service != null
             if (surfaceView.holder.surface.isValid) service?.attachSurface(surfaceView.holder.surface)
+            service?.diagnosticSnapshot()?.let(::renderDiagnosticSnapshot)
             renderCurrentState()
         }
 
@@ -55,6 +64,14 @@ class PiperAppleMirrorActivity : AppCompatActivity(), SurfaceHolder.Callback {
 
     private val stateReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action == PiperAppleMirrorService.ACTION_DIAGNOSTIC) {
+                appendDiagnostic(
+                    intent.getStringExtra(PiperAppleMirrorService.EXTRA_DIAGNOSTIC_MESSAGE).orEmpty(),
+                    if (intent.hasExtra(PiperAppleMirrorService.EXTRA_DIAGNOSTIC_OK))
+                        intent.getBooleanExtra(PiperAppleMirrorService.EXTRA_DIAGNOSTIC_OK, false) else null
+                )
+                return
+            }
             sourceWidth = intent?.getIntExtra(PiperAppleMirrorService.EXTRA_WIDTH, 0) ?: 0
             sourceHeight = intent?.getIntExtra(PiperAppleMirrorService.EXTRA_HEIGHT, 0) ?: 0
             val error = intent?.getStringExtra(PiperAppleMirrorService.EXTRA_ERROR)
@@ -95,6 +112,8 @@ class PiperAppleMirrorActivity : AppCompatActivity(), SurfaceHolder.Callback {
         status = findViewById(R.id.tvAppleMirrorStatus)
         startButton = findViewById(R.id.btnAppleMirrorStart)
         nameInput = findViewById(R.id.etAppleMirrorName)
+        diagnosticsView = findViewById(R.id.tvAppleMirrorDiagnostics)
+        diagnosticsScroll = findViewById(R.id.appleMirrorLogScroll)
         surfaceView.holder.addCallback(this)
         viewerPanel.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ -> fitSurface() }
     }
@@ -118,7 +137,11 @@ class PiperAppleMirrorActivity : AppCompatActivity(), SurfaceHolder.Callback {
         findViewById<View>(R.id.btnAppleMirrorStop).setOnClickListener { stopReceiver() }
         findViewById<View>(R.id.btnAppleMirrorExitViewer).setOnClickListener { confirmStop() }
         startButton.setOnClickListener {
-            if (PiperAppleMirrorService.isRunning) stopReceiver() else startReceiver()
+            if (PiperAppleMirrorService.isRunning) stopReceiver() else {
+                diagnosticEntries.clear()
+                renderDiagnosticEntries()
+                startReceiver()
+            }
         }
     }
 
@@ -217,6 +240,37 @@ class PiperAppleMirrorActivity : AppCompatActivity(), SurfaceHolder.Callback {
 
     private fun showStatus(message: String) { status.text = message }
 
+    private fun renderDiagnosticSnapshot(entries: List<PiperAppleMirrorService.AirPlayDiagnostic>) {
+        diagnosticEntries.clear()
+        diagnosticEntries.addAll(entries)
+        renderDiagnosticEntries()
+    }
+
+    private fun appendDiagnostic(message: String, succeeded: Boolean?) {
+        if (message.isBlank()) return
+        diagnosticEntries += PiperAppleMirrorService.AirPlayDiagnostic(message, succeeded)
+        if (diagnosticEntries.size > 80) diagnosticEntries.removeAt(0)
+        renderDiagnosticEntries()
+    }
+
+    private fun renderDiagnosticEntries() {
+        val lines = SpannableStringBuilder()
+        diagnosticEntries.forEachIndexed { index, entry ->
+            if (index > 0) lines.append('\n')
+            val color = when (entry.succeeded) {
+                true -> Color.rgb(74, 222, 128)
+                false -> Color.rgb(248, 113, 113)
+                null -> Color.rgb(203, 213, 225)
+            }
+            val start = lines.length
+            lines.append(if (entry.succeeded == true || entry.succeeded == false) "●  " else "○  ")
+            lines.append(entry.message)
+            lines.setSpan(ForegroundColorSpan(color), start, lines.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        }
+        diagnosticsView.text = if (lines.isEmpty()) "Chẩn đoán sẽ hiển thị khi khởi động Receiver." else lines
+        diagnosticsScroll.post { diagnosticsScroll.fullScroll(View.FOCUS_DOWN) }
+    }
+
     private fun confirmStop() {
         PiperDialog.showConfirm(this, getString(R.string.apple_mirror_stop_title),
             getString(R.string.apple_mirror_stop_message), getString(R.string.remote_stop)) { stopReceiver() }
@@ -228,7 +282,11 @@ class PiperAppleMirrorActivity : AppCompatActivity(), SurfaceHolder.Callback {
 
     override fun onStart() {
         super.onStart()
-        ContextCompat.registerReceiver(this, stateReceiver, IntentFilter(PiperAppleMirrorService.ACTION_STATE), ContextCompat.RECEIVER_NOT_EXPORTED)
+        val filter = IntentFilter().apply {
+            addAction(PiperAppleMirrorService.ACTION_STATE)
+            addAction(PiperAppleMirrorService.ACTION_DIAGNOSTIC)
+        }
+        ContextCompat.registerReceiver(this, stateReceiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
         if (PiperAppleMirrorService.isRunning) bindReceiverService()
     }
 

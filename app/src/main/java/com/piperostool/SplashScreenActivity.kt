@@ -43,6 +43,9 @@ class SplashScreenActivity : AppCompatActivity() {
     private var passwordResolved = false
     private var startupCheckInProgress = false
     private var startupChecksResolved = false
+    private var biometricRequired = false
+    private var biometricPromptActive = false
+    private var activityResumed = false
 
     private val updateActivityLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -125,6 +128,8 @@ class SplashScreenActivity : AppCompatActivity() {
         if (startupCheckInProgress || startupChecksResolved || navigating) return
         startupCheckInProgress = true
         findViewById<ViewGroup>(R.id.startupCheckPanel).visibility = android.view.View.VISIBLE
+        appNameTextView.visibility = android.view.View.GONE
+        developerTextView.visibility = android.view.View.GONE
         findViewById<android.widget.ProgressBar>(R.id.startupCheckProgress).visibility = android.view.View.VISIBLE
         setStartupStep("Đang kiểm tra Internet…")
         setStartupLine(R.id.startupInternetStatus, "Internet", InfoHealthState.CHECKING, "Đang kiểm tra")
@@ -360,7 +365,7 @@ class SplashScreenActivity : AppCompatActivity() {
 
                     // Ưu tiên 2: KHÔNG có mật khẩu, nhưng CÓ vân tay -> Quét luôn
                     isFingerprintEnabled -> {
-                        biometricPrompt.authenticate(promptInfo)
+                        requestBiometricUnlock()
                     }
 
                     // Trường hợp còn lại: KHÔNG có cả hai -> Vào Home
@@ -388,13 +393,14 @@ class SplashScreenActivity : AppCompatActivity() {
                 intent.putExtra("IS_UNLOCK_MODE", true)
                 navigateTo(intent)
             }
-            isFingerprintEnabled -> biometricPrompt.authenticate(promptInfo)
+            isFingerprintEnabled -> requestBiometricUnlock()
             else -> navigateTo(HomeActivity::class.java)
         }
     }
 
     companion object {
         const val EXTRA_SESSION_EXPIRED = "session_expired"
+        private const val BIOMETRIC_RESUME_DELAY_MS = 350L
     }
 
     // --- LOGIC BIOMETRIC (VÂN TAY) ---
@@ -404,14 +410,33 @@ class SplashScreenActivity : AppCompatActivity() {
             object : BiometricPrompt.AuthenticationCallback() {
                 override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
                     super.onAuthenticationSucceeded(result)
+                    biometricPromptActive = false
+                    biometricRequired = false
                     Toast.makeText(applicationContext, "Xác thực thành công!", Toast.LENGTH_SHORT).show()
                     navigateTo(HomeActivity::class.java)
                 }
 
                 override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
                     super.onAuthenticationError(errorCode, errString)
-                    Toast.makeText(applicationContext, "Xác thực bị hủy.", Toast.LENGTH_SHORT).show()
-                    finish()
+                    biometricPromptActive = false
+                    if (errorCode == BiometricPrompt.ERROR_NEGATIVE_BUTTON) {
+                        biometricRequired = false
+                        finish()
+                        return
+                    }
+                    biometricRequired = true
+                    val message = if (errorCode == BiometricPrompt.ERROR_CANCELED ||
+                        errorCode == BiometricPrompt.ERROR_USER_CANCELED) {
+                        "Xác thực tạm dừng. Mở khóa ứng dụng để quét vân tay lại."
+                    } else {
+                        "Chưa xác thực được vân tay: $errString. Mở lại để thử lại."
+                    }
+                    setStartupStep(message)
+                    Toast.makeText(applicationContext, message, Toast.LENGTH_SHORT).show()
+                    if ((errorCode == BiometricPrompt.ERROR_CANCELED ||
+                            errorCode == BiometricPrompt.ERROR_USER_CANCELED) && activityResumed) {
+                        handler.postDelayed({ showBiometricPromptIfReady() }, BIOMETRIC_RESUME_DELAY_MS)
+                    }
                 }
 
                 override fun onAuthenticationFailed() {
@@ -426,6 +451,35 @@ class SplashScreenActivity : AppCompatActivity() {
             .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG)
             .setNegativeButtonText("Thoát")
             .build()
+    }
+
+    private fun requestBiometricUnlock() {
+        biometricRequired = true
+        setStartupStep("Đang chờ xác thực vân tay…")
+        showBiometricPromptIfReady()
+    }
+
+    private fun showBiometricPromptIfReady() {
+        if (!biometricRequired || biometricPromptActive || !activityResumed || navigating) return
+        biometricPromptActive = true
+        runCatching { biometricPrompt.authenticate(promptInfo) }
+            .onFailure { error ->
+                biometricPromptActive = false
+                setStartupStep("Không mở được xác thực vân tay: ${error.message ?: "hãy thử lại"}")
+            }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        activityResumed = true
+        if (biometricRequired && !biometricPromptActive && !navigating) {
+            handler.postDelayed({ showBiometricPromptIfReady() }, BIOMETRIC_RESUME_DELAY_MS)
+        }
+    }
+
+    override fun onPause() {
+        activityResumed = false
+        super.onPause()
     }
 
     private fun navigateTo(activityClass: Class<*>) {

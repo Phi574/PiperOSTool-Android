@@ -1,5 +1,12 @@
 # Changelog
 
+## 3.6.6.PRE
+
+- Thêm bảng chẩn đoán AirPlay có log khởi tạo, quảng bá dịch vụ, nhận kết nối, nhận dạng luồng màn hình và tốc độ nhận video; trạng thái thành công và lỗi được tô màu riêng.
+- Căn giữa theo chiều dọc bảng kiểm tra khởi động và đặt nội dung trong thẻ nền bo góc.
+- Tiếp tục yêu cầu vân tay sau khi màn hình tắt hoặc người dùng rời app rồi quay lại, tránh treo ở màn hình khởi động.
+- Nâng versionCode lên 69 để cập nhật đè từ 3.6.5.PRE.
+
 ## 3.6.5.PRE
 - Sửa PiperOS ADB bị ngắt khi rời màn hình trong trường hợp service chỉ được khởi tạo bằng binding; khi người dùng đã bật ADB, service được chuyển sang trạng thái chạy bền để giữ kết nối dùng chung qua các Activity.
 - Trạng thái tắt vẫn không tự khởi động lại ADB; chỉ khôi phục kết nối khi tùy chọn bật đã được người dùng lưu.

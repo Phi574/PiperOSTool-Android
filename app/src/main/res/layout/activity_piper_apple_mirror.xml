@@ -210,6 +210,38 @@
                     android:layout_height="54dp"
                     android:layout_marginTop="14dp"
                     android:text="@string/apple_mirror_start" />
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="22dp"
+                    android:text="CHẨN ĐOÁN KẾT NỐI AIRPLAY"
+                    android:textColor="@color/remote_text_primary"
+                    android:textStyle="bold" />
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="190dp"
+                    android:layout_marginTop="8dp"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="0dp"
+                    app:cardBackgroundColor="@android:color/transparent"
+                    app:strokeWidth="0dp">
+                    <ScrollView
+                        android:id="@+id/appleMirrorLogScroll"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:background="@drawable/bg_remote_surface"
+                        android:fillViewport="true"
+                        android:padding="12dp">
+                        <TextView
+                            android:id="@+id/tvAppleMirrorDiagnostics"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Chẩn đoán sẽ hiển thị khi khởi động Receiver."
+                            android:textColor="@color/remote_text_secondary"
+                            android:textSize="12sp"
+                            android:fontFamily="monospace" />
+                    </ScrollView>
+                </com.google.android.material.card.MaterialCardView>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
     </androidx.core.widget.NestedScrollView>

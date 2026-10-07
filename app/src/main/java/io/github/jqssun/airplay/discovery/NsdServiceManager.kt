@@ -6,7 +6,10 @@ import android.net.nsd.NsdServiceInfo
 import android.net.wifi.WifiManager
 import android.util.Log
 
-class NsdServiceManager(private val ctx: Context) {
+class NsdServiceManager(
+    private val ctx: Context,
+    private val onDiagnostic: (message: String, succeeded: Boolean) -> Unit = { _, _ -> }
+) {
 
     private val nsdManager = ctx.getSystemService(Context.NSD_SERVICE) as NsdManager
     private var multicastLock: WifiManager.MulticastLock? = null
@@ -19,6 +22,7 @@ class NsdServiceManager(private val ctx: Context) {
             setReferenceCounted(false)
             acquire()
         }
+        onDiagnostic("Multicast lock đang hoạt động để hỗ trợ khám phá Receiver", true)
     }
 
     fun registerRaop(serviceName: String, port: Int, txtRecords: Map<String, String>) {
@@ -32,9 +36,11 @@ class NsdServiceManager(private val ctx: Context) {
         raopRegistration = object : NsdManager.RegistrationListener {
             override fun onServiceRegistered(info: NsdServiceInfo) {
                 Log.i(TAG, "RAOP registered: ${info.serviceName}")
+                onDiagnostic("Đã quảng bá dịch vụ âm thanh RAOP: ${info.serviceName}", true)
             }
             override fun onRegistrationFailed(info: NsdServiceInfo, code: Int) {
                 Log.e(TAG, "RAOP registration failed: $code")
+                onDiagnostic("Không thể quảng bá dịch vụ RAOP (mã $code)", false)
             }
             override fun onServiceUnregistered(info: NsdServiceInfo) {
                 Log.i(TAG, "RAOP unregistered")
@@ -57,9 +63,11 @@ class NsdServiceManager(private val ctx: Context) {
         airplayRegistration = object : NsdManager.RegistrationListener {
             override fun onServiceRegistered(info: NsdServiceInfo) {
                 Log.i(TAG, "AirPlay registered: ${info.serviceName}")
+                onDiagnostic("Đã quảng bá dịch vụ AirPlay: ${info.serviceName}", true)
             }
             override fun onRegistrationFailed(info: NsdServiceInfo, code: Int) {
                 Log.e(TAG, "AirPlay registration failed: $code")
+                onDiagnostic("Không thể quảng bá dịch vụ AirPlay (mã $code)", false)
             }
             override fun onServiceUnregistered(info: NsdServiceInfo) {
                 Log.i(TAG, "AirPlay unregistered")

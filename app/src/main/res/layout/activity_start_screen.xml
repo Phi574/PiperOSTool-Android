@@ -34,11 +34,11 @@
         android:id="@+id/startupCheckPanel"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@id/developerTextView"
-        android:layout_centerHorizontal="true"
-        android:layout_marginHorizontal="34dp"
-        android:layout_marginTop="28dp"
+        android:layout_centerInParent="true"
+        android:layout_marginHorizontal="24dp"
+        android:background="@drawable/bg_startup_check_panel"
         android:orientation="vertical"
+        android:padding="18dp"
         android:visibility="gone">
 
         <LinearLayout

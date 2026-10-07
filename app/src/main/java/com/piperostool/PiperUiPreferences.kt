@@ -173,19 +173,7 @@ object PiperModernUi {
             return
         }
 
-        if (name.endsWith("FeatureStatus", ignoreCase = true) && view is TextView) {
-            view.setTextColor(palette.accent)
-            view.background = rounded(
-                ColorUtils.blendARGB(palette.surface, palette.accent, 0.12f),
-                ColorUtils.blendARGB(palette.border, palette.accent, 0.2f),
-                100f,
-                view
-            )
-            return
-        }
-
-        if (name == "qrPreviewBadgeBeta" && view is TextView) {
-            view.setTextColor(palette.accent)
+        if ((name.endsWith("FeatureStatus", ignoreCase = true) || name == "qrPreviewBadgeBeta") && view is ViewGroup) {
             view.background = rounded(
                 ColorUtils.blendARGB(palette.surface, palette.accent, 0.12f),
                 ColorUtils.blendARGB(palette.border, palette.accent, 0.2f),
@@ -302,7 +290,12 @@ object PiperModernUi {
                 )
             }
             is TextView -> {
-                modernizeText(view, palette)
+                val parentName = (view.parent as? View)?.let(::resourceName).orEmpty()
+                if (parentName.endsWith("FeatureStatus", ignoreCase = true) || parentName == "qrPreviewBadgeBeta") {
+                    view.setTextColor(palette.accent)
+                } else {
+                    modernizeText(view, palette)
+                }
                 if (
                     (view.isClickable || name == "tvTerminalPromptMode") &&
                     view.background != null && !isNavigationItem(name)
@@ -329,6 +322,9 @@ object PiperModernUi {
                     return
                 }
                 when {
+                    name == "betaTitleIcon" || parentName.endsWith("FeatureStatus", ignoreCase = true) ||
+                        parentName == "qrPreviewBadgeBeta" ->
+                        view.imageTintList = android.content.res.ColorStateList.valueOf(palette.accent)
                     name == "piperosQrIcon" ->
                         view.imageTintList = android.content.res.ColorStateList.valueOf(palette.secondaryText)
                     parentName in setOf("btnOpenApkEditor", "btnRefreshApps", "btnSortApps") ->

@@ -103,7 +103,7 @@
                     android:id="@+id/iconNews"
                     android:layout_width="24dp"
                     android:layout_height="24dp"
-                    android:src="@drawable/module"
+                    android:src="@drawable/icon_beta"
                     app:tint="@color/nav_unselected"/>
 
                 <TextView
