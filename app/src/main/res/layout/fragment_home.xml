@@ -1,63 +1,87 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/fragmentHomeRoot"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:padding="20dp">
+    android:layout_height="match_parent">
 
-    <com.google.android.material.card.MaterialCardView
-        android:id="@+id/homeFeaturePanel"
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/homeContentScroll"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        app:cardCornerRadius="24dp"
-        app:cardElevation="0dp"
-        app:strokeWidth="1dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.2">
+        android:layout_height="match_parent"
+        android:clipToPadding="false"
+        android:fillViewport="true"
+        android:overScrollMode="never"
+        android:paddingStart="18dp"
+        android:paddingTop="22dp"
+        android:paddingEnd="18dp"
+        android:paddingBottom="112dp">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:padding="24dp"
             android:orientation="vertical">
 
-            <ImageView
-                android:layout_width="52dp"
-                android:layout_height="52dp"
-                android:layout_marginBottom="16dp"
-                android:scaleType="centerInside"
-                android:src="@drawable/a3tn" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+                    <TextView
+                        android:id="@+id/homeScreenTitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/home_screen_title"
+                        android:textColor="@color/white"
+                        android:textSize="26sp"
+                        android:textStyle="bold" />
+                    <TextView
+                        android:id="@+id/homeScreenSummary"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="3dp"
+                        android:text="@string/home_screen_summary"
+                        android:textColor="#B3FFFFFF"
+                        android:textSize="13sp" />
+                </LinearLayout>
+
+                <ImageButton
+                    android:id="@+id/btnHomeWindow"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:background="@drawable/bg_modern_pill"
+                    android:contentDescription="@string/home_window_title"
+                    android:padding="12dp"
+                    android:src="@drawable/window"
+                    app:tint="@color/white" />
+            </LinearLayout>
 
             <TextView
-                android:id="@+id/homeScreenTitle"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:letterSpacing="0.1"
-                android:text="@string/home_screen_title"
-                android:textColor="#FFFFFF"
-                android:textSize="22sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/homeScreenSummary"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="@string/home_screen_summary"
+                android:layout_marginTop="24dp"
+                android:layout_marginBottom="10dp"
+                android:text="@string/home_tools_heading"
                 android:textColor="#B3FFFFFF"
-                android:textSize="14sp" />
+                android:textSize="12sp"
+                android:textStyle="bold" />
 
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/homePiperBrowser"
                 android:layout_width="match_parent"
-                android:layout_height="76dp"
-                android:layout_marginTop="20dp"
+                android:layout_height="68dp"
+                android:layout_marginBottom="10dp"
                 android:clickable="true"
-                android:focusable="true"
                 android:contentDescription="@string/piperos_browser"
-                app:cardCornerRadius="19dp"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground"
+                app:cardCornerRadius="18dp"
                 app:cardElevation="0dp"
                 app:strokeWidth="1dp">
                 <LinearLayout
@@ -66,39 +90,28 @@
                     android:gravity="center_vertical"
                     android:orientation="horizontal"
                     android:paddingHorizontal="16dp">
-                    <ImageView
-                        android:layout_width="32dp"
-                        android:layout_height="32dp"
-                        android:contentDescription="@null"
-                        android:src="@drawable/browser" />
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="14dp"
-                        android:layout_weight="1"
-                        android:text="@string/piperos_browser"
-                        android:textColor="#FFFFFF"
-                        android:textSize="17sp"
-                        android:textStyle="bold" />
-                    <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:contentDescription="@null"
-                        android:rotation="180"
-                        android:src="@drawable/ic_browser_back"
-                        app:tint="#DFFFFFFF" />
+                    <ImageView android:id="@+id/iconHomeBrowser" android:layout_width="30dp" android:layout_height="30dp"
+                        android:contentDescription="@null" android:src="@drawable/browser" />
+                    <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+                        android:layout_marginStart="14dp" android:layout_weight="1"
+                        android:text="@string/piperos_browser" android:textColor="@color/white"
+                        android:textSize="16sp" android:textStyle="bold" />
+                    <ImageView android:layout_width="18dp" android:layout_height="18dp"
+                        android:contentDescription="@null" android:rotation="180"
+                        android:src="@drawable/ic_browser_back" app:tint="#BFFFFFFF" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/homeFakeMap"
                 android:layout_width="match_parent"
-                android:layout_height="76dp"
-                android:layout_marginTop="14dp"
+                android:layout_height="68dp"
+                android:layout_marginBottom="10dp"
                 android:clickable="true"
-                android:focusable="true"
                 android:contentDescription="@string/piperos_fake_map"
-                app:cardCornerRadius="19dp"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground"
+                app:cardCornerRadius="18dp"
                 app:cardElevation="0dp"
                 app:strokeWidth="1dp">
                 <LinearLayout
@@ -107,31 +120,135 @@
                     android:gravity="center_vertical"
                     android:orientation="horizontal"
                     android:paddingHorizontal="16dp">
-                    <ImageView
-                        android:layout_width="32dp"
-                        android:layout_height="32dp"
-                        android:contentDescription="@null"
-                        android:src="@drawable/ic_location_pin" />
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="14dp"
-                        android:layout_weight="1"
-                        android:text="@string/piperos_fake_map"
-                        android:textColor="#FFFFFF"
-                        android:textSize="17sp"
-                        android:textStyle="bold" />
-                    <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:contentDescription="@null"
-                        android:rotation="180"
-                        android:src="@drawable/ic_browser_back"
-                        app:tint="#DFFFFFFF" />
+                    <ImageView android:id="@+id/iconHomeFakeMap" android:layout_width="30dp" android:layout_height="30dp"
+                        android:contentDescription="@null" android:src="@drawable/ic_location_pin" />
+                    <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+                        android:layout_marginStart="14dp" android:layout_weight="1"
+                        android:text="@string/piperos_fake_map" android:textColor="@color/white"
+                        android:textSize="16sp" android:textStyle="bold" />
+                    <ImageView android:layout_width="18dp" android:layout_height="18dp"
+                        android:contentDescription="@null" android:rotation="180"
+                        android:src="@drawable/ic_browser_back" app:tint="#BFFFFFFF" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/homePiperQr"
+                android:layout_width="match_parent"
+                android:layout_height="68dp"
+                android:layout_marginBottom="10dp"
+                android:clickable="true"
+                android:contentDescription="@string/piperos_qr"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground"
+                app:cardCornerRadius="18dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="1dp">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="16dp">
+                    <ImageView android:id="@+id/iconHomeQr" android:layout_width="30dp" android:layout_height="30dp"
+                        android:contentDescription="@null" android:src="@drawable/ic_piperos_qr" />
+                    <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+                        android:layout_marginStart="14dp" android:layout_weight="1"
+                        android:text="@string/piperos_qr" android:textColor="@color/white"
+                        android:textSize="16sp" android:textStyle="bold" />
+                    <ImageView android:layout_width="18dp" android:layout_height="18dp"
+                        android:contentDescription="@null" android:rotation="180"
+                        android:src="@drawable/ic_browser_back" app:tint="#BFFFFFFF" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
-    </com.google.android.material.card.MaterialCardView>
+    </androidx.core.widget.NestedScrollView>
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+    <FrameLayout
+        android:id="@+id/homeWindowOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone">
+        <View
+            android:id="@+id/homeWindowScrim"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#99000000" />
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/homeWindowPanel"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_gravity="end"
+            android:layout_marginStart="48dp"
+            android:layout_marginVertical="12dp"
+            android:layout_marginEnd="12dp"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="12dp"
+            app:strokeWidth="1dp">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:padding="20dp">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingBottom="16dp">
+                    <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+                        android:layout_weight="1" android:text="@string/home_window_title"
+                        android:textColor="@color/white" android:textSize="21sp" android:textStyle="bold" />
+                    <ImageButton android:id="@+id/btnCloseHomeWindow"
+                        android:layout_width="42dp" android:layout_height="42dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="@string/close_browser"
+                        android:padding="11dp" android:src="@drawable/cancel_circle"
+                        app:tint="@color/white" />
+                </LinearLayout>
+                <View android:layout_width="match_parent" android:layout_height="1dp"
+                    android:background="@color/home_nav_border" />
+                <LinearLayout android:id="@+id/homeWindowProfile"
+                    style="@style/SettingsRow" android:layout_marginTop="12dp">
+                    <ImageView android:id="@+id/iconHomeWindowProfile"
+                        style="@style/SettingsRowIcon" android:src="@drawable/user" />
+                    <LinearLayout style="@style/SettingsRowTextGroup">
+                        <TextView style="@style/SettingsRowTitle" android:text="@string/home_personal_info" />
+                        <TextView style="@style/SettingsRowSubtitle" android:text="@string/home_personal_info_summary" />
+                    </LinearLayout>
+                    <ImageView style="@style/SettingsChevron" />
+                </LinearLayout>
+                <View style="@style/SettingsDivider" />
+                <LinearLayout android:id="@+id/homeWindowSecurity"
+                    style="@style/SettingsRow">
+                    <ImageView android:id="@+id/iconHomeWindowSecurity"
+                        style="@style/SettingsRowIcon" android:src="@drawable/security" />
+                    <LinearLayout style="@style/SettingsRowTextGroup">
+                        <TextView style="@style/SettingsRowTitle" android:text="@string/home_security" />
+                        <TextView style="@style/SettingsRowSubtitle" android:text="@string/home_security_summary" />
+                    </LinearLayout>
+                    <ImageView style="@style/SettingsChevron" />
+                </LinearLayout>
+                <View style="@style/SettingsDivider" />
+                <LinearLayout android:id="@+id/homeWindowSupport"
+                    style="@style/SettingsRow">
+                    <ImageView android:id="@+id/iconHomeWindowSupport"
+                        style="@style/SettingsRowIcon" android:src="@drawable/error_bug" />
+                    <LinearLayout style="@style/SettingsRowTextGroup">
+                        <TextView style="@style/SettingsRowTitle" android:text="@string/home_support" />
+                        <TextView style="@style/SettingsRowSubtitle" android:text="@string/home_support_summary" />
+                    </LinearLayout>
+                    <ImageView style="@style/SettingsChevron" />
+                </LinearLayout>
+                <View android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnHomeWindowLogout"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:text="@string/auth_logout"
+                    app:icon="@drawable/exit"
+                    app:iconPadding="10dp" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+    </FrameLayout>
+</FrameLayout>

@@ -85,13 +85,108 @@
             android:textColor="@color/remote_text_secondary"
             android:textSize="14sp" />
 
-        <Button
-            android:id="@+id/btnChangeAccountPassword"
+        <TextView
             android:layout_width="match_parent"
-            android:layout_height="52dp"
-            android:layout_marginTop="8dp"
-            android:textColor="@color/remote_text_secondary"
-            android:text="@string/sessions_change_password" />
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:layout_marginBottom="8dp"
+            android:text="@string/home_security"
+            android:textColor="@color/remote_text_primary"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/securityChangePasswordBeta"
+            android:layout_width="match_parent"
+            android:layout_height="72dp"
+            android:layout_marginBottom="8dp"
+            android:alpha="0.58"
+            android:enabled="false"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="1dp">
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:paddingHorizontal="16dp">
+                <TextView
+                    android:id="@+id/tvSecurityChangePassword"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:text="@string/security_change_password"
+                    android:textColor="@color/remote_text_primary"
+                    android:textSize="15sp"
+                    android:textStyle="bold"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toStartOf="@id/securityPasswordBetaBadge"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+                <LinearLayout
+                    android:id="@+id/securityPasswordBetaBadge"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:orientation="horizontal"
+                    android:background="@drawable/bg_feature_beta_pill"
+                    android:paddingHorizontal="9dp"
+                    android:paddingVertical="5dp"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="parent">
+                    <ImageView android:layout_width="10dp" android:layout_height="10dp"
+                        android:contentDescription="@null" android:src="@drawable/icon_beta" />
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp" android:text="@string/security_beta_badge"
+                        android:textColor="#147C60" android:textSize="10sp" android:textStyle="bold" />
+                </LinearLayout>
+            </androidx.constraintlayout.widget.ConstraintLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/securityManageLinksBeta"
+            android:layout_width="match_parent"
+            android:layout_height="72dp"
+            android:alpha="0.58"
+            android:enabled="false"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="1dp">
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:paddingHorizontal="16dp">
+                <TextView
+                    android:id="@+id/tvSecurityManageLinks"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:text="@string/security_manage_links"
+                    android:textColor="@color/remote_text_primary"
+                    android:textSize="15sp"
+                    android:textStyle="bold"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toStartOf="@id/securityLinksBetaBadge"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+                <LinearLayout
+                    android:id="@+id/securityLinksBetaBadge"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:orientation="horizontal"
+                    android:background="@drawable/bg_feature_beta_pill"
+                    android:paddingHorizontal="9dp"
+                    android:paddingVertical="5dp"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="parent">
+                    <ImageView android:layout_width="10dp" android:layout_height="10dp"
+                        android:contentDescription="@null" android:src="@drawable/icon_beta" />
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp" android:text="@string/security_beta_badge"
+                        android:textColor="#147C60" android:textSize="10sp" android:textStyle="bold" />
+                </LinearLayout>
+            </androidx.constraintlayout.widget.ConstraintLayout>
+        </com.google.android.material.card.MaterialCardView>
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>
 </FrameLayout>

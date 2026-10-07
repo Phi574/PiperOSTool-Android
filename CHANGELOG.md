@@ -1,5 +1,13 @@
 # Changelog
 
+## 3.6.8.PRE
+
+- Cập nhật compileSdk/targetSdk lên Android 17 (API 37) và nâng versionCode lên 71.
+- Thiết kế lại trang chủ gọn hơn, giữ trình duyệt và Fake Map GPS; chuyển PiperOS QR từ Beta sang Trang chủ.
+- Thêm bảng Tài khoản trượt từ bên phải với Thông tin cá nhân, Mật khẩu bảo mật, Hỗ trợ và Đăng xuất; thanh điều hướng dưới ẩn/hiện theo bảng.
+- Chuyển thông tin hồ sơ và thiết bị đăng nhập khỏi trang Thông tin; đặt thiết bị đăng nhập trong Mật khẩu bảo mật.
+- Đưa Đổi mật khẩu và Quản lý liên kết vào trạng thái BETA màu xám, chưa thể mở; chuyển Đăng xuất khỏi Cài đặt.
+
 ## 3.6.7.PRE
 
 - Cập nhật log tải APK với ảnh tiến trình theo các mốc 10%, 20%, 25%, 30%, 40%, 50%, 60%, 70%, 75%, 80%, 90% và 100%.

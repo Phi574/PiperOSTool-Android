@@ -116,8 +116,12 @@ class SettingFragment : Fragment() {
         clearLegacyRowSurfaces(view)
         view.findViewById<TextView>(R.id.tvSettingVersion).text =
             getString(R.string.auth_version, AppVersion.name(requireContext()))
-        view.findViewById<View>(R.id.btnSettingLogout).setOnClickListener {
-            showLogoutConfirmation()
+        view.findViewById<View>(R.id.settingsAccountSurface).apply {
+            visibility = View.GONE
+            (parent as? ViewGroup)?.let { container ->
+                val index = container.indexOfChild(this)
+                if (index > 0) container.getChildAt(index - 1).visibility = View.GONE
+            }
         }
         view.findViewById<View>(R.id.btnCheckUpdate).setOnClickListener {
             startActivity(Intent(requireContext(), AppUpdateActivity::class.java))

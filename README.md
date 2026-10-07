@@ -29,9 +29,17 @@ PiperOS Tool.
 
 ## Bản hiện tại
 
-`3.6.7.PRE` (versionCode `70`) sử dụng `minSdk 29 (Android 10)`, `targetSdk 36`, Kotlin `2.4.10`.
+`3.6.8.PRE` (versionCode `71`) sử dụng `minSdk 29 (Android 10)`, `targetSdk 37 (Android 17)`, Kotlin `2.4.10`.
 
-**Tải và cài đặt:** [Bản phát hành 3.6.7.PRE](https://github.com/Phi574/PiperOSTool-Android/releases/tag/v3.6.7.PRE). APK được ký bằng cùng khóa như các bản trước; màn Cập nhật chỉ chấp nhận APK có cùng chữ ký với bản đang cài.
+**Tải và cài đặt:** [Bản phát hành 3.6.8.PRE](https://github.com/Phi574/PiperOSTool-Android/releases/tag/v3.6.8.PRE). APK được ký bằng cùng khóa như các bản trước; màn Cập nhật chỉ chấp nhận APK có cùng chữ ký với bản đang cài.
+
+### Cải tiến trong 3.6.8.PRE
+
+- Cập nhật ứng dụng cho Android 17 (API 37).
+- Làm gọn trang chủ và chuyển PiperOS QR từ Beta sang Trang chủ.
+- Thêm bảng tài khoản trượt từ cạnh phải, gom hồ sơ, bảo mật, hỗ trợ và đăng xuất; ẩn thanh menu dưới khi bảng mở.
+- Chuyển thiết bị đăng nhập vào Mật khẩu bảo mật; Đổi mật khẩu và Quản lý liên kết được đánh dấu BETA và tạm khóa.
+- Bỏ mục hồ sơ và đăng xuất khỏi trang Thông tin/Cài đặt.
 
 ### Cải tiến trong 3.6.7.PRE
 

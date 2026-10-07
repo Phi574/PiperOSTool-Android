@@ -195,6 +195,8 @@ class DecoderSelector(private val ctx: Context) {
             listOf("omx.amlogic", "c2.amlogic") to mapOf("vendor.low-latency.enable" to 1),
         )
 
-        fun MediaCodecInfo.videoCaps(mime: String): VideoCapabilities = getCapabilitiesForType(mime).videoCapabilities
+        fun MediaCodecInfo.videoCaps(mime: String): VideoCapabilities = requireNotNull(
+            getCapabilitiesForType(mime).videoCapabilities
+        ) { "Video capabilities are unavailable for $mime" }
     }
 }

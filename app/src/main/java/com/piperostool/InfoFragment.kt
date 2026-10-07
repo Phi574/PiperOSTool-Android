@@ -48,19 +48,13 @@ class InfoFragment : Fragment() {
         view.findViewById<TextView>(R.id.tvInfoHeadline).text =
             "PiperOS Tool ${AppVersion.name(context)}"
 
-        val actions = view.findViewById<LinearLayout>(R.id.infoAccountActions)
-        addAction(
-            actions,
-            R.drawable.details,
-            getString(R.string.info_account_profile),
-            getString(R.string.info_account_profile_summary)
-        ) { startActivity(Intent(context, AccountProfileActivity::class.java)) }
-        addAction(
-            actions,
-            R.drawable.devices,
-            getString(R.string.info_device_sessions),
-            getString(R.string.info_device_sessions_summary)
-        ) { startActivity(Intent(context, DeviceSessionsActivity::class.java)) }
+        view.findViewById<LinearLayout>(R.id.infoAccountActions).apply {
+            visibility = View.GONE
+            (parent as? ViewGroup)?.let { container ->
+                val index = container.indexOfChild(this)
+                if (index > 0) container.getChildAt(index - 1).visibility = View.GONE
+            }
+        }
 
         val sectionContainer = view.findViewById<LinearLayout>(R.id.infoSections)
         sections.forEach { section -> addSection(sectionContainer, section) }

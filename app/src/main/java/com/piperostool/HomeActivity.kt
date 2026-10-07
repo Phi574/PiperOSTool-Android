@@ -183,6 +183,10 @@ class HomeActivity : AppCompatActivity() {
     private fun setupBackPressHandler() {
         val callback = object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
+                if (currentTab == 0 &&
+                    (supportFragmentManager.findFragmentById(R.id.fragment_container) as? homeFragment)
+                        ?.closeWindowDrawer() == true
+                ) return
                 if (currentTab != 0) {
                     replaceFragment(homeFragment())
                     currentTab = 0

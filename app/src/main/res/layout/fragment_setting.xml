@@ -63,6 +63,7 @@
                         app:autoSizeTextType="uniform" />
 
                     <TextView
+                        android:id="@+id/tvSettingVersion"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
@@ -439,7 +440,6 @@
                         android:text="@string/auth_logout"
                         android:textColor="#FFFF8A8A" />
                     <TextView
-                        android:id="@+id/tvSettingVersion"
                         style="@style/SettingsRowSubtitle"
                         android:text="@string/auth_version_placeholder" />
                 </LinearLayout>

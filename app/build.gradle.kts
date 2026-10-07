@@ -16,7 +16,7 @@ if (googleServicesConfig.isFile) {
 android {
     namespace = "com.piperostool"
     compileSdk {
-        version = release(36)
+        version = release(37)
     }
 
     defaultConfig {
@@ -24,9 +24,9 @@ android {
         // Android 10 (API 29) is the supported baseline for the current UI,
         // scoped-storage model and media/remote features.
         minSdk = 29
-        targetSdk = 36
-        versionCode = 70
-        versionName = "3.6.7.PRE"
+        targetSdk = 37
+        versionCode = 71
+        versionName = "3.6.8.PRE"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         ndk {

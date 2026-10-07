@@ -173,7 +173,9 @@ object PiperModernUi {
             return
         }
 
-        if ((name.endsWith("FeatureStatus", ignoreCase = true) || name == "qrPreviewBadgeBeta") && view is ViewGroup) {
+        if ((name.endsWith("FeatureStatus", ignoreCase = true) || name in setOf(
+                "qrPreviewBadgeBeta", "securityPasswordBetaBadge", "securityLinksBetaBadge"
+            )) && view is ViewGroup) {
             view.background = rounded(
                 ColorUtils.blendARGB(palette.surface, palette.accent, 0.12f),
                 ColorUtils.blendARGB(palette.border, palette.accent, 0.2f),
@@ -291,7 +293,9 @@ object PiperModernUi {
             }
             is TextView -> {
                 val parentName = (view.parent as? View)?.let(::resourceName).orEmpty()
-                if (parentName.endsWith("FeatureStatus", ignoreCase = true) || parentName == "qrPreviewBadgeBeta") {
+                if (parentName.endsWith("FeatureStatus", ignoreCase = true) || parentName in setOf(
+                        "qrPreviewBadgeBeta", "securityPasswordBetaBadge", "securityLinksBetaBadge"
+                    )) {
                     view.setTextColor(palette.accent)
                 } else {
                     modernizeText(view, palette)
@@ -323,7 +327,7 @@ object PiperModernUi {
                 }
                 when {
                     name == "betaTitleIcon" || parentName.endsWith("FeatureStatus", ignoreCase = true) ||
-                        parentName == "qrPreviewBadgeBeta" ->
+                        parentName in setOf("qrPreviewBadgeBeta", "securityPasswordBetaBadge", "securityLinksBetaBadge") ->
                         view.imageTintList = android.content.res.ColorStateList.valueOf(palette.accent)
                     name == "piperosQrIcon" ->
                         view.imageTintList = android.content.res.ColorStateList.valueOf(palette.secondaryText)
@@ -389,7 +393,7 @@ object PiperModernUi {
             name.contains("progress", true) || name == "terminalScroll"
 
     private fun isPageRoot(name: String): Boolean = name in setOf(
-        "homeRoot", "updateRoot", "lockRoot", "loginRoot", "signupRoot", "forgotRoot", "welcomeRoot", "permissionRoot",
+        "homeRoot", "fragmentHomeRoot", "updateRoot", "lockRoot", "loginRoot", "signupRoot", "forgotRoot", "welcomeRoot", "permissionRoot",
         "browserRoot", "mediaRoot", "mediaGalleryRoot", "fileManagerRoot", "filePreviewRoot",
         "fakeMapRoot", "terminalRoot", "apkEditorRoot", "textEditorRoot", "piperQrRoot",
         "accountProfileRoot", "deviceSessionsRoot"
@@ -398,7 +402,8 @@ object PiperModernUi {
     private fun isSettingsRow(name: String): Boolean = name in setOf(
         "layoutDeviceAdmin", "layoutFingerprint", "layoutPasswordToggle", "btnChangeLock",
         "btnPermissions", "layoutColorMode", "layoutLanguage", "layoutFont",
-        "layoutChangeBackground", "layoutResetBackground"
+        "layoutChangeBackground", "layoutResetBackground", "homeWindowProfile", "homeWindowSecurity",
+        "homeWindowSupport"
     )
 
     private fun installAmbientBackground(activity: Activity, dark: Boolean) {
