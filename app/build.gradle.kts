@@ -25,8 +25,8 @@ android {
         // scoped-storage model and media/remote features.
         minSdk = 29
         targetSdk = 37
-        versionCode = 72
-        versionName = "3.6.9.PRE"
+        versionCode = 73
+        versionName = "3.6.10"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         ndk {

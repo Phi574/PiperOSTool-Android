@@ -1,5 +1,19 @@
 # Changelog
 
+## 3.6.10 — Bản chính thức
+
+Bản chính thức này tổng hợp các cải tiến từ 3.6.2.PRE đến 3.6.9.PRE đã được giữ lại trong ứng dụng sau giai đoạn thử nghiệm.
+
+- **Trang chủ và điều hướng:** tối ưu thanh điều hướng cho thiết bị dùng phím hệ thống; làm gọn trang Thông tin; chuyển PiperOS QR từ Beta sang Trang chủ; bổ sung bảng tài khoản trượt với hồ sơ, bảo mật, hỗ trợ và đăng xuất. Bảng này ẩn thanh menu dưới khi mở và chừa khoảng an toàn cho thanh trạng thái.
+- **Cập nhật và khởi động:** kiểm tra Internet, GitHub, Firebase Auth và phiên bản mới khi khởi động; hỗ trợ tiếp tục Offline hoặc thử lại. Màn cập nhật hiển thị tiến độ tải và kết quả xác minh APK, đồng thời kiểm tra chữ ký, package và version trước khi cài.
+- **PiperOS ADB và ứng dụng:** dùng chung phiên ADB đã ghép đôi cho các công cụ; thao tác bật/tắt ứng dụng hiển thị tiến trình và phản hồi từ Android, đồng bộ trạng thái nhanh, đồng thời giải thích khi hệ thống chặn thao tác. PiperOS Runtime xử lý lỗi cài đặt và hủy tải rõ ràng hơn.
+- **Thông tin hệ thống:** trang Thông tin có kiểm tra theo yêu cầu cho Internet, GitHub API và Firebase Auth, kèm thời gian phản hồi; phép kiểm tra Firebase dùng App Check và không giả lập thử đăng nhập hay gửi SMS.
+- **Media và AirPlay:** bộ lọc PiperOS Media theo màu giao diện sáng/tối; bổ sung chẩn đoán Receiver AirPlay về dịch vụ, thiết bị, luồng video và tốc độ nhận dữ liệu.
+- **Tài khoản và bảo mật:** tiếp tục hỗ trợ đăng nhập email, Google, số điện thoại và Firebase App Check với Play Integrity; xử lý lại xác thực vân tay khi quay về ứng dụng sau khi màn hình tắt hoặc người dùng rời app.
+- **Android và giao diện:** nhắm Android 17 (API 37), giữ vùng an toàn cho thanh trạng thái, thu gọn ảnh tiến trình cập nhật và giữ màu gốc của icon tính năng trên trang chủ.
+- **Nút bảng tài khoản:** tăng nhẹ kích thước nút `window`, đặt trong nền tròn có viền và hiệu ứng chạm, giúp dễ nhận ra và dễ bấm hơn.
+- Nâng versionCode lên 73 để cập nhật đè từ 3.6.9.PRE.
+
 ## 3.6.9.PRE
 
 - Thu nhỏ ảnh tiến trình tải/xác minh APK trong màn hình Cập nhật từ 112dp xuống 48dp để gọn hơn.

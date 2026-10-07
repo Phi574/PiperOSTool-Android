@@ -309,7 +309,9 @@ object PiperModernUi {
                 }
             }
             is ImageButton -> {
-                view.setBackgroundColor(Color.TRANSPARENT)
+                if (name != "btnHomeWindow") {
+                    view.setBackgroundColor(Color.TRANSPARENT)
+                }
                 view.imageTintList = when (name) {
                     "btnExitBrowser" -> null
                     "fileCopySelected", "fileMoveSelected", "fileCompressSelected", "fileBackupSelected" ->
