@@ -29,9 +29,13 @@ PiperOS Tool.
 
 ## Bản hiện tại
 
-`3.6.6.PRE` (versionCode `69`) sử dụng `minSdk 29 (Android 10)`, `targetSdk 36`, Kotlin `2.4.10`.
+`3.6.7.PRE` (versionCode `70`) sử dụng `minSdk 29 (Android 10)`, `targetSdk 36`, Kotlin `2.4.10`.
 
-**Tải và cài đặt:** [Bản phát hành 3.6.6.PRE](https://github.com/Phi574/PiperOSTool-Android/releases/tag/v3.6.6.PRE). APK được ký bằng khóa debug của dự án; màn Cập nhật chỉ chấp nhận APK có cùng chữ ký với bản đang cài.
+**Tải và cài đặt:** [Bản phát hành 3.6.7.PRE](https://github.com/Phi574/PiperOSTool-Android/releases/tag/v3.6.7.PRE). APK được ký bằng cùng khóa như các bản trước; màn Cập nhật chỉ chấp nhận APK có cùng chữ ký với bản đang cài.
+
+### Cải tiến trong 3.6.7.PRE
+
+- Màn Cập nhật hiển thị ảnh tiến trình tải theo phần trăm và ảnh kết quả sau khi xác minh chữ ký, tên gói và phiên bản APK.
 
 ### Cải tiến trong 3.6.6.PRE
 

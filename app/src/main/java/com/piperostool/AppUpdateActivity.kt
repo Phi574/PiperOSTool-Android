@@ -12,6 +12,7 @@ import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
 import android.view.Window
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.ScrollView
@@ -37,6 +38,7 @@ class AppUpdateActivity : AppCompatActivity() {
     private lateinit var published: TextView
     private lateinit var description: TextView
     private lateinit var status: TextView
+    private lateinit var progressArtwork: ImageView
     private lateinit var progress: ProgressBar
     private lateinit var action: MaterialCardView
     private lateinit var actionText: TextView
@@ -51,6 +53,7 @@ class AppUpdateActivity : AppCompatActivity() {
     private var verifying = false
     private var installerPending = false
     private var lastLoggedPercent = -10
+    private var currentArtwork = 0
 
     private val unknownSources = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         if (installerPending && packageManager.canRequestPackageInstalls()) {
@@ -71,6 +74,7 @@ class AppUpdateActivity : AppCompatActivity() {
         published = findViewById(R.id.updatePublished)
         description = findViewById(R.id.updateDescription)
         status = findViewById(R.id.updateStatus)
+        progressArtwork = findViewById(R.id.updateProgressArtwork)
         progress = findViewById(R.id.updateProgress)
         action = findViewById(R.id.updateAction)
         actionText = findViewById(R.id.updateActionText)
@@ -140,7 +144,7 @@ class AppUpdateActivity : AppCompatActivity() {
                 } else {
                     if (remote != local) published.text = "Bản công khai gần nhất: ${found.tag}"
                     description.text = if (remote == local) readableNotes(found.description) else
-                        "Bản ${AppVersion.name(this@AppUpdateActivity)} gồm màn cập nhật trong ứng dụng, kiểm tra APK và hỗ trợ trình cài đặt hệ thống."
+                        "Bản ${AppVersion.name(this@AppUpdateActivity)} gồm các bản vá bảo mật thường xuyên."
                     headline.text = "PiperOS Tool ${AppVersion.name(this@AppUpdateActivity)}"
                     status.text = "Bản hiện tại là bản mới nhất"
                     action.visibility = View.GONE
@@ -211,9 +215,11 @@ class AppUpdateActivity : AppCompatActivity() {
         downloadedApk = null
         lastLoggedPercent = -10
         log.text = ""
+        currentArtwork = 0
         logToggle.visibility = View.VISIBLE
         progress.visibility = View.VISIBLE
         progress.progress = 0
+        showDownloadArtwork(0)
         cancel.visibility = View.VISIBLE
         action.visibility = View.GONE
         appendLog("Bắt đầu tải ${target.tag} từ GitHub Releases")
@@ -223,6 +229,7 @@ class AppUpdateActivity : AppCompatActivity() {
                 val file = AppUpdateRepository.download(this@AppUpdateActivity, target) { bytes, total ->
                     val percent = ((bytes * 100) / total).toInt().coerceIn(0, 100)
                     progress.progress = percent
+                    showDownloadArtwork(percent)
                     status.text = "Đang tải $percent% · ${bytes / (1024 * 1024)} / ${total / (1024 * 1024)} MB"
                     if (percent >= lastLoggedPercent + 10 || percent == 100) {
                         appendLog("Đã tải $percent% ($bytes / $total byte)")
@@ -237,18 +244,21 @@ class AppUpdateActivity : AppCompatActivity() {
                     AppUpdateRepository.verifyDownloadedApk(this@AppUpdateActivity, target, file)
                 }
                 downloadedApk = file
+                showVerificationArtwork(success = true)
                 appendLog("Đã xác thực APK ${target.tag}: chữ ký, tên gói và phiên bản hợp lệ")
                 status.text = "APK ${target.tag} đã xác thực · sẵn sàng cài đặt"
                 setAction("Mở trình cài đặt") { launchInstaller() }
                 launchInstaller()
             } catch (cancelled: CancellationException) {
                 status.text = "Đã hủy tải xuống"
+                progressArtwork.visibility = View.GONE
                 appendLog("Người dùng đã hủy tải")
                 throw cancelled
             } catch (error: Exception) {
+                showVerificationArtwork(success = false)
                 status.text = "Không thể cài bản cập nhật"
                 showError(error.message ?: "Lỗi tải hoặc kiểm tra APK")
-                appendLog("Lỗi: ${error.message ?: "Không xác định"}")
+                appendLog("Xác minh APK thất bại: ${error.message ?: "Không xác định"}")
                 setAction("Thử tải lại") { showInstallConfirmation() }
             } finally {
                 verifying = false
@@ -262,7 +272,43 @@ class AppUpdateActivity : AppCompatActivity() {
         downloadJob?.cancel()
         cancel.visibility = View.GONE
         progress.visibility = View.GONE
+        progressArtwork.visibility = View.GONE
         setAction("Tải xuống và cài đặt") { showInstallConfirmation() }
+    }
+
+    private fun showDownloadArtwork(percent: Int) {
+        val resource = when {
+            percent >= 100 -> R.drawable.loading_100
+            percent >= 90 -> R.drawable.loading_90
+            percent >= 80 -> R.drawable.loading_80
+            percent >= 75 -> R.drawable.loading_75
+            percent >= 70 -> R.drawable.loading_70
+            percent >= 60 -> R.drawable.loading_60
+            percent >= 50 -> R.drawable.loading_50
+            percent >= 40 -> R.drawable.loading_40
+            percent >= 30 -> R.drawable.loading_30
+            percent >= 25 -> R.drawable.loading_25
+            percent >= 20 -> R.drawable.loading_20
+            else -> R.drawable.loading_10
+        }
+        if (currentArtwork != resource) {
+            progressArtwork.setImageResource(resource)
+            currentArtwork = resource
+        }
+        progressArtwork.imageTintList = android.content.res.ColorStateList.valueOf(
+            PiperModernUi.accentColor(this)
+        )
+        progressArtwork.visibility = View.VISIBLE
+    }
+
+    private fun showVerificationArtwork(success: Boolean) {
+        val resource = if (success) R.drawable.very else R.drawable.no_very
+        progressArtwork.setImageResource(resource)
+        progressArtwork.imageTintList = android.content.res.ColorStateList.valueOf(
+            if (success) Color.rgb(69, 211, 135) else Color.rgb(248, 86, 86)
+        )
+        progressArtwork.visibility = View.VISIBLE
+        currentArtwork = resource
     }
 
     private fun launchInstaller() {

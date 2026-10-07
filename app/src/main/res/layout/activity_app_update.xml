@@ -89,6 +89,15 @@
                 android:layout_marginTop="18dp"
                 android:textColor="#B7E7D7"
                 android:textSize="14sp" />
+            <ImageView
+                android:id="@+id/updateProgressArtwork"
+                android:layout_width="112dp"
+                android:layout_height="112dp"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="12dp"
+                android:contentDescription="Tiến trình tải và xác minh APK"
+                android:scaleType="fitCenter"
+                android:visibility="gone" />
             <ProgressBar
                 android:id="@+id/updateProgress"
                 style="?android:attr/progressBarStyleHorizontal"

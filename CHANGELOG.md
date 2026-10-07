@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.6.7.PRE
+
+- Cập nhật log tải APK với ảnh tiến trình theo các mốc 10%, 20%, 25%, 30%, 40%, 50%, 60%, 70%, 75%, 80%, 90% và 100%.
+- Hiện ảnh xác minh thành công sau khi chữ ký/gói/phiên bản APK hợp lệ; hiện ảnh lỗi nếu tải hoặc xác minh thất bại.
+- Nâng versionCode lên 70 để cập nhật đè từ 3.6.6.PRE.
+
 ## 3.6.6.PRE
 
 - Thêm bảng chẩn đoán AirPlay có log khởi tạo, quảng bá dịch vụ, nhận kết nối, nhận dạng luồng màn hình và tốc độ nhận video; trạng thái thành công và lỗi được tô màu riêng.
