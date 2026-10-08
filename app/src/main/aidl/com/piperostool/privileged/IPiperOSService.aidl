@@ -8,6 +8,10 @@ interface IPiperOSService {
     Bundle getStatus();
     String[] getRecentLogs(long sinceTimestamp);
     Bundle getCapabilities();
+    Bundle getClientPermissions();
+    void setClientPermission(String permission, boolean granted);
+    Bundle transactSystemService(String serviceName, int transactionCode, in byte[] data, int flags);
+    Bundle executeShell(String command, String workingDirectory, String stdin, in Bundle environment, long timeoutMs);
     ParcelFileDescriptor openDirectory(String path, boolean showHidden);
     Bundle stat(String path);
     ParcelFileDescriptor openRead(String path);

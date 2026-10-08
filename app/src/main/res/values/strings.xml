@@ -131,7 +131,15 @@
     <string name="piper_adb_summary">Kết nối dùng chung cho Truy cập chuyên sâu và các công cụ PiperOS.</string>
     <string name="piper_adb_status_section">TRẠNG THÁI KẾT NỐI</string>
     <string name="piper_adb_how_section">CÁCH KẾT NỐI</string>
-    <string name="piper_adb_how_detail">Ghép đôi Wireless debugging một lần. Khi bật công tắc, PiperOS giữ dịch vụ ADB và tự kết nối lại bằng quyền đã lưu. Tắt công tắc sẽ đóng kết nối và dừng dịch vụ ADB.</string>
+    <string name="piper_adb_how_detail">Ghép đôi Wireless debugging một lần. Khi bật công tắc, PiperOS khởi chạy tiến trình đặc quyền app_process bằng quyền shell. PiperOS ADB, Truy cập chuyên sâu, Ứng dụng và Tệp tin cùng dùng một kết nối và API nội bộ có kiểm tra quyền. Tắt công tắc sẽ đóng kết nối và dừng tiến trình.</string>
+    <string name="piper_adb_clients_section">CLIENT VÀ QUYỀN TRUY CẬP</string>
+    <string name="piper_adb_clients_summary">Client được cấp quyền: PiperOS Tool trên thiết bị này. Thay đổi có hiệu lực ngay và được ghi vào tiến trình ADB.</string>
+    <string name="piper_adb_permission_file_read">Đọc tệp qua Truy cập chuyên sâu</string>
+    <string name="piper_adb_permission_file_write">Tạo, sửa và xóa tệp</string>
+    <string name="piper_adb_permission_apps">Bật, tắt hoặc gỡ ứng dụng</string>
+    <string name="piper_adb_permission_activities">Thử mở Activity bị Android chặn</string>
+    <string name="piper_adb_permission_binder">Gọi giao dịch Binder tới dịch vụ hệ thống</string>
+    <string name="piper_adb_permission_shell">Chạy tiến trình shell tùy chỉnh</string>
     <string name="piper_adb_refresh">Kiểm tra lại kết nối ADB</string>
     <string name="piper_adb_toggle_title">Bật PiperOS ADB</string>
     <string name="piper_adb_toggle_summary">Giữ kết nối và tự kết nối lại bằng quyền Wireless debugging đã lưu.</string>

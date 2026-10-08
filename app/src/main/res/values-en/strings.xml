@@ -131,7 +131,15 @@
     <string name="piper_adb_summary">One shared connection for Advanced Access and PiperOS tools.</string>
     <string name="piper_adb_status_section">CONNECTION STATUS</string>
     <string name="piper_adb_how_section">HOW IT CONNECTS</string>
-    <string name="piper_adb_how_detail">Pair Wireless debugging once. When the switch is on, PiperOS keeps the ADB service active and reconnects with saved authorization. Turning the switch off closes the connection and stops the ADB service.</string>
+    <string name="piper_adb_how_detail">Pair Wireless debugging once. When enabled, PiperOS starts a privileged app_process with shell identity. PiperOS ADB, Advanced Access, Apps, and Files share one connection and a permission-checked internal API. Turning the switch off closes the connection and stops the process.</string>
+    <string name="piper_adb_clients_section">CLIENT AND ACCESS PERMISSIONS</string>
+    <string name="piper_adb_clients_summary">Authorized client: PiperOS Tool on this device. Changes apply immediately and are recorded in the ADB log.</string>
+    <string name="piper_adb_permission_file_read">Read files through Advanced Access</string>
+    <string name="piper_adb_permission_file_write">Create, modify, and delete files</string>
+    <string name="piper_adb_permission_apps">Enable, disable, or uninstall apps</string>
+    <string name="piper_adb_permission_activities">Try launching Android-blocked activities</string>
+    <string name="piper_adb_permission_binder">Transact with Android system services over Binder</string>
+    <string name="piper_adb_permission_shell">Run a custom shell process</string>
     <string name="piper_adb_refresh">Refresh ADB status</string>
     <string name="piper_adb_toggle_title">Enable PiperOS ADB</string>
     <string name="piper_adb_toggle_summary">Keep the connection and reconnect with saved Wireless debugging authorization.</string>

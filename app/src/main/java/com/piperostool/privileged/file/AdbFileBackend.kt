@@ -10,6 +10,7 @@ import com.piperostool.privileged.adb.AdbShellSession
 import java.io.File
 import java.io.IOException
 import java.util.concurrent.Executors
+import org.json.JSONObject
 
 internal class AdbFileBackend(
     private val session: AdbShellSession
@@ -18,6 +19,17 @@ internal class AdbFileBackend(
     override val privilege = PiperPrivilege.SHELL
 
     fun isConnected(): Boolean = session.isConnected()
+
+    fun transactSystemService(serviceName: String, transactionCode: Int, data: ByteArray, flags: Int): JSONObject =
+        session.transactSystemService(serviceName, transactionCode, data, flags)
+
+    fun newProcess(
+        command: String,
+        workingDirectory: String?,
+        stdin: String,
+        environment: Map<String, String>,
+        timeoutMs: Long
+    ): JSONObject = session.newProcess(command, workingDirectory, stdin, environment, timeoutMs)
 
     fun runAppAction(action: String, packageName: String, activityName: String): Pair<Boolean, String> {
         val command = PiperAppActionPolicy.command(action, packageName, activityName)
@@ -56,111 +68,57 @@ internal class AdbFileBackend(
 
     override fun list(path: String, showHidden: Boolean): Sequence<PiperFileEntry> {
         val canonical = PiperPathPolicy.canonical(path)
-        val quoted = PiperPathPolicy.shellQuote(canonical)
-        val flags = if (showHidden) "-lnA" else "-ln"
-        val result = session.execute(
-            "[ -d $quoted ] || { echo 'Not a directory' >&2; exit 2; }; " +
-                "[ -r $quoted ] || { echo 'Permission denied' >&2; exit 13; }; " +
-                "LC_ALL=C ls $flags -- $quoted"
-        )
-        if (result.exitCode != 0) {
-            throw IOException(result.output.ifBlank { "Không thể đọc $canonical (exit ${result.exitCode})" })
-        }
-        val entries = result.output.lineSequence()
-            .filter(String::isNotBlank)
-            .filterNot { it.startsWith("total ") }
-            .mapNotNull { parseListEntry(canonical, it) }
-            .filter { showHidden || !it.hidden }
-            .toList()
-        if (result.output.isNotBlank() && entries.isEmpty()) {
-            throw IOException("PPS nhận dữ liệu thư mục không hợp lệ từ $canonical")
-        }
-        return entries.asSequence()
-    }
-
-    private fun parseListEntry(parent: String, line: String): PiperFileEntry? {
-        val values = line.trim().split(Regex("\\s+"), limit = 8)
-        if (values.size < 8) return null
-        val mode = values[0]
-        val rawName = values[7]
-        val name = if (mode.startsWith('l')) rawName.substringBefore(" -> ") else rawName
-        if (name == "." || name == ".." || name.isBlank()) return null
-        val path = if (parent == "/") "/$name" else "$parent/$name"
-        return PiperFileEntry(
-            name = name,
-            path = path,
-            directory = mode.startsWith('d'),
-            size = values[4].toLongOrNull() ?: 0L,
-            modifiedAt = 0L,
-            mode = mode,
-            uid = values[2].toIntOrNull() ?: -1,
-            gid = values[3].toIntOrNull() ?: -1,
-            symlinkTarget = if (mode.startsWith('l')) rawName.substringAfter(" -> ", "").ifBlank { null } else null
-        )
+        return session.listDirectory(canonical, showHidden).asSequence().map(::parseEntry)
     }
 
     override fun stat(path: String): PiperFileEntry? {
         val canonical = PiperPathPolicy.canonical(path)
-        val quoted = PiperPathPolicy.shellQuote(canonical)
-        val result = session.execute(
-            "if [ -e $quoted ] || [ -L $quoted ]; then " +
-                "if [ -d $quoted ]; then t=d; else t=f; fi; " +
-                "s=\$(stat -c %s $quoted 2>/dev/null || echo 0); " +
-                "m=\$(stat -c %Y $quoted 2>/dev/null || echo 0); " +
-                "o=\$(stat -c %a $quoted 2>/dev/null || echo ''); " +
-                "u=\$(stat -c %u $quoted 2>/dev/null || echo -1); " +
-                "g=\$(stat -c %g $quoted 2>/dev/null || echo -1); " +
-                "l=\$(readlink $quoted 2>/dev/null || true); " +
-                "printf '%s\\t%s\\t%s\\t%s\\t%s\\t%s' \"\$t\" \"\$s\" \"\$m\" \"\$o\" \"\$u\" \"\$g\"; " +
-                "[ -n \"\$l\" ] && printf '\\t%s' \"\$l\"; fi"
-        )
-        if (result.exitCode != 0 || result.output.isBlank()) return null
-        val values = result.output.lineSequence().last().split('\t')
-        return PiperFileEntry(
-            name = File(canonical).name.ifEmpty { "/" },
-            path = canonical,
-            directory = values.getOrNull(0) == "d",
-            size = values.getOrNull(1)?.toLongOrNull() ?: 0L,
-            modifiedAt = (values.getOrNull(2)?.toLongOrNull() ?: 0L) * 1000L,
-            mode = values.getOrNull(3).orEmpty(),
-            uid = values.getOrNull(4)?.toIntOrNull() ?: -1,
-            gid = values.getOrNull(5)?.toIntOrNull() ?: -1,
-            symlinkTarget = values.getOrNull(6)?.ifBlank { null }
-        )
+        val result = session.fileOperation("stat", canonical)
+        if (!result.optBoolean("success")) return null
+        return result.optJSONObject("entry")?.let(::parseEntry)
     }
+
+    private fun parseEntry(json: JSONObject) = PiperFileEntry(
+        name = json.optString("name"),
+        path = json.optString("path"),
+        directory = json.optBoolean("directory"),
+        size = json.optLong("size"),
+        modifiedAt = json.optLong("modified"),
+        mode = json.optString("mode"),
+        uid = json.optInt("uid", -1),
+        gid = json.optInt("gid", -1),
+        symlinkTarget = json.optString("link").takeUnless { it.isBlank() || it == "null" },
+        hidden = json.optBoolean("hidden")
+    )
 
     override fun openRead(path: String): ParcelFileDescriptor? {
         val canonical = PiperPathPolicy.canonical(path)
         val pipe = ParcelFileDescriptor.createPipe()
         transferWorker.execute {
             runCatching {
-                session.open("cat -- ${PiperPathPolicy.shellQuote(canonical)}").use { stream ->
-                    stream.openInputStream().use { input ->
-                        ParcelFileDescriptor.AutoCloseOutputStream(pipe[1]).use { output ->
-                            input.copyTo(output)
-                        }
-                    }
+                ParcelFileDescriptor.AutoCloseOutputStream(pipe[1]).use { output ->
+                    session.copyRemoteFile(canonical, output)
                 }
             }.onFailure { runCatching { pipe[1].close() } }
         }
         return pipe[0]
     }
 
-    override fun mkdir(path: String) = write(path) { "mkdir -- ${PiperPathPolicy.shellQuote(it)}" }
+    override fun mkdir(path: String) = fileSuccess("mkdir", PiperPathPolicy.requireWriteAllowed(path, false))
 
     override fun rename(source: String, destination: String): Boolean {
         val from = PiperPathPolicy.requireWriteAllowed(source, false)
         val to = PiperPathPolicy.requireWriteAllowed(destination, false)
-        return session.execute("mv -- ${PiperPathPolicy.shellQuote(from)} ${PiperPathPolicy.shellQuote(to)}").exitCode == 0
+        return fileSuccess("rename", from, destination = to)
     }
 
-    override fun delete(path: String, recursive: Boolean) = write(path) {
-        if (recursive) "rm -rf -- ${PiperPathPolicy.shellQuote(it)}" else "rm -f -- ${PiperPathPolicy.shellQuote(it)}"
-    }
+    override fun delete(path: String, recursive: Boolean) = fileSuccess(
+        "delete", PiperPathPolicy.requireWriteAllowed(path, false), recursive = recursive
+    )
 
-    override fun chmod(path: String, mode: Int) = write(path) {
-        "chmod ${mode.toString(8)} -- ${PiperPathPolicy.shellQuote(it)}"
-    }
+    override fun chmod(path: String, mode: Int) = fileSuccess(
+        "chmod", PiperPathPolicy.requireWriteAllowed(path, false), mode = mode
+    )
 
     override fun chown(path: String, uid: Int, gid: Int) = false
 
@@ -169,8 +127,11 @@ internal class AdbFileBackend(
         session.close()
     }
 
-    private inline fun write(path: String, command: (String) -> String): Boolean {
-        val safe = PiperPathPolicy.requireWriteAllowed(path, false)
-        return session.execute(command(safe)).exitCode == 0
-    }
+    private fun fileSuccess(
+        action: String,
+        path: String,
+        destination: String = "",
+        recursive: Boolean = false,
+        mode: Int = 0
+    ) = session.fileOperation(action, path, destination, recursive, mode).optBoolean("success")
 }

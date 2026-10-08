@@ -164,6 +164,60 @@
                 android:text="@string/piper_adb_how_detail"
                 android:textSize="14sp" />
 
+            <TextView
+                style="@style/SettingsSectionTitle"
+                android:layout_marginTop="20dp"
+                android:text="@string/piper_adb_clients_section" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_settings_surface"
+                android:orientation="vertical"
+                android:padding="16dp">
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/piper_adb_clients_summary"
+                    android:textSize="13sp" />
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/piperAdbPermissionFileRead"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:checked="true"
+                    android:text="@string/piper_adb_permission_file_read" />
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/piperAdbPermissionFileWrite"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:checked="true"
+                    android:text="@string/piper_adb_permission_file_write" />
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/piperAdbPermissionApps"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:checked="true"
+                    android:text="@string/piper_adb_permission_apps" />
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/piperAdbPermissionActivities"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:checked="true"
+                    android:text="@string/piper_adb_permission_activities" />
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/piperAdbPermissionBinder"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:checked="false"
+                    android:text="@string/piper_adb_permission_binder" />
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/piperAdbPermissionShell"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:checked="false"
+                    android:text="@string/piper_adb_permission_shell" />
+            </LinearLayout>
+
         </LinearLayout>
     </ScrollView>
 

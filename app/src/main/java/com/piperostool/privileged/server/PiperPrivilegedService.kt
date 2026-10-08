@@ -16,6 +16,7 @@ import com.piperostool.privileged.PiperPrivilege
 import com.piperostool.privileged.PiperPrivilegedPreferences
 import com.piperostool.privileged.PiperServiceState
 import com.piperostool.privileged.PiperServiceStatus
+import com.piperostool.privileged.PiperAdbClientPermission
 import com.piperostool.privileged.file.NormalFileBackend
 import com.piperostool.privileged.file.PrivilegedFileBackend
 import com.piperostool.privileged.file.RootFileBackend
@@ -77,8 +78,127 @@ class PiperPrivilegedService : Service() {
             return this@PiperPrivilegedService.capabilities.toBundle()
         }
 
+        override fun getClientPermissions(): Bundle {
+            enforceClient()
+            return Bundle().apply {
+                PiperAdbClientPermission.ALL.forEach { key ->
+                    putBoolean(key, PiperPrivilegedPreferences.clientPermission(this@PiperPrivilegedService, key))
+                }
+            }
+        }
+
+        override fun setClientPermission(permission: String, granted: Boolean) {
+            enforceClient()
+            require(permission in PiperAdbClientPermission.ALL) { "Quyền client không hợp lệ" }
+            PiperPrivilegedPreferences.setClientPermission(this@PiperPrivilegedService, permission, granted)
+            log("client-permission", "client=${packageName} permission=$permission granted=$granted")
+        }
+
+        override fun transactSystemService(
+            serviceName: String,
+            transactionCode: Int,
+            data: ByteArray,
+            flags: Int
+        ): Bundle {
+            enforceClient()
+            enforcePermission(PiperAdbClientPermission.SYSTEM_TRANSACTIONS)
+            if (data.size > 256 * 1024) {
+                return Bundle().apply {
+                    putBoolean("handled", false)
+                    putString("errorType", "TransactionTooLargeException")
+                    putString("error", "Binder request exceeds 256 KiB")
+                }
+            }
+            val adbBackend = backend as? AdbFileBackend
+                ?: return Bundle().apply { putString("errorType", "PiperAdbUnavailable"); putString("error", "PiperOS ADB chưa kết nối") }
+            val startedAt = SystemClock.elapsedRealtime()
+            log("binder-transaction-start", "service=$serviceName code=$transactionCode bytes=${data.size}")
+            return runCatching {
+                synchronized(backendLock) {
+                    adbBackend.transactSystemService(serviceName, transactionCode, data, flags)
+                }
+            }.fold(
+                onSuccess = { result ->
+                    val error = result.optString("error")
+                    val errorType = result.optString("errorType")
+                    log(
+                        if (error.isBlank()) "binder-transaction-finish" else "binder-transaction-failed",
+                        "service=$serviceName code=$transactionCode handled=${result.optBoolean("handled")} elapsed_ms=${SystemClock.elapsedRealtime() - startedAt} error_type=$errorType error=${error.take(160)}"
+                    )
+                    Bundle().apply {
+                        putBoolean("handled", result.optBoolean("handled"))
+                        result.optString("reply").takeIf(String::isNotBlank)?.let {
+                            val reply = android.util.Base64.decode(it, android.util.Base64.NO_WRAP)
+                            if (reply.size <= 512 * 1024) putByteArray("reply", reply)
+                            else {
+                                putBoolean("handled", false)
+                                putString("errorType", "TransactionTooLargeException")
+                                putString("error", "Binder reply exceeds 512 KiB")
+                            }
+                        }
+                        if (error.isNotBlank()) putString("error", error)
+                        if (errorType.isNotBlank()) putString("errorType", errorType)
+                    }
+                },
+                onFailure = { error ->
+                    log("binder-transaction-failed", "service=$serviceName code=$transactionCode error=${error.message.orEmpty().take(160)}")
+                    Bundle().apply {
+                        putBoolean("handled", false)
+                        putString("error", error.message.orEmpty())
+                        putString("errorType", error.javaClass.name)
+                    }
+                }
+            )
+        }
+
+        override fun executeShell(
+            command: String,
+            workingDirectory: String,
+            stdin: String,
+            environment: Bundle,
+            timeoutMs: Long
+        ): Bundle {
+            enforceClient()
+            enforcePermission(PiperAdbClientPermission.SHELL_COMMANDS)
+            val adbBackend = backend as? AdbFileBackend
+                ?: return Bundle().apply { putInt("exitCode", 125); putString("errorType", "PiperAdbUnavailable"); putString("output", "PiperOS ADB chưa kết nối") }
+            val env = environment.keySet().mapNotNull { key -> environment.getString(key)?.let { key to it } }.toMap()
+            val startedAt = SystemClock.elapsedRealtime()
+            log("shell-process-start", "command_chars=${command.length} cwd=${workingDirectory.take(160)} env_keys=${env.keys.joinToString(",")} timeout_ms=$timeoutMs")
+            return runCatching {
+                synchronized(backendLock) {
+                    adbBackend.newProcess(command, workingDirectory.takeIf(String::isNotBlank), stdin, env, timeoutMs)
+                }
+            }.fold(
+                onSuccess = { result ->
+                    val exitCode = result.optInt("exitCode", -1)
+                    val output = result.optString("output")
+                    log(
+                        if (exitCode == 0) "shell-process-finish" else "shell-process-failed",
+                        "exit_code=$exitCode elapsed_ms=${SystemClock.elapsedRealtime() - startedAt} output_chars=${output.length} error_type=${result.optString("errorType")}"
+                    )
+                    Bundle().apply {
+                        putInt("exitCode", exitCode)
+                        putString("output", output.take(512 * 1024))
+                        if (output.length > 512 * 1024) putBoolean("outputTruncated", true)
+                        result.optString("errorType").takeIf(String::isNotBlank)?.let { putString("errorType", it) }
+                    }
+                },
+                onFailure = { error ->
+                    log("shell-process-failed", "elapsed_ms=${SystemClock.elapsedRealtime() - startedAt} error=${error.message.orEmpty().take(160)}")
+                    Bundle().apply {
+                        putInt("exitCode", 125)
+                        putString("output", error.message.orEmpty())
+                        putString("errorType", error.javaClass.name)
+                    }
+                }
+            )
+        }
+
         override fun openDirectory(path: String, showHidden: Boolean): ParcelFileDescriptor {
             enforceClient()
+            enforcePermission(PiperAdbClientPermission.FILE_READ)
+            log("file-list-start", "path_hash=${path.hashCode()} show_hidden=$showHidden")
             val pipe = ParcelFileDescriptor.createPipe()
             worker.execute {
                 ParcelFileDescriptor.AutoCloseOutputStream(pipe[1]).bufferedWriter().use { output ->
@@ -89,6 +209,7 @@ class PiperPrivilegedService : Service() {
                             }
                             backend.list(path, showHidden).toList()
                         }
+                        log("file-list-finish", "path_hash=${path.hashCode()} count=${entries.size}")
                         entries.forEach { entry ->
                             output.append(JSONObject().apply {
                                 put("name", entry.name)
@@ -116,6 +237,8 @@ class PiperPrivilegedService : Service() {
 
         override fun stat(path: String): Bundle {
             enforceClient()
+            enforcePermission(PiperAdbClientPermission.FILE_READ)
+            log("file-stat", "path_hash=${path.hashCode()}")
             val entry = runCatching {
                 synchronized(backendLock) {
                     check(this@PiperPrivilegedService.status.state != PiperServiceState.STARTING && this@PiperPrivilegedService.status.state != PiperServiceState.STOPPED) {
@@ -143,6 +266,8 @@ class PiperPrivilegedService : Service() {
 
         override fun openRead(path: String): ParcelFileDescriptor? {
             enforceClient()
+            enforcePermission(PiperAdbClientPermission.FILE_READ)
+            log("file-read-start", "path_hash=${path.hashCode()}")
             return runCatching {
                 synchronized(backendLock) {
                     check(this@PiperPrivilegedService.status.state != PiperServiceState.STARTING && this@PiperPrivilegedService.status.state != PiperServiceState.STOPPED) {
@@ -150,7 +275,7 @@ class PiperPrivilegedService : Service() {
                     }
                     backend.openRead(path)
                 }
-            }.getOrElse {
+            }.onSuccess { log("file-read-open", "path_hash=${path.hashCode()} opened=${it != null}") }.getOrElse {
                 log("openRead", it)
                 null
             }
@@ -231,6 +356,10 @@ class PiperPrivilegedService : Service() {
 
         override fun runAppAction(action: String, packageName: String, activityName: String): Bundle {
             enforceClient()
+            enforcePermission(
+                if (action == PiperAppActionPolicy.LAUNCH_ACTIVITY) PiperAdbClientPermission.PRIVATE_ACTIVITIES
+                else PiperAdbClientPermission.APP_MANAGEMENT
+            )
             if (this@PiperPrivilegedService.status.state == PiperServiceState.STARTING || this@PiperPrivilegedService.status.state == PiperServiceState.STOPPED) {
                 return Bundle().apply {
                     putBoolean("success", false)
@@ -306,6 +435,8 @@ class PiperPrivilegedService : Service() {
 
         private inline fun write(operation: String, action: () -> Boolean): Boolean {
             enforceClient()
+            enforcePermission(PiperAdbClientPermission.FILE_WRITE)
+            log("file-write-start", "operation=$operation")
             return runCatching {
                 synchronized(backendLock) {
                     check(this@PiperPrivilegedService.status.state != PiperServiceState.STARTING && this@PiperPrivilegedService.status.state != PiperServiceState.STOPPED) {
@@ -313,7 +444,7 @@ class PiperPrivilegedService : Service() {
                     }
                     action()
                 }
-            }.getOrElse {
+            }.onSuccess { log("file-write-finish", "operation=$operation success=$it") }.getOrElse {
                 log(operation, it)
                 false
             }
@@ -451,6 +582,10 @@ class PiperPrivilegedService : Service() {
         val adb = runCatching {
             check(session.connect()) { "Wireless debugging is not paired or is switched off" }
             log("adb-connect-ok", "Wireless debugging socket connected")
+            log(
+                "privileged-server-ready",
+                "app_process server started; UID=2000; PID=${session.privilegedServerPid()}; protocol=1"
+            )
             updateConnectingDetail("Đã kết nối; đang xác minh shell UID 2000…")
             val identity = session.execute("id -u; echo \$\$; getenforce 2>/dev/null || echo Unknown")
             check(identity.exitCode == 0) { identity.output.ifBlank { "ADB shell identity check failed" } }
@@ -477,13 +612,13 @@ class PiperPrivilegedService : Service() {
             state = PiperServiceState.RUNNING,
             privilege = PiperPrivilege.SHELL,
             uid = 2000,
-            pid = lines.getOrNull(1)?.toIntOrNull() ?: -1,
+            pid = session.privilegedServerPid().takeIf { it > 0 } ?: lines.getOrNull(1)?.toIntOrNull() ?: -1,
             startupMethod = "PIPEROS_ADB",
             selinux = lines.getOrNull(2).orEmpty().ifBlank { "Unknown" },
             startedAt = System.currentTimeMillis(),
             protocolVersion = PROTOCOL_VERSION
         )
-        log("start", "PIPEROS_ADB active; shell UID=2000; PID=${status.pid}; SELinux=${status.selinux}")
+        log("start", "PIPEROS_ADB app_process active; shell UID=2000; PID=${status.pid}; SELinux=${status.selinux}")
     }
 
     private fun setNormal(error: PiperError, detail: String) {
@@ -510,6 +645,13 @@ class PiperPrivilegedService : Service() {
         if (Binder.getCallingUid() != applicationInfo.uid) {
             log("client-denied", "uid=${Binder.getCallingUid()}")
             throw SecurityException("PiperOS client is not authorized")
+        }
+    }
+
+    private fun enforcePermission(permission: String) {
+        if (!PiperPrivilegedPreferences.clientPermission(this, permission)) {
+            log("client-permission-denied", "uid=${Binder.getCallingUid()} permission=$permission")
+            throw SecurityException("PiperOS ADB client does not have permission: $permission")
         }
     }
 

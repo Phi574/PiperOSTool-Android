@@ -185,6 +185,29 @@ object PiperPrivilegedPreferences {
     fun setWorkspace(context: Context, value: Boolean) = prefs(context).edit().putBoolean(KEY_WORKSPACE, value).apply()
     fun showHidden(context: Context) = prefs(context).getBoolean(KEY_HIDDEN, false)
     fun setShowHidden(context: Context, value: Boolean) = prefs(context).edit().putBoolean(KEY_HIDDEN, value).apply()
+
+    fun clientPermission(context: Context, permission: String): Boolean {
+        require(permission in PiperAdbClientPermission.ALL) { "Quyền client không hợp lệ" }
+        return prefs(context).getBoolean(
+            "client_permission_$permission",
+            permission !in setOf(PiperAdbClientPermission.SYSTEM_TRANSACTIONS, PiperAdbClientPermission.SHELL_COMMANDS)
+        )
+    }
+
+    fun setClientPermission(context: Context, permission: String, granted: Boolean) {
+        require(permission in PiperAdbClientPermission.ALL) { "Quyền client không hợp lệ" }
+        prefs(context).edit().putBoolean("client_permission_$permission", granted).apply()
+    }
+}
+
+object PiperAdbClientPermission {
+    const val FILE_READ = "file_read"
+    const val FILE_WRITE = "file_write"
+    const val APP_MANAGEMENT = "app_management"
+    const val PRIVATE_ACTIVITIES = "private_activities"
+    const val SYSTEM_TRANSACTIONS = "system_transactions"
+    const val SHELL_COMMANDS = "shell_commands"
+    val ALL = setOf(FILE_READ, FILE_WRITE, APP_MANAGEMENT, PRIVATE_ACTIVITIES, SYSTEM_TRANSACTIONS, SHELL_COMMANDS)
 }
 
 object PiperAppActionPolicy {

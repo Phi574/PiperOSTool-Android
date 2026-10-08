@@ -1,5 +1,15 @@
 # Changelog
 
+## 3.7.0.PRE
+
+- PiperOS ADB khởi chạy tiến trình Java `app_process` bằng UID shell 2000 khi người dùng bật kết nối; tiến trình tồn tại xuyên suốt các thao tác và dừng khi PiperOS ADB bị tắt.
+- Thêm protocol RPC có request ID, stdin/stdout/exit code, thư mục làm việc, môi trường và timeout giới hạn; truyền tệp theo từng khối thay vì giữ một lệnh `cat` riêng.
+- Thêm API giao dịch Binder hệ thống qua server đặc quyền, trả dữ liệu phản hồi cùng loại/lỗi có cấu trúc; quyền này mặc định tắt và có thể thu hồi trong mục Client và quyền truy cập.
+- Thêm quyền client theo nhóm: đọc tệp, sửa tệp, quản lý ứng dụng, mở Activity bị chặn, chạy shell tùy chỉnh và giao dịch Binder; chỉ UID ứng dụng PiperOS được bind tới AIDL, mọi lần cấp/thu hồi hoặc từ chối đều được ghi log.
+- Trang Ứng dụng, Tùy chọn sâu ứng dụng và Trình quản lý tệp cùng dùng một tiến trình và phiên PiperOS ADB mới cho thao tác package, Activity và tệp.
+- Giữ ghép đôi Wireless debugging trong ứng dụng; tiến trình shell không tự khởi chạy sau khi Android reboot nếu người dùng chưa bật lại dịch vụ.
+- Nâng versionCode lên 74 để cập nhật đè từ 3.6.10.
+
 ## 3.6.10 — Bản chính thức
 
 Bản chính thức này tổng hợp các cải tiến từ 3.6.2.PRE đến 3.6.9.PRE đã được giữ lại trong ứng dụng sau giai đoạn thử nghiệm.

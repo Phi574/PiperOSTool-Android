@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
 import android.os.IBinder
+import android.os.Bundle
 import android.os.ParcelFileDescriptor
 import com.piperostool.privileged.IPiperOSService
 import com.piperostool.privileged.PiperCapabilities
@@ -76,6 +77,49 @@ class PiperPrivilegedClient(context: Context) : Closeable {
 
     suspend fun capabilities(): PiperCapabilities? = withConnected {
         PiperCapabilities.fromBundle(it.capabilities)
+    }
+
+    suspend fun clientPermissions(): Map<String, Boolean> = withConnected { remote ->
+        remote.getClientPermissions().let { bundle ->
+            listOf("file_read", "file_write", "app_management", "private_activities", "system_transactions", "shell_commands")
+                .associateWith { bundle.getBoolean(it, true) }
+        }
+    }.orEmpty()
+
+    suspend fun setClientPermission(permission: String, granted: Boolean): Boolean = withConnected {
+        it.setClientPermission(permission, granted)
+        true
+    } ?: false
+
+    suspend fun transactSystemService(
+        serviceName: String,
+        transactionCode: Int,
+        data: ByteArray,
+        flags: Int = 0
+    ): PiperSystemTransactionResult? = withConnected { remote ->
+        val result = remote.transactSystemService(serviceName, transactionCode, data, flags)
+        PiperSystemTransactionResult(
+            handled = result.getBoolean("handled"),
+            reply = result.getByteArray("reply") ?: byteArrayOf(),
+            errorType = result.getString("errorType").orEmpty(),
+            error = result.getString("error").orEmpty()
+        )
+    }
+
+    suspend fun newProcess(
+        command: String,
+        workingDirectory: String? = null,
+        stdin: String = "",
+        environment: Map<String, String> = emptyMap(),
+        timeoutMs: Long = 30_000L
+    ): PiperShellCommandResult? = withConnected { remote ->
+        val variables = Bundle().apply { environment.forEach { (key, value) -> putString(key, value) } }
+        val result = remote.executeShell(command, workingDirectory.orEmpty(), stdin, variables, timeoutMs)
+        PiperShellCommandResult(
+            output = result.getString("output").orEmpty(),
+            exitCode = result.getInt("exitCode", -1),
+            errorType = result.getString("errorType").orEmpty()
+        )
     }
 
     suspend fun list(path: String, showHidden: Boolean): List<PiperFileEntry>? = withConnected { remote ->
@@ -189,3 +233,10 @@ class PiperPrivilegedClient(context: Context) : Closeable {
 }
 
 data class PiperAppActionResult(val success: Boolean, val message: String)
+data class PiperSystemTransactionResult(
+    val handled: Boolean,
+    val reply: ByteArray,
+    val errorType: String,
+    val error: String
+)
+data class PiperShellCommandResult(val output: String, val exitCode: Int, val errorType: String)

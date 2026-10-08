@@ -25,8 +25,10 @@ android {
         // scoped-storage model and media/remote features.
         minSdk = 29
         targetSdk = 37
-        versionCode = 73
-        versionName = "3.6.10"
+        multiDexEnabled = true
+        multiDexKeepProguard = file("multidex-keep.pro")
+        versionCode = 74
+        versionName = "3.7.0.PRE"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         ndk {

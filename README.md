@@ -29,9 +29,13 @@ PiperOS Tool.
 
 ## Bản hiện tại
 
-`3.6.10` (versionCode `73`) sử dụng `minSdk 29 (Android 10)`, `targetSdk 37 (Android 17)`, Kotlin `2.4.10`.
+`3.7.0.PRE` (versionCode `74`) sử dụng `minSdk 29 (Android 10)`, `targetSdk 37 (Android 17)`, Kotlin `2.4.10`.
 
-**Tải và cài đặt:** [Bản phát hành 3.6.10](https://github.com/Phi574/PiperOSTool-Android/releases/tag/v3.6.10). APK được ký bằng cùng khóa như các bản trước; màn Cập nhật chỉ chấp nhận APK có cùng chữ ký với bản đang cài.
+**Tải và cài đặt:** [Bản phát hành 3.7.0.PRE](https://github.com/Phi574/PiperOSTool-Android/releases/tag/v3.7.0.PRE). APK được ký bằng cùng khóa như các bản trước; màn Cập nhật chỉ chấp nhận APK có cùng chữ ký với bản đang cài.
+
+### PiperOS ADB 3.7.0.PRE
+
+PiperOS ADB chạy một tiến trình Java `app_process` với UID shell, dùng RPC có cấu trúc cho lệnh có stdin/stdout, exit code, thư mục làm việc, môi trường và timeout; truyền tệp theo luồng. Các thao tác Ứng dụng, Tùy chọn sâu và Trình quản lý tệp dùng chung tiến trình đó. Mục Client và quyền truy cập cho phép cấp/thu hồi quyền theo nhóm; shell tùy chỉnh và giao dịch Binder hệ thống mặc định tắt. Sau khi khởi động lại, mở PiperOS ADB và bật/kết nối lại; khóa ghép đôi đã lưu sẽ được dùng lại nếu Wireless debugging vẫn cho phép.
 
 ### Bản chính thức 3.6.10
 
