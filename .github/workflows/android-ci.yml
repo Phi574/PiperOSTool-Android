@@ -36,7 +36,7 @@ jobs:
         run: ./gradlew --no-daemon assembleDebug testDebugUnitTest lintDebug
 
       - name: Upload debug APK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: piperos-tool-debug-${{ github.sha }}
           path: app/build/outputs/apk/debug/app-debug.apk
@@ -45,7 +45,7 @@ jobs:
 
       - name: Upload lint report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: piperos-lint-${{ github.sha }}
           path: app/build/reports/lint-results-debug.html
