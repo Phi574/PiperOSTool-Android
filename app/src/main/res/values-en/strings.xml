@@ -1,4 +1,13 @@
 <resources>
+    <string name="piperos_2fa">PiperOS 2FA</string>
+    <string name="piperos_2fa_summary">Generate verification codes for multiple service accounts.</string>
+    <string name="home_whats_new">What’s new</string>
+    <string name="home_whats_new_summary">See changes and version history</string>
+    <string name="whats_new_current_version">CURRENT VERSION · %1$s</string>
+    <string name="whats_new_current_fallback">No detailed release notes were found for version %1$s.</string>
+    <string name="whats_new_show_all">View all versions</string>
+    <string name="whats_new_hide_all">Collapse version history</string>
+    <string name="whats_new_no_details">No release notes are available for this version.</string>
     <string name="dismiss">Close</string>
     <string name="offline_message">No network connection. Online features are temporarily hidden.</string>
     <string name="auth_offline_note">This device is offline. Connect to the internet to use your PiperOS account.</string>
