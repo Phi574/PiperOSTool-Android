@@ -39,10 +39,12 @@ class PiperApkBuilder(private val context: Context) {
         val replacements = workspace.filesDirectory.walkTopDown()
             .filter { it.isFile }
             .associateBy { it.relativeTo(workspace.filesDirectory).invariantSeparatorsPath }
+            .filterKeys { !workspace.isDeleted(it) }
 
         ZipFile(workspace.sourceApk).use { source ->
             val entries = source.entries().asSequence()
                 .filterNot { it.isDirectory || isOldSignature(it.name) }
+                .filterNot { workspace.isDeleted(it.name) }
                 .toList()
             val total = entries.size + replacements.keys.count { source.getEntry(it) == null }
             val counter = CountingOutputStream(BufferedOutputStream(FileOutputStream(unsigned)))

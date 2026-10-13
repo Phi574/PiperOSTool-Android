@@ -163,6 +163,7 @@
         <activity android:name=".PhoneAuthActivity" android:exported="false" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" android:theme="@style/Theme.PiperOSTool.AppCompat.NoActionBar" />
         <activity android:name=".ForgotPassword" android:exported="false" android:screenOrientation="portrait" android:theme="@style/Theme.PiperOSTool.AppCompat.NoActionBar" />
         <activity android:name=".AccountProfileActivity" android:exported="false" android:theme="@style/Theme.PiperOSTool" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".WhatsNewActivity" android:exported="false" android:theme="@style/Theme.PiperOSTool" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".DeviceSessionsActivity" android:exported="false" android:theme="@style/Theme.PiperOSTool" android:windowSoftInputMode="adjustResize" />
 
         <activity android:name=".HomeActivity" android:exported="false" android:launchMode="singleTask" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
@@ -215,6 +216,12 @@
             android:theme="@style/zxing_CaptureTheme" />
         <activity
             android:name=".PiperQrActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.PiperOSTool"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".BetaTwoFactorActivity"
             android:exported="false"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.PiperOSTool"

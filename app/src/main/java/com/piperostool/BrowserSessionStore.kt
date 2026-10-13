@@ -7,7 +7,9 @@ import org.json.JSONObject
 data class BrowserSavedTab(
     val id: Long,
     val title: String,
-    val url: String
+    val url: String,
+    val history: List<String> = emptyList(),
+    val historyIndex: Int = -1
 )
 
 data class BrowserHistoryEntry(
@@ -51,10 +53,12 @@ class BrowserSessionStore(context: Context) {
         val json = JSONArray()
         tabs.forEach { tab ->
             json.put(
-                JSONObject()
-                    .put("id", tab.id)
-                    .put("title", tab.title)
-                    .put("url", tab.url)
+                    JSONObject()
+                        .put("id", tab.id)
+                        .put("title", tab.title)
+                        .put("url", tab.url)
+                        .put("history", JSONArray(tab.history))
+                        .put("historyIndex", tab.historyIndex)
             )
         }
         preferences.edit()
@@ -74,7 +78,15 @@ class BrowserSessionStore(context: Context) {
                         BrowserSavedTab(
                             id = item.optLong("id", System.nanoTime()),
                             title = item.optString("title", DEFAULT_TAB_TITLE),
-                            url = item.optString("url", HOME_URL)
+                            url = item.optString("url", HOME_URL),
+                            history = item.optJSONArray("history")?.let { history ->
+                                buildList {
+                                    for (historyIndex in 0 until history.length()) {
+                                        history.optString(historyIndex).takeIf(::isBrowserUrl)?.let(::add)
+                                    }
+                                }.takeLast(MAX_TAB_HISTORY)
+                            }.orEmpty(),
+                            historyIndex = item.optInt("historyIndex", -1)
                         )
                     )
                 }
@@ -227,7 +239,11 @@ class BrowserSessionStore(context: Context) {
         private const val KEY_BROWSER_THEME = "browser_theme"
         private const val KEY_SEARCH_ENGINE = "search_engine"
         private const val MAX_HISTORY_ITEMS = 250
+        private const val MAX_TAB_HISTORY = 50
         private const val SEARCH_ENGINE_GOOGLE = "google"
+
+        private fun isBrowserUrl(value: String): Boolean =
+            value.startsWith("https://", ignoreCase = true) || value.startsWith("http://", ignoreCase = true)
 
         fun searchEngines(): List<BrowserSearchEngine> = listOf(
             BrowserSearchEngine(SEARCH_ENGINE_GOOGLE, "Google", "https://www.google.com/search?q=%s"),

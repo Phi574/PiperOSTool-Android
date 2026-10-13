@@ -159,9 +159,15 @@
         <TextView
             android:id="@+id/btnApkSelectionBackup"
             style="@style/ApkEditorPrimaryAction"
-            android:layout_width="104dp"
+            android:layout_width="88dp"
             android:layout_marginEnd="0dp"
             android:text="@string/action_backup" />
+        <TextView
+            android:id="@+id/btnApkSelectionDelete"
+            style="@style/ApkEditorAction"
+            android:layout_width="70dp"
+            android:layout_marginStart="6dp"
+            android:text="XÓA" />
     </LinearLayout>
 
     <LinearLayout

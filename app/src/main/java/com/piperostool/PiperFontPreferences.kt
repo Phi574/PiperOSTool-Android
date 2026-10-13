@@ -1,7 +1,6 @@
 package com.piperostool
 
 import android.content.Context
-import android.graphics.Typeface
 
 data class PiperFontChoice(
     val key: String,
@@ -9,17 +8,23 @@ data class PiperFontChoice(
     val removable: Boolean
 )
 
+/** System font is the default; users can still choose an included font. */
 object PiperFontPreferences {
     const val SYSTEM = "system"
-    const val BILINGUAL = "bilingual"
-    const val INTER = "inter"
+    const val BILINGUAL = "bilingual" // Kept only so old preference data remains readable.
+    const val INTER = "inter" // Kept only so old preference data remains readable.
 
     private const val PREFS = "PiperPrefs"
     private const val KEY_SELECTED = "app_font"
-    fun selectedKey(context: Context): String {
-        val saved = prefs(context).getString(KEY_SELECTED, BILINGUAL).orEmpty()
-        return if (saved in builtInKeys) saved else BILINGUAL
+
+    fun initialize(context: Context) {
+        // Installations without an explicit choice use the device font by default.
+        val saved = prefs(context).getString(KEY_SELECTED, null)
+        if (saved !in builtInKeys) prefs(context).edit().putString(KEY_SELECTED, SYSTEM).apply()
     }
+
+    fun selectedKey(context: Context): String =
+        prefs(context).getString(KEY_SELECTED, SYSTEM)?.takeIf { it in builtInKeys } ?: SYSTEM
 
     fun select(context: Context, key: String): Boolean {
         if (key !in builtInKeys) return false
@@ -36,7 +41,7 @@ object PiperFontPreferences {
 
     fun selectedName(context: Context): String =
         choices(context).firstOrNull { it.key == selectedKey(context) }?.name
-            ?: context.getString(R.string.settings_font_bilingual)
+            ?: context.getString(R.string.settings_font_system)
 
     private val builtInKeys = setOf(SYSTEM, BILINGUAL, INTER)
 

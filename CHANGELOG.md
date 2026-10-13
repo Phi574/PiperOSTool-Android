@@ -1,5 +1,21 @@
 # Changelog
 
+## 3.7.1.PRE
+
+- Thêm mục **Có gì mới** trong bảng `window`, hiển thị ghi chú 3.7.1.PRE và cho xem lịch sử chi tiết các phiên bản trước.
+- Đặt font thiết bị làm mặc định cho theme, ô nhập và tiêu đề; vẫn cho phép chọn Inter hoặc bộ font song ngữ trong Cài đặt. Font tùy chọn lỗi tải sẽ tự dùng font hệ thống.
+- Sửa cửa sổ chọn loại khóa bảo mật và các action sheet dùng chung để áp dụng đúng font người dùng đã chọn.
+- Cập nhật PiperOS 2FA: bỏ các bước tạo/mở kho và đồng bộ trực tiếp nhiều tài khoản theo Firebase UID đang đăng nhập.
+- Thêm nút nổi để chọn thêm thủ công hoặc quét QR bằng trình quét PiperOS; cửa sổ thêm tài khoản đồng bộ theme ứng dụng và chấp nhận khóa Base32 có dấu cách.
+- Cho phép chọn mã tự đổi theo chu kỳ hoặc chỉ đổi khi bấm làm mới; giới hạn quyền đọc/ghi Firestore theo UID tài khoản.
+- Thêm tìm kiếm tài khoản 2FA, nhập/xuất tệp JSON PiperOS và nhập/xuất QR chuyển tài khoản tương thích Google Authenticator, gồm hỗ trợ quét nhiều phần QR.
+- Bổ sung HOTP theo bộ đếm và Steam Guard 5 ký tự; hỗ trợ nhập/xuất HOTP qua QR Google Authenticator.
+- Sửa phục hồi trang đang chọn của HomeActivity sau khi hệ thống tái tạo Activity.
+- Trình duyệt lưu lịch sử URL theo từng tab để có thể quay lại trang trước sau khi khôi phục phiên; giữ nút Quay lại hoạt động ở trang không phải Home.
+- Cải thiện an toàn và ổn định khi nén: tạo file tạm, chỉ hoàn tất sau khi nén xong, chặn tự nén file đầu ra, bỏ qua symlink và giới hạn số tệp.
+- APK Editor cho phép xóa tệp/thư mục khỏi workspace và APK xuất ra; không sửa ứng dụng đã cài.
+- Nâng versionCode lên 77 để cập nhật đè từ 3.7.0.PRE và các bản 3.7.1.PRE trước đó.
+
 ## 3.7.0.PRE
 
 - PiperOS ADB khởi chạy tiến trình Java `app_process` bằng UID shell 2000 khi người dùng bật kết nối; tiến trình tồn tại xuyên suốt các thao tác và dừng khi PiperOS ADB bị tắt.

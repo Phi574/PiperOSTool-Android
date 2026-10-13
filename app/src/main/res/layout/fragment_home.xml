@@ -244,6 +244,18 @@
                     <ImageView style="@style/SettingsChevron" />
                 </LinearLayout>
                 <View android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" />
+                <LinearLayout android:id="@+id/homeWindowWhatsNew"
+                    style="@style/SettingsRow">
+                    <ImageView android:id="@+id/iconHomeWindowWhatsNew"
+                        style="@style/SettingsRowIcon" android:layout_width="20dp"
+                        android:layout_height="20dp" android:src="@drawable/speaker" />
+                    <LinearLayout style="@style/SettingsRowTextGroup">
+                        <TextView style="@style/SettingsRowTitle" android:text="@string/home_whats_new" />
+                        <TextView style="@style/SettingsRowSubtitle" android:text="@string/home_whats_new_summary" />
+                    </LinearLayout>
+                    <ImageView style="@style/SettingsChevron" />
+                </LinearLayout>
+                <View style="@style/SettingsDivider" />
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnHomeWindowLogout"
                     android:layout_width="match_parent"

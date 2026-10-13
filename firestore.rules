@@ -42,6 +42,50 @@ service cloud.firestore {
           && request.resource.data.updatedAt is int;
       }
 
+      // TOTP seeds are AES-GCM encrypted in the client before Firebase sync.
+      match /totpVault/{documentId} {
+        allow read, delete: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+          && documentId == 'main'
+          && request.resource.data.keys().hasOnly([
+            'version', 'kdf', 'iterations', 'salt', 'payload', 'updatedAt'
+          ])
+          && request.resource.data.version == 1
+          && request.resource.data.kdf == 'PBKDF2WithHmacSHA256'
+          && request.resource.data.iterations >= 260000
+          && request.resource.data.iterations <= 1000000
+          && request.resource.data.salt is string
+          && request.resource.data.salt.size() <= 128
+          && request.resource.data.payload is string
+          && request.resource.data.payload.size() <= 262144
+          && request.resource.data.updatedAt is int;
+      }
+
+      // Account-synced TOTP entries; each record belongs only to its Firebase UID.
+      match /totpAccounts/{accountId} {
+        allow read, delete: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+          && request.resource.data.keys().hasOnly([
+            'label', 'secret', 'algorithm', 'digits', 'period', 'autoRefresh',
+            'type', 'counter', 'updatedAt'
+          ])
+          && request.resource.data.label is string
+          && request.resource.data.label.size() >= 1
+          && request.resource.data.label.size() <= 120
+          && request.resource.data.secret is string
+          && request.resource.data.secret.size() >= 16
+          && request.resource.data.secret.size() <= 128
+          && request.resource.data.algorithm in ['SHA1', 'SHA256', 'SHA512']
+          && request.resource.data.digits in [5, 6, 7, 8]
+          && request.resource.data.period >= 15
+          && request.resource.data.period <= 120
+          && request.resource.data.autoRefresh is bool
+          && request.resource.data.type in ['TOTP', 'HOTP', 'STEAM']
+          && request.resource.data.counter is int
+          && request.resource.data.counter >= 0
+          && request.resource.data.updatedAt is int;
+      }
+
       match /accountProfile/{documentId} {
         allow read: if isOwner(uid);
         allow create: if isOwner(uid)

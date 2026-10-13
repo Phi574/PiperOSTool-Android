@@ -164,6 +164,8 @@ object PiperActionSheet {
             )
         )
         PiperModernUi.apply(content)
+        // This action-sheet path had no font watcher, unlike the other selectors.
+        PiperAutoFont.watch(content)
         setSheetContent(dialog, content)
         styleBottomSheet(dialog, context)
         dialog.show()

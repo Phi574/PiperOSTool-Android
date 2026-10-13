@@ -27,8 +27,8 @@ android {
         targetSdk = 37
         multiDexEnabled = true
         multiDexKeepProguard = file("multidex-keep.pro")
-        versionCode = 74
-        versionName = "3.7.0.PRE"
+        versionCode = 77
+        versionName = "3.7.1.PRE"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         ndk {

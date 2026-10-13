@@ -1,4 +1,6 @@
 <resources>
+    <string name="piperos_2fa">PiperOS 2FA</string>
+    <string name="piperos_2fa_summary">Tạo mã xác minh cho nhiều tài khoản dịch vụ</string>
     <string name="dismiss">Đóng</string>
     <string name="offline_message">Không có kết nối mạng. Các tính năng trực tuyến đã tạm ẩn.</string>
     <string name="auth_offline_note">Thiết bị đang offline. Kết nối mạng để sử dụng tài khoản PiperOS.</string>
@@ -109,6 +111,13 @@
     <string name="home_security_summary">Thiết bị, mật khẩu và liên kết</string>
     <string name="home_support">Hỗ trợ</string>
     <string name="home_support_summary">Liên hệ nhóm PiperOS</string>
+    <string name="home_whats_new">Có gì mới</string>
+    <string name="home_whats_new_summary">Xem thay đổi và lịch sử phiên bản</string>
+    <string name="whats_new_current_version">PHIÊN BẢN HIỆN TẠI · %1$s</string>
+    <string name="whats_new_current_fallback">Không tìm thấy ghi chú chi tiết cho phiên bản %1$s.</string>
+    <string name="whats_new_show_all">Xem tất cả phiên bản</string>
+    <string name="whats_new_hide_all">Thu gọn lịch sử phiên bản</string>
+    <string name="whats_new_no_details">Không có ghi chú cho phiên bản này.</string>
     <string name="home_support_email_subject">Hỗ trợ PiperOS Tool</string>
     <string name="home_support_no_email">Không tìm thấy ứng dụng email trên thiết bị.</string>
     <string name="home_beta_feature">Đang phát triển</string>

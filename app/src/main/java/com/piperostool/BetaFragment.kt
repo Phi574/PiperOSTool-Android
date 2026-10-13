@@ -34,5 +34,8 @@ class BetaFragment : Fragment() {
         view.findViewById<View>(R.id.featurePiperAdb).setOnClickListener {
             startActivity(Intent(requireContext(), com.piperostool.privileged.ui.PiperAdbActivity::class.java))
         }
+        view.findViewById<View>(R.id.featurePiper2fa).setOnClickListener {
+            startActivity(Intent(requireContext(), BetaTwoFactorActivity::class.java))
+        }
     }
 }

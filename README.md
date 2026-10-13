@@ -29,9 +29,13 @@ PiperOS Tool.
 
 ## Bản hiện tại
 
-`3.7.0.PRE` (versionCode `74`) sử dụng `minSdk 29 (Android 10)`, `targetSdk 37 (Android 17)`, Kotlin `2.4.10`.
+`3.7.1.PRE` (versionCode `75`) sử dụng `minSdk 29 (Android 10)`, `targetSdk 37 (Android 17)`, Kotlin `2.4.10`.
 
-**Tải và cài đặt:** [Bản phát hành 3.7.0.PRE](https://github.com/Phi574/PiperOSTool-Android/releases/tag/v3.7.0.PRE). APK được ký bằng cùng khóa như các bản trước; màn Cập nhật chỉ chấp nhận APK có cùng chữ ký với bản đang cài.
+**Tải và cài đặt:** [Bản phát hành 3.7.1.PRE](https://github.com/Phi574/PiperOSTool-Android/releases/tag/v3.7.1.PRE). APK được ký bằng cùng khóa như các bản trước; màn Cập nhật chỉ chấp nhận APK có cùng chữ ký với bản đang cài.
+
+### PiperOS 2FA 3.7.1.PRE
+
+PiperOS 2FA tạo TOTP, HOTP theo bộ đếm và mã Steam Guard 5 ký tự. Thêm tài khoản bằng khóa thiết lập, QR `otpauth://` hoặc QR chuyển tài khoản Google Authenticator; nhập/xuất cũng hỗ trợ QR Google và tệp JSON PiperOS. Khóa có thể nhập theo nhóm cách nhau bởi dấu cách. Tài khoản đồng bộ trực tiếp với Firebase UID đang đăng nhập, không cần tạo/mở kho riêng. TOTP có thể tự đổi theo chu kỳ hoặc chỉ đổi khi bấm làm mới; HOTP tăng bộ đếm sau mỗi lần tạo mã. Firestore Rules giới hạn đọc/ghi theo UID; khóa bí mật được lưu trong Firebase và bản sao xuất có thể đọc được, vì vậy hãy bảo vệ tài khoản và tệp sao lưu như bảo vệ mật khẩu.
 
 ### PiperOS ADB 3.7.0.PRE
 

@@ -34,9 +34,14 @@ object PiperAutoFont {
     private lateinit var inter: Typeface
 
     fun initialize(context: Context) {
-        vt323 = checkNotNull(ResourcesCompat.getFont(context, R.font.vt323))
-        silkscreen = checkNotNull(ResourcesCompat.getFont(context, R.font.silkscreen))
-        inter = checkNotNull(ResourcesCompat.getFont(context, R.font.inter))
+        // The default path never loads a bundled font. Load them only as optional choices,
+        // and keep the app usable with the device font if a resource cannot be loaded.
+        vt323 = runCatching { ResourcesCompat.getFont(context, R.font.vt323) }
+            .getOrNull() ?: Typeface.DEFAULT
+        silkscreen = runCatching { ResourcesCompat.getFont(context, R.font.silkscreen) }
+            .getOrNull() ?: Typeface.DEFAULT
+        inter = runCatching { ResourcesCompat.getFont(context, R.font.inter) }
+            .getOrNull() ?: Typeface.DEFAULT
     }
 
     fun clearTypefaceCache() {
@@ -238,6 +243,7 @@ class PiperOsApplication : Application(), Application.ActivityLifecycleCallbacks
         )
         deleteSharedPreferences("account_session_guard")
         PiperUiPreferences.initialize(this)
+        PiperFontPreferences.initialize(this)
         PiperAutoFont.initialize(this)
         AccountDataScope.activate(this, FirebaseAuth.getInstance().currentUser?.uid)
         FirebaseAuth.getInstance().addAuthStateListener(accountScopeListener)

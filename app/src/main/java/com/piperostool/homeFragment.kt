@@ -48,6 +48,11 @@ class homeFragment : Fragment() {
         view.findViewById<View>(R.id.homeWindowSupport).setOnClickListener {
             closeWindowDrawer(view) { openSupport() }
         }
+        view.findViewById<View>(R.id.homeWindowWhatsNew).setOnClickListener {
+            closeWindowDrawer(view) {
+                startActivity(Intent(requireContext(), WhatsNewActivity::class.java))
+            }
+        }
         view.findViewById<View>(R.id.btnHomeWindowLogout).setOnClickListener {
             closeWindowDrawer(view) { confirmLogout() }
         }

@@ -27,6 +27,7 @@ import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.InputStream
 import java.io.OutputStream
+import java.nio.file.Files
 
 enum class FileArchiveFormat(val label: String, val extension: String) {
     ZIP("ZIP", ".zip"),
@@ -93,37 +94,40 @@ object FileArchiveEngine {
     ) {
         val validSources = sources.distinctBy(File::getAbsolutePath)
         require(validSources.isNotEmpty() && validSources.all(File::exists)) { "Source does not exist" }
-        output.parentFile?.mkdirs()
-        if (format == FileArchiveFormat.ZIP) {
-            compressZip(validSources, output, preset, password, cancelled, progress)
-        } else if (format == FileArchiveFormat.SEVEN_Z) {
-            require(password.isNullOrEmpty()) { "Encrypted 7Z creation is unavailable; use ZIP AES-256" }
-            compressSevenZ(validSources, output, cancelled, progress)
-        } else {
-            require(password.isNullOrEmpty()) { "AES-256 password is available for ZIP only" }
-            compressTar(validSources, output, format, preset, cancelled, progress)
+        val outputPath = output.canonicalFile.toPath()
+        validSources.forEach { source ->
+            val sourcePath = source.canonicalFile.toPath()
+            require(sourcePath != outputPath && !Files.isSymbolicLink(sourcePath)) {
+                "Không thể nén tệp đầu ra hoặc liên kết tượng trưng làm nguồn"
+            }
+            require(!source.isDirectory || !outputPath.startsWith(sourcePath)) {
+                "Hãy lưu tệp nén bên ngoài thư mục đang nén"
+            }
         }
-    }
-
-    private fun legacyCompressRemoved(
-        source: File,
-        output: File,
-        format: FileArchiveFormat,
-        preset: ArchiveCompressionPreset,
-        password: String?,
-        cancelled: () -> Boolean,
-        progress: (FileOperationProgress) -> Unit
-    ) {
-        require(source.exists()) { "Nguồn không tồn tại" }
-        output.parentFile?.mkdirs()
-        if (format == FileArchiveFormat.ZIP) {
-            compressZip(listOf(source), output, preset, password, cancelled, progress)
-        } else if (format == FileArchiveFormat.SEVEN_Z) {
-            require(password.isNullOrEmpty()) { "Tạo 7Z mã hóa chưa được thư viện hỗ trợ; hãy chọn ZIP AES-256" }
-            compressSevenZ(listOf(source), output, cancelled, progress)
-        } else {
-            require(password.isNullOrEmpty()) { "Mật khẩu AES-256 chỉ áp dụng cho ZIP" }
-            compressTar(listOf(source), output, format, preset, cancelled, progress)
+        require(!output.exists()) { "Tệp đầu ra đã tồn tại" }
+        val outputParent = output.parentFile ?: File(".")
+        check(outputParent.isDirectory || outputParent.mkdirs()) { "Không thể tạo thư mục lưu tệp nén" }
+        val staging = File(output.parentFile ?: File("."), ".${output.name}.${System.nanoTime()}.partial")
+        staging.delete()
+        try {
+            when (format) {
+                FileArchiveFormat.ZIP -> compressZip(validSources, staging, preset, password, cancelled, progress)
+                FileArchiveFormat.SEVEN_Z -> {
+                    require(password.isNullOrEmpty()) { "Encrypted 7Z creation is unavailable; use ZIP AES-256" }
+                    compressSevenZ(validSources, staging, cancelled, progress)
+                }
+                else -> {
+                    require(password.isNullOrEmpty()) { "AES-256 password is available for ZIP only" }
+                    compressTar(validSources, staging, format, preset, cancelled, progress)
+                }
+            }
+            check(!cancelled()) { "Đã hủy" }
+            check(staging.isFile && staging.length() > 0L) { "Tệp nén được tạo rỗng" }
+            check(staging.renameTo(output)) { "Không thể hoàn tất tệp nén" }
+        } catch (error: Throwable) {
+            staging.delete()
+            output.delete()
+            throw error
         }
     }
 
@@ -143,34 +147,37 @@ object FileArchiveEngine {
     }
 
     private fun compressZip(sources: List<File>, output: File, preset: ArchiveCompressionPreset, password: String?, cancelled: () -> Boolean, progress: (FileOperationProgress) -> Unit) {
-        val files = sources.flatMap { it.walkTopDown().filter(File::isFile).toList() }
+        val files = collectArchiveFiles(sources)
+        require(files.isNotEmpty()) { "Không có tệp nào trong mục đã chọn" }
         val zip = ZipFile(output, password?.takeIf { it.isNotEmpty() }?.toCharArray())
-        val parameters = ZipParameters().apply {
-            compressionLevel = when (preset) {
-                ArchiveCompressionPreset.FASTEST -> CompressionLevel.FASTEST
-                ArchiveCompressionPreset.FAST -> CompressionLevel.FAST
-                ArchiveCompressionPreset.NORMAL -> CompressionLevel.NORMAL
-                ArchiveCompressionPreset.MAXIMUM -> CompressionLevel.MAXIMUM
-                else -> CompressionLevel.ULTRA
-            }
-            if (!password.isNullOrEmpty()) {
-                isEncryptFiles = true
-                encryptionMethod = EncryptionMethod.AES
-                aesKeyStrength = AesKeyStrength.KEY_STRENGTH_256
-            }
-        }
-        val base = sources.first().parentFile ?: sources.first()
+        val base = commonParent(sources)
         files.forEachIndexed { index, file ->
             check(!cancelled()) { "Đã hủy" }
-            parameters.fileNameInZip = file.relativeTo(base).invariantSeparatorsPath
+            val parameters = ZipParameters().apply {
+                compressionLevel = when (preset) {
+                    ArchiveCompressionPreset.FASTEST -> CompressionLevel.FASTEST
+                    ArchiveCompressionPreset.FAST -> CompressionLevel.FAST
+                    ArchiveCompressionPreset.NORMAL -> CompressionLevel.NORMAL
+                    ArchiveCompressionPreset.MAXIMUM -> CompressionLevel.MAXIMUM
+                    else -> CompressionLevel.ULTRA
+                }
+                fileNameInZip = runCatching { file.relativeTo(base).invariantSeparatorsPath }
+                    .getOrDefault(file.name)
+                if (!password.isNullOrEmpty()) {
+                    isEncryptFiles = true
+                    encryptionMethod = EncryptionMethod.AES
+                    aesKeyStrength = AesKeyStrength.KEY_STRENGTH_256
+                }
+            }
             zip.addFile(file, parameters)
             progress(FileOperationProgress(index + 1, files.size, file.name))
         }
     }
 
     private fun compressSevenZ(sources: List<File>, output: File, cancelled: () -> Boolean, progress: (FileOperationProgress) -> Unit) {
-        val files = sources.flatMap { it.walkTopDown().filter(File::isFile).toList() }
-        val base = sources.first().parentFile ?: sources.first()
+        val files = collectArchiveFiles(sources)
+        require(files.isNotEmpty()) { "Không có tệp nào trong mục đã chọn" }
+        val base = commonParent(sources)
         SevenZOutputFile(output).use { archive ->
             files.forEachIndexed { index, file ->
                 check(!cancelled()) { "Đã hủy" }
@@ -191,8 +198,9 @@ object FileArchiveEngine {
     }
 
     private fun compressTar(sources: List<File>, output: File, format: FileArchiveFormat, preset: ArchiveCompressionPreset, cancelled: () -> Boolean, progress: (FileOperationProgress) -> Unit) {
-        val files = sources.flatMap { it.walkTopDown().filter(File::isFile).toList() }
-        val base = sources.first().parentFile ?: sources.first()
+        val files = collectArchiveFiles(sources)
+        require(files.isNotEmpty()) { "Không có tệp nào trong mục đã chọn" }
+        val base = commonParent(sources)
         FileOutputStream(output).buffered(BUFFER_SIZE).use { raw ->
             compressorOutput(raw, format, preset).use { compressed ->
                 TarArchiveOutputStream(compressed).use { tar ->
@@ -297,5 +305,32 @@ object FileArchiveEngine {
         return output
     }
 
+    private fun collectArchiveFiles(sources: List<File>): List<File> {
+        val files = mutableListOf<File>()
+        sources.forEach { source ->
+            if (source.isFile && !Files.isSymbolicLink(source.toPath())) files += source
+            else if (source.isDirectory) {
+                source.walkTopDown()
+                    .onEnter { directory -> !Files.isSymbolicLink(directory.toPath()) }
+                    .filter { it.isFile && !Files.isSymbolicLink(it.toPath()) }
+                    .forEach { file ->
+                        check(files.size < MAX_ARCHIVE_FILES) { "Có quá nhiều tệp trong mục đã chọn" }
+                        files += file
+                    }
+            }
+        }
+        return files
+    }
+
+    private fun commonParent(sources: List<File>): File {
+        val sourceParents = sources.map { (it.canonicalFile.parentFile ?: it.canonicalFile).toPath() }
+        var candidate = sourceParents.first()
+        while (sourceParents.any { !it.startsWith(candidate) }) {
+            candidate = candidate.parent ?: return File(File.separator)
+        }
+        return candidate.toFile()
+    }
+
     private const val BUFFER_SIZE = 128 * 1024
+    private const val MAX_ARCHIVE_FILES = 100_000
 }

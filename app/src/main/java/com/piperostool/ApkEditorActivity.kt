@@ -177,6 +177,7 @@ class ApkEditorActivity : AppCompatActivity() {
         findViewById<View>(R.id.btnApkSelect).setOnClickListener { enterSelectionMode() }
         findViewById<View>(R.id.btnApkSelectionCancel).setOnClickListener { leaveSelectionMode() }
         findViewById<View>(R.id.btnApkSelectionBackup).setOnClickListener { chooseBackupDestination() }
+        findViewById<View>(R.id.btnApkSelectionDelete).setOnClickListener { deleteSelectedEntries() }
         search.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(value: Editable?) = applyFileFilter(value?.toString().orEmpty())
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
@@ -271,7 +272,32 @@ class ApkEditorActivity : AppCompatActivity() {
         findViewById<View>(R.id.btnApkSelectionBackup).isEnabled = selectedPaths.isNotEmpty()
         findViewById<View>(R.id.btnApkSelectionBackup).alpha =
             if (selectedPaths.isEmpty()) 0.45f else 1f
+        findViewById<View>(R.id.btnApkSelectionDelete).isEnabled = selectedPaths.isNotEmpty()
+        findViewById<View>(R.id.btnApkSelectionDelete).alpha = if (selectedPaths.isEmpty()) 0.45f else 1f
         adapter.setSelected(selectedPaths)
+    }
+
+    private fun deleteSelectedEntries() {
+        val paths = selectedPaths.toList()
+        val currentWorkspace = workspace ?: return
+        if (paths.isEmpty() || busy) return
+        PiperDialog.showConfirm(
+            this,
+            title = "Xóa khỏi bản APK",
+            message = "Xóa ${paths.size} mục khỏi workspace và APK xuất ra? Ứng dụng đang cài trên máy không bị thay đổi.",
+            positiveLabel = "XÓA",
+            negativeLabel = "HỦY",
+            destructive = true
+        ) {
+            runBusy("Đang xóa mục khỏi workspace") {
+                val removed = withContext(Dispatchers.IO) { currentWorkspace.deleteEntries(paths) }
+                withContext(Dispatchers.Main) {
+                    leaveSelectionMode()
+                    renderFiles()
+                    Toast.makeText(this@ApkEditorActivity, "Đã xóa $removed mục khỏi workspace APK", Toast.LENGTH_LONG).show()
+                }
+            }
+        }
     }
 
     private fun leaveSelectionMode() {

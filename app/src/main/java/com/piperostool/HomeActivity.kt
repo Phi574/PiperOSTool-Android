@@ -65,8 +65,17 @@ class HomeActivity : AppCompatActivity() {
         setupKeyboardAwareBottomNav()
         setupNavigationBarAwareBottomNav()
 
-        replaceFragment(homeFragment())
-        currentTab = 0
+        currentTab = savedInstanceState?.getInt(STATE_CURRENT_TAB, 0)?.coerceIn(0, 4) ?: 0
+        val restoredPage = supportFragmentManager.findFragmentById(R.id.fragment_container)
+        if (savedInstanceState == null || restoredPage == null) {
+            replaceFragment(fragmentForTab(currentTab))
+        }
+        updateTabUI(currentTab)
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        outState.putInt(STATE_CURRENT_TAB, currentTab)
+        super.onSaveInstanceState(outState)
     }
 
     override fun onResume() {
@@ -293,6 +302,14 @@ class HomeActivity : AppCompatActivity() {
             .start()
     }
 
+    private fun fragmentForTab(index: Int): Fragment = when (index) {
+        1 -> BetaFragment()
+        2 -> AppsFragment()
+        3 -> SettingFragment()
+        4 -> InfoFragment()
+        else -> homeFragment()
+    }
+
     private fun updateTabUI(selectedIndex: Int) {
         val dark = resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK ==
             android.content.res.Configuration.UI_MODE_NIGHT_YES
@@ -350,5 +367,6 @@ class HomeActivity : AppCompatActivity() {
 
     companion object {
         private const val SESSION_CHECK_INTERVAL_MS = 10_000L
+        private const val STATE_CURRENT_TAB = "home.current_tab"
     }
 }

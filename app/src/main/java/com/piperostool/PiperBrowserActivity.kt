@@ -88,6 +88,8 @@ class PiperBrowserActivity : AppCompatActivity() {
         val webView: WebView,
         val incognito: Boolean,
         val profileName: String?,
+        val history: MutableList<String> = mutableListOf(),
+        var historyIndex: Int = -1,
         var thumbnail: Bitmap? = null,
         val thirdPartyHosts: MutableSet<String> = ConcurrentHashMap.newKeySet(),
         val trackerHosts: MutableSet<String> = ConcurrentHashMap.newKeySet(),
@@ -401,7 +403,9 @@ class PiperBrowserActivity : AppCompatActivity() {
                 url = saved.url,
                 switchToTab = false,
                 id = saved.id,
-                savedTitle = saved.title
+                savedTitle = saved.title,
+                savedHistory = saved.history,
+                savedHistoryIndex = saved.historyIndex
             )
         }
         val savedActiveId = sessionStore.loadActiveTabId()
@@ -413,6 +417,8 @@ class PiperBrowserActivity : AppCompatActivity() {
         switchToTab: Boolean,
         id: Long = System.nanoTime(),
         savedTitle: String = BrowserSessionStore.DEFAULT_TAB_TITLE,
+        savedHistory: List<String> = emptyList(),
+        savedHistoryIndex: Int = -1,
         incognito: Boolean = false
     ): BrowserTab {
         val profileName = when {
@@ -421,7 +427,18 @@ class PiperBrowserActivity : AppCompatActivity() {
             else -> AccountDataScope.webViewProfileName(this)
         }
         val webView = createWebView(id, profileName)
-        val tab = BrowserTab(id, savedTitle, url, webView, incognito, profileName)
+        val tab = BrowserTab(id, savedTitle, url, webView, incognito, profileName).apply {
+            history += savedHistory.filter(::isWebUrl).takeLast(MAX_TAB_HISTORY)
+            historyIndex = if (savedHistoryIndex in history.indices) {
+                savedHistoryIndex
+            } else {
+                history.indexOfLast { it == url }.takeIf { it >= 0 } ?: history.lastIndex
+            }
+            if (history.isEmpty() && isWebUrl(url)) {
+                history += url
+                historyIndex = 0
+            }
+        }
         tabs += tab
         browserContent.addView(
             webView,
@@ -598,6 +615,7 @@ class PiperBrowserActivity : AppCompatActivity() {
                 tab.title = view.title?.takeIf { it.isNotBlank() } ?: currentUrl
                 if (!tab.incognito) {
                     sessionStore.addHistory(tab.title, currentUrl)
+                    rememberTabNavigation(tab, currentUrl)
                 }
                 cookieManagerFor(view).flush()
                 applyWebContentTheme(view)
@@ -871,9 +889,41 @@ class PiperBrowserActivity : AppCompatActivity() {
             tab.url != BrowserSessionStore.HOME_URL && tab.webView.canGoBack() -> {
                 tab.webView.goBack()
             }
+            tab.historyIndex > 0 -> {
+                tab.historyIndex--
+                tab.url = tab.history[tab.historyIndex]
+                tab.webView.loadUrl(tab.url)
+                saveSession()
+            }
+            tab.url != BrowserSessionStore.HOME_URL -> {
+                tab.url = BrowserSessionStore.HOME_URL
+                tab.title = BrowserSessionStore.DEFAULT_TAB_TITLE
+                tab.webView.stopLoading()
+                tab.webView.loadUrl("about:blank")
+                startPage.visibility = View.VISIBLE
+                tab.webView.visibility = View.GONE
+                updateActiveTabUi()
+                saveSession()
+            }
             tabs.size > 1 -> closeTab(tab.id)
             else -> finish()
         }
+    }
+
+    private fun rememberTabNavigation(tab: BrowserTab, url: String) {
+        if (!isWebUrl(url)) return
+        if (tab.history.getOrNull(tab.historyIndex) == url) return
+        val previous = tab.history.indexOfLast { it == url }
+        if (previous in 0 until tab.historyIndex) {
+            tab.historyIndex = previous
+            return
+        }
+        if (tab.historyIndex + 1 < tab.history.size) {
+            tab.history.subList(tab.historyIndex + 1, tab.history.size).clear()
+        }
+        tab.history += url
+        if (tab.history.size > MAX_TAB_HISTORY) tab.history.removeAt(0)
+        tab.historyIndex = tab.history.lastIndex
     }
 
     private fun switchToTab(tabId: Long) {
@@ -937,7 +987,10 @@ class PiperBrowserActivity : AppCompatActivity() {
     private fun updateNavigationButtons() {
         val tab = activeTab()
         backButton.alpha =
-            if (tab?.webView?.canGoBack() == true || tabs.size > 1) 1f else 0.38f
+            if (tab?.webView?.canGoBack() == true ||
+                tab?.historyIndex?.let { it > 0 } == true ||
+                (tab != null && tab.url != BrowserSessionStore.HOME_URL) || tabs.size > 1
+            ) 1f else 0.38f
         forwardButton.alpha = if (tab?.webView?.canGoForward() == true) 1f else 0.38f
         reloadButton.alpha = if (tab?.url == BrowserSessionStore.HOME_URL) 0.65f else 1f
     }
@@ -1126,10 +1179,13 @@ class PiperBrowserActivity : AppCompatActivity() {
             ?.id
             ?: regularTabs.first().id
         sessionStore.saveTabs(
-            regularTabs.map { BrowserSavedTab(it.id, it.title, it.url) },
+            regularTabs.map { BrowserSavedTab(it.id, it.title, it.url, it.history.toList(), it.historyIndex) },
             savedActiveId
         )
     }
+
+    private fun isWebUrl(value: String): Boolean =
+        value.startsWith("https://", ignoreCase = true) || value.startsWith("http://", ignoreCase = true)
 
     private fun selectedUserAgent(): BrowserUserAgent {
         val selectedId = sessionStore.selectedUserAgentId()
@@ -3089,6 +3145,7 @@ class PiperBrowserActivity : AppCompatActivity() {
         private const val INCOGNITO_PROFILE_PREFIX = "piperos_incognito_"
         private const val DOWNLOAD_BRIDGE_NAME = "PiperDownloadMetadata"
         private const val MAX_SUGGESTED_DOWNLOADS = 64
+        private const val MAX_TAB_HISTORY = 50
         private const val MAX_MEDIA_CANDIDATES = 24
         private const val MAX_RESOURCE_URLS = 4000
         private const val SCROLL_UP = -1

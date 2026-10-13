@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import android.os.SystemClock
 import androidx.documentfile.provider.DocumentFile
+import org.json.JSONArray
 import java.io.File
 import java.io.FileOutputStream
 import java.util.zip.ZipFile
@@ -47,6 +48,7 @@ class ApkWorkspace private constructor(
     val outputDirectory = File(root, "output")
     private val previewDirectory = File(root, "previews")
     private val decodedModeFile = File(root, "decoded-mode.txt")
+    private val deletedEntriesFile = File(root, "deleted-apk-entries.json")
     val hasDecodedProject: Boolean
         get() = File(decodedDirectory, "AndroidManifest.xml").isFile
     val hasDecodedSmali: Boolean
@@ -59,6 +61,7 @@ class ApkWorkspace private constructor(
         ZipFile(sourceApk).use { zip ->
             zip.entries().asSequence().forEach { entry ->
                 if (!entry.name.startsWith(normalized) || entry.name == normalized) return@forEach
+                if (isDeleted(entry.name)) return@forEach
                 val remainder = entry.name.removePrefix(normalized)
                 val first = remainder.substringBefore('/')
                 if (first.isEmpty()) return@forEach
@@ -78,7 +81,7 @@ class ApkWorkspace private constructor(
                 )
             }
         }
-        File(filesDirectory, normalized).listFiles()?.forEach { file ->
+        File(filesDirectory, normalized).listFiles()?.filterNot { isDeleted(normalized + it.name) }?.forEach { file ->
             children[file.name] = ApkWorkspaceEntry(
                 name = file.name,
                 archivePath = normalized + file.name,
@@ -96,6 +99,7 @@ class ApkWorkspace private constructor(
     }
 
     fun extractEntry(path: String): File {
+        check(!isDeleted(path)) { "Tệp đã bị xóa khỏi APK đầu ra" }
         if (hasDecodedProject) {
             val decoded = safeDecoded(path)
             check(decoded.isFile) { "$path không phải là tệp trong project" }
@@ -115,6 +119,7 @@ class ApkWorkspace private constructor(
     }
 
     fun previewFile(path: String): File {
+        check(!isDeleted(path)) { "Tệp đã bị xóa khỏi APK đầu ra" }
         if (hasDecodedProject) {
             val decoded = safeDecoded(path)
             check(decoded.isFile) { "$path không phải là tệp trong project" }
@@ -154,7 +159,7 @@ class ApkWorkspace private constructor(
         val directorySelections = linkedSetOf<String>()
 
         ZipFile(sourceApk).use { zip ->
-            val entries = zip.entries().asSequence().filterNot { it.isDirectory }.toList()
+            val entries = zip.entries().asSequence().filterNot { it.isDirectory || isDeleted(it.name) }.toList()
             normalized.forEach { selected ->
                 val selectedEntry = zip.getEntry(selected)
                 if (selectedEntry != null && !selectedEntry.isDirectory) {
@@ -227,11 +232,13 @@ class ApkWorkspace private constructor(
         ZipFile(sourceApk).use { zip ->
             val total = zip.entries().asSequence()
                 .filterNot { it.isDirectory }
+                .filterNot { isDeleted(it.name) }
                 .filter { matches(scope, it.name) }
                 .count()
             var completed = 0
             zip.entries().asSequence()
                 .filterNot { it.isDirectory }
+                .filterNot { isDeleted(it.name) }
                 .filter { matches(scope, it.name) }
                 .forEach { entry ->
                 val output = safeOutput(entry.name)
@@ -268,6 +275,43 @@ class ApkWorkspace private constructor(
         }
         onProgress(ApkWorkspaceProgress(phase, 100, 100, started))
     }
+
+    /** Deletes selected entries from the APK workspace; the installed app is never modified. */
+    fun deleteEntries(paths: Collection<String>): Int {
+        val normalized = paths.map { it.trim('/') }.filter { it.isNotBlank() }.distinct()
+        require(normalized.isNotEmpty()) { "Chưa chọn tệp hoặc thư mục" }
+        if (hasDecodedProject) {
+            normalized.forEach { path ->
+                val target = safeDecoded(path)
+                require(target != decodedDirectory && target.exists()) { "Không tìm thấy $path" }
+                check(target.deleteRecursively()) { "Không thể xóa $path khỏi project" }
+            }
+        } else {
+            val deleted = readDeletedEntries().toMutableSet()
+            normalized.forEach { path ->
+                val target = safeOutput(path)
+                require(target.canonicalFile != filesDirectory.canonicalFile) { "Không thể xóa thư mục gốc" }
+                target.deleteRecursively()
+                deleted += path
+            }
+            deletedEntriesFile.parentFile?.mkdirs()
+            deletedEntriesFile.writeText(JSONArray(deleted.sorted()).toString())
+        }
+        return normalized.size
+    }
+
+    fun isDeleted(path: String): Boolean {
+        val candidate = path.trim('/')
+        return readDeletedEntries().any { candidate == it || candidate.startsWith("$it/") }
+    }
+
+    fun deletedEntries(): Set<String> = readDeletedEntries()
+
+    private fun readDeletedEntries(): Set<String> = runCatching {
+        if (!deletedEntriesFile.isFile) return emptySet()
+        val json = JSONArray(deletedEntriesFile.readText())
+        buildSet { repeat(json.length()) { add(json.getString(it).trim('/')) } }
+    }.getOrDefault(emptySet())
 
     fun extractedTextFiles(): List<File> = activeFilesDirectory().walkTopDown()
         .filter { it.isFile && it.extension.lowercase() in TEXT_EXTENSIONS }
