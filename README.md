@@ -29,9 +29,17 @@ PiperOS Tool.
 
 ## Bản hiện tại
 
-`3.7.1.PRE` (versionCode `75`) sử dụng `minSdk 29 (Android 10)`, `targetSdk 37 (Android 17)`, Kotlin `2.4.10`.
+`3.7.3.PRE` (versionCode `79`) sử dụng `minSdk 29 (Android 10)`, `targetSdk 37 (Android 17)`, Kotlin `2.4.10`.
 
-**Tải và cài đặt:** [Bản phát hành 3.7.1.PRE](https://github.com/Phi574/PiperOSTool-Android/releases/tag/v3.7.1.PRE). APK được ký bằng cùng khóa như các bản trước; màn Cập nhật chỉ chấp nhận APK có cùng chữ ký với bản đang cài.
+**Tải và cài đặt:** [Bản phát hành 3.7.3.PRE](https://github.com/Phi574/PiperOSTool-Android/releases/tag/v3.7.3.PRE). APK phát hành được ký bằng cùng khóa như các bản trước; màn Cập nhật chỉ chấp nhận APK có cùng chữ ký với bản đang cài.
+
+### Trang chủ 3.7.3.PRE
+
+PiperOS Media và PiperOS 2FA được chuyển từ Beta sang Trang chủ. Trong PiperOS MOD, mục Xóa ứng dụng đã bỏ; Quản lý ứng dụng mở trang Thông tin ứng dụng của Android cho ứng dụng đang chọn.
+
+### PiperOS MOD 3.7.3.PRE
+
+PiperOS MOD cung cấp kiểm tra chỉ đọc một số dấu hiệu trong APK, thông tin ứng dụng/quyền/chứng chỉ và thao tác chạy ứng dụng. Các mục vá và công cụ đang hiển thị BETA, chưa hoạt động. Quản lý ứng dụng mở trang thông tin hệ thống của ứng dụng được chọn; mục Xóa ứng dụng đã được bỏ.
 
 ### PiperOS 2FA 3.7.1.PRE
 

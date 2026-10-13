@@ -66,6 +66,11 @@
         android:localeConfig="@xml/locales_config">
 
         <activity android:name=".AppUpdateActivity" android:exported="false" android:theme="@style/Theme.PiperOSTool" />
+        <activity
+            android:name=".PiperOsModActivity"
+            android:exported="false"
+            android:theme="@style/Theme.PiperOSTool"
+            android:windowSoftInputMode="adjustResize" />
 
         <service
             android:name=".NotificationListener"

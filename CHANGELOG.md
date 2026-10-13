@@ -1,5 +1,23 @@
 # Changelog
 
+## 3.7.3.PRE
+
+- Chuyển PiperOS Media và PiperOS 2FA sang Trang chủ, giữ biểu tượng, mô tả ngắn và cách mở activity hiện có.
+- Gỡ PiperOS Media, PiperOS 2FA và thẻ PiperOS QR đã ẩn khỏi trang Beta; trang Beta chỉ còn các tính năng thử nghiệm còn lại.
+- Trong PiperOS MOD, bỏ mục Xóa ứng dụng và mở Quản lý ứng dụng trực tiếp tới trang Thông tin ứng dụng của Android cho package đang chọn.
+- Nâng versionCode lên 79 để nhận cập nhật từ 3.7.2.PRE.
+
+## 3.7.2.PRE
+
+- Thêm PiperOS MOD vào bảng thao tác của ứng dụng đã chọn trong trang Ứng dụng.
+- PiperOS MOD hiển thị icon, tên, package, phiên bản và quét chỉ đọc APK để nhận diện dấu hiệu thư viện quảng cáo, xác minh giấy phép, thanh toán trong ứng dụng; không sửa hoặc bỏ qua cơ chế bảo vệ của ứng dụng.
+- Thêm Thông tin ứng dụng với thông tin gói, activity khởi chạy, SHA-1 chứng chỉ, đường dẫn, phiên bản/build, SDK, UID, nguồn cài, ngày cài, dung lượng APK và danh sách quyền kèm trạng thái cấp.
+- Thêm trang Thông tin chứng chỉ hiển thị lược đồ ký APK, thông tin X.509, thời hạn, mã băm, CRC32, chứng chỉ Base64 và khóa công khai.
+- Mở Menu các bản vá bằng cửa sổ PiperOS; liệt kê các lựa chọn như ảnh tham khảo bằng hàng xám không có icon, mỗi hàng có viên thuốc icon BETA và không thể bấm.
+- Mở mục Công cụ bằng cửa sổ PiperOS với các mục nhân bản ứng dụng, phân loại mua hàng, gỡ mục mua đã lưu, sao lưu, Google Play và chia sẻ; tất cả đều xám, có viên thuốc icon BETA và chưa thể bấm.
+- Cho phép chạy ứng dụng đã chọn; bỏ mục Xóa ứng dụng và chuyển Quản lý ứng dụng sang trang Thông tin ứng dụng của Android cho package đã chọn.
+- Nâng versionCode lên 78 để cập nhật từ 3.7.1.PRE.
+
 ## 3.7.1.PRE
 
 - Thêm mục **Có gì mới** trong bảng `window`, hiển thị ghi chú 3.7.1.PRE và cho xem lịch sử chi tiết các phiên bản trước.

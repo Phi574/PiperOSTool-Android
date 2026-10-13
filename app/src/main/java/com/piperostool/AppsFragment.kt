@@ -517,6 +517,7 @@ class AppsFragment : Fragment() {
 
         val btnLaunch = dialogView.findViewById<LinearLayout>(R.id.btnLaunch)
         val btnDetails = dialogView.findViewById<LinearLayout>(R.id.btnDetails)
+        val btnPiperOsMod = dialogView.findViewById<LinearLayout>(R.id.btnPiperOsMod)
 
         ivIcon.setImageDrawable(app.icon)
         tvName.text = app.name
@@ -579,6 +580,14 @@ class AppsFragment : Fragment() {
         btnDetails.setOnClickListener {
             bottomSheetDialog.dismiss()
             showActivitiesList(app)
+        }
+
+        btnPiperOsMod.setOnClickListener {
+            bottomSheetDialog.dismiss()
+            startActivity(
+                Intent(requireContext(), PiperOsModActivity::class.java)
+                    .putExtra(PiperOsModActivity.EXTRA_PACKAGE_NAME, app.packageName)
+            )
         }
 
         btnDialogBackup.setOnClickListener {

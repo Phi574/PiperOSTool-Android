@@ -32,6 +32,12 @@ class homeFragment : Fragment() {
         view.findViewById<View>(R.id.homePiperQr).setOnClickListener {
             startActivity(Intent(requireContext(), PiperQrActivity::class.java))
         }
+        view.findViewById<View>(R.id.homePiperMedia).setOnClickListener {
+            startActivity(Intent(requireContext(), PiperMediaActivity::class.java))
+        }
+        view.findViewById<View>(R.id.homePiper2fa).setOnClickListener {
+            startActivity(Intent(requireContext(), BetaTwoFactorActivity::class.java))
+        }
         view.findViewById<View>(R.id.btnHomeWindow).setOnClickListener { openWindowDrawer(view) }
         view.findViewById<View>(R.id.btnCloseHomeWindow).setOnClickListener { closeWindowDrawer(view) }
         view.findViewById<View>(R.id.homeWindowScrim).setOnClickListener { closeWindowDrawer(view) }

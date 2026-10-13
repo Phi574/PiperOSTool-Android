@@ -18,10 +18,6 @@ class BetaFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        view.findViewById<View>(R.id.featurePiperQr).visibility = View.GONE
-        view.findViewById<View>(R.id.featurePiperMedia).setOnClickListener {
-            startActivity(Intent(requireContext(), PiperMediaActivity::class.java))
-        }
         view.findViewById<View>(R.id.featurePiperTerminal).setOnClickListener {
             startActivity(Intent(requireContext(), PiperTerminalActivity::class.java))
         }
@@ -33,9 +29,6 @@ class BetaFragment : Fragment() {
         }
         view.findViewById<View>(R.id.featurePiperAdb).setOnClickListener {
             startActivity(Intent(requireContext(), com.piperostool.privileged.ui.PiperAdbActivity::class.java))
-        }
-        view.findViewById<View>(R.id.featurePiper2fa).setOnClickListener {
-            startActivity(Intent(requireContext(), BetaTwoFactorActivity::class.java))
         }
     }
 }
