@@ -46,6 +46,10 @@ import java.util.concurrent.atomic.AtomicReference
 import kotlin.math.roundToInt
 
 class PiperRemoteActivity : AppCompatActivity(), PiperRemoteClient.Listener {
+    private companion object {
+        const val LOCAL_NETWORK_PERMISSION = "android.permission.ACCESS_LOCAL_NETWORK"
+    }
+
     private lateinit var sharePanel: View
     private lateinit var connectPanel: View
     private lateinit var credentialPanel: View
@@ -68,6 +72,7 @@ class PiperRemoteActivity : AppCompatActivity(), PiperRemoteClient.Listener {
     private var receiverRegistered = false
     private var connected = false
     private var shownRequestId: String? = null
+    private var pendingLocalNetworkAction: (() -> Unit)? = null
     private val pendingFrame = AtomicReference<Bitmap?>(null)
     private val frameRenderScheduled = AtomicBoolean(false)
     private val client = PiperRemoteClient(this)
@@ -77,6 +82,12 @@ class PiperRemoteActivity : AppCompatActivity(), PiperRemoteClient.Listener {
 
     private val audioPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) {
         launchProjection()
+    }
+
+    private val localNetworkPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        val action = pendingLocalNetworkAction
+        pendingLocalNetworkAction = null
+        if (granted) action?.invoke() else showStatus(getString(R.string.remote_local_network_denied))
     }
 
     private val projectionLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -212,14 +223,16 @@ class PiperRemoteActivity : AppCompatActivity(), PiperRemoteClient.Listener {
         }
         findViewById<View>(R.id.btnScanLanRemote).setOnClickListener { scanLan() }
         findViewById<View>(R.id.btnScanRemoteQr).setOnClickListener {
-            qrLauncher.launch(
-                ScanOptions()
-                    .setDesiredBarcodeFormats(ScanOptions.QR_CODE)
-                    .setPrompt(getString(R.string.remote_scan_qr_prompt))
-                    .setBeepEnabled(false)
-                    .setCaptureActivity(PiperRemoteQrCaptureActivity::class.java)
-                    .setOrientationLocked(true)
-            )
+            withLocalNetworkPermission {
+                qrLauncher.launch(
+                    ScanOptions()
+                        .setDesiredBarcodeFormats(ScanOptions.QR_CODE)
+                        .setPrompt(getString(R.string.remote_scan_qr_prompt))
+                        .setBeepEnabled(false)
+                        .setCaptureActivity(PiperRemoteQrCaptureActivity::class.java)
+                        .setOrientationLocked(true)
+                )
+            }
         }
         findViewById<View>(R.id.btnConnectRemoteCode).setOnClickListener { resolveCode() }
         findViewById<View>(R.id.btnRemoteExitViewer).setOnClickListener { confirmDisconnect() }
@@ -231,6 +244,10 @@ class PiperRemoteActivity : AppCompatActivity(), PiperRemoteClient.Listener {
     }
 
     private fun requestShare(method: PiperRemoteMethod) {
+        if (method != PiperRemoteMethod.USB && !hasLocalNetworkPermission()) {
+            withLocalNetworkPermission { requestShare(method) }
+            return
+        }
         if (PiperRemoteShareService.currentSession != null) PiperRemoteShareService.stop(this)
         pendingMethod = method
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
@@ -273,6 +290,19 @@ class PiperRemoteActivity : AppCompatActivity(), PiperRemoteClient.Listener {
             manager.createScreenCaptureIntent()
         }
         projectionLauncher.launch(captureIntent)
+    }
+
+    private fun hasLocalNetworkPermission(): Boolean =
+        Build.VERSION.SDK_INT < 37 ||
+            ContextCompat.checkSelfPermission(this, LOCAL_NETWORK_PERMISSION) == PackageManager.PERMISSION_GRANTED
+
+    private fun withLocalNetworkPermission(action: () -> Unit) {
+        if (hasLocalNetworkPermission()) {
+            action()
+            return
+        }
+        pendingLocalNetworkAction = action
+        localNetworkPermissionLauncher.launch(LOCAL_NETWORK_PERMISSION)
     }
 
     private fun renderRole(isShare: Boolean) {
@@ -355,6 +385,10 @@ class PiperRemoteActivity : AppCompatActivity(), PiperRemoteClient.Listener {
     }
 
     private fun scanLan() {
+        if (!hasLocalNetworkPermission()) {
+            withLocalNetworkPermission(::scanLan)
+            return
+        }
         showStatus(getString(R.string.remote_scanning_lan))
         deviceList.removeAllViews()
         io.execute {
@@ -401,6 +435,10 @@ class PiperRemoteActivity : AppCompatActivity(), PiperRemoteClient.Listener {
             codeInput.error = getString(R.string.remote_code_invalid)
             return
         }
+        if (!hasLocalNetworkPermission()) {
+            withLocalNetworkPermission(::resolveCode)
+            return
+        }
         showStatus(getString(R.string.remote_resolving_code))
         io.execute {
             val endpoint = runCatching { PiperRemoteDiscovery.resolveCode(code) }.getOrNull()
@@ -411,6 +449,10 @@ class PiperRemoteActivity : AppCompatActivity(), PiperRemoteClient.Listener {
     }
 
     private fun connect(endpoint: PiperRemoteEndpoint) {
+        if (endpoint.method != PiperRemoteMethod.USB && !hasLocalNetworkPermission()) {
+            withLocalNetworkPermission { connect(endpoint) }
+            return
+        }
         client.close(false)
         stopToolbar.visibility = View.VISIBLE
         showStatus(getString(R.string.remote_connecting, endpoint.name))

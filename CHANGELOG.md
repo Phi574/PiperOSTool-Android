@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.7.4.PRE
+
+- Fix kết nối PiperOS View Remote trên Android 17: khai báo và xin quyền Mạng cục bộ trước khi quét LAN, tìm mã 6 số, quét/kết nối QR hoặc chia sẻ qua Wi‑Fi.
+- Giữ luồng USB ADB không yêu cầu quyền Mạng cục bộ; báo rõ khi người dùng từ chối quyền để có thể cấp lại trong Cài đặt ứng dụng.
+- Nâng versionCode lên 80 để cập nhật đè từ 3.7.3.PRE.
+
 ## 3.7.3.PRE
 
 - Chuyển PiperOS Media và PiperOS 2FA sang Trang chủ, giữ biểu tượng, mô tả ngắn và cách mở activity hiện có.

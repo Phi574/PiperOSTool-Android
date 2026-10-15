@@ -720,6 +720,7 @@
     <string name="remote_share_device">Chia sẻ máy này</string>
     <string name="remote_control_device">Kết nối thiết bị</string>
     <string name="remote_private_lan_note">Kết nối được truyền trực tiếp trong mạng nội bộ. Không có hình ảnh hay thao tác nào đi qua máy chủ PiperOS.</string>
+    <string name="remote_local_network_denied">PiperOS cần quyền Mạng cục bộ để tìm và kết nối thiết bị qua Wi‑Fi. Bạn có thể cấp quyền trong Cài đặt ứng dụng rồi thử lại.</string>
     <string name="remote_choose_share_method">Chọn cách chia sẻ</string>
     <string name="remote_method_lan_share">Hiện với thiết bị dùng chung Wi‑Fi</string>
     <string name="remote_method_qr_share">Tạo mã QR hoặc quét mã QR PC để kết nối riêng</string>
