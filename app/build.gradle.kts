@@ -9,8 +9,8 @@ plugins {
 
 val googleServicesConfig = file("google-services.json")
 val testPackage = providers.gradleProperty("piperTestPackage").orNull == "true"
-val piperVersionCode = providers.gradleProperty("piperVersionCode").orNull?.toIntOrNull() ?: 94
-val piperVersionName = providers.gradleProperty("piperVersionName").orNull ?: "3.8.1"
+val piperVersionCode = providers.gradleProperty("piperVersionCode").orNull?.toIntOrNull() ?: 95
+val piperVersionName = providers.gradleProperty("piperVersionName").orNull ?: "3.8.2"
 val piperSigningPropertiesFile = File(System.getProperty("user.home"), ".android/PiperOS/signing.properties")
 val piperSigningProperties = Properties().apply {
     if (piperSigningPropertiesFile.isFile) {

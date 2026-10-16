@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.8.2 — Bản chính thức
+
+- Sửa trang **Có gì mới**: ghi chú bản phát hành hiện tại được bổ sung từ GitHub, trong khi changelog nhúng vẫn dùng làm nguồn dự phòng khi ngoại tuyến.
+- Giữ các ghi chú chi tiết trong app ưu tiên hơn phần mô tả ngắn của release; lịch sử trực tuyến bổ sung các phiên bản mới bị thiếu trong changelog cục bộ.
+- Nâng versionCode lên 95 để cập nhật từ 3.8.1.
+
 ## 3.8.0 — Bản chính thức
 
 - Sửa trang **Có gì mới** để nhận đúng phiên bản hiện tại kể cả tiêu đề có phần mô tả; hiện đầy đủ lịch sử phiên bản theo thứ tự mới nhất trước.

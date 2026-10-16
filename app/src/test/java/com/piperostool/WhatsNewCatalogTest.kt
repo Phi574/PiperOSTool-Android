@@ -49,4 +49,22 @@ class WhatsNewCatalogTest {
         assertEquals("3.8.0.beta", WhatsNewCatalog.currentRelease(releases, "3.8.0.beta")?.version)
         assertNull(WhatsNewCatalog.currentRelease(releases, "3.8.0"))
     }
+
+    @Test fun remoteNotesFillMissingCurrentReleaseAndKeepBundledDetails() {
+        val local = WhatsNewCatalog.parse("""
+            ## 3.8.0 — Stable
+            - Bundled detailed notes.
+        """.trimIndent())
+        val remote = listOf(
+            AppRelease("v3.8.1", "PiperOS Tool 3.8.1", "Hotfix notes.\n- Firebase Analytics integration.", "2026-10-16", null, 0L, null),
+            AppRelease("3.8.0", "PiperOS Tool 3.8.0", "Short release body.", "2026-10-15", null, 0L, null)
+        )
+
+        val merged = WhatsNewCatalog.mergeLocalAndRemote(local, remote)
+
+        assertEquals(listOf("3.8.1", "3.8.0"), merged.map { it.version })
+        assertEquals("Hotfix notes.\nFirebase Analytics integration.", merged.first().details)
+        assertEquals("Bundled detailed notes.", merged.last().details)
+        assertEquals("3.8.1", WhatsNewCatalog.currentRelease(merged, "3.8.1")?.version)
+    }
 }

@@ -14,16 +14,20 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.lifecycle.lifecycleScope
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.button.MaterialButtonToggleGroup
 import com.google.android.material.card.MaterialCardView
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.launch
 
 class WhatsNewActivity : AppCompatActivity() {
     private lateinit var content: LinearLayout
     private lateinit var historyContainer: LinearLayout
     private lateinit var filters: MaterialButtonToggleGroup
-    private val releases by lazy { readReleaseNotes() }
+    private var releases = emptyList<WhatsNewRelease>()
     private val filterIds = mutableMapOf<AppUpdateRepository.Channel?, Int>()
+    private var selectedChannel: AppUpdateRepository.Channel? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -68,7 +72,25 @@ class WhatsNewActivity : AppCompatActivity() {
             insets
         }
         ViewCompat.requestApplyInsets(root)
+        releases = readReleaseNotes()
         render()
+        refreshReleaseNotes()
+    }
+
+    private fun refreshReleaseNotes() {
+        lifecycleScope.launch {
+            try {
+                val merged = WhatsNewCatalog.mergeLocalAndRemote(releases, AppUpdateRepository.releases())
+                if (merged != releases) {
+                    releases = merged
+                    render()
+                }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                // Keep the bundled changelog available when GitHub is offline or rate-limited.
+            }
+        }
     }
 
     private fun render() {
@@ -101,9 +123,12 @@ class WhatsNewActivity : AppCompatActivity() {
         content.addView(filters, margin(bottom = 10))
         historyContainer = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         content.addView(historyContainer)
-        filters.check(filterIds[null]!!)
+        filters.check(filterIds[selectedChannel] ?: filterIds[null]!!)
         filters.addOnButtonCheckedListener { _, checkedId, isChecked ->
-            if (isChecked) renderHistory(currentRelease)
+            if (isChecked) {
+                selectedChannel = filterIds.entries.firstOrNull { it.value == checkedId }?.key
+                renderHistory(WhatsNewCatalog.currentRelease(releases, current))
+            }
         }
         renderHistory(currentRelease)
     }
@@ -126,8 +151,6 @@ class WhatsNewActivity : AppCompatActivity() {
 
     private fun renderHistory(currentRelease: WhatsNewRelease?) {
         historyContainer.removeAllViews()
-        val selectedId = filters.checkedButtonId
-        val selectedChannel = filterIds.entries.firstOrNull { it.value == selectedId }?.key
         val history = releases.filterNot { note ->
             currentRelease != null && note.parsedVersion == currentRelease.parsedVersion
         }.filter { selectedChannel == null || it.channel == selectedChannel }

@@ -34,4 +34,21 @@ internal object WhatsNewCatalog {
         val installed = AppUpdateRepository.version(installedVersion) ?: return null
         return releases.firstOrNull { it.parsedVersion == installed }
     }
+
+    fun mergeLocalAndRemote(local: List<WhatsNewRelease>, remote: List<AppRelease>): List<WhatsNewRelease> {
+        val merged = local.associateBy { it.parsedVersion }.toMutableMap()
+        remote.forEach { release ->
+            val parsed = AppUpdateRepository.version(release.tag) ?: return@forEach
+            if (parsed in merged) return@forEach
+            val version = release.tag.removePrefix("v").removePrefix("V")
+            val details = release.description.lineSequence().joinToString("\n") { line ->
+                line.trim()
+                    .removePrefix("- ")
+                    .replace(Regex("\\*\\*(.*?)\\*\\*"), "$1")
+                    .replace(Regex("`([^`]*)`"), "$1")
+            }.trim()
+            merged[parsed] = WhatsNewRelease(version, details)
+        }
+        return merged.values.sortedWith { left, right -> right.parsedVersion.compareTo(left.parsedVersion) }
+    }
 }
