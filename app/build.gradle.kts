@@ -9,8 +9,8 @@ plugins {
 
 val googleServicesConfig = file("google-services.json")
 val testPackage = providers.gradleProperty("piperTestPackage").orNull == "true"
-val piperVersionCode = providers.gradleProperty("piperVersionCode").orNull?.toIntOrNull() ?: 93
-val piperVersionName = providers.gradleProperty("piperVersionName").orNull ?: "3.8.0"
+val piperVersionCode = providers.gradleProperty("piperVersionCode").orNull?.toIntOrNull() ?: 94
+val piperVersionName = providers.gradleProperty("piperVersionName").orNull ?: "3.8.1"
 val piperSigningPropertiesFile = File(System.getProperty("user.home"), ".android/PiperOS/signing.properties")
 val piperSigningProperties = Properties().apply {
     if (piperSigningPropertiesFile.isFile) {
@@ -108,6 +108,7 @@ dependencies {
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.androidx.appcompat)
     implementation(platform("com.google.firebase:firebase-bom:34.17.0"))
+    implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-appcheck-playintegrity")
     implementation("com.google.firebase:firebase-auth")
     implementation("androidx.credentials:credentials:1.3.0")
