@@ -14,7 +14,9 @@ import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
 
 class WhatsNewActivity : AppCompatActivity() {
-    private data class ReleaseNote(val version: String, val details: String)
+    private data class ReleaseNote(val version: String, val details: String) {
+        val channel: AppUpdateRepository.Channel get() = AppUpdateRepository.channel(version)
+    }
 
     private lateinit var content: LinearLayout
     private lateinit var historyContainer: LinearLayout
@@ -95,8 +97,19 @@ class WhatsNewActivity : AppCompatActivity() {
             orientation = LinearLayout.VERTICAL
             visibility = if (historyVisible) View.VISIBLE else View.GONE
         }
-        releases.filterNot { it.version.equals(currentRelease?.version, ignoreCase = true) }
-            .forEach { release -> historyContainer.addView(releaseCard(release), margin(bottom = 10)) }
+        val previous = releases.filterNot { it.version.equals(currentRelease?.version, ignoreCase = true) }
+        listOf(AppUpdateRepository.Channel.PREVIEW, AppUpdateRepository.Channel.BETA, AppUpdateRepository.Channel.STABLE)
+            .forEach { channel ->
+                val group = previous.filter { it.channel == channel }
+                if (group.isNotEmpty()) {
+                    historyContainer.addView(label(channelTitle(channel), 13f, true).apply {
+                        setTextColor(PiperModernUi.accentColor(this@WhatsNewActivity))
+                    }, margin(bottom = 8))
+                    group.forEach { release ->
+                        historyContainer.addView(releaseCard(release), margin(bottom = 10))
+                    }
+                }
+            }
         content.addView(historyContainer)
     }
 
@@ -106,7 +119,7 @@ class WhatsNewActivity : AppCompatActivity() {
             setPadding(dp(16), dp(14), dp(16), dp(14))
         }
         val title = TextView(this).apply {
-            text = note.version
+            text = "${note.version} · ${channelTitle(note.channel)}"
             textSize = 17f
             setTypeface(typeface, Typeface.BOLD)
             setTextColor(PiperModernUi.textColor(this@WhatsNewActivity))
@@ -140,6 +153,12 @@ class WhatsNewActivity : AppCompatActivity() {
         setCardBackgroundColor(PiperModernUi.surfaceColor(this@WhatsNewActivity))
         strokeColor = PiperModernUi.borderColor(this@WhatsNewActivity)
         addView(label(text, 14f, false).apply { setPadding(dp(16), dp(14), dp(16), dp(14)) })
+    }
+
+    private fun channelTitle(channel: AppUpdateRepository.Channel): String = when (channel) {
+        AppUpdateRepository.Channel.STABLE -> "Ổn định chính thức"
+        AppUpdateRepository.Channel.BETA -> "Beta"
+        AppUpdateRepository.Channel.PREVIEW -> "Preview / PRE"
     }
 
     private fun label(text: String, size: Float, bold: Boolean) = TextView(this).apply {

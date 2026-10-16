@@ -15,12 +15,16 @@ import android.view.Window
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ProgressBar
+import android.widget.RadioButton
+import android.widget.RadioGroup
 import android.widget.ScrollView
+import android.widget.Switch
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AlertDialog
 import androidx.core.content.FileProvider
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.button.MaterialButton
@@ -41,6 +45,7 @@ class AppUpdateActivity : AppCompatActivity() {
     private lateinit var progressArtwork: ImageView
     private lateinit var progress: ProgressBar
     private lateinit var action: MaterialCardView
+    private lateinit var otherReleases: MaterialCardView
     private lateinit var actionText: TextView
     private lateinit var cancel: MaterialCardView
     private lateinit var logToggle: TextView
@@ -54,6 +59,8 @@ class AppUpdateActivity : AppCompatActivity() {
     private var installerPending = false
     private var lastLoggedPercent = -10
     private var currentArtwork = 0
+    private val updatePreferences by lazy { getSharedPreferences("update_program", MODE_PRIVATE) }
+    private var foundReleases: List<AppRelease> = emptyList()
 
     private val unknownSources = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         if (installerPending && packageManager.canRequestPackageInstalls()) {
@@ -77,6 +84,7 @@ class AppUpdateActivity : AppCompatActivity() {
         progressArtwork = findViewById(R.id.updateProgressArtwork)
         progress = findViewById(R.id.updateProgress)
         action = findViewById(R.id.updateAction)
+        otherReleases = findViewById(R.id.updateOtherReleases)
         actionText = findViewById(R.id.updateActionText)
         cancel = findViewById(R.id.updateCancel)
         logToggle = findViewById(R.id.updateLogToggle)
@@ -84,7 +92,9 @@ class AppUpdateActivity : AppCompatActivity() {
         log = findViewById(R.id.updateLog)
         currentVersion.text = "Đang có trên máy: ${AppVersion.name(this)}"
         findViewById<View>(R.id.updateBack).setOnClickListener { leave() }
+        findViewById<View>(R.id.updateSettings).setOnClickListener { showProgramSettings() }
         cancel.setOnClickListener { cancelDownload() }
+        otherReleases.setOnClickListener { showOtherReleases() }
         logToggle.setOnClickListener {
             val expanded = logScroll.visibility != View.VISIBLE
             logScroll.visibility = if (expanded) View.VISIBLE else View.GONE
@@ -109,6 +119,7 @@ class AppUpdateActivity : AppCompatActivity() {
         if (checking) return
         checking = true
         action.visibility = View.GONE
+        otherReleases.visibility = View.GONE
         status.text = "Đang kiểm tra"
         val loading = Dialog(this).apply {
             requestWindowFeature(Window.FEATURE_NO_TITLE)
@@ -130,17 +141,31 @@ class AppUpdateActivity : AppCompatActivity() {
         loading.show()
         lifecycleScope.launch {
             try {
-                val found = AppUpdateRepository.newestRelease()
+                foundReleases = AppUpdateRepository.releases()
+                val channel = AppUpdateRepository.selectedChannel(updatePreferences)
+                val localName = AppVersion.name(this@AppUpdateActivity)
+                val found = AppUpdateRepository.nextRelease(foundReleases, localName, channel)
+                val latestEligible = foundReleases.lastOrNull { AppUpdateRepository.isEligible(it.tag, channel) }
+                if (found == null) {
+                    headline.text = "PiperOS Tool $localName"
+                    published.text = latestEligible?.let { "${channelLabel(channel)} · bản mới nhất ${it.tag}" }.orEmpty()
+                    description.text = latestEligible?.let { readableNotes(it.description) } ?: "Chưa có bản phát hành cho kênh này."
+                    status.text = "Bản hiện tại là bản mới nhất trong kênh ${channelLabel(channel)}"
+                    release = null
+                    action.visibility = View.GONE
+                    return@launch
+                }
                 release = found
                 headline.text = found.title
                 published.text = "GitHub Releases · ${found.tag} · ${found.published}"
-                val local = AppUpdateRepository.version(AppVersion.name(this@AppUpdateActivity))
+                val local = AppUpdateRepository.version(localName)
                 val remote = AppUpdateRepository.version(found.tag)
                 val newer = local != null && remote != null && remote > local
                 if (newer) {
                     description.text = readableNotes(found.description)
-                    status.text = if (found.assetUrl == null) "Có bản mới nhưng chưa có APK để cài" else "Có phiên bản mới ${found.tag}"
+                    status.text = if (found.assetUrl == null) "Bước kế tiếp ${found.tag} chưa có APK để cài" else "Bước cập nhật kế tiếp: ${found.tag} · ${channelLabel(channel)}"
                     if (found.assetUrl != null) setAction("Tải xuống và cài đặt") { showInstallConfirmation() }
+                    otherReleases.visibility = if (AppUpdateRepository.laterReleases(foundReleases, localName, channel).size > 1) View.VISIBLE else View.GONE
                 } else {
                     if (remote != local) published.text = "Bản công khai gần nhất: ${found.tag}"
                     description.text = if (remote == local) readableNotes(found.description) else
@@ -161,6 +186,128 @@ class AppUpdateActivity : AppCompatActivity() {
         }
     }
 
+    private fun channelLabel(channel: AppUpdateRepository.Channel) = when (channel) {
+        AppUpdateRepository.Channel.STABLE -> "Ổn định"
+        AppUpdateRepository.Channel.BETA -> "BETA"
+        AppUpdateRepository.Channel.PREVIEW -> "PREVIEW"
+    }
+
+    private fun showProgramSettings() {
+        val enabled = updatePreferences.getBoolean("update_program_enabled", false)
+        if (!enabled && !updatePreferences.getBoolean("update_terms_accepted", false)) {
+            AlertDialog.Builder(this)
+                .setTitle("Điều khoản Beta / Preview")
+                .setMessage("Bản thử nghiệm có thể chứa lỗi, gây mất ổn định hoặc không tương thích với thiết bị. Hãy sao lưu dữ liệu trước khi cài. Bạn có thể tắt chương trình bất cứ lúc nào; các bản đang cài sẽ không tự hạ cấp.")
+                .setNegativeButton("Hủy", null)
+                .setPositiveButton("Đồng ý") { _, _ ->
+                    updatePreferences.edit().putBoolean("update_terms_accepted", true)
+                        .putBoolean("update_program_enabled", true)
+                        .putString("update_channel", AppUpdateRepository.Channel.BETA.name).apply()
+                    checkRelease()
+                }.show()
+            return
+        }
+        val root = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(20), dp(12), dp(20), dp(8))
+        }
+        val toggle = Switch(this).apply {
+            text = "Cập nhật các bản thử nghiệm (Beta/Preview)"
+            isChecked = enabled
+            setTextColor(PiperModernUi.textColor(this@AppUpdateActivity))
+        }
+        root.addView(toggle)
+        val choices = RadioGroup(this).apply { orientation = RadioGroup.VERTICAL }
+        val beta = RadioButton(this).apply { text = "Bản thử nghiệm (BETA)"; id = View.generateViewId() }
+        val preview = RadioButton(this).apply { text = "Bản DEV (PREVIEW) · có thể không ổn định"; id = View.generateViewId() }
+        choices.addView(beta); choices.addView(preview)
+        root.addView(choices)
+        val currentChannel = AppUpdateRepository.selectedChannel(updatePreferences)
+        choices.check(if (currentChannel == AppUpdateRepository.Channel.PREVIEW) preview.id else beta.id)
+        fun applyEnabledState() {
+            beta.isEnabled = toggle.isChecked
+            preview.isEnabled = toggle.isChecked
+            beta.alpha = if (toggle.isChecked) 1f else 0.45f
+            preview.alpha = if (toggle.isChecked) 1f else 0.45f
+        }
+        applyEnabledState()
+        val dialog = AlertDialog.Builder(this).setTitle("Chương trình Beta / Preview")
+            .setView(root).setNegativeButton("Đóng", null).create()
+        toggle.setOnCheckedChangeListener { _, checked ->
+            if (checked) {
+                if (!updatePreferences.getBoolean("update_terms_accepted", false)) {
+                    toggle.isChecked = false
+                    AlertDialog.Builder(this).setTitle("Điều khoản Beta / Preview")
+                        .setMessage("Bản thử nghiệm có thể chứa lỗi, gây mất ổn định hoặc không tương thích với thiết bị. Hãy sao lưu dữ liệu trước khi cài.")
+                        .setNegativeButton("Hủy", null)
+                        .setPositiveButton("Đồng ý") { _, _ ->
+                            updatePreferences.edit().putBoolean("update_terms_accepted", true)
+                                .putBoolean("update_program_enabled", true)
+                                .putString("update_channel", AppUpdateRepository.Channel.BETA.name).apply()
+                            dialog.dismiss(); checkRelease()
+                        }.show()
+                } else {
+                    val editor = updatePreferences.edit().putBoolean("update_program_enabled", true)
+                    if (AppUpdateRepository.selectedChannel(updatePreferences) == AppUpdateRepository.Channel.STABLE) {
+                        editor.putString("update_channel", AppUpdateRepository.Channel.BETA.name)
+                    }
+                    editor.apply()
+                    applyEnabledState()
+                }
+            } else {
+                val isNonStableInstalled = AppUpdateRepository.channel(AppVersion.name(this)) != AppUpdateRepository.Channel.STABLE
+                val confirm = {
+                    updatePreferences.edit().putBoolean("update_program_enabled", false)
+                        .putString("update_channel", AppUpdateRepository.Channel.STABLE.name).apply()
+                    applyEnabledState(); checkRelease()
+                }
+                if (isNonStableInstalled) AlertDialog.Builder(this)
+                    .setTitle("Thoát chương trình Beta / Preview?")
+                    .setMessage("Bạn đang dùng bản thử nghiệm. Nếu tắt, các lần kiểm tra sau chỉ đề xuất bản ổn định chính thức; ứng dụng hiện tại không bị gỡ hoặc hạ cấp.")
+                    .setNegativeButton("Tiếp tục tham gia") { _, _ -> toggle.isChecked = true }
+                    .setPositiveButton("Tắt chương trình") { _, _ -> confirm() }.show()
+                else confirm()
+            }
+        }
+        choices.setOnCheckedChangeListener { _, checkedId ->
+            if (toggle.isChecked) {
+                val selected = if (checkedId == preview.id) AppUpdateRepository.Channel.PREVIEW else AppUpdateRepository.Channel.BETA
+                updatePreferences.edit().putString("update_channel", selected.name).apply()
+                checkRelease()
+            }
+        }
+        dialog.show()
+    }
+
+    private fun showOtherReleases() {
+        val channel = AppUpdateRepository.selectedChannel(updatePreferences)
+        val candidates = AppUpdateRepository.laterReleases(foundReleases, AppVersion.name(this), channel)
+        if (candidates.isEmpty()) return
+        val next = AppUpdateRepository.nextRelease(foundReleases, AppVersion.name(this), channel)
+        AlertDialog.Builder(this).setTitle("Các bản cập nhật khác")
+            .setItems(candidates.map { "${it.tag} · ${channelLabel(AppUpdateRepository.channel(it.tag))}" }.toTypedArray()) { _, index ->
+                val selected = candidates[index]
+                if (selected.tag.equals(next?.tag, ignoreCase = true)) {
+                    selectRelease(selected)
+                    return@setItems
+                }
+                AlertDialog.Builder(this).setTitle("Cập nhật không tuần tự")
+                    .setMessage("Cài ${selected.tag} trực tiếp có thể gây lỗi ở một số phiên bản hoặc điện thoại. Bạn có thể bỏ qua các bản trung gian. Tiếp tục?")
+                    .setNegativeButton("Hủy", null)
+                    .setPositiveButton("Tiếp tục") { _, _ -> selectRelease(selected) }.show()
+            }.show()
+    }
+
+    private fun selectRelease(selected: AppRelease) {
+        release = selected
+        otherReleases.visibility = View.GONE
+        headline.text = selected.title
+        published.text = "GitHub Releases · ${selected.tag} · ${selected.published}"
+        description.text = readableNotes(selected.description)
+        status.text = "Đã chọn cập nhật lên ${selected.tag}"
+        setAction("Tải xuống và cài đặt") { showInstallConfirmation() }
+    }
+
     private fun showInstallConfirmation() {
         val dialog = Dialog(this)
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
@@ -173,7 +320,7 @@ class AppUpdateActivity : AppCompatActivity() {
             }
         }
         root.addView(TextView(this).apply {
-            text = "Cài bản mới nhất?"
+            text = "Cài bản ${release?.tag ?: "đã chọn"}?"
             textSize = 20f
             setTextColor(Color.WHITE)
             setTypeface(typeface, android.graphics.Typeface.BOLD)
@@ -222,6 +369,7 @@ class AppUpdateActivity : AppCompatActivity() {
         showDownloadArtwork(0)
         cancel.visibility = View.VISIBLE
         action.visibility = View.GONE
+        otherReleases.visibility = View.GONE
         appendLog("Bắt đầu tải ${target.tag} từ GitHub Releases")
         appendLog("Tệp cài đặt: ${AppUpdateRepository.apkFileName(target)}")
         downloadJob = lifecycleScope.launch {

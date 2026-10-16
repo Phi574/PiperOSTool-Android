@@ -29,17 +29,19 @@ PiperOS Tool.
 
 ## Bản hiện tại
 
-`3.7.4.PRE` (versionCode `80`) sử dụng `minSdk 29 (Android 10)`, `targetSdk 37 (Android 17)`, Kotlin `2.4.10`.
+`3.7.5.PRE` (versionCode `81`) sử dụng `minSdk 29 (Android 10)`, `targetSdk 37 (Android 17)`, Kotlin `2.4.10`.
 
-**Tải và cài đặt:** [Bản phát hành 3.7.4.PRE](https://github.com/Phi574/PiperOSTool-Android/releases/tag/v3.7.4.PRE). APK phát hành được ký bằng cùng khóa như các bản trước; màn Cập nhật chỉ chấp nhận APK có cùng chữ ký với bản đang cài.
+**Tải và cài đặt:** [Bản phát hành 3.7.5.PRE](https://github.com/Phi574/PiperOSTool-Android/releases/tag/v3.7.5.PRE). APK phát hành được ký bằng cùng khóa như các bản trước; màn Cập nhật chỉ chấp nhận APK có cùng chữ ký với bản đang cài.
+
+### Cập nhật và thông tin ứng dụng 3.7.5.PRE
+
+Màn Cập nhật mặc định đề xuất lần lượt từng phiên bản mới hơn. Người dùng có thể mở danh sách các bản xa hơn và xác nhận cảnh báo trước khi bỏ qua phiên bản trung gian. Kênh ổn định là mặc định; tham gia Beta hoặc Preview cần chấp nhận điều khoản. Beta nhận bản ổn định và Beta, còn Preview nhận cả bản Preview. Lịch sử Có gì mới được nhóm theo từng kênh.
+
+PiperOS MOD đã được gỡ. Trong chi tiết ứng dụng, mục **Thông tin ứng dụng** giữ kiểm tra chỉ đọc Google Ads, xác minh giấy phép, InApp và bản vá tùy chỉnh, cùng thông tin kỹ thuật, quyền và chứng chỉ.
 
 ### Trang chủ 3.7.3.PRE
 
-PiperOS Media và PiperOS 2FA được chuyển từ Beta sang Trang chủ. Trong PiperOS MOD, mục Xóa ứng dụng đã bỏ; Quản lý ứng dụng mở trang Thông tin ứng dụng của Android cho ứng dụng đang chọn.
-
-### PiperOS MOD 3.7.3.PRE
-
-PiperOS MOD cung cấp kiểm tra chỉ đọc một số dấu hiệu trong APK, thông tin ứng dụng/quyền/chứng chỉ và thao tác chạy ứng dụng. Các mục vá và công cụ đang hiển thị BETA, chưa hoạt động. Quản lý ứng dụng mở trang thông tin hệ thống của ứng dụng được chọn; mục Xóa ứng dụng đã được bỏ.
+PiperOS Media và PiperOS 2FA được chuyển từ Beta sang Trang chủ.
 
 ### PiperOS 2FA 3.7.1.PRE
 

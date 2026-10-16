@@ -1,7 +1,5 @@
 package com.piperostool
 
-import android.content.Context
-import android.content.Intent
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.graphics.Color
@@ -9,8 +7,6 @@ import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.os.Build
 import android.os.Bundle
-import android.net.Uri
-import android.provider.Settings
 import android.text.format.Formatter
 import android.view.Gravity
 import android.view.View
@@ -37,14 +33,14 @@ import java.util.Date
 import java.util.Locale
 import java.util.zip.CRC32
 
-class PiperOsModActivity : AppCompatActivity() {
+class AppInspectionActivity : AppCompatActivity() {
     private lateinit var packageInfo: PackageInfo
     private lateinit var appLabel: String
     private lateinit var rootView: LinearLayout
     private lateinit var rootContent: LinearLayout
     private lateinit var scanSummary: TextView
     private lateinit var scanRows: LinearLayout
-    private var scan: PiperModScanResult? = null
+    private var scan: AppPackageScanResult? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -89,10 +85,10 @@ class PiperOsModActivity : AppCompatActivity() {
             setOnClickListener { finish() }
         }, LinearLayout.LayoutParams(dp(96), dp(44)))
         toolbar.addView(TextView(this).apply {
-            text = "PiperOS MOD"
+            text = "Thông tin ứng dụng"
             textSize = 22f
             setTypeface(typeface, Typeface.BOLD)
-            setTextColor(PiperModernUi.textColor(this@PiperOsModActivity))
+            setTextColor(PiperModernUi.textColor(this@AppInspectionActivity))
             setPadding(dp(10), 0, 0, 0)
         }, LinearLayout.LayoutParams(0, -2, 1f))
         rootView.addView(toolbar, LinearLayout.LayoutParams(-1, dp(52)))
@@ -122,13 +118,13 @@ class PiperOsModActivity : AppCompatActivity() {
         cardBody.addView(LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(14), 0, 0, 0)
-            addView(label(appLabel, 18f, true).apply { setTextColor(PiperModernUi.textColor(this@PiperOsModActivity)) })
+            addView(label(appLabel, 18f, true).apply { setTextColor(PiperModernUi.textColor(this@AppInspectionActivity)) })
             addView(label(packageInfo.packageName.orEmpty(), 12f, false), topMargin(4))
             addView(label("Phiên bản ${packageInfo.versionName ?: "-"}", 12f, false), topMargin(4))
         }, LinearLayout.LayoutParams(0, -2, 1f))
         rootContent.addView(card(cardBody), bottomMargin(10))
         rootContent.addView(label(
-            "PiperOS MOD chỉ đọc APK để nhận diện một số thư viện và thông tin đóng gói. Chưa có thao tác vá nào được bật.",
+            "Thông tin ứng dụng và các dấu hiệu trong APK được hiển thị để tham khảo; các kết quả quét không thay đổi ứng dụng.",
             13f,
             false
         ).apply {
@@ -140,33 +136,21 @@ class PiperOsModActivity : AppCompatActivity() {
             setPadding(dp(16), dp(14), dp(16), dp(14))
         }
         scanCard.addView(label("KẾT QUẢ KIỂM TRA", 12f, true).apply {
-            setTextColor(PiperModernUi.accentColor(this@PiperOsModActivity))
+            setTextColor(PiperModernUi.accentColor(this@AppInspectionActivity))
         })
         scanSummary = label("Đang kiểm tra APK…", 14f, true).apply {
-            setTextColor(PiperModernUi.textColor(this@PiperOsModActivity))
+            setTextColor(PiperModernUi.textColor(this@AppInspectionActivity))
         }
         scanCard.addView(scanSummary, topMargin(8))
         scanRows = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         scanCard.addView(scanRows, topMargin(8))
         rootContent.addView(card(scanCard), bottomMargin(16))
 
-        rootContent.addView(label("TÙY CHỌN", 12f, true).apply {
-            setTextColor(PiperModernUi.secondaryTextColor(this@PiperOsModActivity))
+        rootContent.addView(label("CHI TIẾT ỨNG DỤNG", 12f, true).apply {
+            setTextColor(PiperModernUi.secondaryTextColor(this@AppInspectionActivity))
         }, bottomMargin(8))
-        addOption("Thông tin ứng dụng", "Xem thông tin, quyền và chứng chỉ", R.drawable.details, enabled = true) {
+        addOption("Thông tin, quyền và chứng chỉ", "Xem thông tin kỹ thuật đầy đủ của ứng dụng", R.drawable.details, enabled = true) {
             showAppInfo()
-        }
-        addOption("Chạy ứng dụng", "Khởi động ứng dụng đã chọn", R.drawable.play, enabled = true) {
-            launchSelectedApp()
-        }
-        addOption("Menu các bản vá", "Xem các mục dự kiến phát hành", R.drawable.apk, enabled = true) {
-            showPatchMenu()
-        }
-        addOption("Công cụ", "Xem các công cụ dự kiến phát hành", R.drawable.details, enabled = true) {
-            showToolsMenu()
-        }
-        addOption("Quản lý ứng dụng", "Mở trang thông tin ứng dụng trên thiết bị", R.drawable.apps, enabled = true) {
-            openSystemAppInfo()
         }
     }
 
@@ -175,14 +159,14 @@ class PiperOsModActivity : AppCompatActivity() {
         lifecycleScope.launch {
             val result = withContext(Dispatchers.IO) {
                 val path = packageInfo.applicationInfo?.sourceDir.orEmpty()
-                if (path.isBlank()) PiperModScanResult(false, false, false)
-                else PiperModAnalyzer.analyze(File(path))
+                if (path.isBlank()) AppPackageScanResult(false, false, false)
+                else AppPackageAnalyzer.analyze(File(path))
             }
             scan = result
-            scanSummary.text = if (result.hasSupportedPatchTargets) {
-                "Đã phát hiện một số thư viện liên quan. Các mục vá vẫn chưa được mở."
+            scanSummary.text = if (result.hasDetectedComponents) {
+                "Đã phát hiện một số thành phần trong APK. Xem từng kết quả bên dưới."
             } else {
-                "Không có gì để vá ở đây hoặc chưa phát hiện mục vá được hỗ trợ."
+                "Chưa phát hiện các dấu hiệu được hỗ trợ trong APK này."
             }
             scanRows.removeAllViews()
             addScanRow("Thấy Google ADS", result.googleAds)
@@ -201,14 +185,14 @@ class PiperOsModActivity : AppCompatActivity() {
         row.addView(View(this).apply {
             background = GradientDrawable().apply {
                 shape = GradientDrawable.OVAL
-                setColor(if (found) Color.rgb(44, 176, 111) else PiperModernUi.secondaryTextColor(this@PiperOsModActivity))
+                setColor(if (found) Color.rgb(44, 176, 111) else PiperModernUi.secondaryTextColor(this@AppInspectionActivity))
             }
         }, LinearLayout.LayoutParams(dp(8), dp(8)))
         row.addView(label(title, 13f, false).apply {
-            setTextColor(PiperModernUi.textColor(this@PiperOsModActivity))
+            setTextColor(PiperModernUi.textColor(this@AppInspectionActivity))
         }, LinearLayout.LayoutParams(0, -2, 1f).apply { marginStart = dp(10) })
         row.addView(label(if (found) "Có" else "Không phát hiện", 12f, true).apply {
-            setTextColor(if (found) Color.rgb(44, 176, 111) else PiperModernUi.secondaryTextColor(this@PiperOsModActivity))
+            setTextColor(if (found) Color.rgb(44, 176, 111) else PiperModernUi.secondaryTextColor(this@AppInspectionActivity))
             gravity = Gravity.END
         })
         scanRows.addView(row)
@@ -219,8 +203,8 @@ class PiperOsModActivity : AppCompatActivity() {
             radius = dp(16).toFloat()
             cardElevation = 0f
             strokeWidth = dp(1)
-            setCardBackgroundColor(PiperModernUi.surfaceColor(this@PiperOsModActivity))
-            strokeColor = PiperModernUi.borderColor(this@PiperOsModActivity)
+            setCardBackgroundColor(PiperModernUi.surfaceColor(this@AppInspectionActivity))
+            strokeColor = PiperModernUi.borderColor(this@AppInspectionActivity)
             isClickable = enabled
             isFocusable = enabled
             alpha = if (enabled) 1f else 0.46f
@@ -234,26 +218,26 @@ class PiperOsModActivity : AppCompatActivity() {
         body.addView(ImageView(this).apply {
             setImageResource(iconRes)
             imageTintList = android.content.res.ColorStateList.valueOf(
-                if (enabled) PiperModernUi.accentColor(this@PiperOsModActivity)
-                else PiperModernUi.secondaryTextColor(this@PiperOsModActivity)
+                if (enabled) PiperModernUi.accentColor(this@AppInspectionActivity)
+                else PiperModernUi.secondaryTextColor(this@AppInspectionActivity)
             )
         }, LinearLayout.LayoutParams(dp(24), dp(24)))
         body.addView(LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(12), 0, dp(8), 0)
-            addView(label(title, 14f, true).apply { setTextColor(PiperModernUi.textColor(this@PiperOsModActivity)) })
-            addView(label(subtitle, 11f, false).apply { setTextColor(PiperModernUi.secondaryTextColor(this@PiperOsModActivity)) }, topMargin(3))
+            addView(label(title, 14f, true).apply { setTextColor(PiperModernUi.textColor(this@AppInspectionActivity)) })
+            addView(label(subtitle, 11f, false).apply { setTextColor(PiperModernUi.secondaryTextColor(this@AppInspectionActivity)) }, topMargin(3))
         }, LinearLayout.LayoutParams(0, -2, 1f))
         if (!enabled) {
             val badge = TextView(this).apply {
                 text = "BETA"
                 textSize = 9f
                 setTypeface(typeface, Typeface.BOLD)
-                setTextColor(PiperModernUi.secondaryTextColor(this@PiperOsModActivity))
+                setTextColor(PiperModernUi.secondaryTextColor(this@AppInspectionActivity))
                 background = GradientDrawable().apply {
                     cornerRadius = dp(30).toFloat()
-                    setColor(PiperModernUi.surfaceColor(this@PiperOsModActivity))
-                    setStroke(dp(1), PiperModernUi.borderColor(this@PiperOsModActivity))
+                    setColor(PiperModernUi.surfaceColor(this@AppInspectionActivity))
+                    setStroke(dp(1), PiperModernUi.borderColor(this@AppInspectionActivity))
                 }
                 setPadding(dp(9), dp(5), dp(9), dp(5))
             }
@@ -261,104 +245,6 @@ class PiperOsModActivity : AppCompatActivity() {
         }
         row.addView(body)
         rootContent.addView(row, bottomMargin(8))
-    }
-
-    private fun showPatchMenu() {
-        showBetaFeatureMenu(
-            title = "Tạo tập tin APK đã sửa",
-            items = listOf(
-                "APK với Multi-patch",
-                "APK không có giấy phép xác minh",
-                "APK không có Google Ads",
-                "APK xây dựng lại cho giả lập InApp và LVL",
-                "APK có quyền và hoạt động đã được thay đổi",
-                "Ký lại với kiểm tra chữ ký",
-                "Ký bằng chữ ký gốc để vá lỗi vô hiệu hóa xác minh chữ ký APK"
-            )
-        )
-    }
-
-    private fun showToolsMenu() {
-        showBetaFeatureMenu(
-            title = "Công cụ",
-            items = listOf(
-                "Nhân bản ứng dụng (Không phải lúc nào cũng hoạt động)",
-                "Bộ phân loại mua hàng",
-                "Gỡ bỏ những mục mua đã lưu",
-                "Sao lưu",
-                "Mở trong Google Play",
-                "Chia sẻ ứng dụng này"
-            )
-        )
-    }
-
-    private fun showBetaFeatureMenu(title: String, items: List<String>) {
-        val content = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(0, 0, 0, dp(4))
-        }
-        val scroll = ScrollView(this).apply {
-            isFillViewport = false
-            isVerticalScrollBarEnabled = true
-            addView(content)
-        }
-        items.forEachIndexed { index, title ->
-            val row = LinearLayout(this).apply {
-                orientation = LinearLayout.HORIZONTAL
-                gravity = Gravity.CENTER_VERTICAL
-                setPadding(dp(8), dp(12), dp(4), dp(12))
-                alpha = 0.48f
-                isEnabled = false
-                isClickable = false
-                isFocusable = false
-                contentDescription = "$title, BETA, chưa khả dụng"
-            }
-            row.addView(label(title, 14f, false).apply {
-                setTextColor(PiperModernUi.secondaryTextColor(this@PiperOsModActivity))
-            }, LinearLayout.LayoutParams(0, -2, 1f))
-            val betaPill = LinearLayout(this).apply {
-                orientation = LinearLayout.HORIZONTAL
-                gravity = Gravity.CENTER
-                background = GradientDrawable().apply {
-                    cornerRadius = dp(30).toFloat()
-                    setColor(PiperModernUi.surfaceColor(this@PiperOsModActivity))
-                    setStroke(dp(1), PiperModernUi.borderColor(this@PiperOsModActivity))
-                }
-                setPadding(dp(7), dp(4), dp(8), dp(4))
-            }
-            betaPill.addView(ImageView(this).apply {
-                setImageResource(R.drawable.icon_beta)
-                scaleType = ImageView.ScaleType.CENTER_INSIDE
-                imageTintList = android.content.res.ColorStateList.valueOf(
-                    PiperModernUi.secondaryTextColor(this@PiperOsModActivity)
-                )
-                contentDescription = null
-            }, LinearLayout.LayoutParams(dp(12), dp(12)))
-            betaPill.addView(TextView(this).apply {
-                text = "BETA"
-                textSize = 9f
-                setTypeface(typeface, Typeface.BOLD)
-                setTextColor(PiperModernUi.secondaryTextColor(this@PiperOsModActivity))
-                setPadding(dp(4), 0, 0, 0)
-            })
-            row.addView(betaPill)
-            content.addView(row)
-            if (index < items.lastIndex) {
-                content.addView(View(this).apply {
-                    setBackgroundColor(PiperModernUi.borderColor(this@PiperOsModActivity))
-                    alpha = 0.55f
-                }, LinearLayout.LayoutParams(-1, dp(1)))
-            }
-        }
-        PiperDialog.showCustom(
-            context = this,
-            title = title,
-            content = scroll,
-            positiveLabel = "Đóng",
-            negativeLabel = null,
-            onPositive = { true }
-        )
-        PiperAutoFont.watch(scroll)
     }
 
     private fun showAppInfo() {
@@ -457,13 +343,13 @@ class PiperOsModActivity : AppCompatActivity() {
                 background = roundedSurface()
             }
             item.addView(label(permission, 12f, true).apply {
-                setTextColor(PiperModernUi.accentColor(this@PiperOsModActivity))
+                setTextColor(PiperModernUi.accentColor(this@AppInspectionActivity))
             })
             item.addView(label(description, 12f, false).apply {
-                setTextColor(PiperModernUi.secondaryTextColor(this@PiperOsModActivity))
+                setTextColor(PiperModernUi.secondaryTextColor(this@AppInspectionActivity))
             }, topMargin(6))
             item.addView(label(if (granted) "Đã cấp" else "Chưa cấp", 11f, true).apply {
-                setTextColor(if (granted) Color.rgb(44, 176, 111) else PiperModernUi.secondaryTextColor(this@PiperOsModActivity))
+                setTextColor(if (granted) Color.rgb(44, 176, 111) else PiperModernUi.secondaryTextColor(this@AppInspectionActivity))
             }, topMargin(6))
             container.addView(item, bottomMargin(8))
         }
@@ -523,32 +409,12 @@ class PiperOsModActivity : AppCompatActivity() {
 
     private fun addFact(container: LinearLayout, title: String, value: String) {
         container.addView(label("$title:", 12f, true).apply {
-            setTextColor(PiperModernUi.secondaryTextColor(this@PiperOsModActivity))
+            setTextColor(PiperModernUi.secondaryTextColor(this@AppInspectionActivity))
         })
         container.addView(label(value, 13f, false).apply {
-            setTextColor(PiperModernUi.textColor(this@PiperOsModActivity))
+            setTextColor(PiperModernUi.textColor(this@AppInspectionActivity))
             setTextIsSelectable(true)
         }, bottomMargin(10))
-    }
-
-    private fun launchSelectedApp() {
-        val launch = packageManager.getLaunchIntentForPackage(packageInfo.packageName)
-        if (launch == null) {
-            Toast.makeText(this, "Ứng dụng này không có màn hình khởi chạy.", Toast.LENGTH_LONG).show()
-            return
-        }
-        runCatching { startActivity(launch) }.onFailure {
-            Toast.makeText(this, "Không thể khởi chạy ${appLabel}.", Toast.LENGTH_LONG).show()
-        }
-    }
-
-    private fun openSystemAppInfo() {
-        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-            data = Uri.fromParts("package", packageInfo.packageName, null)
-        }
-        runCatching { startActivity(intent) }.onFailure {
-            Toast.makeText(this, "Không thể mở trang thông tin ứng dụng trên thiết bị.", Toast.LENGTH_LONG).show()
-        }
     }
 
     private fun installerLabel(packageName: String): String {
@@ -578,7 +444,7 @@ class PiperOsModActivity : AppCompatActivity() {
         tab.setTextColor(if (selected) PiperModernUi.onAccentColor(this) else PiperModernUi.secondaryTextColor(this))
         tab.background = GradientDrawable().apply {
             cornerRadius = dp(10).toFloat()
-            setColor(if (selected) PiperModernUi.accentColor(this@PiperOsModActivity) else Color.TRANSPARENT)
+            setColor(if (selected) PiperModernUi.accentColor(this@AppInspectionActivity) else Color.TRANSPARENT)
         }
     }
 
@@ -586,22 +452,22 @@ class PiperOsModActivity : AppCompatActivity() {
         radius = dp(18).toFloat()
         cardElevation = 0f
         strokeWidth = dp(1)
-        setCardBackgroundColor(PiperModernUi.surfaceColor(this@PiperOsModActivity))
-        strokeColor = PiperModernUi.borderColor(this@PiperOsModActivity)
+        setCardBackgroundColor(PiperModernUi.surfaceColor(this@AppInspectionActivity))
+        strokeColor = PiperModernUi.borderColor(this@AppInspectionActivity)
         addView(content)
     }
 
     private fun roundedSurface() = GradientDrawable().apply {
         cornerRadius = dp(12).toFloat()
-        setColor(PiperModernUi.surfaceColor(this@PiperOsModActivity))
-        setStroke(dp(1), PiperModernUi.borderColor(this@PiperOsModActivity))
+        setColor(PiperModernUi.surfaceColor(this@AppInspectionActivity))
+        setStroke(dp(1), PiperModernUi.borderColor(this@AppInspectionActivity))
     }
 
     private fun label(text: String, size: Float, bold: Boolean) = TextView(this).apply {
         this.text = text
         textSize = size
         if (bold) setTypeface(typeface, Typeface.BOLD)
-        setTextColor(PiperModernUi.secondaryTextColor(this@PiperOsModActivity))
+        setTextColor(PiperModernUi.secondaryTextColor(this@AppInspectionActivity))
         setLineSpacing(dp(2).toFloat(), 1.05f)
     }
 

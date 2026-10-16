@@ -1,5 +1,19 @@
 # Changelog
 
+## 3.7.5.PRE
+
+- Gỡ PiperOS MOD khỏi Trang Ứng dụng và bỏ các mục vá/công cụ; chuyển kiểm tra chỉ đọc dấu hiệu Google Ads, xác minh giấy phép, InApp và bản vá tùy chỉnh vào mục **Thông tin ứng dụng** cùng thông tin gói, quyền và chứng chỉ.
+- Màn Cập nhật mặc định đề xuất lần lượt phiên bản mới kế tiếp; thêm danh sách các bản mới hơn để người dùng chủ động chọn bản xa hơn kèm cảnh báo bỏ qua phiên bản trung gian.
+- Thêm chương trình Beta/Preview, điều khoản tham gia, lựa chọn kênh và xác nhận khi thoát; mặc định chỉ nhận bản ổn định, Beta nhận bản ổn định/Beta, Preview nhận mọi kênh.
+- Chia lịch sử **Có gì mới** thành Preview, Beta và bản ổn định; có thể xem toàn bộ các phiên bản.
+- Nâng versionCode lên 81 để cập nhật đè từ 3.7.4.PRE.
+
+## 3.7.4.PRE
+
+- Fix kết nối PiperOS View Remote trên Android 17: khai báo và xin quyền Mạng cục bộ trước khi quét LAN, tìm mã 6 số, quét/kết nối QR hoặc chia sẻ qua Wi‑Fi.
+- Giữ luồng USB ADB không yêu cầu quyền Mạng cục bộ; báo rõ khi người dùng từ chối quyền để có thể cấp lại trong Cài đặt ứng dụng.
+- Nâng versionCode lên 80 để cập nhật đè từ 3.7.3.PRE.
+
 ## 3.7.3.PRE
 
 - Chuyển PiperOS Media và PiperOS 2FA sang Trang chủ, giữ biểu tượng, mô tả ngắn và cách mở activity hiện có.

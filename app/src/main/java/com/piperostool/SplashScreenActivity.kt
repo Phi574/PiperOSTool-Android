@@ -163,7 +163,14 @@ class SplashScreenActivity : AppCompatActivity() {
 
                 setStartupStep("Đang kiểm tra phiên bản cập nhật…")
                 val latest = try {
-                    withTimeout(20_000L) { AppUpdateRepository.newestRelease() }
+                    withTimeout(20_000L) {
+                        val available = AppUpdateRepository.releases()
+                        val preferences = getSharedPreferences("update_program", MODE_PRIVATE)
+                        val channel = AppUpdateRepository.selectedChannel(preferences)
+                        val current = AppVersion.name(this@SplashScreenActivity)
+                        AppUpdateRepository.nextRelease(available, current, channel)
+                            ?: available.lastOrNull { AppUpdateRepository.isEligible(it.tag, channel) }
+                    }
                 } catch (cancelled: CancellationException) {
                     throw cancelled
                 } catch (_: Exception) {

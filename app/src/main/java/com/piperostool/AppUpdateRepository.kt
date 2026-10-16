@@ -2,6 +2,7 @@ package com.piperostool
 
 import android.content.Context
 import android.content.pm.PackageManager
+import android.content.SharedPreferences
 import com.android.apksig.ApkVerifier
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
@@ -25,20 +26,21 @@ internal data class AppRelease(
 )
 
 internal object AppUpdateRepository {
-    private const val API = "https://api.github.com/repos/Phi574/PiperOSTool-Android/releases?per_page=30"
+    private const val API = "https://api.github.com/repos/Phi574/PiperOSTool-Android/releases?per_page=100"
     private const val ASSET_PREFIX = "https://github.com/Phi574/PiperOSTool-Android/releases/download/"
     private const val MAX_APK_BYTES = 500L * 1024 * 1024
     private val versionPattern = Regex("^v?(\\d+)\\.(\\d+)\\.(\\d+)(?:[._-](.+))?$", RegexOption.IGNORE_CASE)
+    enum class Channel { STABLE, BETA, PREVIEW }
 
     internal data class Version(val major: Int, val minor: Int, val patch: Int, val stage: String) : Comparable<Version> {
         override fun compareTo(other: Version): Int {
             val numeric = compareValuesBy(this, other, Version::major, Version::minor, Version::patch)
             if (numeric != 0) return numeric
             fun rank(value: String): Int = when {
-                value.isBlank() -> 4
-                value.startsWith("rc") -> 3
+                value.isBlank() -> 5
+                value.startsWith("rc") -> 4
                 value.startsWith("beta") -> 2
-                else -> 1
+                else -> 3
             }
             return rank(stage).compareTo(rank(other.stage)).takeIf { it != 0 }
                 ?: stage.compareTo(other.stage, ignoreCase = true)
@@ -50,6 +52,39 @@ internal object AppUpdateRepository {
             match.groupValues[3].toInt(), match.groupValues[4].lowercase())
     }
 
+    fun channel(tag: String): Channel = when {
+        version(tag)?.stage.orEmpty().contains("beta", ignoreCase = true) -> Channel.BETA
+        version(tag)?.stage.orEmpty().isBlank() -> Channel.STABLE
+        else -> Channel.PREVIEW
+    }
+
+    fun selectedChannel(preferences: SharedPreferences): Channel {
+        if (!preferences.getBoolean("update_program_enabled", false)) return Channel.STABLE
+        return runCatching {
+        Channel.valueOf(preferences.getString("update_channel", Channel.STABLE.name) ?: Channel.STABLE.name)
+        }.getOrDefault(Channel.STABLE)
+    }
+
+    fun isEligible(tag: String, selected: Channel): Boolean = when (selected) {
+        Channel.STABLE -> channel(tag) == Channel.STABLE
+        Channel.BETA -> channel(tag) != Channel.PREVIEW
+        Channel.PREVIEW -> true
+    }
+
+    fun nextRelease(releases: List<AppRelease>, current: String, channel: Channel): AppRelease? {
+        val local = version(current) ?: return null
+        return releases.asSequence()
+            .filter { isEligible(it.tag, channel) }
+            .filter { candidate -> version(candidate.tag)?.let { it > local } == true }
+            .minByOrNull { version(it.tag)!! }
+    }
+
+    fun laterReleases(releases: List<AppRelease>, current: String, channel: Channel): List<AppRelease> {
+        val local = version(current) ?: return emptyList()
+        return releases.filter { isEligible(it.tag, channel) && version(it.tag)?.let { v -> v > local } == true }
+            .sortedBy { version(it.tag) }
+    }
+
     internal fun apkFileName(release: AppRelease): String {
         val safeTag = release.tag.replace(Regex("[^A-Za-z0-9._-]"), "_").take(48)
         val digest = release.assetDigest?.removePrefix("sha256:")
@@ -58,22 +93,26 @@ internal object AppUpdateRepository {
         return "PiperOS-Tool-$safeTag-$digest.apk"
     }
 
-    suspend fun newestRelease(): AppRelease = withContext(Dispatchers.IO) {
-        val connection = open(API)
-        try {
-            if (connection.responseCode != 200) throw IOException("GitHub trả về HTTP ${connection.responseCode} khi kiểm tra bản cập nhật")
-            val json = connection.inputStream.bufferedReader().use { reader ->
-                val chars = CharArray(8192)
-                val text = StringBuilder()
-                while (true) {
-                    val count = reader.read(chars)
-                    if (count < 0) break
-                    if (text.length + count > 2_000_000) throw IOException("Danh sách phiên bản quá lớn")
-                    text.append(chars, 0, count)
+    suspend fun releases(): List<AppRelease> = withContext(Dispatchers.IO) {
+        val all = mutableListOf<AppRelease>()
+        for (page in 1..10) {
+            val connection = open("$API&page=$page")
+            val json = try {
+                if (connection.responseCode != 200) throw IOException("GitHub trả về HTTP ${connection.responseCode} khi kiểm tra bản cập nhật")
+                connection.inputStream.bufferedReader().use { reader ->
+                    val chars = CharArray(8192)
+                    val text = StringBuilder()
+                    while (true) {
+                        val count = reader.read(chars)
+                        if (count < 0) break
+                        if (text.length + count > 2_000_000) throw IOException("Danh sách phiên bản quá lớn")
+                        text.append(chars, 0, count)
+                    }
+                    JSONArray(text.toString())
                 }
-                JSONArray(text.toString())
-            }
-            (0 until json.length()).mapNotNull { index ->
+            } finally { connection.disconnect() }
+            if (json.length() == 0) break
+            all += (0 until json.length()).mapNotNull { index ->
                 val item = json.getJSONObject(index)
                 val tag = item.optString("tag_name")
                 if (item.optBoolean("draft") || version(tag) == null) return@mapNotNull null
@@ -88,11 +127,11 @@ internal object AppUpdateRepository {
                     item.optString("published_at").take(10),
                     asset?.optString("browser_download_url"), asset?.optLong("size") ?: 0L,
                     asset?.optString("digest")?.takeIf { it.startsWith("sha256:") })
-            }.maxWithOrNull(compareBy { version(it.tag) })
-                ?: throw IOException("GitHub chưa có bản phát hành hợp lệ")
-        } finally {
-            connection.disconnect()
+            }
+            if (json.length() < 100) break
         }
+        all.distinctBy { it.tag.lowercase() }.sortedBy { version(it.tag) }
+            .ifEmpty { throw IOException("GitHub chưa có bản phát hành hợp lệ") }
     }
 
     suspend fun download(context: Context, release: AppRelease, onProgress: suspend (Long, Long) -> Unit): File =

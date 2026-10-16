@@ -3,18 +3,18 @@ package com.piperostool
 import java.io.File
 import java.util.zip.ZipFile
 
-data class PiperModScanResult(
+data class AppPackageScanResult(
     val googleAds: Boolean,
     val licenseVerification: Boolean,
     val inAppPurchases: Boolean,
     val customPatchAvailable: Boolean = false
 ) {
-    val hasSupportedPatchTargets: Boolean
+    val hasDetectedComponents: Boolean
         get() = googleAds || licenseVerification || inAppPurchases || customPatchAvailable
 }
 
 /** Read-only indicator scan. This does not modify or bypass an app. */
-object PiperModAnalyzer {
+object AppPackageAnalyzer {
     private val adMarkers = listOf(
         "com/google/android/gms/ads", "com.google.android.gms.ads", "com/google/ads/",
         "com/facebook/ads", "com/unity3d/ads", "com/applovin", "com/startapp"
@@ -28,7 +28,7 @@ object PiperModAnalyzer {
         "com/android/vending/billing", "com.android.vending.billing", "inappbillingservice"
     )
 
-    fun analyze(apk: File): PiperModScanResult {
+    fun analyze(apk: File): AppPackageScanResult {
         val matches = mutableSetOf<String>()
         var scanned = 0L
         runCatching {
@@ -58,16 +58,16 @@ object PiperModAnalyzer {
             }
         }
         val normalized = matches
-        return PiperModScanResult(
+        return AppPackageScanResult(
             googleAds = normalized.any { it in adMarkers },
             licenseVerification = normalized.any { it in licenseMarkers },
             inAppPurchases = normalized.any { it in billingMarkers }
         )
     }
 
-    internal fun analyzeDexText(vararg dexTexts: String): PiperModScanResult {
+    internal fun analyzeDexText(vararg dexTexts: String): AppPackageScanResult {
         val text = dexTexts.joinToString("\n").lowercase()
-        return PiperModScanResult(
+        return AppPackageScanResult(
             googleAds = adMarkers.any(text::contains),
             licenseVerification = licenseMarkers.any(text::contains),
             inAppPurchases = billingMarkers.any(text::contains)
