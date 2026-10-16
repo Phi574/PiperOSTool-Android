@@ -108,11 +108,7 @@ internal class AppUpdateDownloadWorker(
             assetDigest = inputData.getString("asset_digest")
         )
         return try {
-            setForeground(ForegroundInfo(
-                AppUpdateDownload.NOTIFICATION_ID,
-                AppUpdateDownload.downloadNotification(applicationContext, tag, 0, false),
-                ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
-            ))
+            publishDownloadState(tag, 0)
             val file = try {
                 AppUpdateRepository.download(applicationContext, release) { bytes, total ->
                     val percent = if (total > 0) ((bytes * 100) / total).toInt().coerceIn(0, 100) else 0
@@ -122,11 +118,7 @@ internal class AppUpdateDownloadWorker(
                         .putLong(AppUpdateDownload.KEY_TOTAL, total)
                         .putInt(AppUpdateDownload.KEY_PERCENT, percent)
                         .build())
-                    setForeground(ForegroundInfo(
-                        AppUpdateDownload.NOTIFICATION_ID,
-                        AppUpdateDownload.downloadNotification(applicationContext, tag, percent, false),
-                        ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
-                    ))
+                    publishDownloadState(tag, percent)
                 }
             } catch (error: IOException) {
                 return if (runAttemptCount < MAX_AUTOMATIC_RETRIES) {
@@ -141,9 +133,7 @@ internal class AppUpdateDownloadWorker(
             withContext(Dispatchers.IO) {
                 AppUpdateRepository.verifyDownloadedApk(applicationContext, release, file)
             }
-            val ready = AppUpdateDownload.downloadNotification(applicationContext, tag, 100, true)
-            androidx.core.app.NotificationManagerCompat.from(applicationContext)
-                .notify(AppUpdateDownload.NOTIFICATION_ID, ready)
+            publishDownloadState(tag, 100, completed = true)
             Result.success(Data.Builder()
                 .putString(AppUpdateDownload.KEY_TAG, tag)
                 .putString(AppUpdateDownload.KEY_APK_PATH, file.absolutePath)
@@ -155,6 +145,22 @@ internal class AppUpdateDownloadWorker(
                 .putString(AppUpdateDownload.KEY_TAG, tag)
                 .putString(AppUpdateDownload.KEY_ERROR, error.message ?: "Không thể xác minh APK")
                 .build())
+        }
+    }
+
+    private suspend fun publishDownloadState(tag: String, percent: Int, completed: Boolean = false) {
+        val notification = AppUpdateDownload.downloadNotification(applicationContext, tag, percent, completed)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+            // Android 15+ may reject dataSync FGS for apps targeting future SDKs.
+            // Keep this user-requested transfer as ordinary persistent WorkManager work there.
+            androidx.core.app.NotificationManagerCompat.from(applicationContext)
+                .notify(AppUpdateDownload.NOTIFICATION_ID, notification)
+        } else {
+            setForeground(ForegroundInfo(
+                AppUpdateDownload.NOTIFICATION_ID,
+                notification,
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+            ))
         }
     }
 }
