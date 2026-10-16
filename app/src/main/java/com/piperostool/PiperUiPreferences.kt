@@ -328,6 +328,8 @@ object PiperModernUi {
                     return
                 }
                 when {
+                    name == "updateRefreshIcon" ->
+                        view.imageTintList = android.content.res.ColorStateList.valueOf(palette.secondaryText)
                     name == "betaTitleIcon" || parentName.endsWith("FeatureStatus", ignoreCase = true) ||
                         parentName in setOf("qrPreviewBadgeBeta", "securityPasswordBetaBadge", "securityLinksBetaBadge") ->
                         view.imageTintList = android.content.res.ColorStateList.valueOf(palette.accent)
