@@ -213,7 +213,13 @@ internal object AppUpdateRepository {
         val currentSigners = installed.signingInfo?.apkContentsSigners
             ?.map { sha256(it.toByteArray()) }?.toSet().orEmpty()
         val downloadedSigners = verifier.signerCertificates.map { sha256(it.encoded) }.toSet()
-        if (currentSigners.isEmpty() || currentSigners != downloadedSigners)
+        val directSignerMatch = currentSigners.isNotEmpty() && currentSigners == downloadedSigners
+        val lineage = verifier.signingCertificateLineage
+        val trustedRotation = currentSigners.size == 1 && downloadedSigners.size == 1 &&
+            lineage != null &&
+            lineage.certificatesInLineage.any { sha256(it.encoded) == currentSigners.single() } &&
+            lineage.certificatesInLineage.lastOrNull()?.let { sha256(it.encoded) } == downloadedSigners.single()
+        if (!directSignerMatch && !trustedRotation)
             throw IOException("Chữ ký không khớp với bản đang cài. Bản debug và bản ký khóa khác không thể cập nhật đè; hãy dùng APK cùng khóa ký.")
         if (archive.longVersionCode <= installed.longVersionCode)
             throw IOException("Mã phiên bản APK (${archive.longVersionCode}) không mới hơn bản đang cài (${installed.longVersionCode})")

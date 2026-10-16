@@ -9,6 +9,8 @@ plugins {
 
 val googleServicesConfig = file("google-services.json")
 val testPackage = providers.gradleProperty("piperTestPackage").orNull == "true"
+val piperVersionCode = providers.gradleProperty("piperVersionCode").orNull?.toIntOrNull() ?: 85
+val piperVersionName = providers.gradleProperty("piperVersionName").orNull ?: "3.7.9.PRE"
 val piperSigningPropertiesFile = File(System.getProperty("user.home"), ".android/PiperOS/signing.properties")
 val piperSigningProperties = Properties().apply {
     if (piperSigningPropertiesFile.isFile) {
@@ -50,8 +52,8 @@ android {
         targetSdk = 37
         multiDexEnabled = true
         multiDexKeepProguard = file("multidex-keep.pro")
-        versionCode = 84
-        versionName = "3.7.8.PRE"
+        versionCode = piperVersionCode
+        versionName = piperVersionName
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         ndk {
