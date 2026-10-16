@@ -1,5 +1,12 @@
 # Changelog
 
+## 3.7.9 — Bản chính thức
+
+- Tổng hợp luồng cập nhật bắt buộc: thiết bị dưới 3.7.7 cài cầu nối 3.7.7 trước, chuyển chứng chỉ qua 3.7.8, rồi tiếp tục cập nhật các bản mới.
+- Sửa lỗi văng ứng dụng khi tải cập nhật trên Android 15/16; giữ tiến trình tải nền và trạng thái tải/hủy, giới hạn tự thử lại tối đa 3 lần.
+- Chỉ ký bằng chứng chỉ PiperOS mới; không dùng khóa ký cũ hoặc signing lineage trong APK 3.7.9.
+- Nâng versionCode lên 92 để cập nhật từ 3.7.8.
+
 ## 3.7.8.PRE
 
 - **Bản cập nhật bắt buộc:** người dùng dưới 3.7.7.PRE chỉ được cập nhật lên đúng 3.7.7.PRE trước; khóa chọn bỏ qua bản nền ký này trong luồng cập nhật PiperOS.
