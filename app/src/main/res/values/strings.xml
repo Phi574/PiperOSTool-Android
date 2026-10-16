@@ -835,4 +835,19 @@
     <string name="sessions_delete_history">Xóa phiên khỏi lịch sử</string>
     <string name="sessions_delete_message">Xóa phiên đã ngắt này khỏi danh sách thiết bị? Thiết bị đó vẫn bị ngắt phiên.</string>
     <string name="sessions_delete_failed">Không thể xóa lịch sử phiên. Vui lòng thử lại.</string>
+    <string name="update_notification_channel">Bản cập nhật PiperOS</string>
+    <string name="update_notification_channel_description">Thông báo khi GitHub có bản PiperOS Tool mới.</string>
+    <string name="update_notification_title">Đã có PiperOS Tool %1$s</string>
+    <string name="update_notification_text">Chạm để xem thay đổi và cập nhật trong PiperOS.</string>
+    <string name="update_download_notification_channel">Tải bản cập nhật PiperOS</string>
+    <string name="update_download_running_title">Đang tải PiperOS Tool %1$s</string>
+    <string name="update_download_running_text">Đang tải %1$d%% · có thể rời màn hình này.</string>
+    <string name="update_download_ready_title">PiperOS Tool %1$s đã tải xong</string>
+    <string name="update_download_ready_text">Chạm để mở màn cập nhật và cài đặt.</string>
+    <string name="update_notifications_prompt_title">Nhận thông báo bản cập nhật</string>
+    <string name="update_notifications_prompt_message">PiperOS sẽ kiểm tra GitHub định kỳ khi có mạng và báo khi có phiên bản mới. Android có thể trì hoãn kiểm tra do chế độ tiết kiệm pin; hãy cho phép thông báo để thấy tin cập nhật.</string>
+    <string name="update_notifications_prompt_action">Bật thông báo</string>
+    <string name="update_notifications_prompt_later">Để sau</string>
+    <string name="update_refresh_description">Kiểm tra bản cập nhật ngay</string>
+    <string name="update_delete_download">Xóa APK đã tải xuống</string>
 </resources>

@@ -68,6 +68,10 @@
         android:localeConfig="@xml/locales_config">
 
         <activity android:name=".AppUpdateActivity" android:exported="false" android:theme="@style/Theme.PiperOSTool" />
+        <service
+            android:name="androidx.work.impl.foreground.SystemForegroundService"
+            android:foregroundServiceType="dataSync"
+            tools:node="merge" />
         <activity
             android:name=".AppInspectionActivity"
             android:exported="false"

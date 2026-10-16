@@ -1,12 +1,16 @@
 package com.piperostool
 
+import android.Manifest
+import android.animation.ObjectAnimator
 import android.app.Dialog
 import android.content.ClipData
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.content.pm.PackageManager
 import android.provider.Settings
 import android.view.Gravity
 import android.view.View
@@ -24,13 +28,13 @@ import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.lifecycle.lifecycleScope
+import androidx.work.WorkInfo
+import androidx.work.WorkManager
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -45,19 +49,19 @@ class AppUpdateActivity : AppCompatActivity() {
     private lateinit var progress: ProgressBar
     private lateinit var action: MaterialCardView
     private lateinit var otherReleases: MaterialCardView
+    private lateinit var deleteDownloaded: MaterialCardView
+    private lateinit var refresh: MaterialCardView
     private lateinit var actionText: TextView
     private lateinit var cancel: MaterialCardView
     private lateinit var logToggle: TextView
     private lateinit var logScroll: ScrollView
     private lateinit var log: TextView
     private var release: AppRelease? = null
-    private var downloadJob: Job? = null
     private var downloadedApk: File? = null
     private var checking = false
-    private var verifying = false
     private var installerPending = false
-    private var lastLoggedPercent = -10
     private var currentArtwork = 0
+    private var refreshAnimator: ObjectAnimator? = null
     private val updatePreferences by lazy { getSharedPreferences("update_program", MODE_PRIVATE) }
     private var foundReleases: List<AppRelease> = emptyList()
 
@@ -69,6 +73,10 @@ class AppUpdateActivity : AppCompatActivity() {
             installerPending = false
             showError("Chưa cấp quyền cài APK từ PiperOS Tool. Bạn có thể bật quyền và thử lại.")
         }
+    }
+
+    private val notificationPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) {
+        checkRelease()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -84,6 +92,8 @@ class AppUpdateActivity : AppCompatActivity() {
         progress = findViewById(R.id.updateProgress)
         action = findViewById(R.id.updateAction)
         otherReleases = findViewById(R.id.updateOtherReleases)
+        deleteDownloaded = findViewById(R.id.updateDeleteDownload)
+        refresh = findViewById(R.id.updateRefresh)
         actionText = findViewById(R.id.updateActionText)
         cancel = findViewById(R.id.updateCancel)
         logToggle = findViewById(R.id.updateLogToggle)
@@ -92,6 +102,8 @@ class AppUpdateActivity : AppCompatActivity() {
         currentVersion.text = "Đang có trên máy: ${AppVersion.name(this)}"
         findViewById<View>(R.id.updateBack).setOnClickListener { leave() }
         findViewById<View>(R.id.updateSettings).setOnClickListener { showUpdateSettingsMenu() }
+        refresh.setOnClickListener { checkRelease() }
+        deleteDownloaded.setOnClickListener { confirmDeleteDownloaded() }
         cancel.setOnClickListener { cancelDownload() }
         otherReleases.setOnClickListener { showOtherReleases() }
         logToggle.setOnClickListener {
@@ -102,21 +114,145 @@ class AppUpdateActivity : AppCompatActivity() {
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() = leave()
         })
-        checkRelease()
+        observeDownloadWork()
+        requestUpdateNotificationsOrCheck()
     }
 
     private fun leave() {
-        if (verifying) {
-            Toast.makeText(this, "Đang kiểm tra chữ ký và phiên bản, vui lòng chờ", Toast.LENGTH_SHORT).show()
+        finish()
+    }
+
+    private fun requestUpdateNotificationsOrCheck() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) ==
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            checkRelease()
             return
         }
-        if (downloadJob?.isActive == true) cancelDownload()
-        finish()
+        val prompted = updatePreferences.getBoolean("update_notifications_prompted", false)
+        if (prompted) {
+            checkRelease()
+            return
+        }
+        updatePreferences.edit().putBoolean("update_notifications_prompted", true).apply()
+        PiperDialog.showCustom(
+            context = this,
+            title = getString(R.string.update_notifications_prompt_title),
+            message = getString(R.string.update_notifications_prompt_message),
+            positiveLabel = getString(R.string.update_notifications_prompt_action),
+            negativeLabel = getString(R.string.update_notifications_prompt_later),
+            onPositive = {
+                notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+                true
+            },
+            onNegative = { checkRelease() }
+        )
+    }
+
+    private fun observeDownloadWork() {
+        WorkManager.getInstance(this)
+            .getWorkInfosForUniqueWorkLiveData(AppUpdateDownload.WORK_NAME)
+            .observe(this) { infos ->
+                val info = infos?.firstOrNull { !it.state.isFinished } ?: infos?.lastOrNull() ?: return@observe
+                val tag = info.progress.getString(AppUpdateDownload.KEY_TAG)
+                    ?: info.outputData.getString(AppUpdateDownload.KEY_TAG)
+                    ?: info.tags.firstOrNull { it.startsWith(AppUpdateDownload.TAG_PREFIX) }
+                        ?.removePrefix(AppUpdateDownload.TAG_PREFIX)
+                when (info.state) {
+                    WorkInfo.State.ENQUEUED, WorkInfo.State.BLOCKED -> {
+                        if (tag != null) {
+                            status.text = "Đang chờ tải PiperOS Tool $tag"
+                            action.visibility = View.GONE
+                            cancel.visibility = View.VISIBLE
+                        }
+                    }
+                    WorkInfo.State.RUNNING -> {
+                        if (tag != null) {
+                            val percent = info.progress.getInt(AppUpdateDownload.KEY_PERCENT, 0)
+                            val bytes = info.progress.getLong(AppUpdateDownload.KEY_BYTES, 0L)
+                            val total = info.progress.getLong(AppUpdateDownload.KEY_TOTAL, 0L)
+                            progress.visibility = View.VISIBLE
+                            progress.progress = percent
+                            progressArtwork.visibility = View.VISIBLE
+                            showDownloadArtwork(percent)
+                            status.text = "Đang tải $percent% · ${bytes / (1024 * 1024)} / ${total / (1024 * 1024)} MB"
+                            action.visibility = View.GONE
+                            cancel.visibility = View.VISIBLE
+                            deleteDownloaded.visibility = View.GONE
+                        }
+                    }
+                    WorkInfo.State.SUCCEEDED -> {
+                        val path = info.outputData.getString(AppUpdateDownload.KEY_APK_PATH)
+                        val file = path?.let(::File)?.takeIf { it.isFile }
+                        val installed = AppUpdateRepository.version(AppVersion.name(this))
+                        val completed = tag?.let(AppUpdateRepository::version)
+                        if (file != null && installed != null && completed != null && completed > installed) {
+                            showDownloadedApk(file, tag)
+                        }
+                    }
+                    WorkInfo.State.FAILED -> {
+                        cancel.visibility = View.GONE
+                        val message = info.outputData.getString(AppUpdateDownload.KEY_ERROR)
+                        status.text = message ?: "Không thể tải hoặc xác minh APK. Hãy thử lại."
+                        release?.let { target -> setAction("Thử tải lại") { showInstallConfirmation(target) } }
+                    }
+                    WorkInfo.State.CANCELLED -> {
+                        cancel.visibility = View.GONE
+                        progress.visibility = View.GONE
+                        progressArtwork.visibility = View.GONE
+                        release?.let { target -> setAction("Tải xuống và cài đặt") { showInstallConfirmation(target) } }
+                    }
+                }
+            }
+    }
+
+    private fun showDownloadedApk(file: File, tag: String) {
+        downloadedApk = file
+        progress.visibility = View.GONE
+        cancel.visibility = View.GONE
+        showVerificationArtwork(success = true)
+        status.text = "APK $tag đã tải và xác minh · sẵn sàng cài đặt"
+        setAction("Mở trình cài đặt") { launchInstaller() }
+        deleteDownloaded.visibility = View.VISIBLE
+    }
+
+    private fun confirmDeleteDownloaded() {
+        val file = downloadedApk ?: release?.let { AppUpdateRepository.downloadedApk(this, it) }
+        if (file == null || !file.exists()) {
+            deleteDownloaded.visibility = View.GONE
+            return
+        }
+        PiperDialog.showConfirm(
+            context = this,
+            title = "Xóa APK đã tải xuống?",
+            message = "Tệp ${file.name} sẽ bị xóa khỏi bộ nhớ ứng dụng. Bạn có thể tải lại sau.",
+            positiveLabel = "Xóa",
+            negativeLabel = "Giữ lại",
+            onConfirm = {
+                if (file.delete()) {
+                    downloadedApk = null
+                    deleteDownloaded.visibility = View.GONE
+                    progressArtwork.visibility = View.GONE
+                    release?.let { target -> setAction("Tải xuống và cài đặt") { showInstallConfirmation(target) } }
+                    status.text = "Đã xóa APK đã tải xuống"
+                } else {
+                    showError("Không thể xóa APK đã tải xuống")
+                }
+            }
+        )
     }
 
     private fun checkRelease() {
         if (checking) return
         checking = true
+        deleteDownloaded.visibility = View.GONE
+        refreshAnimator?.cancel()
+        refreshAnimator = ObjectAnimator.ofFloat(findViewById(R.id.updateRefreshIcon), View.ROTATION, 0f, 360f).apply {
+            duration = 700
+            repeatCount = ObjectAnimator.INFINITE
+            start()
+        }
         action.visibility = View.GONE
         otherReleases.visibility = View.GONE
         status.text = "Đang kiểm tra"
@@ -139,13 +275,24 @@ class AppUpdateActivity : AppCompatActivity() {
                 foundReleases = AppUpdateRepository.releases()
                 val channel = AppUpdateRepository.selectedChannel(updatePreferences)
                 val localName = AppVersion.name(this@AppUpdateActivity)
-                val found = AppUpdateRepository.nextRelease(foundReleases, localName, channel)
+                val mustInstallBaseline = AppUpdateRepository.needsRequiredMigration(localName)
+                val found = if (mustInstallBaseline) {
+                    AppUpdateRepository.requiredMigrationRelease(foundReleases, localName)
+                } else {
+                    AppUpdateRepository.nextRelease(foundReleases, localName, channel)
+                }
                 val latestEligible = foundReleases.lastOrNull { AppUpdateRepository.isEligible(it.tag, channel) }
                 if (found == null) {
                     headline.text = "PiperOS Tool $localName"
                     published.text = latestEligible?.let { "${channelLabel(channel)} · bản mới nhất ${it.tag}" }.orEmpty()
-                    description.text = latestEligible?.let { readableNotes(it.description) } ?: "Chưa có bản phát hành cho kênh này."
-                    status.text = "Bản hiện tại là bản mới nhất trong kênh ${channelLabel(channel)}"
+                    if (mustInstallBaseline) {
+                        headline.text = "Cần cài bản ${AppUpdateRepository.REQUIRED_BASELINE} trước"
+                        description.text = "Bản ${AppUpdateRepository.REQUIRED_BASELINE} thiết lập nền tảng ký để cập nhật các phiên bản tiếp theo. Hãy cài đúng bản này trước; PiperOS sẽ mở khóa các bản mới hơn sau khi cập nhật xong."
+                        status.text = "Không thể bỏ qua bước cập nhật bắt buộc này"
+                    } else {
+                        description.text = latestEligible?.let { readableNotes(it.description) } ?: "Chưa có bản phát hành cho kênh này."
+                        status.text = "Bản hiện tại là bản mới nhất trong kênh ${channelLabel(channel)}"
+                    }
                     release = null
                     action.visibility = View.GONE
                     return@launch
@@ -159,8 +306,8 @@ class AppUpdateActivity : AppCompatActivity() {
                 if (newer) {
                     description.text = readableNotes(found.description)
                     status.text = if (found.assetUrl == null) "Bước kế tiếp ${found.tag} chưa có APK để cài" else "Bước cập nhật kế tiếp: ${found.tag} · ${channelLabel(channel)}"
-                    if (found.assetUrl != null) setAction("Tải xuống và cài đặt") { showInstallConfirmation() }
-                    otherReleases.visibility = if (AppUpdateRepository.laterReleases(foundReleases, localName, channel).size > 1) View.VISIBLE else View.GONE
+                    if (found.assetUrl != null) showSavedDownload(found)
+                    otherReleases.visibility = if (!mustInstallBaseline && AppUpdateRepository.laterReleases(foundReleases, localName, channel).size > 1) View.VISIBLE else View.GONE
                 } else {
                     if (remote != local) published.text = "Bản công khai gần nhất: ${found.tag}"
                     description.text = if (remote == local) readableNotes(found.description) else
@@ -176,7 +323,32 @@ class AppUpdateActivity : AppCompatActivity() {
                 setAction("Kiểm tra lại") { checkRelease() }
             } finally {
                 checking = false
+                refreshAnimator?.cancel()
+                findViewById<View>(R.id.updateRefreshIcon).rotation = 0f
                 loading.dismiss()
+            }
+        }
+    }
+
+    private fun showSavedDownload(target: AppRelease) {
+        val file = AppUpdateRepository.downloadedApk(this, target)
+        if (!file.isFile) {
+            deleteDownloaded.visibility = View.GONE
+            setAction("Tải xuống và cài đặt") { showInstallConfirmation(target) }
+            return
+        }
+        lifecycleScope.launch {
+            try {
+                withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    AppUpdateRepository.verifyDownloadedApk(this@AppUpdateActivity, target, file)
+                }
+                if (release?.tag == target.tag) showDownloadedApk(file, target.tag)
+            } catch (_: Exception) {
+                AppUpdateRepository.deleteDownloadedApk(this@AppUpdateActivity, target)
+                if (release?.tag == target.tag) {
+                    setAction("Tải xuống và cài đặt") { showInstallConfirmation(target) }
+                    deleteDownloaded.visibility = View.GONE
+                }
             }
         }
     }
@@ -365,31 +537,34 @@ class AppUpdateActivity : AppCompatActivity() {
     }
 
     private fun selectRelease(selected: AppRelease) {
+        if (AppUpdateRepository.needsRequiredMigration(AppVersion.name(this)) &&
+            AppUpdateRepository.version(selected.tag) != AppUpdateRepository.version(AppUpdateRepository.REQUIRED_BASELINE)
+        ) {
+            showError("Bạn cần cài ${AppUpdateRepository.REQUIRED_BASELINE} trước khi chọn bản mới hơn")
+            return
+        }
         release = selected
         otherReleases.visibility = View.GONE
         headline.text = selected.title
         published.text = "GitHub Releases · ${selected.tag} · ${selected.published}"
         description.text = readableNotes(selected.description)
         status.text = "Đã chọn cập nhật lên ${selected.tag}"
-        setAction("Tải xuống và cài đặt") { showInstallConfirmation() }
+        showSavedDownload(selected)
     }
 
-    private fun showInstallConfirmation() {
+    private fun showInstallConfirmation(target: AppRelease) {
         PiperDialog.showConfirm(
             context = this,
-            title = "Cài bản ${release?.tag ?: "đã chọn"}?",
-            message = "Từ ${AppVersion.name(this)} lên ${release?.tag ?: "bản mới"}. Hãy sao lưu dữ liệu quan trọng trước khi cài. Không đóng app khi đang tải và cài đặt. Nếu đã bật chạy nền, bạn có thể chuyển sang app khác nhưng đừng vuốt tắt PiperOS khỏi màn đa nhiệm.",
-            positiveLabel = "Cài đặt",
+            title = "Tải bản ${target.tag}?",
+            message = "Tệp APK sẽ được tải nền và lưu lại trong PiperOS. Bạn có thể rời màn hình này hoặc quay lại sau; chỉ vuốt tắt PiperOS khỏi màn đa nhiệm mới dừng tiến trình nền. Hãy sao lưu dữ liệu quan trọng trước khi cài.",
+            positiveLabel = "Tải xuống",
             negativeLabel = "Hủy",
-            onConfirm = { beginDownload() }
+            onConfirm = { beginDownload(target) }
         )
     }
 
-    private fun beginDownload() {
-        val target = release ?: return
-        if (downloadJob?.isActive == true) return
+    private fun beginDownload(target: AppRelease) {
         downloadedApk = null
-        lastLoggedPercent = -10
         log.text = ""
         currentArtwork = 0
         logToggle.visibility = View.VISIBLE
@@ -397,60 +572,20 @@ class AppUpdateActivity : AppCompatActivity() {
         progress.progress = 0
         showDownloadArtwork(0)
         cancel.visibility = View.VISIBLE
+        deleteDownloaded.visibility = View.GONE
         action.visibility = View.GONE
         otherReleases.visibility = View.GONE
-        appendLog("Bắt đầu tải ${target.tag} từ GitHub Releases")
-        appendLog("Tệp cài đặt: ${AppUpdateRepository.apkFileName(target)}")
-        downloadJob = lifecycleScope.launch {
-            try {
-                val file = AppUpdateRepository.download(this@AppUpdateActivity, target) { bytes, total ->
-                    val percent = ((bytes * 100) / total).toInt().coerceIn(0, 100)
-                    progress.progress = percent
-                    showDownloadArtwork(percent)
-                    status.text = "Đang tải $percent% · ${bytes / (1024 * 1024)} / ${total / (1024 * 1024)} MB"
-                    if (percent >= lastLoggedPercent + 10 || percent == 100) {
-                        appendLog("Đã tải $percent% ($bytes / $total byte)")
-                        lastLoggedPercent = percent
-                    }
-                }
-                cancel.visibility = View.GONE
-                verifying = true
-                status.text = "Đang kiểm tra chữ ký và phiên bản"
-                appendLog("Tải hoàn tất. Đang xác thực APK và so sánh với bản đang cài…")
-                withContext(Dispatchers.IO) {
-                    AppUpdateRepository.verifyDownloadedApk(this@AppUpdateActivity, target, file)
-                }
-                downloadedApk = file
-                showVerificationArtwork(success = true)
-                appendLog("Đã xác thực APK ${target.tag}: chữ ký, tên gói và phiên bản hợp lệ")
-                status.text = "APK ${target.tag} đã xác thực · sẵn sàng cài đặt"
-                setAction("Mở trình cài đặt") { launchInstaller() }
-                launchInstaller()
-            } catch (cancelled: CancellationException) {
-                status.text = "Đã hủy tải xuống"
-                progressArtwork.visibility = View.GONE
-                appendLog("Người dùng đã hủy tải")
-                throw cancelled
-            } catch (error: Exception) {
-                showVerificationArtwork(success = false)
-                status.text = "Không thể cài bản cập nhật"
-                showError(error.message ?: "Lỗi tải hoặc kiểm tra APK")
-                appendLog("Xác minh APK thất bại: ${error.message ?: "Không xác định"}")
-                setAction("Thử tải lại") { showInstallConfirmation() }
-            } finally {
-                verifying = false
-                cancel.visibility = View.GONE
-            }
-        }
+        appendLog("Đã xếp tải nền ${target.tag} từ GitHub Releases")
+        appendLog("Tệp sẽ được giữ lại trong ứng dụng sau khi tải xong")
+        AppUpdateDownload.enqueue(this, target)
     }
 
     private fun cancelDownload() {
-        if (verifying) return
-        downloadJob?.cancel()
+        AppUpdateDownload.cancel(this)
         cancel.visibility = View.GONE
         progress.visibility = View.GONE
         progressArtwork.visibility = View.GONE
-        setAction("Tải xuống và cài đặt") { showInstallConfirmation() }
+        release?.let { target -> setAction("Tải xuống và cài đặt") { showInstallConfirmation(target) } }
     }
 
     private fun showDownloadArtwork(percent: Int) {
@@ -491,7 +626,7 @@ class AppUpdateActivity : AppCompatActivity() {
     private fun launchInstaller() {
         val file = downloadedApk ?: return
         if (!file.isFile) {
-            showError("APK đã tải không còn trong bộ nhớ đệm. Hãy tải lại.")
+            showError("APK đã tải không còn trong bộ nhớ ứng dụng. Hãy tải lại.")
             return
         }
         if (!packageManager.canRequestPackageInstalls()) {

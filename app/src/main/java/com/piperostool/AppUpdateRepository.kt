@@ -29,6 +29,7 @@ internal object AppUpdateRepository {
     private const val API = "https://api.github.com/repos/Phi574/PiperOSTool-Android/releases?per_page=100"
     private const val ASSET_PREFIX = "https://github.com/Phi574/PiperOSTool-Android/releases/download/"
     private const val MAX_APK_BYTES = 500L * 1024 * 1024
+    const val REQUIRED_BASELINE = "3.7.7.PRE"
     private val versionPattern = Regex("^v?(\\d+)\\.(\\d+)\\.(\\d+)(?:[._-](.+))?$", RegexOption.IGNORE_CASE)
     enum class Channel { STABLE, BETA, PREVIEW }
 
@@ -78,6 +79,16 @@ internal object AppUpdateRepository {
             .filter { candidate -> version(candidate.tag)?.let { it > local } == true }
             .minByOrNull { version(it.tag)!! }
     }
+
+    fun requiredMigrationRelease(releases: List<AppRelease>, current: String): AppRelease? {
+        val installed = version(current) ?: return null
+        val baseline = version(REQUIRED_BASELINE) ?: return null
+        if (installed >= baseline) return null
+        return releases.firstOrNull { version(it.tag) == baseline }
+    }
+
+    fun needsRequiredMigration(current: String): Boolean =
+        version(current)?.let { installed -> version(REQUIRED_BASELINE)?.let { installed < it } } == true
 
     fun laterReleases(releases: List<AppRelease>, current: String, channel: Channel): List<AppRelease> {
         val local = version(current) ?: return emptyList()
@@ -139,7 +150,7 @@ internal object AppUpdateRepository {
             val url = release.assetUrl ?: throw IOException("Bản phát hành chưa có tệp APK")
             if (!url.startsWith(ASSET_PREFIX)) throw IOException("Đường dẫn APK không thuộc kho phát hành chính thức")
             if (release.assetSize <= 0 || release.assetSize > MAX_APK_BYTES) throw IOException("Dung lượng APK không hợp lệ")
-            val directory = File(context.cacheDir, "app-update").apply { mkdirs() }
+            val directory = File(context.filesDir, "app-update").apply { mkdirs() }
             val complete = File(directory, apkFileName(release))
             val partial = File(directory, "${complete.name}.part")
             partial.delete()
@@ -208,6 +219,16 @@ internal object AppUpdateRepository {
             throw IOException("Mã phiên bản APK (${archive.longVersionCode}) không mới hơn bản đang cài (${installed.longVersionCode})")
         if (version(archive.versionName.orEmpty()) != version(release.tag))
             throw IOException("Phiên bản trong APK không khớp với bản phát hành ${release.tag}")
+    }
+
+    fun downloadedApk(context: Context, release: AppRelease): File =
+        File(File(context.filesDir, "app-update"), apkFileName(release))
+
+    fun deleteDownloadedApk(context: Context, release: AppRelease): Boolean {
+        val file = downloadedApk(context, release)
+        val partial = File(file.parentFile, "${file.name}.part")
+        val partialDeleted = !partial.exists() || partial.delete()
+        return (!file.exists() || file.delete()) && partialDeleted
     }
 
     private fun sha256(bytes: ByteArray): String = MessageDigest.getInstance("SHA-256")

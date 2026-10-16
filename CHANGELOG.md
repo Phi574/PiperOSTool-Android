@@ -1,5 +1,14 @@
 # Changelog
 
+## 3.7.8.PRE
+
+- **Bản cập nhật bắt buộc:** người dùng dưới 3.7.7.PRE chỉ được cập nhật lên đúng 3.7.7.PRE trước; khóa chọn bỏ qua bản nền ký này trong luồng cập nhật PiperOS.
+- Đăng ký kiểm tra GitHub định kỳ bằng WorkManager khi ứng dụng đã được mở và có mạng; thông báo phiên bản mới kể cả khi đã rời ứng dụng, mở thẳng trang cập nhật khi chạm thông báo.
+- Thêm nút làm mới ở đầu trang Cập nhật để kiểm tra GitHub ngay, không cần thoát vào lại.
+- Tải APK bằng tác vụ nền có thông báo tiến độ; tải tiếp tục khi rời trang, APK đã xác minh được giữ trong dữ liệu ứng dụng để mở lại và cài sau.
+- Thêm nút xóa APK đã tải; không giữ bản cài trong cache dễ bị Android dọn tự động.
+- Nâng versionCode lên 84 để cập nhật đè từ 3.7.7.PRE.
+
 ## 3.7.7.PRE
 
 - **BẢN CẬP NHẬT QUAN TRỌNG — khuyến khích tất cả người dùng cập nhật ngay.** Bản này thiết lập chứng chỉ ký mới cùng chuỗi chuyển đổi v3 để các bản PiperOS sau có thể cập nhật đè ổn định; bỏ qua bản này có thể khiến việc nhận/cài các bản cập nhật tiếp theo gặp lỗi chữ ký.

@@ -833,4 +833,19 @@
     <string name="sessions_delete_history">Remove session from history</string>
     <string name="sessions_delete_message">Remove this ended session from the device list? The device will remain signed out.</string>
     <string name="sessions_delete_failed">Could not remove session history. Please try again.</string>
+    <string name="update_notification_channel">PiperOS updates</string>
+    <string name="update_notification_channel_description">Notifies when a new PiperOS Tool release is published on GitHub.</string>
+    <string name="update_notification_title">PiperOS Tool %1$s is available</string>
+    <string name="update_notification_text">Tap to review changes and update in PiperOS.</string>
+    <string name="update_download_notification_channel">PiperOS update download</string>
+    <string name="update_download_running_title">Downloading PiperOS Tool %1$s</string>
+    <string name="update_download_running_text">Downloading %1$d%% · you can leave this screen.</string>
+    <string name="update_download_ready_title">PiperOS Tool %1$s download complete</string>
+    <string name="update_download_ready_text">Tap to open the update screen and install.</string>
+    <string name="update_notifications_prompt_title">Get update notifications</string>
+    <string name="update_notifications_prompt_message">PiperOS periodically checks GitHub when connected and notifies you when a new version is available. Android may defer checks to save battery; allow notifications to see update alerts.</string>
+    <string name="update_notifications_prompt_action">Enable notifications</string>
+    <string name="update_notifications_prompt_later">Later</string>
+    <string name="update_refresh_description">Check for updates now</string>
+    <string name="update_delete_download">Delete downloaded APK</string>
 </resources>

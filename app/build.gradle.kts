@@ -50,8 +50,8 @@ android {
         targetSdk = 37
         multiDexEnabled = true
         multiDexKeepProguard = file("multidex-keep.pro")
-        versionCode = 83
-        versionName = "3.7.7.PRE"
+        versionCode = 84
+        versionName = "3.7.8.PRE"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         ndk {
@@ -103,6 +103,7 @@ dependencies {
     implementation(files("libs/reandroid-smali.jar"))
     implementation(files("libs/reandroid-jcommand.jar"))
     implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.androidx.appcompat)
     implementation(platform("com.google.firebase:firebase-bom:34.17.0"))
     implementation("com.google.firebase:firebase-appcheck-playintegrity")

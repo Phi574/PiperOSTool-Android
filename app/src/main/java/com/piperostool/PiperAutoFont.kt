@@ -237,6 +237,7 @@ class PiperOsApplication : Application(), Application.ActivityLifecycleCallbacks
         super.onCreate()
         // The isolated PPS process has no FirebaseInitProvider; it only serves local Binder calls.
         if (Application.getProcessName().endsWith(":pps")) return
+        AppUpdateMonitor.schedule(this)
         // Install App Check before any Firebase Auth, Firestore, or Database use.
         FirebaseAppCheck.getInstance().installAppCheckProviderFactory(
             PlayIntegrityAppCheckProviderFactory.getInstance()

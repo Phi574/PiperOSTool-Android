@@ -40,4 +40,12 @@ class AppUpdateRepositoryTest {
         assertEquals(listOf("3.5.2.PRE", "3.7.4.PRE", "3.7.5"),
             AppUpdateRepository.laterReleases(all, "3.5.1.PRE", AppUpdateRepository.Channel.PREVIEW).map { it.tag })
     }
+
+    @Test fun requiredSigningBaselineCannotBeSkippedInTheUpdatedClient() {
+        fun release(tag: String) = AppRelease(tag, tag, "", "", "https://github.com/Phi574/PiperOSTool-Android/releases/download/$tag/app.apk", 100, null)
+        val releases = listOf(release("3.7.7.PRE"), release("3.7.8.PRE"))
+        assertTrue(AppUpdateRepository.needsRequiredMigration("3.7.6"))
+        assertEquals("3.7.7.PRE", AppUpdateRepository.requiredMigrationRelease(releases, "3.7.6")?.tag)
+        assertEquals(null, AppUpdateRepository.requiredMigrationRelease(releases, "3.7.7.PRE"))
+    }
 }
