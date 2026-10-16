@@ -58,6 +58,7 @@ class AppUpdateActivity : AppCompatActivity() {
     private lateinit var log: TextView
     private var release: AppRelease? = null
     private var downloadedApk: File? = null
+    private var downloadWorkInfo: WorkInfo? = null
     private var checking = false
     private var installerPending = false
     private var currentArtwork = 0
@@ -154,7 +155,12 @@ class AppUpdateActivity : AppCompatActivity() {
         WorkManager.getInstance(this)
             .getWorkInfosForUniqueWorkLiveData(AppUpdateDownload.WORK_NAME)
             .observe(this) { infos ->
-                val info = infos?.firstOrNull { !it.state.isFinished } ?: infos?.lastOrNull() ?: return@observe
+                val info = infos?.firstOrNull { !it.state.isFinished } ?: infos?.lastOrNull()
+                downloadWorkInfo = info
+                if (info == null) {
+                    cancel.visibility = View.GONE
+                    return@observe
+                }
                 val tag = info.progress.getString(AppUpdateDownload.KEY_TAG)
                     ?: info.outputData.getString(AppUpdateDownload.KEY_TAG)
                     ?: info.tags.firstOrNull { it.startsWith(AppUpdateDownload.TAG_PREFIX) }
@@ -163,6 +169,8 @@ class AppUpdateActivity : AppCompatActivity() {
                     WorkInfo.State.ENQUEUED, WorkInfo.State.BLOCKED -> {
                         if (tag != null) {
                             status.text = "Đang chờ tải PiperOS Tool $tag"
+                            progress.visibility = View.GONE
+                            progressArtwork.visibility = View.GONE
                             action.visibility = View.GONE
                             cancel.visibility = View.VISIBLE
                         }
@@ -183,6 +191,7 @@ class AppUpdateActivity : AppCompatActivity() {
                         }
                     }
                     WorkInfo.State.SUCCEEDED -> {
+                        cancel.visibility = View.GONE
                         val path = info.outputData.getString(AppUpdateDownload.KEY_APK_PATH)
                         val file = path?.let(::File)?.takeIf { it.isFile }
                         val installed = AppUpdateRepository.version(AppVersion.name(this))
@@ -331,6 +340,21 @@ class AppUpdateActivity : AppCompatActivity() {
     }
 
     private fun showSavedDownload(target: AppRelease) {
+        val info = downloadWorkInfo
+        val activeTag = info?.let { work ->
+            work.progress.getString(AppUpdateDownload.KEY_TAG)
+                ?: work.outputData.getString(AppUpdateDownload.KEY_TAG)
+                ?: work.tags.firstOrNull { it.startsWith(AppUpdateDownload.TAG_PREFIX) }
+                    ?.removePrefix(AppUpdateDownload.TAG_PREFIX)
+        }
+        if (info != null && !info.state.isFinished && activeTag == target.tag) {
+            action.visibility = View.GONE
+            cancel.visibility = View.VISIBLE
+            return
+        }
+        cancel.visibility = View.GONE
+        progress.visibility = View.GONE
+        progressArtwork.visibility = View.GONE
         val file = AppUpdateRepository.downloadedApk(this, target)
         if (!file.isFile) {
             deleteDownloaded.visibility = View.GONE

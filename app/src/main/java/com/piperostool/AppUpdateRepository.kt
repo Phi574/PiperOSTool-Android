@@ -5,8 +5,13 @@ import android.content.pm.PackageManager
 import android.content.SharedPreferences
 import com.android.apksig.ApkVerifier
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import org.json.JSONArray
 import java.io.File
 import java.io.IOException
@@ -27,9 +32,11 @@ internal data class AppRelease(
 
 internal object AppUpdateRepository {
     private const val API = "https://api.github.com/repos/Phi574/PiperOSTool-Android/releases?per_page=100"
+    private const val ATOM = "https://github.com/Phi574/PiperOSTool-Android/releases.atom"
+    private const val RELEASE_PAGE_PREFIX = "https://github.com/Phi574/PiperOSTool-Android/releases/expanded_assets/"
     private const val ASSET_PREFIX = "https://github.com/Phi574/PiperOSTool-Android/releases/download/"
     private const val MAX_APK_BYTES = 500L * 1024 * 1024
-    const val REQUIRED_BASELINE = "3.7.7.PRE"
+    const val REQUIRED_BASELINE = "3.7.7"
     private val versionPattern = Regex("^v?(\\d+)\\.(\\d+)\\.(\\d+)(?:[._-](.+))?$", RegexOption.IGNORE_CASE)
     enum class Channel { STABLE, BETA, PREVIEW }
 
@@ -40,8 +47,8 @@ internal object AppUpdateRepository {
             fun rank(value: String): Int = when {
                 value.isBlank() -> 5
                 value.startsWith("rc") -> 4
-                value.startsWith("beta") -> 2
-                else -> 3
+                value.startsWith("beta") -> 3
+                else -> 2
             }
             return rank(stage).compareTo(rank(other.stage)).takeIf { it != 0 }
                 ?: stage.compareTo(other.stage, ignoreCase = true)
@@ -105,6 +112,19 @@ internal object AppUpdateRepository {
     }
 
     suspend fun releases(): List<AppRelease> = withContext(Dispatchers.IO) {
+        try {
+            apiReleases()
+        } catch (apiError: Exception) {
+            runCatching { atomReleases() }.getOrElse { feedError ->
+                throw IOException(
+                    "GitHub API lỗi (${apiError.message}); nguồn dự phòng cũng lỗi (${feedError.message})",
+                    feedError
+                )
+            }
+        }
+    }
+
+    private fun apiReleases(): List<AppRelease> {
         val all = mutableListOf<AppRelease>()
         for (page in 1..10) {
             val connection = open("$API&page=$page")
@@ -141,15 +161,101 @@ internal object AppUpdateRepository {
             }
             if (json.length() < 100) break
         }
-        all.distinctBy { it.tag.lowercase() }.sortedBy { version(it.tag) }
+        return all.distinctBy { it.tag.lowercase() }.sortedBy { version(it.tag) }
             .ifEmpty { throw IOException("GitHub chưa có bản phát hành hợp lệ") }
     }
+
+    private suspend fun atomReleases(): List<AppRelease> {
+        val atomConnection = open(ATOM).apply {
+            setRequestProperty("Accept", "application/atom+xml, application/xml;q=0.9, */*;q=0.8")
+        }
+        val xml = try {
+            if (atomConnection.responseCode != 200)
+                throw IOException("GitHub Releases feed trả về HTTP ${atomConnection.responseCode}")
+            atomConnection.inputStream.bufferedReader().use { it.readText().take(2_000_001) }
+        } finally {
+            atomConnection.disconnect()
+        }
+        if (xml.length > 2_000_000) throw IOException("Danh sách GitHub Releases quá lớn")
+        val entries = parseAtomFeed(xml)
+        if (entries.isEmpty()) throw IOException("GitHub Releases feed không có phiên bản hợp lệ")
+
+        return coroutineScope {
+            val semaphore = Semaphore(4)
+            entries.map { item ->
+                async(Dispatchers.IO) { semaphore.withPermit { runCatching { resolveReleaseAsset(item) }.getOrDefault(item) } }
+            }.awaitAll().filter { it.assetUrl != null }
+                .distinctBy { it.tag.lowercase() }
+                .sortedBy { version(it.tag) }
+                .ifEmpty { throw IOException("GitHub Releases feed không có APK để tải") }
+        }
+    }
+
+    private fun resolveReleaseAsset(release: AppRelease): AppRelease {
+        val connection = open(RELEASE_PAGE_PREFIX + release.tag).apply {
+            setRequestProperty("Accept", "text/html,application/xhtml+xml;q=0.9,*/*;q=0.8")
+        }
+        val html = try {
+            if (connection.responseCode != 200) return release
+            connection.inputStream.bufferedReader().use { it.readText().take(2_000_001) }
+        } finally {
+            connection.disconnect()
+        }
+        if (html.length > 2_000_000) return release
+        val asset = parseExpandedAssets(release.tag, html) ?: return release
+        return release.copy(assetUrl = asset.first, assetSize = 0L, assetDigest = asset.second)
+    }
+
+    internal fun parseAtomFeed(xml: String): List<AppRelease> =
+        Regex("<entry\\b[^>]*>(.*?)</entry>", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL))
+            .findAll(xml).mapNotNull { match ->
+                val entry = match.groupValues[1]
+                val href = Regex("<link[^>]+rel=[\"']alternate[\"'][^>]+href=[\"']([^\"']+)[\"']", RegexOption.IGNORE_CASE)
+                    .find(entry)?.groupValues?.get(1).orEmpty()
+                val tag = Regex("/releases/tag/([^/?&#\"']+)", RegexOption.IGNORE_CASE)
+                    .find(href)?.groupValues?.get(1)?.let(::decodeXml).orEmpty()
+                if (version(tag) == null) return@mapNotNull null
+                fun field(name: String): String = Regex("<$name(?:\\s+[^>]*)?>(.*?)</$name>",
+                    setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL))
+                    .find(entry)?.groupValues?.get(1)?.let(::decodeXml).orEmpty()
+                val htmlNotes = field("content")
+                val notes = htmlNotes.replace(Regex("(?i)<br\\s*/?>|</p>|</li>"), "\n")
+                    .replace(Regex("<[^>]+>"), " ").replace(Regex("[ \\t]+"), " ")
+                    .replace(Regex("\\n[ \\t]+"), "\n").trim()
+                AppRelease(
+                    tag = tag,
+                    title = field("title").ifBlank { "PiperOS Tool $tag" },
+                    description = notes.ifBlank { "Bản phát hành $tag" },
+                    published = field("updated").take(10),
+                    assetUrl = null,
+                    assetSize = 0L,
+                    assetDigest = null
+                )
+            }.toList()
+
+    internal fun parseExpandedAssets(tag: String, html: String): Pair<String, String?>? {
+        val path = Regex("href=[\"'](/Phi574/PiperOSTool-Android/releases/download/([^/]+)/([^\"']+\\.apk))[\"']",
+            RegexOption.IGNORE_CASE).findAll(html).firstOrNull { match ->
+            decodeXml(match.groupValues[2]).equals(tag, ignoreCase = true)
+        } ?: return null
+        val digest = Regex("sha256:([a-f0-9]{64})", RegexOption.IGNORE_CASE)
+            .find(html)?.groupValues?.get(1)
+        return ("https://github.com" + decodeXml(path.groupValues[1])) to digest?.let { "sha256:$it" }
+    }
+
+    private fun decodeXml(value: String): String = value
+        .replace("&lt;", "<", ignoreCase = true)
+        .replace("&gt;", ">", ignoreCase = true)
+        .replace("&quot;", "\"", ignoreCase = true)
+        .replace("&apos;", "'", ignoreCase = true)
+        .replace("&#39;", "'", ignoreCase = true)
+        .replace("&amp;", "&", ignoreCase = true)
 
     suspend fun download(context: Context, release: AppRelease, onProgress: suspend (Long, Long) -> Unit): File =
         withContext(Dispatchers.IO) {
             val url = release.assetUrl ?: throw IOException("Bản phát hành chưa có tệp APK")
             if (!url.startsWith(ASSET_PREFIX)) throw IOException("Đường dẫn APK không thuộc kho phát hành chính thức")
-            if (release.assetSize <= 0 || release.assetSize > MAX_APK_BYTES) throw IOException("Dung lượng APK không hợp lệ")
+            if (release.assetSize < 0 || release.assetSize > MAX_APK_BYTES) throw IOException("Dung lượng APK không hợp lệ")
             val directory = File(context.filesDir, "app-update").apply { mkdirs() }
             val complete = File(directory, apkFileName(release))
             val partial = File(directory, "${complete.name}.part")
@@ -159,7 +265,9 @@ internal object AppUpdateRepository {
             try {
                 if (connection.responseCode != 200) throw IOException("Tải APK thất bại: HTTP ${connection.responseCode}")
                 val expectedLength = connection.contentLengthLong
-                if (expectedLength > MAX_APK_BYTES || (expectedLength > 0 && expectedLength != release.assetSize))
+                val totalSize = release.assetSize.takeIf { it > 0 } ?: expectedLength
+                if (totalSize <= 0 || totalSize > MAX_APK_BYTES || expectedLength > MAX_APK_BYTES ||
+                    (expectedLength > 0 && release.assetSize > 0 && expectedLength != release.assetSize))
                     throw IOException("Dung lượng tải xuống khác thông tin bản phát hành")
                 val digest = MessageDigest.getInstance("SHA-256")
                 var bytes = 0L
@@ -177,12 +285,12 @@ internal object AppUpdateRepository {
                             output.write(buffer, 0, count)
                             if (bytes - lastReport >= 512 * 1024) {
                                 lastReport = bytes
-                                withContext(Dispatchers.Main) { onProgress(bytes, release.assetSize) }
+                                withContext(Dispatchers.Main) { onProgress(bytes, totalSize) }
                             }
                         }
                     }
                 }
-                if (bytes != release.assetSize) throw IOException("APK tải chưa đủ: $bytes/${release.assetSize} byte")
+                if (bytes != totalSize) throw IOException("APK tải chưa đủ: $bytes/$totalSize byte")
                 val actual = digest.digest().joinToString("") { "%02x".format(it) }
                 val expected = release.assetDigest?.removePrefix("sha256:")
                 if (expected != null && !actual.equals(expected, ignoreCase = true))
@@ -191,7 +299,7 @@ internal object AppUpdateRepository {
                 directory.listFiles()?.filter { candidate ->
                     candidate != complete && (candidate.name.endsWith(".apk") || candidate.name.endsWith(".apk.part"))
                 }?.forEach { it.delete() }
-                withContext(Dispatchers.Main) { onProgress(bytes, release.assetSize) }
+                withContext(Dispatchers.Main) { onProgress(bytes, totalSize) }
                 complete
             } catch (error: Exception) {
                 partial.delete()

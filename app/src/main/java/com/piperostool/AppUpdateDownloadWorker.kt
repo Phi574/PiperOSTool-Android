@@ -91,6 +91,10 @@ internal class AppUpdateDownloadWorker(
     context: Context,
     parameters: WorkerParameters
 ) : CoroutineWorker(context, parameters) {
+    private companion object {
+        const val MAX_AUTOMATIC_RETRIES = 2
+    }
+
     override suspend fun doWork(): Result {
         val tag = inputData.getString(AppUpdateDownload.KEY_TAG)
             ?: return Result.failure(Data.Builder().putString(AppUpdateDownload.KEY_ERROR, "Thiếu mã phiên bản").build())
@@ -125,7 +129,14 @@ internal class AppUpdateDownloadWorker(
                     ))
                 }
             } catch (error: IOException) {
-                return Result.retry()
+                return if (runAttemptCount < MAX_AUTOMATIC_RETRIES) {
+                    Result.retry()
+                } else {
+                    Result.failure(Data.Builder()
+                        .putString(AppUpdateDownload.KEY_TAG, tag)
+                        .putString(AppUpdateDownload.KEY_ERROR, error.message ?: "Không thể tải APK sau nhiều lần thử")
+                        .build())
+                }
             }
             withContext(Dispatchers.IO) {
                 AppUpdateRepository.verifyDownloadedApk(applicationContext, release, file)
