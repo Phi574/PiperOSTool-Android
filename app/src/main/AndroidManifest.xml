@@ -68,6 +68,7 @@
         android:localeConfig="@xml/locales_config">
 
         <activity android:name=".AppUpdateActivity" android:exported="false" android:theme="@style/Theme.PiperOSTool" />
+        <activity android:name=".StartupPermissionSetupActivity" android:exported="false" android:theme="@style/Theme.PiperOSTool.AppCompat.NoActionBar" />
         <service
             android:name="androidx.work.impl.foreground.SystemForegroundService"
             android:foregroundServiceType="dataSync"

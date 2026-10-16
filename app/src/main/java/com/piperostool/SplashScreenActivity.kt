@@ -5,13 +5,9 @@ import android.animation.ObjectAnimator
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
-import android.net.Uri
-import android.os.Build
 import android.os.Bundle
-import android.os.Environment
 import android.os.Handler
 import android.os.Looper
-import android.provider.Settings
 import android.view.ViewGroup
 import android.view.animation.DecelerateInterpolator
 import android.widget.TextView
@@ -103,25 +99,10 @@ class SplashScreenActivity : AppCompatActivity() {
         }
     }
 
-    private val storagePermissionLauncher = registerForActivityResult(
+    private val permissionSetupLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) {
         checkNavigation()
-    }
-
-    private fun checkAndRequestStoragePermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            if (!Environment.isExternalStorageManager()) {
-                val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
-                val uri = Uri.fromParts("package", packageName, null)
-                intent.data = uri
-                storagePermissionLauncher.launch(intent)
-            } else {
-                checkNavigation()
-            }
-        } else {
-            checkNavigation()
-        }
     }
 
     private fun startStartupChecks() {
@@ -291,7 +272,12 @@ class SplashScreenActivity : AppCompatActivity() {
         if (startupChecksResolved || navigating) return
         startupChecksResolved = true
         startupCheckInProgress = false
-        checkAndRequestStoragePermission()
+        if (StartupPermissionSetupActivity.shouldShow(this)) {
+            StartupPermissionSetupActivity.markShown(this)
+            permissionSetupLauncher.launch(Intent(this, StartupPermissionSetupActivity::class.java))
+        } else {
+            checkNavigation()
+        }
     }
 
     // --- LOGIC ĐIỀU HƯỚNG ---

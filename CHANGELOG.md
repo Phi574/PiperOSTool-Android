@@ -1,5 +1,12 @@
 # Changelog
 
+## 3.8.0 — Bản chính thức
+
+- Sửa trang **Có gì mới** để nhận đúng phiên bản hiện tại kể cả tiêu đề có phần mô tả; hiện đầy đủ lịch sử phiên bản theo thứ tự mới nhất trước.
+- Thêm bộ lọc nhanh **Preview**, **Beta** và **Stable**; thẻ Preview có nền xanh nước nhạt, Beta xanh nhạt kèm biểu tượng và nhãn BETA, bản chính thức xanh lá nhạt.
+- Thêm màn hình thiết lập quyền ở lần khởi động đầu tiên của phiên bản: liệt kê quyền còn thiếu, cho phép cấp các quyền runtime cùng lúc và mở đúng trang Cài đặt cho quyền đặc biệt. Có thể bỏ qua và bật sau.
+- Nâng versionCode lên 93 để cập nhật từ 3.7.9.
+
 ## 3.7.9 — Bản chính thức
 
 - Tổng hợp luồng cập nhật bắt buộc: thiết bị dưới 3.7.7 cài cầu nối 3.7.7 trước, chuyển chứng chỉ qua 3.7.8, rồi tiếp tục cập nhật các bản mới.

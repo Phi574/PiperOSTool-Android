@@ -146,6 +146,7 @@ object PiperModernUi {
     }
 
     private fun applyView(view: View, palette: Palette) {
+        if (view.getTag(R.id.piper_preserve_modern_colors) == true) return
         val name = resourceName(view)
         if (name == "homeBackground") {
             if (view.rootView.findViewById<View>(R.id.homeRoot) == null) view.visibility = View.GONE
