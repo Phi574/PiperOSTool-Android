@@ -43,7 +43,12 @@ internal object AppUpdateMonitor {
     }
 
     internal fun notifyIfAvailable(context: Context, release: AppRelease, channel: AppUpdateRepository.Channel) {
-        if (release.assetUrl == null || !notificationsAllowed(context)) return
+        if (release.assetUrl == null) return
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) !=
+            PackageManager.PERMISSION_GRANTED
+        ) return
+        if (!NotificationManagerCompat.from(context).areNotificationsEnabled()) return
         val preferences = context.getSharedPreferences(NOTIFICATION_PREFS, Context.MODE_PRIVATE)
         val key = "last_notified_${channel.name}"
         if (preferences.getString(key, null) == release.tag) return
@@ -92,11 +97,6 @@ internal object AppUpdateMonitor {
         preferences.edit().putString(key, release.tag).apply()
     }
 
-    private fun notificationsAllowed(context: Context): Boolean =
-        NotificationManagerCompat.from(context).areNotificationsEnabled() &&
-            (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
-                ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
-                PackageManager.PERMISSION_GRANTED)
 }
 
 internal class AppUpdateCheckWorker(

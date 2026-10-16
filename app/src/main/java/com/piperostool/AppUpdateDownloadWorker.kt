@@ -3,11 +3,14 @@ package com.piperostool
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
+import android.Manifest
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.os.Build
 import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 import androidx.work.CoroutineWorker
 import androidx.work.Data
 import androidx.work.ExistingWorkPolicy
@@ -153,6 +156,12 @@ internal class AppUpdateDownloadWorker(
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
             // Android 15+ may reject dataSync FGS for apps targeting future SDKs.
             // Keep this user-requested transfer as ordinary persistent WorkManager work there.
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                ContextCompat.checkSelfPermission(
+                    applicationContext,
+                    Manifest.permission.POST_NOTIFICATIONS
+                ) != PackageManager.PERMISSION_GRANTED
+            ) return
             androidx.core.app.NotificationManagerCompat.from(applicationContext)
                 .notify(AppUpdateDownload.NOTIFICATION_ID, notification)
         } else {
