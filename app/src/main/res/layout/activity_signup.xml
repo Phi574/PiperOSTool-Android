@@ -175,29 +175,36 @@
                 android:textColor="#AFFFFFFF"
                 android:textSize="12sp" />
 
-            <Button
-                android:id="@+id/btnGoogleSignIn"
+            <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="50dp"
+                android:layout_height="56dp"
                 android:layout_marginTop="8dp"
-                android:background="@drawable/bg_auth_panel"
-                android:text="@string/auth_google_button_text"
-                android:textColor="@color/white"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                app:backgroundTint="@null" />
+                android:orientation="horizontal">
 
-            <Button
-                android:id="@+id/btnPhoneSignIn"
-                android:layout_width="match_parent"
-                android:layout_height="50dp"
-                android:layout_marginTop="8dp"
-                android:background="@drawable/bg_auth_panel"
-                android:text="@string/auth_phone_continue"
-                android:textColor="@color/white"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                app:backgroundTint="@null" />
+                <ImageButton
+                    android:id="@+id/btnGoogleSignIn"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_marginEnd="6dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_auth_panel"
+                    android:contentDescription="@string/auth_google_button_description"
+                    android:padding="14dp"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/auth_google" />
+
+                <ImageButton
+                    android:id="@+id/btnPhoneSignIn"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_marginStart="6dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_auth_panel"
+                    android:contentDescription="@string/auth_phone_button_description"
+                    android:padding="14dp"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/auth_phone" />
+            </LinearLayout>
 
             <TextView
                 android:id="@+id/tvBackToLogin"

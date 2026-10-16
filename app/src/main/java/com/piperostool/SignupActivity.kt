@@ -4,6 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.widget.Button
 import android.widget.EditText
+import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
 import android.view.View
@@ -21,8 +22,8 @@ class SignupActivity : AppCompatActivity() {
     private lateinit var edtPassword: EditText
     private lateinit var edtConfirm: EditText
     private lateinit var btnRegister: Button
-    private lateinit var btnGoogle: Button
-    private lateinit var btnPhone: Button
+    private lateinit var btnGoogle: ImageButton
+    private lateinit var btnPhone: ImageButton
     private lateinit var tvBackToLogin: TextView
     private lateinit var root: View
     private lateinit var offlineState: View
@@ -100,8 +101,8 @@ class SignupActivity : AppCompatActivity() {
     private fun validateInput(): Boolean {
         val name = edtName.text.toString().trim()
         val email = edtEmail.text.toString().trim()
-        val pass = edtPassword.text.toString().trim()
-        val confirm = edtConfirm.text.toString().trim()
+        val pass = edtPassword.text.toString()
+        val confirm = edtConfirm.text.toString()
 
         if (name.isEmpty()) {
             edtName.error = "Vui lòng nhập Tên/Bí danh"
@@ -111,8 +112,12 @@ class SignupActivity : AppCompatActivity() {
             edtEmail.error = "Email không hợp lệ"
             return false
         }
-        if (pass.length < 6) {
-            edtPassword.error = "Mật khẩu phải từ 6 ký tự"
+        val missingPasswordRequirements = AuthPasswordPolicy.missingRequirements(pass)
+        if (missingPasswordRequirements.isNotEmpty()) {
+            edtPassword.error = getString(
+                R.string.auth_password_requirements_missing,
+                missingPasswordRequirements.joinToString(", ") { getString(it) }
+            )
             return false
         }
         if (pass != confirm) {
@@ -124,7 +129,7 @@ class SignupActivity : AppCompatActivity() {
 
     private fun performSignUp() {
         val email = edtEmail.text.toString().trim()
-        val password = edtPassword.text.toString().trim()
+        val password = edtPassword.text.toString()
         val name = edtName.text.toString().trim()
 
         btnRegister.isEnabled = false
@@ -142,7 +147,7 @@ class SignupActivity : AppCompatActivity() {
                         resetButton()
                     }
                 } else {
-                    Toast.makeText(this, "Lỗi tạo ID: ${task.exception?.message}", Toast.LENGTH_LONG).show()
+                    showAuthError(this, task.exception)
                     resetButton()
                 }
             }
@@ -164,22 +169,25 @@ class SignupActivity : AppCompatActivity() {
 
         db.collection("users").document(userId)
             .set(userMap, com.google.firebase.firestore.SetOptions.merge())
-            .addOnCompleteListener(this) {
+            .addOnCompleteListener(this) { saveTask ->
                 user.updateProfile(
                     com.google.firebase.auth.UserProfileChangeRequest.Builder()
                         .setDisplayName(name)
                         .build()
-                ).addOnCompleteListener(this) {
+                ).addOnCompleteListener(this) { profileTask ->
                     auth.useAppLanguage()
                     user.sendEmailVerification().addOnCompleteListener(this) { verification ->
                         auth.signOut()
                         resetButton()
-                        val message = if (verification.isSuccessful) {
-                            R.string.auth_signup_verify_sent
-                        } else {
-                            R.string.auth_signup_verify_failed
+                        if (!saveTask.isSuccessful) {
+                            showAuthError(this, saveTask.exception)
+                        } else if (!profileTask.isSuccessful) {
+                            showAuthError(this, profileTask.exception)
                         }
+                        val message = if (verification.isSuccessful) R.string.auth_signup_verify_sent
+                        else R.string.auth_signup_verify_failed
                         Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+                        if (!verification.isSuccessful) showAuthError(this, verification.exception)
                         if (isFinishing.not()) finish()
                     }
                 }

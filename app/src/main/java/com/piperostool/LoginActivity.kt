@@ -4,6 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.widget.Button
 import android.widget.EditText
+import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
 import android.view.View
@@ -19,8 +20,8 @@ class LoginActivity : AppCompatActivity() {
     private lateinit var etEmail: EditText
     private lateinit var etPassword: EditText
     private lateinit var btnLogin: Button
-    private lateinit var btnGoogle: Button
-    private lateinit var btnPhone: Button
+    private lateinit var btnGoogle: ImageButton
+    private lateinit var btnPhone: ImageButton
     private lateinit var btnResendVerification: Button
     private lateinit var tvGoToSignUp: TextView
     private lateinit var tvForgotPassword: TextView
@@ -114,7 +115,7 @@ class LoginActivity : AppCompatActivity() {
 
     private fun validateInput(): Boolean {
         val email = etEmail.text.toString().trim()
-        val password = etPassword.text.toString().trim()
+        val password = etPassword.text.toString()
 
         if (email.isEmpty()) {
             etEmail.error = "Vui lòng nhập Username/Email"
@@ -131,7 +132,7 @@ class LoginActivity : AppCompatActivity() {
 
     private fun performLogin() {
         val email = etEmail.text.toString().trim()
-        val password = etPassword.text.toString().trim()
+        val password = etPassword.text.toString()
 
         // Hiệu ứng nút bấm khi loading
         setAuthButtonsEnabled(false)
@@ -159,7 +160,16 @@ class LoginActivity : AppCompatActivity() {
                     }
                 } else {
                     resetLoginButton()
-                    showAuthError(this, task.exception)
+                    if (AuthProviderMessages.requiresPasswordUpgrade(task.exception)) {
+                        auth.signOut()
+                        startActivity(
+                            Intent(this, ForgotPassword::class.java)
+                                .putExtra(ForgotPassword.EXTRA_REQUIRED_PASSWORD_UPGRADE, true)
+                                .putExtra(ForgotPassword.EXTRA_EMAIL, email)
+                        )
+                    } else {
+                        showAuthError(this, task.exception)
+                    }
                 }
             }
     }
@@ -210,7 +220,7 @@ class LoginActivity : AppCompatActivity() {
                     if (sent.isSuccessful) {
                         Toast.makeText(this, R.string.auth_email_verification_sent, Toast.LENGTH_LONG).show()
                     } else {
-                        Toast.makeText(this, R.string.auth_email_verification_failed, Toast.LENGTH_LONG).show()
+                        showAuthError(this, sent.exception)
                     }
                 } ?: run {
                     auth.signOut()

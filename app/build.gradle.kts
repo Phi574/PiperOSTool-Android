@@ -1,4 +1,6 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.io.File
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
@@ -7,6 +9,13 @@ plugins {
 
 val googleServicesConfig = file("google-services.json")
 val testPackage = providers.gradleProperty("piperTestPackage").orNull == "true"
+val piperSigningPropertiesFile = File(System.getProperty("user.home"), ".android/PiperOS/signing.properties")
+val piperSigningProperties = Properties().apply {
+    if (piperSigningPropertiesFile.isFile) {
+        piperSigningPropertiesFile.inputStream().use(::load)
+    }
+}
+val piperReleaseSigningConfigured = piperSigningPropertiesFile.isFile
 if (googleServicesConfig.isFile) {
     apply(plugin = "com.google.gms.google-services")
 } else {
@@ -15,6 +24,20 @@ if (googleServicesConfig.isFile) {
 
 android {
     namespace = "com.piperostool"
+    signingConfigs.configureEach {
+        enableV2Signing = true
+        enableV3Signing = true
+    }
+    if (piperReleaseSigningConfigured) {
+        signingConfigs.create("piperRelease") {
+            storeFile = file(piperSigningProperties.getProperty("storeFile"))
+            storePassword = piperSigningProperties.getProperty("storePassword")
+            keyAlias = piperSigningProperties.getProperty("keyAlias")
+            keyPassword = piperSigningProperties.getProperty("keyPassword")
+            enableV2Signing = true
+            enableV3Signing = true
+        }
+    }
     compileSdk {
         version = release(37)
     }
@@ -27,8 +50,8 @@ android {
         targetSdk = 37
         multiDexEnabled = true
         multiDexKeepProguard = file("multidex-keep.pro")
-        versionCode = 82
-        versionName = "3.7.6"
+        versionCode = 83
+        versionName = "3.7.7.PRE"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         ndk {
@@ -38,8 +61,16 @@ android {
 
 
     buildTypes {
+        debug {
+            if (piperReleaseSigningConfigured) {
+                signingConfig = signingConfigs.getByName("piperRelease")
+            }
+        }
         release {
             isMinifyEnabled = false
+            if (piperReleaseSigningConfigured) {
+                signingConfig = signingConfigs.getByName("piperRelease")
+            }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

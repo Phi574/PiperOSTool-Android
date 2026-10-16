@@ -24,3 +24,7 @@ local.properties
 *.apks
 *.jks
 *.keystore
+*.p12
+*.pk8
+*.pem
+**/signing.properties

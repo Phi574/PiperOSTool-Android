@@ -13,11 +13,17 @@ import com.google.firebase.auth.auth
 
 class ForgotPassword : AppCompatActivity() {
 
+    companion object {
+        const val EXTRA_REQUIRED_PASSWORD_UPGRADE = "required_password_upgrade"
+        const val EXTRA_EMAIL = "recovery_email"
+    }
+
     private lateinit var edtEmail: EditText
     private lateinit var btnReset: Button
     private lateinit var tvBackToLogin: TextView
     private lateinit var root: View
     private lateinit var offlineState: View
+    private var requiredPasswordUpgrade = false
 
     private lateinit var auth: FirebaseAuth
 
@@ -29,6 +35,7 @@ class ForgotPassword : AppCompatActivity() {
 
         // Khởi tạo Firebase Auth
         auth = Firebase.auth
+        requiredPasswordUpgrade = intent.getBooleanExtra(EXTRA_REQUIRED_PASSWORD_UPGRADE, false)
 
         initViews()
         setupListeners()
@@ -39,6 +46,14 @@ class ForgotPassword : AppCompatActivity() {
         edtEmail = findViewById(R.id.edtForgotEmail)
         btnReset = findViewById(R.id.btnResetPassword)
         tvBackToLogin = findViewById(R.id.tvBackToLoginFromForgot)
+        val title = findViewById<TextView>(R.id.forgotTitle)
+        val summary = findViewById<TextView>(R.id.forgotSummary)
+        if (requiredPasswordUpgrade) {
+            title.setText(R.string.auth_password_upgrade_title)
+            summary.setText(R.string.auth_password_upgrade_summary)
+            btnReset.setText(R.string.auth_password_upgrade_send)
+            edtEmail.setText(intent.getStringExtra(EXTRA_EMAIL).orEmpty())
+        }
         root = findViewById(R.id.forgotRoot)
         AuthScreenUi.apply(this, root)
         offlineState = findViewById(R.id.forgotOfflineState)
@@ -68,16 +83,21 @@ class ForgotPassword : AppCompatActivity() {
             auth.sendPasswordResetEmail(email)
                 .addOnCompleteListener { task ->
                     if (task.isSuccessful) {
-                        Toast.makeText(this, R.string.auth_reset_generic_success, Toast.LENGTH_LONG).show()
+                        val message = if (requiredPasswordUpgrade) {
+                            R.string.auth_password_upgrade_sent
+                        } else {
+                            R.string.auth_reset_generic_success
+                        }
+                        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
                         finish() // Tự động quay về màn Login
                         overridePendingTransition(R.anim.piper_page_enter, R.anim.piper_page_exit)
                     } else {
-                        val message = if (task.exception is com.google.firebase.FirebaseNetworkException) {
-                            R.string.auth_network_error
-                        } else R.string.auth_reset_failed
-                        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+                        showAuthError(this, task.exception)
                         btnReset.isEnabled = true
-                        btnReset.text = getString(R.string.auth_send_reset)
+                        btnReset.text = getString(
+                            if (requiredPasswordUpgrade) R.string.auth_password_upgrade_send
+                            else R.string.auth_send_reset
+                        )
                         btnReset.alpha = 1.0f
                     }
                 }

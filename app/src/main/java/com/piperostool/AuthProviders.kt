@@ -105,16 +105,70 @@ object AuthProviderMessages {
         if (error is GetCredentialCancellationException) {
             return context.getString(R.string.auth_google_cancelled)
         }
-        val code = (error as? FirebaseAuthException)?.errorCode.orEmpty()
+        val firebaseError = error as? FirebaseAuthException
+        val code = firebaseError?.errorCode.orEmpty()
         return when (code) {
             "ERROR_ACCOUNT_EXISTS_WITH_DIFFERENT_CREDENTIAL" ->
                 context.getString(R.string.auth_account_exists_other_provider)
-            "ERROR_INVALID_EMAIL", "ERROR_WRONG_PASSWORD", "ERROR_USER_NOT_FOUND",
+            "ERROR_INVALID_EMAIL" -> context.getString(R.string.auth_error_invalid_email)
+            "ERROR_EMAIL_ALREADY_IN_USE" -> context.getString(R.string.auth_error_email_in_use)
+            "ERROR_USER_DISABLED" -> context.getString(R.string.auth_error_user_disabled)
+            "ERROR_WRONG_PASSWORD", "ERROR_USER_NOT_FOUND",
             "ERROR_INVALID_CREDENTIAL", "ERROR_INVALID_LOGIN_CREDENTIAL" ->
                 context.getString(R.string.auth_invalid_credentials)
+            "ERROR_PASSWORD_DOES_NOT_MEET_REQUIREMENTS", "ERROR_WEAK_PASSWORD" ->
+                context.getString(R.string.auth_error_password_policy)
+            "ERROR_OPERATION_NOT_ALLOWED" -> context.getString(R.string.auth_error_operation_disabled)
+            "ERROR_TOO_MANY_REQUESTS" -> context.getString(R.string.auth_error_too_many_requests)
             "ERROR_NETWORK_REQUEST_FAILED" -> context.getString(R.string.auth_network_error)
-            else -> context.getString(R.string.auth_provider_failed)
+            "ERROR_REQUIRES_RECENT_LOGIN" -> context.getString(R.string.auth_error_recent_login)
+            "ERROR_EXPIRED_ACTION_CODE", "ERROR_INVALID_ACTION_CODE" ->
+                context.getString(R.string.auth_error_expired_action)
+            "ERROR_APP_NOT_AUTHORIZED", "ERROR_INVALID_API_KEY" ->
+                context.getString(R.string.auth_error_app_configuration)
+            else -> {
+                val message = error?.localizedMessage?.takeIf(String::isNotBlank)
+                    ?.replace(Regex("(?i)firebase:\\s*error\\s*\\("), "")
+                    ?.removeSuffix(")")
+                    ?.take(220)
+                if (code.isNotBlank() && message != null) {
+                    context.getString(R.string.auth_error_unknown_with_code, code, message)
+                } else if (code.isNotBlank()) {
+                    context.getString(R.string.auth_error_unknown_code, code)
+                } else if (error is com.google.firebase.FirebaseException && message != null) {
+                    context.getString(R.string.auth_error_unknown_with_code, "Firebase", message)
+                } else {
+                    context.getString(R.string.auth_provider_failed)
+                }
+            }
         }
+    }
+
+    fun requiresPasswordUpgrade(error: Exception?): Boolean {
+        val code = (error as? FirebaseAuthException)?.errorCode.orEmpty()
+        val details = generateSequence<Throwable>(error) { it.cause }
+            .joinToString(" ") { it.message.orEmpty() }
+            .uppercase()
+        return code == "ERROR_PASSWORD_DOES_NOT_MEET_REQUIREMENTS" ||
+            code == "ERROR_WEAK_PASSWORD" ||
+            error?.javaClass?.simpleName == "FirebaseAuthPasswordDoesNotMeetRequirementsException" ||
+            details.contains("PASSWORD_DOES_NOT_MEET_REQUIREMENTS")
+    }
+}
+
+object AuthPasswordPolicy {
+    private val allowedSpecialCharacters = setOf(
+        '^', '$', '*', '.', '[', ']', '{', '}', '(', ')', '?', '"', '!', '@', '#', '%', '&',
+        '/', '\\', ',', '>', '<', '\'', ':', ';', '|', '_', '~'
+    )
+
+    fun missingRequirements(password: String): List<Int> = buildList {
+        if (password.length < 6) add(R.string.auth_password_rule_minimum)
+        if (password.length > 4096) add(R.string.auth_password_rule_maximum)
+        if (password.none(Char::isLowerCase)) add(R.string.auth_password_rule_lowercase)
+        if (password.none(Char::isUpperCase)) add(R.string.auth_password_rule_uppercase)
+        if (password.none(Char::isDigit)) add(R.string.auth_password_rule_number)
+        if (password.none(allowedSpecialCharacters::contains)) add(R.string.auth_password_rule_special)
     }
 }
 

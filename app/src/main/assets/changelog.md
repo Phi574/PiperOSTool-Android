@@ -1,5 +1,15 @@
 # Changelog
 
+## 3.7.7.PRE
+
+- **BẢN CẬP NHẬT QUAN TRỌNG — khuyến khích tất cả người dùng cập nhật ngay.** Bản này thiết lập chứng chỉ ký mới cùng chuỗi chuyển đổi v3 để các bản PiperOS sau có thể cập nhật đè ổn định; bỏ qua bản này có thể khiến việc nhận/cài các bản cập nhật tiếp theo gặp lỗi chữ ký.
+- Bản phát hành này giữ khả năng cập nhật đè từ chứng chỉ cũ bằng lineage công khai đi kèm; hãy cài trực tiếp lên ứng dụng hiện tại, không gỡ ứng dụng trước.
+- Thêm luồng cập nhật mật khẩu bắt buộc: khi Firebase báo mật khẩu cũ không còn đạt chính sách, người dùng được chuyển tới màn riêng để yêu cầu link đặt lại mật khẩu an toàn qua email.
+- Khi đăng ký, kiểm tra trước chính sách mật khẩu hiện hành của PiperOS: tối thiểu 6 ký tự gồm chữ hoa, chữ thường, số và ký tự đặc biệt; Firebase vẫn là nơi xác minh cuối cùng.
+- Phân loại lỗi Firebase khi đăng ký/đăng nhập và hiển thị hướng xử lý cho email sai định dạng, email đã tồn tại, sai thông tin đăng nhập, tài khoản bị vô hiệu hóa, chính sách mật khẩu, mạng, giới hạn yêu cầu và cấu hình chưa bật; mã lỗi không nhận diện được cũng được hiển thị để hỗ trợ chẩn đoán.
+- Làm rõ trạng thái email chưa xác minh và lỗi gửi email xác minh; giữ luồng gửi lại thư từ màn hình đăng nhập.
+- Nâng versionCode lên 83 để cập nhật đè từ 3.7.6.
+
 ## 3.7.6 — Bản chính thức
 
 Bản ổn định tổng hợp các cải tiến đã thử nghiệm từ 3.7.0.PRE đến 3.7.5.PRE.
