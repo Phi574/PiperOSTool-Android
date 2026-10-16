@@ -1,5 +1,16 @@
 # Changelog
 
+## 3.7.6 — Bản chính thức
+
+Bản ổn định tổng hợp các cải tiến đã thử nghiệm từ 3.7.0.PRE đến 3.7.5.PRE.
+
+- **PiperOS ADB:** thêm tiến trình đặc quyền và giao tiếp Binder, quyền client theo nhóm cùng nhật ký thao tác; trang Ứng dụng và Trình quản lý tệp dùng phiên ADB đã cấp quyền.
+- **Trang chủ và tiện ích:** chuyển PiperOS Media và PiperOS 2FA ra Trang chủ; 2FA đồng bộ các mã OTP của người dùng theo tài khoản PiperOS, hỗ trợ TOTP, HOTP, Steam Guard và nhập/xuất JSON hoặc QR.
+- **Thông tin ứng dụng:** thêm thông tin gói, quyền, chứng chỉ và nhận diện chỉ đọc dấu hiệu quảng cáo, xác minh giấy phép, InApp; bỏ PiperOS MOD cùng các thao tác vá APK.
+- **Cập nhật:** mặc định nhận bản ổn định, có tùy chọn tham gia Beta/Preview, xem các bản phát hành khác và cảnh báo khi bỏ qua bản trung gian; các cửa sổ nổi dùng giao diện PiperOS.
+- **Tương thích:** sửa kết nối mạng cục bộ trên Android 17, thêm kiểm tra/xin quyền cần thiết và cải thiện ổn định khi nén tệp, khôi phục trình duyệt và dùng các tính năng khác.
+- Nâng versionCode lên 82 để cập nhật đè từ 3.7.5.PRE.
+
 ## 3.7.5.PRE
 
 - Gỡ PiperOS MOD khỏi Trang Ứng dụng và bỏ các mục vá/công cụ; chuyển kiểm tra chỉ đọc dấu hiệu Google Ads, xác minh giấy phép, InApp và bản vá tùy chỉnh vào mục **Thông tin ứng dụng** cùng thông tin gói, quyền và chứng chỉ.

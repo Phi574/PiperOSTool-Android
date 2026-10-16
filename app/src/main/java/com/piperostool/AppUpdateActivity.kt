@@ -24,7 +24,6 @@ import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.app.AlertDialog
 import androidx.core.content.FileProvider
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.button.MaterialButton
@@ -92,7 +91,7 @@ class AppUpdateActivity : AppCompatActivity() {
         log = findViewById(R.id.updateLog)
         currentVersion.text = "Đang có trên máy: ${AppVersion.name(this)}"
         findViewById<View>(R.id.updateBack).setOnClickListener { leave() }
-        findViewById<View>(R.id.updateSettings).setOnClickListener { showProgramSettings() }
+        findViewById<View>(R.id.updateSettings).setOnClickListener { showUpdateSettingsMenu() }
         cancel.setOnClickListener { cancelDownload() }
         otherReleases.setOnClickListener { showOtherReleases() }
         logToggle.setOnClickListener {
@@ -121,23 +120,19 @@ class AppUpdateActivity : AppCompatActivity() {
         action.visibility = View.GONE
         otherReleases.visibility = View.GONE
         status.text = "Đang kiểm tra"
-        val loading = Dialog(this).apply {
-            requestWindowFeature(Window.FEATURE_NO_TITLE)
-            setContentView(LinearLayout(this@AppUpdateActivity).apply {
+        val loadingContent = LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER_VERTICAL
                 setPadding(dp(24), dp(22), dp(24), dp(22))
-                setBackgroundColor(Color.rgb(31, 42, 59))
                 addView(ProgressBar(this@AppUpdateActivity), LinearLayout.LayoutParams(dp(30), dp(30)))
                 addView(TextView(this@AppUpdateActivity).apply {
                     text = "Đang kiểm tra"
                     textSize = 16f
-                    setTextColor(Color.WHITE)
+                    setTextColor(PiperModernUi.textColor(this@AppUpdateActivity))
                     setPadding(dp(18), 0, 0, 0)
                 })
-            })
-            setCancelable(false)
         }
+        val loading = PiperDialog.createContent(this, loadingContent).apply { setCancelable(false) }
         loading.show()
         lifecycleScope.launch {
             try {
@@ -192,19 +187,47 @@ class AppUpdateActivity : AppCompatActivity() {
         AppUpdateRepository.Channel.PREVIEW -> "PREVIEW"
     }
 
+    private fun showUpdateSettingsMenu() {
+        val option = TextView(this).apply {
+            text = "Chương trình Beta / Preview     ›"
+            textSize = 15f
+            setTextColor(PiperModernUi.textColor(this@AppUpdateActivity))
+            setPadding(dp(14), dp(15), dp(14), dp(15))
+            isClickable = true
+            isFocusable = true
+        }
+        lateinit var menu: Dialog
+        option.setOnClickListener {
+            menu.dismiss()
+            showProgramSettings()
+        }
+        menu = PiperDialog.showCustom(
+            context = this,
+            title = "Cài đặt cập nhật",
+            content = option,
+            positiveLabel = "Đóng",
+            negativeLabel = null,
+            onPositive = { true }
+        )
+    }
+
     private fun showProgramSettings() {
         val enabled = updatePreferences.getBoolean("update_program_enabled", false)
         if (!enabled && !updatePreferences.getBoolean("update_terms_accepted", false)) {
-            AlertDialog.Builder(this)
-                .setTitle("Điều khoản Beta / Preview")
-                .setMessage("Bản thử nghiệm có thể chứa lỗi, gây mất ổn định hoặc không tương thích với thiết bị. Hãy sao lưu dữ liệu trước khi cài. Bạn có thể tắt chương trình bất cứ lúc nào; các bản đang cài sẽ không tự hạ cấp.")
-                .setNegativeButton("Hủy", null)
-                .setPositiveButton("Đồng ý") { _, _ ->
+            PiperDialog.showCustom(
+                context = this,
+                title = "Điều khoản Beta / Preview",
+                message = "Bản thử nghiệm có thể chứa lỗi, gây mất ổn định hoặc không tương thích với thiết bị. Hãy sao lưu dữ liệu trước khi cài. Bạn có thể tắt chương trình bất cứ lúc nào; các bản đang cài sẽ không tự hạ cấp.",
+                positiveLabel = "Đồng ý",
+                negativeLabel = "Hủy",
+                onPositive = {
                     updatePreferences.edit().putBoolean("update_terms_accepted", true)
                         .putBoolean("update_program_enabled", true)
                         .putString("update_channel", AppUpdateRepository.Channel.BETA.name).apply()
                     checkRelease()
-                }.show()
+                    true
+                }
+            )
             return
         }
         val root = LinearLayout(this).apply {
@@ -231,21 +254,33 @@ class AppUpdateActivity : AppCompatActivity() {
             preview.alpha = if (toggle.isChecked) 1f else 0.45f
         }
         applyEnabledState()
-        val dialog = AlertDialog.Builder(this).setTitle("Chương trình Beta / Preview")
-            .setView(root).setNegativeButton("Đóng", null).create()
+        lateinit var dialog: Dialog
+        dialog = PiperDialog.showCustom(
+            context = this,
+            title = "Chương trình Beta / Preview",
+            content = root,
+            positiveLabel = "Đóng",
+            negativeLabel = null,
+            onPositive = { true }
+        )
         toggle.setOnCheckedChangeListener { _, checked ->
             if (checked) {
                 if (!updatePreferences.getBoolean("update_terms_accepted", false)) {
                     toggle.isChecked = false
-                    AlertDialog.Builder(this).setTitle("Điều khoản Beta / Preview")
-                        .setMessage("Bản thử nghiệm có thể chứa lỗi, gây mất ổn định hoặc không tương thích với thiết bị. Hãy sao lưu dữ liệu trước khi cài.")
-                        .setNegativeButton("Hủy", null)
-                        .setPositiveButton("Đồng ý") { _, _ ->
+                    PiperDialog.showCustom(
+                        context = this,
+                        title = "Điều khoản Beta / Preview",
+                        message = "Bản thử nghiệm có thể chứa lỗi, gây mất ổn định hoặc không tương thích với thiết bị. Hãy sao lưu dữ liệu trước khi cài.",
+                        positiveLabel = "Đồng ý",
+                        negativeLabel = "Hủy",
+                        onPositive = {
                             updatePreferences.edit().putBoolean("update_terms_accepted", true)
                                 .putBoolean("update_program_enabled", true)
                                 .putString("update_channel", AppUpdateRepository.Channel.BETA.name).apply()
                             dialog.dismiss(); checkRelease()
-                        }.show()
+                            true
+                        }
+                    )
                 } else {
                     val editor = updatePreferences.edit().putBoolean("update_program_enabled", true)
                     if (AppUpdateRepository.selectedChannel(updatePreferences) == AppUpdateRepository.Channel.STABLE) {
@@ -261,11 +296,15 @@ class AppUpdateActivity : AppCompatActivity() {
                         .putString("update_channel", AppUpdateRepository.Channel.STABLE.name).apply()
                     applyEnabledState(); checkRelease()
                 }
-                if (isNonStableInstalled) AlertDialog.Builder(this)
-                    .setTitle("Thoát chương trình Beta / Preview?")
-                    .setMessage("Bạn đang dùng bản thử nghiệm. Nếu tắt, các lần kiểm tra sau chỉ đề xuất bản ổn định chính thức; ứng dụng hiện tại không bị gỡ hoặc hạ cấp.")
-                    .setNegativeButton("Tiếp tục tham gia") { _, _ -> toggle.isChecked = true }
-                    .setPositiveButton("Tắt chương trình") { _, _ -> confirm() }.show()
+                if (isNonStableInstalled) PiperDialog.showCustom(
+                    context = this,
+                    title = "Thoát chương trình Beta / Preview?",
+                    message = "Bạn đang dùng bản thử nghiệm. Nếu tắt, các lần kiểm tra sau chỉ đề xuất bản ổn định chính thức; ứng dụng hiện tại không bị gỡ hoặc hạ cấp.",
+                    positiveLabel = "Tắt chương trình",
+                    negativeLabel = "Tiếp tục tham gia",
+                    onPositive = { confirm(); true },
+                    onNegative = { toggle.isChecked = true }
+                )
                 else confirm()
             }
         }
@@ -284,18 +323,45 @@ class AppUpdateActivity : AppCompatActivity() {
         val candidates = AppUpdateRepository.laterReleases(foundReleases, AppVersion.name(this), channel)
         if (candidates.isEmpty()) return
         val next = AppUpdateRepository.nextRelease(foundReleases, AppVersion.name(this), channel)
-        AlertDialog.Builder(this).setTitle("Các bản cập nhật khác")
-            .setItems(candidates.map { "${it.tag} · ${channelLabel(AppUpdateRepository.channel(it.tag))}" }.toTypedArray()) { _, index ->
-                val selected = candidates[index]
-                if (selected.tag.equals(next?.tag, ignoreCase = true)) {
-                    selectRelease(selected)
-                    return@setItems
+        val list = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        var releasesDialog: Dialog? = null
+        candidates.forEach { candidate ->
+            val row = TextView(this).apply {
+                text = "${candidate.tag} · ${channelLabel(AppUpdateRepository.channel(candidate.tag))}"
+                textSize = 15f
+                setTextColor(PiperModernUi.textColor(this@AppUpdateActivity))
+                setPadding(dp(14), dp(13), dp(14), dp(13))
+                isClickable = true
+                isFocusable = true
+                setOnClickListener {
+                    releasesDialog?.dismiss()
+                    if (candidate.tag.equals(next?.tag, ignoreCase = true)) {
+                        selectRelease(candidate)
+                    } else {
+                        PiperDialog.showConfirm(
+                            context = this@AppUpdateActivity,
+                            title = "Cập nhật không tuần tự",
+                            message = "Cài ${candidate.tag} trực tiếp có thể gây lỗi ở một số phiên bản hoặc điện thoại. Bạn có thể bỏ qua các bản trung gian. Tiếp tục?",
+                            positiveLabel = "Tiếp tục",
+                            onConfirm = { selectRelease(candidate) }
+                        )
+                    }
                 }
-                AlertDialog.Builder(this).setTitle("Cập nhật không tuần tự")
-                    .setMessage("Cài ${selected.tag} trực tiếp có thể gây lỗi ở một số phiên bản hoặc điện thoại. Bạn có thể bỏ qua các bản trung gian. Tiếp tục?")
-                    .setNegativeButton("Hủy", null)
-                    .setPositiveButton("Tiếp tục") { _, _ -> selectRelease(selected) }.show()
-            }.show()
+            }
+            list.addView(row)
+            if (candidate != candidates.last()) list.addView(View(this).apply {
+                setBackgroundColor(PiperModernUi.borderColor(this@AppUpdateActivity))
+            }, LinearLayout.LayoutParams(-1, dp(1)))
+        }
+        val scroll = ScrollView(this).apply { addView(list) }
+        releasesDialog = PiperDialog.showCustom(
+            context = this,
+            title = "Các bản cập nhật khác",
+            content = scroll,
+            positiveLabel = "Đóng",
+            negativeLabel = null,
+            onPositive = { true }
+        )
     }
 
     private fun selectRelease(selected: AppRelease) {
@@ -309,51 +375,14 @@ class AppUpdateActivity : AppCompatActivity() {
     }
 
     private fun showInstallConfirmation() {
-        val dialog = Dialog(this)
-        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
-        val root = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(22), dp(22), dp(22), dp(22))
-            background = GradientDrawable().apply {
-                setColor(Color.rgb(29, 41, 58))
-                cornerRadius = dp(22).toFloat()
-            }
-        }
-        root.addView(TextView(this).apply {
-            text = "Cài bản ${release?.tag ?: "đã chọn"}?"
-            textSize = 20f
-            setTextColor(Color.WHITE)
-            setTypeface(typeface, android.graphics.Typeface.BOLD)
-        })
-        root.addView(TextView(this).apply {
-            text = "Từ ${AppVersion.name(this@AppUpdateActivity)} lên ${release?.tag ?: "bản mới"}. Hãy sao lưu dữ liệu quan trọng trước khi cài. Không đóng app khi đang tải và cài đặt. Nếu đã bật chạy nền, bạn có thể chuyển sang app khác nhưng đừng vuốt tắt PiperOS khỏi màn đa nhiệm."
-            textSize = 14f
-            setTextColor(Color.rgb(203, 215, 231))
-            setPadding(0, dp(14), 0, dp(16))
-        })
-        root.addView(dialogButton("Cài đặt") { dialog.dismiss(); beginDownload() })
-        root.addView(dialogButton("Hủy") { dialog.dismiss() }, LinearLayout.LayoutParams(-1, dp(48)).apply {
-            topMargin = dp(9)
-        })
-        dialog.setContentView(root)
-        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
-        dialog.show()
-        dialog.window?.setLayout((resources.displayMetrics.widthPixels * 0.88f).toInt(), ViewGroup.LayoutParams.WRAP_CONTENT)
-    }
-
-    private fun dialogButton(label: String, click: () -> Unit): MaterialButton = MaterialButton(this).apply {
-        text = label
-        isAllCaps = false
-        cornerRadius = dp(18)
-        backgroundTintList = android.content.res.ColorStateList.valueOf(PiperModernUi.surfaceColor(this@AppUpdateActivity))
-        strokeColor = android.content.res.ColorStateList.valueOf(PiperModernUi.borderColor(this@AppUpdateActivity))
-        strokeWidth = dp(1)
-        setTextColor(PiperModernUi.textColor(this@AppUpdateActivity))
-        isClickable = true
-        isFocusable = true
-        contentDescription = label
-        layoutParams = LinearLayout.LayoutParams(-1, dp(48))
-        setOnClickListener { click() }
+        PiperDialog.showConfirm(
+            context = this,
+            title = "Cài bản ${release?.tag ?: "đã chọn"}?",
+            message = "Từ ${AppVersion.name(this)} lên ${release?.tag ?: "bản mới"}. Hãy sao lưu dữ liệu quan trọng trước khi cài. Không đóng app khi đang tải và cài đặt. Nếu đã bật chạy nền, bạn có thể chuyển sang app khác nhưng đừng vuốt tắt PiperOS khỏi màn đa nhiệm.",
+            positiveLabel = "Cài đặt",
+            negativeLabel = "Hủy",
+            onConfirm = { beginDownload() }
+        )
     }
 
     private fun beginDownload() {

@@ -30,9 +30,10 @@
                 android:src="@drawable/ic_browser_back"/>
         </com.google.android.material.card.MaterialCardView>
         <TextView
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
+            android:layout_weight="1"
             android:text="Cập nhật PiperOS"
             android:textColor="#FFFFFF"
             android:textSize="21sp"
@@ -41,7 +42,6 @@
             android:id="@+id/updateSettings"
             android:layout_width="40dp"
             android:layout_height="40dp"
-            android:layout_marginStart="8dp"
             android:clickable="true"
             android:focusable="true"
             android:contentDescription="Cài đặt cập nhật"
