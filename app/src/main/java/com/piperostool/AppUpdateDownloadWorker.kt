@@ -5,6 +5,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.work.CoroutineWorker
@@ -105,7 +106,8 @@ internal class AppUpdateDownloadWorker(
         return try {
             setForeground(ForegroundInfo(
                 AppUpdateDownload.NOTIFICATION_ID,
-                AppUpdateDownload.downloadNotification(applicationContext, tag, 0, false)
+                AppUpdateDownload.downloadNotification(applicationContext, tag, 0, false),
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
             ))
             val file = try {
                 AppUpdateRepository.download(applicationContext, release) { bytes, total ->
@@ -118,7 +120,8 @@ internal class AppUpdateDownloadWorker(
                         .build())
                     setForeground(ForegroundInfo(
                         AppUpdateDownload.NOTIFICATION_ID,
-                        AppUpdateDownload.downloadNotification(applicationContext, tag, percent, false)
+                        AppUpdateDownload.downloadNotification(applicationContext, tag, percent, false),
+                        ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
                     ))
                 }
             } catch (error: IOException) {
