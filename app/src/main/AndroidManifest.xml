@@ -177,6 +177,8 @@
         <activity android:name=".AccountProfileActivity" android:exported="false" android:theme="@style/Theme.PiperOSTool" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".WhatsNewActivity" android:exported="false" android:theme="@style/Theme.PiperOSTool" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".DeviceSessionsActivity" android:exported="false" android:theme="@style/Theme.PiperOSTool" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".PasswordSecurityActivity" android:exported="false" android:theme="@style/Theme.PiperOSTool" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".ChangePasswordActivity" android:exported="false" android:theme="@style/Theme.PiperOSTool" android:windowSoftInputMode="adjustResize" />
 
         <activity android:name=".HomeActivity" android:exported="false" android:launchMode="singleTask" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
         <activity

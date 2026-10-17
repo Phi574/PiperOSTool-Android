@@ -48,7 +48,7 @@ class homeFragment : Fragment() {
         }
         view.findViewById<View>(R.id.homeWindowSecurity).setOnClickListener {
             closeWindowDrawer(view) {
-                startActivity(Intent(requireContext(), DeviceSessionsActivity::class.java))
+                startActivity(Intent(requireContext(), PasswordSecurityActivity::class.java))
             }
         }
         view.findViewById<View>(R.id.homeWindowSupport).setOnClickListener {

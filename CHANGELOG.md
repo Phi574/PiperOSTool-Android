@@ -1,5 +1,17 @@
 # Changelog
 
+## 3.8.3.Beta — Bản Beta
+- Gồm các bản vá 3.8.3.PRE: mô tả thẻ tính năng, lịch sử thiết bị đăng nhập riêng và đổi mật khẩu Firebase.
+- Cập nhật giới hạn gửi email đặt lại mật khẩu: tối đa 3 email trong 24 giờ cho mỗi tài khoản trên thiết bị.
+- Nâng versionCode lên 97 để cập nhật từ 3.8.3.PRE.
+
+## 3.8.3.PRE — Bản xem trước
+- Thêm mô tả ngắn cho PiperOS Browser, PiperOS Fake Map GPS và PiperOS QR trên trang chủ.
+- Tách lịch sử thiết bị thành thẻ riêng trong trang Mật khẩu bảo mật.
+- Bổ sung luồng đổi mật khẩu qua Firebase Auth, xác minh mật khẩu hiện tại và kiểm tra đủ chính sách mật khẩu Firebase.
+- Thêm gửi email đặt lại mật khẩu cho tài khoản đang đăng nhập, giới hạn tối đa 3 lần trong 24 giờ trên thiết bị.
+- Nâng versionCode lên 96 để cập nhật từ 3.8.2.
+
 ## 3.8.0 — Bản chính thức
 
 - Sửa trang **Có gì mới** để nhận đúng phiên bản hiện tại kể cả tiêu đề có phần mô tả; hiện đầy đủ lịch sử phiên bản theo thứ tự mới nhất trước.
