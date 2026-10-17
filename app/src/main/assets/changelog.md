@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.8.4 — Bản chính thức
+- Cập nhật icon ứng dụng theo thiết kế mới, thu nhỏ và căn giữa hình trong nền launcher để hiển thị cân đối hơn.
+- Bổ sung biểu tượng đơn sắc cho themed icons trên Android hỗ trợ.
+- Nâng versionCode lên 99 để cập nhật trực tiếp từ bản 3.8.3.
+
 ## 3.8.3 — Bản chính thức
 - Phát hành ổn định các cải tiến và bản vá đã có trong 3.8.3.Beta.
 - Cập nhật icon ứng dụng PiperOS Tool.
