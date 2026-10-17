@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.8.3 — Bản chính thức
+- Phát hành ổn định các cải tiến và bản vá đã có trong 3.8.3.Beta.
+- Cập nhật icon ứng dụng PiperOS Tool.
+- Nâng versionCode lên 98 để cập nhật từ 3.8.3.Beta.
+
+
 ## 3.8.3.Beta — Bản Beta
 - Gồm các bản vá 3.8.3.PRE: mô tả thẻ tính năng, lịch sử thiết bị đăng nhập riêng và đổi mật khẩu Firebase.
 - Cập nhật giới hạn gửi email đặt lại mật khẩu: tối đa 3 email trong 24 giờ cho mỗi tài khoản trên thiết bị.

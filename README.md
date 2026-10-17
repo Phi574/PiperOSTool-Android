@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="app/src/main/res/drawable/a3tn.png" width="112" alt="PiperOS Tool">
+  <img src="app/src/main/ic_launcher-playstore.png" width="112" alt="PiperOS Tool">
 </p>
 
 <h1 align="center">PiperOS Tool for Android</h1>
@@ -19,9 +19,9 @@
 
 ## Tải ứng dụng
 
-Bản phát hành mới nhất: **3.7.6** · versionCode **82** · Android 10 trở lên.
+Bản phát hành mới nhất: **3.8.3** · versionCode **98** · Android 10 trở lên.
 
-- [Tải APK 3.7.6](https://github.com/Phi574/PiperOSTool-Android/releases/tag/v3.7.6)
+- [Tải APK 3.8.3](https://github.com/Phi574/PiperOSTool-Android/releases/tag/v3.8.3)
 - [Xem toàn bộ bản phát hành](https://github.com/Phi574/PiperOSTool-Android/releases)
 - [Lịch sử thay đổi](CHANGELOG.md)
 
