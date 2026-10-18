@@ -1,4 +1,8 @@
 <resources>
+    <string name="firebase_messaging_channel_id">piperos_updates</string>
+    <string name="firebase_messaging_channel_name">Thông báo PiperOS</string>
+    <string name="firebase_messaging_channel_description">Thông tin cập nhật, tính năng và thông báo từ PiperOS.</string>
+    <string name="firebase_messaging_notification_title">PiperOS Tool</string>
     <string name="piperos_2fa">PiperOS 2FA</string>
     <string name="piperos_2fa_summary">Tạo mã xác minh cho nhiều tài khoản dịch vụ</string>
     <string name="dismiss">Đóng</string>

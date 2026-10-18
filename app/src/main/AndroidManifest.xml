@@ -67,6 +67,19 @@
         android:theme="@style/Theme.PiperOSTool"
         android:localeConfig="@xml/locales_config">
 
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_fcm_notification" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/remote_accent" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="@string/firebase_messaging_channel_id" />
+        <meta-data
+            android:name="firebase_messaging_installation_id_enabled"
+            android:value="true" />
+
         <activity android:name=".AppUpdateActivity" android:exported="false" android:theme="@style/Theme.PiperOSTool" />
         <activity android:name=".StartupPermissionSetupActivity" android:exported="false" android:theme="@style/Theme.PiperOSTool" />
         <service
@@ -86,6 +99,14 @@
             android:exported="true">
             <intent-filter>
                 <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+
+        <service
+            android:name=".PiperFirebaseMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>
         </service>
 

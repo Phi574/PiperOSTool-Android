@@ -1,5 +1,12 @@
 # Changelog
 
+## 3.8.5.PRE — Bản xem trước
+- Tích hợp Firebase Cloud Messaging để nhận thông báo từ Firebase khi app chạy nền và xử lý thông báo/tải trọng dữ liệu khi app đang mở.
+- Thêm Firebase In-App Messaging để hiển thị chiến dịch trong ứng dụng dựa trên Analytics.
+- Bật Firebase Performance Monitoring để đo thời gian khởi động, hiển thị màn hình và yêu cầu mạng HTTP/S.
+- Tự đăng ký và cập nhật Firebase Installation ID (FID) theo API FCM hiện hành; tiếp tục dùng quyền thông báo hiện có trên Android 13 trở lên.
+- Nâng versionCode lên 100.
+
 ## 3.8.4 — Bản chính thức
 - Cập nhật icon ứng dụng theo thiết kế mới, thu nhỏ và căn giữa hình trong nền launcher để hiển thị cân đối hơn.
 - Bổ sung biểu tượng đơn sắc cho themed icons trên Android hỗ trợ.

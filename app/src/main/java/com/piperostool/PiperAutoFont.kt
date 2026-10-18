@@ -22,6 +22,7 @@ import androidx.core.widget.doAfterTextChanged
 import com.google.firebase.appcheck.FirebaseAppCheck
 import com.google.firebase.appcheck.playintegrity.PlayIntegrityAppCheckProviderFactory
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.messaging.FirebaseMessaging
 import com.google.android.material.textfield.TextInputLayout
 import java.util.ArrayDeque
 import java.lang.ref.WeakReference
@@ -242,6 +243,7 @@ class PiperOsApplication : Application(), Application.ActivityLifecycleCallbacks
         FirebaseAppCheck.getInstance().installAppCheckProviderFactory(
             PlayIntegrityAppCheckProviderFactory.getInstance()
         )
+        FirebaseMessagingTokenStore.initialize(this)
         deleteSharedPreferences("account_session_guard")
         PiperUiPreferences.initialize(this)
         PiperFontPreferences.initialize(this)
