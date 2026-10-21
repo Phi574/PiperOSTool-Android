@@ -12,9 +12,7 @@ class BetaFragment : Fragment() {
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
-        return inflater.inflate(R.layout.fragment_beta, container, false)
-    }
+    ): View = inflater.inflate(R.layout.fragment_beta, container, false)
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -29,6 +27,9 @@ class BetaFragment : Fragment() {
         }
         view.findViewById<View>(R.id.featurePiperAdb).setOnClickListener {
             startActivity(Intent(requireContext(), com.piperostool.privileged.ui.PiperAdbActivity::class.java))
+        }
+        view.findViewById<View>(R.id.featurePiperSetEdit).setOnClickListener {
+            startActivity(Intent(requireContext(), PiperSetEditActivity::class.java))
         }
     }
 }

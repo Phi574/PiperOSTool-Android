@@ -27,8 +27,14 @@ object GoogleFirebaseSignIn {
         activity: AppCompatActivity,
         auth: FirebaseAuth,
         onBusy: (Boolean) -> Unit,
+        linkToCurrentUser: Boolean = false,
         onComplete: (FirebaseUser?, Boolean, Exception?) -> Unit
     ) {
+        val currentUser = auth.currentUser
+        if (linkToCurrentUser && currentUser == null) {
+            onComplete(null, false, IllegalStateException(activity.getString(R.string.linked_accounts_no_user)))
+            return
+        }
         val clientIdResource = activity.resources.getIdentifier(
             "default_web_client_id",
             "string",
@@ -67,14 +73,28 @@ object GoogleFirebaseSignIn {
                     onComplete(null, false, IllegalStateException("Unsupported Google credential"))
                     return@launch
                 }
-                val googleToken = GoogleIdTokenCredential.createFrom(credential.data).idToken
-                auth.signInWithCredential(GoogleAuthProvider.getCredential(googleToken, null))
+                val googleCredential = GoogleIdTokenCredential.createFrom(credential.data)
+                val googleToken = googleCredential.idToken
+                if (linkToCurrentUser && !currentUser?.email.isNullOrBlank() &&
+                    !currentUser?.email.equals(googleCredential.id, ignoreCase = true)
+                ) {
+                    onBusy(false)
+                    onComplete(null, false, GoogleAccountEmailMismatchException())
+                    return@launch
+                }
+                val firebaseCredential = GoogleAuthProvider.getCredential(googleToken, null)
+                val authTask = if (linkToCurrentUser) {
+                    currentUser!!.linkWithCredential(firebaseCredential)
+                } else {
+                    auth.signInWithCredential(firebaseCredential)
+                }
+                authTask
                     .addOnCompleteListener(activity) { task ->
                         onBusy(false)
                         if (task.isSuccessful) {
                             onComplete(
-                                auth.currentUser,
-                                task.result.additionalUserInfo?.isNewUser == true,
+                                task.result.user ?: auth.currentUser,
+                                !linkToCurrentUser && task.result.additionalUserInfo?.isNewUser == true,
                                 null
                             )
                         } else {
@@ -96,6 +116,7 @@ object GoogleFirebaseSignIn {
 }
 
 class GoogleProviderConfigurationException : Exception()
+class GoogleAccountEmailMismatchException : Exception()
 
 object AuthProviderMessages {
     fun text(context: android.content.Context, error: Exception?): String {
@@ -105,9 +126,15 @@ object AuthProviderMessages {
         if (error is GetCredentialCancellationException) {
             return context.getString(R.string.auth_google_cancelled)
         }
+        if (error is GoogleAccountEmailMismatchException) {
+            return context.getString(R.string.auth_google_email_mismatch)
+        }
         val firebaseError = error as? FirebaseAuthException
         val code = firebaseError?.errorCode.orEmpty()
         return when (code) {
+            "ERROR_CREDENTIAL_ALREADY_IN_USE" -> context.getString(R.string.auth_credential_already_in_use)
+            "ERROR_PROVIDER_ALREADY_LINKED" -> context.getString(R.string.auth_provider_already_linked)
+            "ERROR_REQUIRES_RECENT_LOGIN" -> context.getString(R.string.auth_recent_login_required)
             "ERROR_ACCOUNT_EXISTS_WITH_DIFFERENT_CREDENTIAL" ->
                 context.getString(R.string.auth_account_exists_other_provider)
             "ERROR_INVALID_EMAIL" -> context.getString(R.string.auth_error_invalid_email)

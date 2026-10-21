@@ -28,6 +28,7 @@ class PhoneAuthActivity : AppCompatActivity() {
     private lateinit var verifyCode: Button
     private lateinit var resendCode: Button
     private val auth by lazy { FirebaseAuth.getInstance() }
+    private val linkToCurrentUser by lazy { intent.getBooleanExtra(EXTRA_LINK_TO_CURRENT_USER, false) }
     private var verificationId: String? = null
     private var resendToken: PhoneAuthProvider.ForceResendingToken? = null
     private var busy = false
@@ -85,6 +86,11 @@ class PhoneAuthActivity : AppCompatActivity() {
         countryPicker = findViewById(R.id.phoneCountryPicker)
         phoneInput = findViewById(R.id.edtPhoneNumber)
         nameInput = findViewById(R.id.edtPhoneDisplayName)
+        if (linkToCurrentUser) {
+            nameInput.visibility = View.GONE
+            findViewById<TextView>(R.id.phoneAuthTitle).setText(R.string.auth_phone_link_title)
+            findViewById<TextView>(R.id.phoneAuthSummary).setText(R.string.auth_phone_link_summary)
+        }
         codeInput = findViewById(R.id.edtPhoneCode)
         status = findViewById(R.id.tvPhoneAuthStatus)
         sendCode = findViewById(R.id.btnPhoneSendCode)
@@ -139,6 +145,22 @@ class PhoneAuthActivity : AppCompatActivity() {
     private fun signInWithPhoneCredential(credential: PhoneAuthCredential, allowWhileBusy: Boolean = false) {
         if (busy && !allowWhileBusy) return
         setBusy(true)
+        if (linkToCurrentUser) {
+            val currentUser = auth.currentUser
+            if (currentUser == null) {
+                setBusy(false)
+                showStatus(getString(R.string.linked_accounts_no_user))
+                return
+            }
+            currentUser.linkWithCredential(credential).addOnCompleteListener(this) { task ->
+                setBusy(false)
+                if (task.isSuccessful) {
+                    setResult(RESULT_OK)
+                    finish()
+                } else showStatus(AuthProviderMessages.text(this, task.exception))
+            }
+            return
+        }
         auth.signInWithCredential(credential).addOnCompleteListener(this) { task ->
             if (!task.isSuccessful) {
                 setBusy(false)
@@ -183,5 +205,6 @@ class PhoneAuthActivity : AppCompatActivity() {
 
     companion object {
         const val EXTRA_PREFERRED_NAME = "phone_auth_preferred_name"
+        const val EXTRA_LINK_TO_CURRENT_USER = "phone_auth_link_to_current_user"
     }
 }

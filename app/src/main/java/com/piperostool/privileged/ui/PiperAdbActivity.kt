@@ -42,7 +42,11 @@ import java.util.Date
 
 /** Dedicated setup and live status screen for PiperOS's app-private Wireless ADB connection. */
 class PiperAdbActivity : AppCompatActivity() {
-    private companion object { const val REQUEST_PAIRING_NOTIFICATIONS = 3112 }
+    companion object {
+        private const val REQUEST_PAIRING_NOTIFICATIONS = 3112
+        private const val STATE_AWAITING_SETTINGS_RETURN = "awaiting_wireless_settings_return"
+        const val ACTION_OPEN_DEVELOPER_SETTINGS = "com.piperostool.action.OPEN_DEVELOPER_SETTINGS_FROM_PAIRING"
+    }
 
     private lateinit var client: PiperPrivilegedClient
     private lateinit var stateView: TextView
@@ -60,11 +64,13 @@ class PiperAdbActivity : AppCompatActivity() {
     private var suppressSwitchCallback = false
     private var suppressAccessCallback = false
     private var adbEnabled = false
+    private var awaitingWirelessSettingsReturn = false
     private var logSinceTimestamp = System.currentTimeMillis() - 5 * 60 * 1000L
     private val localLogs = mutableListOf<Triple<Long, String, Int>>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        awaitingWirelessSettingsReturn = savedInstanceState?.getBoolean(STATE_AWAITING_SETTINGS_RETURN) == true
         WindowCompat.setDecorFitsSystemWindows(window, false)
         setContentView(R.layout.activity_piper_adb)
         client = PiperPrivilegedClient(this)
@@ -115,15 +121,41 @@ class PiperAdbActivity : AppCompatActivity() {
         PiperAutoFont.watch(findViewById(R.id.piperAdbRoot))
         lifecycleScope.launch { updateProgressLogs() }
         refreshConnection()
+        if (intent?.action == ACTION_OPEN_DEVELOPER_SETTINGS) {
+            window.decorView.post { openWirelessDebuggingSettings() }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        if (intent.action == ACTION_OPEN_DEVELOPER_SETTINGS) openWirelessDebuggingSettings()
     }
 
     override fun onResume() {
         super.onResume()
+        if (awaitingWirelessSettingsReturn) {
+            handleWirelessSettingsReturned()
+            return
+        }
         if (!resumedOnce) {
             resumedOnce = true
             return
         }
         if (::client.isInitialized && !busy && actionJob?.isActive != true) refreshConnection()
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        outState.putBoolean(STATE_AWAITING_SETTINGS_RETURN, awaitingWirelessSettingsReturn)
+        super.onSaveInstanceState(outState)
+    }
+
+    private fun handleWirelessSettingsReturned() {
+        if (!awaitingWirelessSettingsReturn) return
+        awaitingWirelessSettingsReturn = false
+        if (::client.isInitialized && !busy && actionJob?.isActive != true) {
+            refreshConnection(forceReconnect = true)
+        }
     }
 
     override fun onDestroy() {
@@ -302,8 +334,11 @@ class PiperAdbActivity : AppCompatActivity() {
             }
             else -> {
                 stateView.setText(R.string.piper_adb_not_connected)
-                val error = status?.detail?.takeIf(String::isNotBlank)
-                detailView.text = error ?: getString(R.string.piper_adb_not_connected_detail)
+                detailView.text = if (status?.error == PiperError.ADB_NOT_AUTHORIZED) {
+                    getString(R.string.piper_adb_authorization_required)
+                } else {
+                    status?.detail?.takeIf(String::isNotBlank) ?: getString(R.string.piper_adb_not_connected_detail)
+                }
             }
         }
         connectButton.setText(if (enabled) R.string.piper_adb_reconnect else R.string.piper_adb_connect)
@@ -393,6 +428,7 @@ class PiperAdbActivity : AppCompatActivity() {
         openWirelessDebuggingSettings()
     }
 
+    @Deprecated("Use Activity Result APIs")
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode != REQUEST_PAIRING_NOTIFICATIONS) return
@@ -400,13 +436,28 @@ class PiperAdbActivity : AppCompatActivity() {
             PiperAdbPairingNotifications.showWaiting(this)
             openWirelessDebuggingSettings()
         } else {
-            PiperDialog.showMessage(this, getString(R.string.piper_adb_title), getString(R.string.pps_notification_permission_required))
+            PiperDialog.showMessage(
+                this,
+                getString(R.string.piper_adb_title),
+                getString(R.string.pps_notification_permission_required)
+            )
         }
     }
 
     private fun openWirelessDebuggingSettings() {
+        awaitingWirelessSettingsReturn = true
         runCatching { startActivity(Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS)) }
-            .onFailure { startActivity(Intent(Settings.ACTION_SETTINGS)) }
+            .onFailure {
+                runCatching { startActivity(Intent(Settings.ACTION_SETTINGS)) }
+                    .onFailure {
+                        awaitingWirelessSettingsReturn = false
+                        PiperDialog.showMessage(
+                            this,
+                            getString(R.string.piper_adb_title),
+                            it.message ?: getString(R.string.piper_adb_android_version_required)
+                        )
+                    }
+            }
         Toast.makeText(this, R.string.pps_keep_pairing_screen_open, Toast.LENGTH_LONG).show()
     }
 }

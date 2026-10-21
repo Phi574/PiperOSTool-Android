@@ -137,6 +137,16 @@
             android:exported="false" />
 
         <service
+            android:name=".privileged.adb.PiperAdbPairingPromptService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse"
+            android:stopWithTask="false">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Keeps the user-requested wireless ADB pairing notification available while the user opens Developer options and enters the pairing code." />
+        </service>
+
+        <service
             android:name=".PiperPlaybackService"
             android:exported="true"
             android:foregroundServiceType="mediaPlayback">
@@ -200,6 +210,8 @@
         <activity android:name=".DeviceSessionsActivity" android:exported="false" android:theme="@style/Theme.PiperOSTool" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".PasswordSecurityActivity" android:exported="false" android:theme="@style/Theme.PiperOSTool" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".ChangePasswordActivity" android:exported="false" android:theme="@style/Theme.PiperOSTool" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".PiperSetEditActivity" android:exported="false" android:theme="@style/Theme.PiperOSTool" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".LinkedAccountsActivity" android:exported="false" android:theme="@style/Theme.PiperOSTool" android:windowSoftInputMode="adjustResize" />
 
         <activity android:name=".HomeActivity" android:exported="false" android:launchMode="singleTask" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
         <activity

@@ -37,7 +37,7 @@ class PiperAdbPairingReceiver : BroadcastReceiver() {
                 check(PiperAdbBootstrap.pair(appContext, port, code).getOrThrow()) {
                     appContext.getString(R.string.pps_pairing_failed_message)
                 }
-                refreshPps(appContext)
+                startPiperAdb(appContext)
                 PiperAdbPairingNotifications.showSuccess(appContext)
             } catch (error: Throwable) {
                 PiperAdbPairingNotifications.showError(
@@ -50,12 +50,13 @@ class PiperAdbPairingReceiver : BroadcastReceiver() {
         }
     }
 
-    private fun refreshPps(context: Context) {
+    private fun startPiperAdb(context: Context) {
         val connection = object : ServiceConnection {
             override fun onServiceConnected(name: ComponentName?, binder: IBinder?) {
                 runCatching {
                     val service = IPiperOSService.Stub.asInterface(binder)
                     if (service.isAdbEnabled()) service.reconnectAdb()
+                    else service.setAdbEnabled(true)
                 }
                 runCatching { context.unbindService(this) }
             }

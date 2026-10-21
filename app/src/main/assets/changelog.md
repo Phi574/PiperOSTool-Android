@@ -1,5 +1,14 @@
 # Changelog
 
+## 3.8.6.PRE — Bản xem trước
+- Thêm PiperOS SetEdit để tìm kiếm, thêm, sửa, xóa và sao lưu/hoàn tác System, Secure, Global Settings; danh sách hiển thị gọn theo hai cột tên khóa và giá trị. Android Properties, Java Properties và Linux Environment được hiển thị chỉ đọc.
+- Thêm trạng thái và công tắc cấp quyền `shell_commands` trong PiperOS ADB, kèm cảnh báo rủi ro cho Secure/Global Settings và xác nhận trước khi khôi phục toàn bảng.
+- Thêm xác nhận lưu theo giao diện PiperOS và chức năng khôi phục các khóa SetEdit đã chỉnh về giá trị trước lần sửa đầu tiên.
+- Sửa thông báo ghép đôi PiperOS ADB để dọn trạng thái xác minh/loading khi Android đã cấp quyền; bổ sung PiperOS 2FA và PiperOS SetEdit vào Công cụ PiperOS trong trang Info.
+- Bật quản lý liên kết đăng nhập Firebase: xem provider đang liên kết, thêm Google cùng email tài khoản, liên kết số điện thoại và gỡ liên kết số điện thoại.
+- Sửa khoảng đệm vùng an toàn trên trang Đổi mật khẩu để nội dung không chạm thanh trạng thái.
+- Nâng versionCode lên 101.
+
 ## 3.8.5.PRE — Bản xem trước
 - Tích hợp Firebase Cloud Messaging để nhận thông báo từ Firebase khi app chạy nền và xử lý thông báo/tải trọng dữ liệu khi app đang mở.
 - Thêm Firebase In-App Messaging để hiển thị chiến dịch trong ứng dụng dựa trên Analytics.

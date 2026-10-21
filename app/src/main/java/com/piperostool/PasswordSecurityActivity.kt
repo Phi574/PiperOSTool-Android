@@ -26,6 +26,7 @@ class PasswordSecurityActivity : AppCompatActivity() {
             findViewById<TextView>(R.id.securityActionTitle)?.setText(R.string.security_manage_links)
             findViewById<TextView>(R.id.securityActionSummary)?.setText(R.string.security_manage_links_summary)
             findViewById<ImageView>(R.id.securityActionIcon)?.setImageResource(R.drawable.user)
+            setOnClickListener { startActivity(Intent(this@PasswordSecurityActivity, LinkedAccountsActivity::class.java)) }
         }
     }
 

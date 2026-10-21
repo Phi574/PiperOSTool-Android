@@ -178,6 +178,8 @@ class InfoFragment : Fragment() {
                 rows = listOf(
                     InfoRow("PiperOS Browser", "Trình duyệt tích hợp"),
                     InfoRow("PiperOS Media", "Phát nhạc và video"),
+                    InfoRow("PiperOS 2FA", "Tạo mã xác minh một lần cho các tài khoản"),
+                    InfoRow("PiperOS SetEdit", "Xem và chỉnh các bảng Settings qua PiperOS ADB"),
                     InfoRow("PiperOS Terminal", "Terminal Android và Linux"),
                     InfoRow("PiperOS Fake Map GPS", "Mô phỏng vị trí và hành trình"),
                     InfoRow("Trình quản lý tệp PiperOS", "Duyệt và quản lý tệp"),

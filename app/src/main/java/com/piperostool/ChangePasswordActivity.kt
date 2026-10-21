@@ -14,6 +14,9 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.core.widget.NestedScrollView
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
@@ -33,6 +36,7 @@ class ChangePasswordActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        WindowCompat.setDecorFitsSystemWindows(window, false)
         setContentView(buildContent())
         PiperModernUi.watch(this)
         confirmPassword.addTextChangedListener(object : TextWatcher {
@@ -106,6 +110,13 @@ class ChangePasswordActivity : AppCompatActivity() {
         return NestedScrollView(this).apply {
             isFillViewport = true
             addView(root, android.widget.FrameLayout.LayoutParams(-1, -2))
+            ViewCompat.setOnApplyWindowInsetsListener(this) { view, insets ->
+                val top = insets.getInsets(WindowInsetsCompat.Type.statusBars() or WindowInsetsCompat.Type.displayCutout()).top
+                val bottom = insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom
+                view.setPadding(0, top, 0, bottom)
+                insets
+            }
+            ViewCompat.requestApplyInsets(this)
         }
     }
 
