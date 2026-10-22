@@ -1,4 +1,6 @@
 <resources>
+    <string name="data_transfer_title">PiperOS Data Transfer</string>
+    <string name="data_transfer_summary">Chuyển tệp và APK an toàn qua mạng cục bộ</string>
     <string name="firebase_messaging_channel_id" translatable="false">piperos_updates</string>
     <string name="firebase_messaging_channel_name" translatable="false">Thông báo PiperOS</string>
     <string name="firebase_messaging_channel_description" translatable="false">Thông tin cập nhật, tính năng và thông báo từ PiperOS.</string>

@@ -7,6 +7,8 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+    <uses-permission android:name="android.permission.NEARBY_WIFI_DEVICES" android:usesPermissionFlags="neverForLocation" />
     <!-- Android 17 blocks local TCP/UDP traffic for apps targeting API 37 until granted. -->
     <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
@@ -211,6 +213,7 @@
         <activity android:name=".PasswordSecurityActivity" android:exported="false" android:theme="@style/Theme.PiperOSTool" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".ChangePasswordActivity" android:exported="false" android:theme="@style/Theme.PiperOSTool" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".PiperSetEditActivity" android:exported="false" android:theme="@style/Theme.PiperOSTool" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".PiperDataTransferActivity" android:exported="false" android:theme="@style/Theme.PiperOSTool" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".LinkedAccountsActivity" android:exported="false" android:theme="@style/Theme.PiperOSTool" android:windowSoftInputMode="adjustResize" />
 
         <activity android:name=".HomeActivity" android:exported="false" android:launchMode="singleTask" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />

@@ -185,7 +185,8 @@ class InfoFragment : Fragment() {
                     InfoRow("Trình quản lý tệp PiperOS", "Duyệt và quản lý tệp"),
                     InfoRow("PiperOS View Remote", "Xem và điều khiển từ xa"),
                     InfoRow("PiperOS ADB", "Thiết lập và quản lý kết nối ADB"),
-                    InfoRow("PiperOS QR", "Tạo và quét mã QR")
+                    InfoRow("PiperOS QR", "Tạo và quét mã QR"),
+                    InfoRow("PiperOS Data Transfer", "Chuyển tệp và APK đã mã hóa qua mạng cục bộ")
                 )
             ),
             InfoSection(

@@ -14,6 +14,8 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.button.MaterialButton
@@ -51,7 +53,9 @@ class PiperSetEditActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         PiperModernUi.watch(this)
-        setContentView(buildScreen())
+        val screen = buildScreen()
+        setContentView(screen)
+        ViewCompat.requestApplyInsets(screen)
         selectTable(table, load = false)
         checkPermission(loadInitialRows = true)
     }
@@ -71,142 +75,94 @@ class PiperSetEditActivity : AppCompatActivity() {
     }
 
     private fun buildScreen(): View {
-        val root = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(16), dp(8), dp(16), dp(10))
-            setBackgroundColor(ContextCompat.getColor(this@PiperSetEditActivity, R.color.remote_page_background))
+        androidx.core.view.WindowCompat.setDecorFitsSystemWindows(window, false)
+        val root = layoutInflater.inflate(R.layout.activity_piper_set_edit, null) as LinearLayout
+        ViewCompat.setOnApplyWindowInsetsListener(root) { view, insets ->
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout())
+            view.setPadding(bars.left + dp(18), bars.top + dp(4), bars.right + dp(18), bars.bottom + dp(8))
+            insets
         }
-        val header = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
-        header.addView(TextView(this).apply {
-            text = "‹   ${getString(R.string.back)}"
-            setTextColor(PiperModernUi.secondaryTextColor(this@PiperSetEditActivity))
-            textSize = 14f
-            setPadding(dp(4), dp(8), dp(12), dp(8))
-            setOnClickListener { finish() }
-        })
-        header.addView(TextView(this).apply {
-            text = getString(R.string.setedit_title)
+        root.findViewById<MaterialButton>(R.id.setEditBack).apply {
+            cornerRadius = dp(15)
+            strokeWidth = dp(1)
+            strokeColor = android.content.res.ColorStateList.valueOf(PiperModernUi.borderColor(this@PiperSetEditActivity))
+            backgroundTintList = android.content.res.ColorStateList.valueOf(PiperModernUi.surfaceColor(this@PiperSetEditActivity))
             setTextColor(PiperModernUi.textColor(this@PiperSetEditActivity))
-            textSize = 21f
-            setTypeface(typeface, android.graphics.Typeface.BOLD)
-        }, LinearLayout.LayoutParams(0, -2, 1f))
-        root.addView(header, LinearLayout.LayoutParams(-1, dp(40)))
-        root.addView(TextView(this).apply {
-            text = getString(R.string.setedit_summary)
+            setOnClickListener { finish() }
+        }
+        root.findViewById<TextView>(R.id.setEditTitle).setTextColor(PiperModernUi.textColor(this))
+        root.findViewById<TextView>(R.id.setEditIntroTitle).setTextColor(PiperModernUi.textColor(this))
+        root.findViewById<TextView>(R.id.setEditSummary).setTextColor(PiperModernUi.secondaryTextColor(this))
+        root.findViewById<TextView>(R.id.setEditPermissionHelp).setTextColor(PiperModernUi.secondaryTextColor(this))
+        root.findViewById<TextView>(R.id.setEditRiskNote).apply {
             setTextColor(PiperModernUi.secondaryTextColor(this@PiperSetEditActivity))
-            textSize = 11f
-            maxLines = 1
-            ellipsize = android.text.TextUtils.TruncateAt.END
-            setPadding(dp(2), 0, dp(2), dp(5))
-        })
+            background = android.graphics.drawable.GradientDrawable().apply {
+                cornerRadius = dp(13).toFloat()
+                setColor(PiperModernUi.surfaceColor(this@PiperSetEditActivity))
+                setStroke(dp(1), PiperModernUi.borderColor(this@PiperSetEditActivity))
+            }
+        }
+        listOf(R.id.setEditIntroCard, R.id.setEditAccessCard).forEach { id ->
+            root.findViewById<MaterialCardView>(id).apply {
+                setCardBackgroundColor(PiperModernUi.surfaceColor(this@PiperSetEditActivity))
+                radius = dp(16).toFloat()
+                cardElevation = 0f
+                strokeWidth = dp(1)
+                setStrokeColor(PiperModernUi.borderColor(this@PiperSetEditActivity))
+            }
+        }
 
-        val accessCard = card()
-        val accessBody = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(9), dp(2), dp(6), dp(2))
-        }
-        val permissionLine = LinearLayout(this).apply { gravity = Gravity.CENTER_VERTICAL }
-        permissionDot = TextView(this).apply { text = "●"; textSize = 14f; setPadding(0, 0, dp(6), 0) }
-        permissionStatus = TextView(this).apply {
-            text = getString(R.string.setedit_permission_checking)
-            setTextColor(PiperModernUi.secondaryTextColor(this@PiperSetEditActivity))
-            textSize = 10f
-            maxLines = 1
-            ellipsize = android.text.TextUtils.TruncateAt.END
-        }
-        permissionLine.addView(permissionDot)
-        permissionLine.addView(permissionStatus, LinearLayout.LayoutParams(0, -2, 1f))
-        permissionSwitch = SwitchMaterial(this).apply {
-            contentDescription = getString(R.string.setedit_permission_switch)
-            scaleX = 0.82f
-            scaleY = 0.82f
-            setOnCheckedChangeListener { _, checked -> if (!busy) setPermission(checked) }
-        }
-        accessBody.addView(permissionLine, LinearLayout.LayoutParams(0, -2, 1f))
-        accessBody.addView(permissionSwitch, LinearLayout.LayoutParams(-2, dp(40)))
-        accessBody.addView(MaterialButton(this).apply {
-            text = getString(R.string.setedit_open_adb)
-            isAllCaps = false
-            textSize = 10f
-            minWidth = 0
-            minimumWidth = 0
-            insetTop = 0
-            insetBottom = 0
+        permissionSwitch = root.findViewById(R.id.setEditPermissionSwitch)
+        permissionStatus = root.findViewById(R.id.setEditPermissionStatus)
+        permissionDot = root.findViewById(R.id.setEditPermissionDot)
+        permissionSwitch.setOnCheckedChangeListener { _, checked -> if (!busy) setPermission(checked) }
+        root.findViewById<MaterialButton>(R.id.setEditOpenAdb).apply {
+            cornerRadius = dp(13)
             setOnClickListener { startActivity(android.content.Intent(this@PiperSetEditActivity, com.piperostool.privileged.ui.PiperAdbActivity::class.java)) }
-        }, LinearLayout.LayoutParams(-2, dp(36)).apply { marginStart = dp(4) })
-        accessCard.addView(accessBody)
-        root.addView(accessCard)
-
-        tableSelector = MaterialButton(this).apply {
-            isAllCaps = false
-            textSize = 12f
-            gravity = Gravity.CENTER_VERTICAL or Gravity.START
-            insetTop = 0
-            insetBottom = 0
-            setOnClickListener { showTableMenu() }
         }
-        root.addView(tableSelector, LinearLayout.LayoutParams(-1, dp(40)).apply { topMargin = dp(6) })
 
-        search = EditText(this).apply {
-            hint = getString(R.string.setedit_search_hint)
-            setSingleLine(true)
-            textSize = 12f
-            setPadding(dp(12), 0, dp(12), 0)
-            background = getDrawable(R.drawable.bg_auth_input)
-            addTextChangedListener(object : TextWatcher {
-                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
-                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = renderRows()
-                override fun afterTextChanged(s: Editable?) = Unit
-            })
-        }
-        root.addView(search, LinearLayout.LayoutParams(-1, dp(40)).apply { topMargin = dp(4) })
-
-        val actions = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
-        actions.addView(actionButton(R.string.setedit_refresh) { loadRows() }, LinearLayout.LayoutParams(0, dp(38), 1f).apply { marginEnd = dp(3) })
-        addRowButton = actionButton(R.string.setedit_add_row) { editRow(null, null) }
-        actions.addView(addRowButton, LinearLayout.LayoutParams(0, dp(38), 1f).apply { marginStart = dp(3); marginEnd = dp(3) })
-        actions.addView(actionButton(R.string.setedit_backup_all) { backupAllTables() }, LinearLayout.LayoutParams(0, dp(38), 1f).apply { marginStart = dp(3); marginEnd = dp(3) })
-        actions.addView(actionButton(R.string.setedit_backups_manage) { showBackups() }, LinearLayout.LayoutParams(0, dp(38), 1f).apply { marginStart = dp(3) })
-        root.addView(actions, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(4) })
-        root.addView(actionButton(R.string.setedit_restore_defaults) { restoreSetEditDefaults() }, LinearLayout.LayoutParams(-1, dp(34)).apply { topMargin = dp(2) })
-
-        actionStatus = TextView(this).apply {
-            setTextColor(PiperModernUi.secondaryTextColor(this@PiperSetEditActivity))
-            textSize = 10f
-            maxLines = 2
-            ellipsize = android.text.TextUtils.TruncateAt.END
-            setPadding(dp(2), dp(3), dp(2), dp(3))
-        }
-        root.addView(actionStatus, LinearLayout.LayoutParams(-1, -2))
-        root.addView(TextView(this).apply {
-            text = getString(R.string.setedit_risk_note)
-            setTextColor(Color.parseColor("#FFCC80"))
-            textSize = 9f
-            maxLines = 2
-            ellipsize = android.text.TextUtils.TruncateAt.END
-            setPadding(dp(7), dp(4), dp(7), dp(4))
-            background = getDrawable(R.drawable.bg_auth_panel)
+        tableSelector = root.findViewById(R.id.setEditTableSelector)
+        styleOutlineButton(tableSelector)
+        tableSelector.gravity = Gravity.CENTER_VERTICAL or Gravity.START
+        tableSelector.setPadding(dp(14), 0, dp(14), 0)
+        tableSelector.setOnClickListener { showTableMenu() }
+        search = root.findViewById(R.id.setEditSearch)
+        search.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = renderRows()
+            override fun afterTextChanged(s: Editable?) = Unit
         })
-        val listHeader = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            setPadding(dp(9), dp(5), dp(9), dp(3))
-            addView(TextView(this@PiperSetEditActivity).apply {
-                text = getString(R.string.setedit_key_hint)
-                textSize = 10f
-                setTypeface(typeface, android.graphics.Typeface.BOLD)
-                setTextColor(PiperModernUi.secondaryTextColor(this@PiperSetEditActivity))
-            }, LinearLayout.LayoutParams(0, -2, 0.46f))
-            addView(TextView(this@PiperSetEditActivity).apply {
-                text = getString(R.string.setedit_value_hint)
-                textSize = 10f
-                setTypeface(typeface, android.graphics.Typeface.BOLD)
-                setTextColor(PiperModernUi.secondaryTextColor(this@PiperSetEditActivity))
-            }, LinearLayout.LayoutParams(0, -2, 0.54f))
+
+        val refreshButton = root.findViewById<MaterialButton>(R.id.setEditRefresh).apply {
+            styleOutlineButton(this)
+            setOnClickListener { loadRows() }
         }
-        root.addView(listHeader)
+        addRowButton = root.findViewById<MaterialButton>(R.id.setEditAddRow).apply {
+            styleOutlineButton(this)
+            setOnClickListener { editRow(null, null) }
+        }
+        root.findViewById<MaterialButton>(R.id.setEditBackup).apply {
+            styleOutlineButton(this)
+            setOnClickListener { backupAllTables() }
+        }
+        root.findViewById<MaterialButton>(R.id.setEditBackups).apply {
+            styleOutlineButton(this)
+            setOnClickListener { showBackups() }
+        }
+        root.findViewById<MaterialButton>(R.id.setEditRestoreDefaults).apply {
+            cornerRadius = dp(14)
+            backgroundTintList = android.content.res.ColorStateList.valueOf(PiperModernUi.surfaceColor(this@PiperSetEditActivity))
+            strokeWidth = dp(1)
+            strokeColor = android.content.res.ColorStateList.valueOf(Color.rgb(190, 78, 78))
+            setTextColor(Color.rgb(190, 78, 78))
+            setOnClickListener { restoreSetEditDefaults() }
+        }
+        actionStatus = root.findViewById(R.id.setEditActionStatus)
+        actionStatus.setTextColor(PiperModernUi.secondaryTextColor(this))
+        root.findViewById<TextView>(R.id.setEditKeyHeader).setTextColor(PiperModernUi.secondaryTextColor(this))
+        root.findViewById<TextView>(R.id.setEditValueHeader).setTextColor(PiperModernUi.secondaryTextColor(this))
         rowsAdapter = SetEditRowsAdapter()
-        rowsList = RecyclerView(this).apply {
+        rowsList = root.findViewById<RecyclerView>(R.id.setEditRows).apply {
             layoutManager = LinearLayoutManager(this@PiperSetEditActivity)
             adapter = rowsAdapter
             isNestedScrollingEnabled = false
@@ -214,14 +170,25 @@ class PiperSetEditActivity : AppCompatActivity() {
             itemAnimator = null
             contentDescription = getString(R.string.setedit_search_hint)
         }
-        root.addView(rowsList, LinearLayout.LayoutParams(-1, 0, 1f))
-        root.fitsSystemWindows = true
+        ViewCompat.requestApplyInsets(root)
         return root
     }
 
+    private fun styleOutlineButton(button: MaterialButton) {
+        button.isAllCaps = false
+        button.textSize = 12f
+        button.minHeight = dp(44)
+        button.insetTop = 0
+        button.insetBottom = 0
+        button.cornerRadius = dp(14)
+        button.backgroundTintList = android.content.res.ColorStateList.valueOf(PiperModernUi.surfaceColor(this))
+        button.strokeWidth = dp(1)
+        button.strokeColor = android.content.res.ColorStateList.valueOf(PiperModernUi.borderColor(this))
+        button.setTextColor(PiperModernUi.textColor(this))
+    }
     private fun selectTable(selected: PiperSetEditPolicy.Table, load: Boolean = true) {
         table = selected
-        tableSelector.text = "${tableTitle(selected)}   ⌄"
+        tableSelector.text = "${tableTitle(selected)}   ·   Chọn nhóm  ⌄"
         addRowButton.isEnabled = selected.editable
         addRowButton.alpha = if (selected.editable) 1f else 0.48f
         actionStatus.text = when {
@@ -902,8 +869,16 @@ class PiperSetEditActivity : AppCompatActivity() {
     private fun actionButton(label: Int, action: () -> Unit) = MaterialButton(this).apply {
         text = getString(label)
         isAllCaps = false
-        textSize = 11f
+        textSize = 12f
+        minHeight = dp(44)
         insetTop = 0; insetBottom = 0
+        cornerRadius = dp(14)
+        if (label == R.string.setedit_restore_defaults) {
+            backgroundTintList = android.content.res.ColorStateList.valueOf(PiperModernUi.surfaceColor(this@PiperSetEditActivity))
+            strokeWidth = dp(1)
+            strokeColor = android.content.res.ColorStateList.valueOf(Color.rgb(190, 78, 78))
+            setTextColor(Color.rgb(190, 78, 78))
+        }
         setOnClickListener { action() }
     }
 
@@ -925,41 +900,38 @@ class PiperSetEditActivity : AppCompatActivity() {
     private inner class SetEditRowsAdapter : RecyclerView.Adapter<SetEditRowsAdapter.Holder>() {
         private var rows: List<Pair<String, String>> = emptyList()
 
-        inner class Holder(val line: LinearLayout, val key: TextView, val value: TextView) : RecyclerView.ViewHolder(line)
+        inner class Holder(val item: MaterialCardView, val line: LinearLayout, val key: TextView, val value: TextView) : RecyclerView.ViewHolder(item)
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): Holder {
             val key = TextView(parent.context).apply {
                 textSize = 13f
                 setTextColor(PiperModernUi.secondaryTextColor(parent.context))
-                setPadding(dp(10), dp(10), dp(8), dp(10))
+                setPadding(dp(10), dp(12), dp(8), dp(12))
             }
             val value = TextView(parent.context).apply {
                 textSize = 13f
                 setTextColor(PiperModernUi.textColor(parent.context))
-                setPadding(dp(8), dp(10), dp(10), dp(10))
+                setPadding(dp(8), dp(12), dp(10), dp(12))
             }
             val line = LinearLayout(parent.context).apply {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.TOP
-                layoutParams = RecyclerView.LayoutParams(-1, -2)
-                background = android.util.TypedValue().let { attribute ->
-                    parent.context.theme.resolveAttribute(android.R.attr.selectableItemBackground, attribute, true)
-                    ContextCompat.getDrawable(parent.context, attribute.resourceId)
-                }
-                isClickable = true
-                isFocusable = true
                 addView(key, LinearLayout.LayoutParams(0, -2, 0.46f))
                 addView(value, LinearLayout.LayoutParams(0, -2, 0.54f))
             }
-            val container = LinearLayout(parent.context).apply {
-                orientation = LinearLayout.VERTICAL
+            val item = MaterialCardView(parent.context).apply {
+                layoutParams = RecyclerView.LayoutParams(-1, -2).apply { bottomMargin = dp(6) }
+                setCardBackgroundColor(PiperModernUi.surfaceColor(parent.context))
+                radius = dp(13).toFloat()
+                cardElevation = 0f
+                strokeWidth = dp(1)
+                setStrokeColor(PiperModernUi.borderColor(parent.context))
+                isClickable = true
+                isFocusable = true
                 addView(line)
-                addView(View(parent.context).apply {
-                    setBackgroundColor(PiperModernUi.borderColor(parent.context))
-                }, LinearLayout.LayoutParams(-1, dp(1)))
             }
-            return Holder(container, key, value).also { holder ->
-                line.setOnClickListener {
+            return Holder(item, line, key, value).also { holder ->
+                item.setOnClickListener {
                     val index = holder.bindingAdapterPosition
                     if (index != RecyclerView.NO_POSITION && rows.isNotEmpty()) {
                         showRow(rows[index].first, rows[index].second)
@@ -974,13 +946,14 @@ class PiperSetEditActivity : AppCompatActivity() {
                 holder.key.gravity = Gravity.CENTER
                 holder.key.layoutParams = LinearLayout.LayoutParams(-1, -2)
                 holder.value.visibility = View.GONE
-                holder.line.setOnClickListener(null)
+                holder.item.isClickable = false
                 return
             }
             val (key, value) = rows[position]
             holder.key.layoutParams = LinearLayout.LayoutParams(0, -2, 0.46f)
             holder.value.visibility = View.VISIBLE
             holder.key.gravity = Gravity.START
+            holder.item.isClickable = true
             holder.key.text = key
             holder.value.text = value.ifBlank { "(empty)" }
         }

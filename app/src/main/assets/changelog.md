@@ -1,5 +1,15 @@
 # Changelog
 
+## 3.8.8.PRE — Bản xem trước
+- Thêm PiperOS Data Transfer vào trang Beta và mục Công cụ PiperOS trong Info.
+- Chuyển nhiều tệp, ảnh, video, tài liệu và APK qua cùng mạng; hỗ trợ quét thiết bị, ghép bằng QR có khóa ngẫu nhiên hoặc nhập IP rồi xác nhận cùng mã sáu số.
+- Có thể chọn ứng dụng đã cài có một APK cơ sở để gửi dưới dạng APK; ứng dụng dùng split APK cần cả bộ và chưa được đóng gói trong bản này.
+- Thêm tạo điểm phát Wi‑Fi cục bộ, Turbo điều chỉnh khối truyền, tiến trình làm mờ màn hình sau 10 giây và trở lại giao diện sáng khi chạm.
+- Mã hóa phiên bằng ECDH P‑256, HKDF‑SHA256 và AES‑GCM; tệp nhận được giữ trong vùng chờ riêng, chỉ nhập sau khi hoàn tất và được người dùng chọn thư mục đích.
+- Hỗ trợ mở trình cài Android cho APK đã nhận, cài lần lượt hoặc chọn từng APK, rồi kiểm tra phiên bản gói đã cài.
+- Giới hạn Android: chưa hỗ trợ cáp USB‑C trực tiếp, dữ liệu riêng app khác, mật khẩu Wi‑Fi lưu, SMS/lịch sử gọi tự động, danh bạ/lịch tự động. Những mục này cần API/vai trò hệ thống riêng; ứng dụng không xin quyền rộng để giả lập khả năng đó.
+- Nâng versionCode lên 103.
+
 ## 3.8.7.PRE — Bản xem trước
 - Thiết kế lại PiperOS SetEdit thành một danh sách cuộn duy nhất; chọn System, Secure, Global Settings hoặc nhóm thuộc tính từ menu gọn.
 - Tạo và quản lý nhiều mốc sao lưu Settings, xem chi tiết hoặc xóa từng mốc; khôi phục bằng cách so sánh và chỉ hoàn tác các khóa khác biệt, đồng thời tự lưu trạng thái hiện tại trước khi khôi phục.

@@ -972,4 +972,6 @@
     <string name="update_notifications_prompt_later">Later</string>
     <string name="update_refresh_description">Check for updates now</string>
     <string name="update_delete_download">Delete downloaded APK</string>
+    <string name="data_transfer_title">PiperOS Data Transfer</string>
+    <string name="data_transfer_summary">Transfer files and APKs securely over a local network</string>
 </resources>

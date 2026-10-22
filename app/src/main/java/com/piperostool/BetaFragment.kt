@@ -31,5 +31,8 @@ class BetaFragment : Fragment() {
         view.findViewById<View>(R.id.featurePiperSetEdit).setOnClickListener {
             startActivity(Intent(requireContext(), PiperSetEditActivity::class.java))
         }
+        view.findViewById<View>(R.id.featurePiperDataTransfer).setOnClickListener {
+            startActivity(Intent(requireContext(), PiperDataTransferActivity::class.java))
+        }
     }
 }
