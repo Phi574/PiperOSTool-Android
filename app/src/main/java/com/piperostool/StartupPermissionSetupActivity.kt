@@ -2,6 +2,7 @@ package com.piperostool
 
 import android.Manifest
 import android.app.AppOpsManager
+import android.app.admin.DevicePolicyManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -21,7 +22,6 @@ import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-import androidx.core.content.pm.PackageInfoCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.google.android.material.button.MaterialButton
@@ -32,23 +32,12 @@ private data class StartupPermission(
     val description: String,
     val runtimePermissions: List<String> = emptyList(),
     val settingsAction: String? = null,
+    val customIntent: ((Context) -> Intent)? = null,
     val granted: (Context) -> Boolean
 )
 
 private object StartupPermissionCatalog {
-    private const val PREFS = "startup_permission_setup"
-    private const val KEY_SHOWN_VERSION = "shown_version_code"
-
-    fun shouldShow(context: Context): Boolean {
-        val versionCode = PackageInfoCompat.getLongVersionCode(context.packageManager.getPackageInfo(context.packageName, 0))
-        val shown = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getLong(KEY_SHOWN_VERSION, -1L)
-        return shown != versionCode && missing(context).isNotEmpty()
-    }
-
-    fun markShown(context: Context) {
-        val versionCode = PackageInfoCompat.getLongVersionCode(context.packageManager.getPackageInfo(context.packageName, 0))
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putLong(KEY_SHOWN_VERSION, versionCode).apply()
-    }
+    fun shouldShow(context: Context): Boolean = missing(context).isNotEmpty()
 
     fun missing(context: Context): List<StartupPermission> = requirements(context).filterNot { it.granted(context) }
 
@@ -128,6 +117,19 @@ private object StartupPermissionCatalog {
                     .any { it.packageName == ctx.packageName }
             }
         }
+        val adminComponent = ComponentName(context, MyDeviceAdminReceiver::class.java)
+        entries += StartupPermission(
+            title = "Quản trị viên thiết bị",
+            description = "Cần bật để sẵn sàng cho PiperOS Family. Bạn có thể bỏ qua và bật sau trong mục Quyền.",
+            customIntent = { ctx ->
+                Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN)
+                    .putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, ComponentName(ctx, MyDeviceAdminReceiver::class.java))
+                    .putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, "Quyền này được dùng cho các tính năng quản trị thiết bị của PiperOS.")
+            },
+            granted = { ctx ->
+                (ctx.getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager).isAdminActive(adminComponent)
+            }
+        )
         if (Build.VERSION.SDK_INT >= 26 && has(Manifest.permission.REQUEST_INSTALL_PACKAGES)) {
             entries += StartupPermission(
                 "Cài ứng dụng từ PiperOS",
@@ -300,8 +302,10 @@ class StartupPermissionSetupActivity : AppCompatActivity() {
             requestRuntimePermissions.launch(requirement.runtimePermissions.toTypedArray())
             return
         }
-        val action = requirement.settingsAction ?: return
-        val intent = Intent(action)
+        val intent = requirement.customIntent?.invoke(this)
+            ?: requirement.settingsAction?.let(::Intent)
+            ?: return
+        val action = intent.action
         when (action) {
             Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
             Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
@@ -326,6 +330,5 @@ class StartupPermissionSetupActivity : AppCompatActivity() {
 
     companion object {
         fun shouldShow(context: Context): Boolean = StartupPermissionCatalog.shouldShow(context)
-        fun markShown(context: Context) = StartupPermissionCatalog.markShown(context)
     }
 }

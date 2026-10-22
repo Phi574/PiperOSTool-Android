@@ -24,6 +24,16 @@ object PiperSetEditPolicy {
 
     enum class Risk { RELATIVE_SAFE, UNSAFE }
 
+    data class SnapshotDiff(val valuesToRestore: Map<String, String>, val keysToDelete: Set<String>) {
+        val changedCount: Int get() = valuesToRestore.size + keysToDelete.size
+    }
+
+    /** Returns only the commands needed to make current values match the saved snapshot. */
+    fun diffSnapshot(saved: Map<String, String>, current: Map<String, String>): SnapshotDiff = SnapshotDiff(
+        valuesToRestore = saved.filter { (key, value) -> current[key] != value },
+        keysToDelete = current.keys - saved.keys
+    )
+
     fun parseSettingsList(output: String): List<Pair<String, String>> = output
         .lineSequence()
         .mapNotNull { line ->

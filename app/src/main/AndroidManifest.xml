@@ -179,7 +179,7 @@
         <service
             android:name=".PiperRemoteAccessibilityService"
             android:description="@string/remote_accessibility_description"
-            android:exported="false"
+            android:exported="true"
             android:label="@string/piperos_remote"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
             <intent-filter>

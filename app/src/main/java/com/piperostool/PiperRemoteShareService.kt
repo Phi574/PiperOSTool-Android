@@ -163,7 +163,14 @@ class PiperRemoteShareService : Service() {
         // consent flow. Permit only that PC's first authenticated QR connection.
         trustedPcHost = pcInvite?.host
         trustedPcPending.set(pcInvite != null)
-        val metrics = resources.displayMetrics
+        val metrics = DisplayMetrics()
+        @Suppress("DEPRECATION")
+        getSystemService(DisplayManager::class.java)
+            .getDisplay(Display.DEFAULT_DISPLAY)
+            ?.getRealMetrics(metrics)
+        if (metrics.widthPixels <= 0 || metrics.heightPixels <= 0) {
+            metrics.setTo(resources.displayMetrics)
+        }
         nativeWidth = metrics.widthPixels.coerceAtLeast(2)
         nativeHeight = metrics.heightPixels.coerceAtLeast(2)
         densityDpi = metrics.densityDpi

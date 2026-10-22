@@ -273,7 +273,6 @@ class SplashScreenActivity : AppCompatActivity() {
         startupChecksResolved = true
         startupCheckInProgress = false
         if (StartupPermissionSetupActivity.shouldShow(this)) {
-            StartupPermissionSetupActivity.markShown(this)
             permissionSetupLauncher.launch(Intent(this, StartupPermissionSetupActivity::class.java))
         } else {
             checkNavigation()

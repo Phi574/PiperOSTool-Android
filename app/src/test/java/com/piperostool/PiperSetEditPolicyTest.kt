@@ -29,4 +29,15 @@ class PiperSetEditPolicyTest {
             PiperSetEditPolicy.parseSettingsList("a=x=y\nmalformed\nb=\n")
         )
     }
+
+    @Test fun snapshotDiffRestoresChangedAndMissingKeysOnly() {
+        val saved = mapOf("keep" to "same", "changed" to "before", "missing_now" to "restore")
+        val current = mapOf("keep" to "same", "changed" to "after", "new_since_backup" to "remove")
+
+        val diff = PiperSetEditPolicy.diffSnapshot(saved, current)
+
+        assertEquals(mapOf("changed" to "before", "missing_now" to "restore"), diff.valuesToRestore)
+        assertEquals(setOf("new_since_backup"), diff.keysToDelete)
+        assertEquals(3, diff.changedCount)
+    }
 }

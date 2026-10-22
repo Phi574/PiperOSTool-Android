@@ -8,9 +8,7 @@ import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
-import android.widget.HorizontalScrollView
 import android.widget.LinearLayout
-import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -41,7 +39,8 @@ class PiperSetEditActivity : AppCompatActivity() {
     private lateinit var permissionSwitch: SwitchMaterial
     private lateinit var permissionStatus: TextView
     private lateinit var permissionDot: TextView
-    private lateinit var tableButtons: LinearLayout
+    private lateinit var tableSelector: MaterialButton
+    private lateinit var addRowButton: MaterialButton
     private lateinit var actionStatus: TextView
     private var table = PiperSetEditPolicy.Table.SYSTEM
     private var settingsRows: List<Pair<String, String>> = emptyList()
@@ -74,102 +73,86 @@ class PiperSetEditActivity : AppCompatActivity() {
     private fun buildScreen(): View {
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
+            setPadding(dp(16), dp(8), dp(16), dp(10))
             setBackgroundColor(ContextCompat.getColor(this@PiperSetEditActivity, R.color.remote_page_background))
         }
-        val scroll = ScrollView(this).apply { clipToPadding = false }
-        val content = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(18), dp(18), dp(18), dp(28))
-        }
-        scroll.addView(content)
-        root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
-
-        content.addView(TextView(this).apply {
+        val header = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
+        header.addView(TextView(this).apply {
             text = "‹   ${getString(R.string.back)}"
             setTextColor(PiperModernUi.secondaryTextColor(this@PiperSetEditActivity))
-            textSize = 15f
-            setPadding(0, dp(4), 0, dp(14))
+            textSize = 14f
+            setPadding(dp(4), dp(8), dp(12), dp(8))
             setOnClickListener { finish() }
         })
-        content.addView(TextView(this).apply {
+        header.addView(TextView(this).apply {
             text = getString(R.string.setedit_title)
             setTextColor(PiperModernUi.textColor(this@PiperSetEditActivity))
-            textSize = 25f
+            textSize = 21f
             setTypeface(typeface, android.graphics.Typeface.BOLD)
-        })
-        content.addView(TextView(this).apply {
+        }, LinearLayout.LayoutParams(0, -2, 1f))
+        root.addView(header, LinearLayout.LayoutParams(-1, dp(40)))
+        root.addView(TextView(this).apply {
             text = getString(R.string.setedit_summary)
             setTextColor(PiperModernUi.secondaryTextColor(this@PiperSetEditActivity))
-            textSize = 13f
-            setPadding(0, dp(5), 0, dp(16))
+            textSize = 11f
+            maxLines = 1
+            ellipsize = android.text.TextUtils.TruncateAt.END
+            setPadding(dp(2), 0, dp(2), dp(5))
         })
 
         val accessCard = card()
         val accessBody = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(14), dp(12), dp(14), dp(12))
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(9), dp(2), dp(6), dp(2))
         }
         val permissionLine = LinearLayout(this).apply { gravity = Gravity.CENTER_VERTICAL }
-        permissionDot = TextView(this).apply { text = "●"; textSize = 17f; setPadding(0, 0, dp(8), 0) }
+        permissionDot = TextView(this).apply { text = "●"; textSize = 14f; setPadding(0, 0, dp(6), 0) }
         permissionStatus = TextView(this).apply {
             text = getString(R.string.setedit_permission_checking)
             setTextColor(PiperModernUi.secondaryTextColor(this@PiperSetEditActivity))
-            textSize = 13f
+            textSize = 10f
+            maxLines = 1
+            ellipsize = android.text.TextUtils.TruncateAt.END
         }
         permissionLine.addView(permissionDot)
         permissionLine.addView(permissionStatus, LinearLayout.LayoutParams(0, -2, 1f))
         permissionSwitch = SwitchMaterial(this).apply {
-            text = getString(R.string.setedit_permission_switch)
-            textSize = 12f
-            setOnCheckedChangeListener { _, checked ->
-                if (!busy) setPermission(checked)
-            }
+            contentDescription = getString(R.string.setedit_permission_switch)
+            scaleX = 0.82f
+            scaleY = 0.82f
+            setOnCheckedChangeListener { _, checked -> if (!busy) setPermission(checked) }
         }
-        accessBody.addView(permissionLine)
-        accessBody.addView(permissionSwitch, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
-        accessBody.addView(TextView(this).apply {
-            text = getString(R.string.setedit_permission_help)
-            textSize = 12f
-            setTextColor(PiperModernUi.secondaryTextColor(this@PiperSetEditActivity))
-            setPadding(0, dp(5), 0, dp(8))
-        })
-        accessBody.addView(MaterialButton(this@PiperSetEditActivity).apply {
+        accessBody.addView(permissionLine, LinearLayout.LayoutParams(0, -2, 1f))
+        accessBody.addView(permissionSwitch, LinearLayout.LayoutParams(-2, dp(40)))
+        accessBody.addView(MaterialButton(this).apply {
             text = getString(R.string.setedit_open_adb)
             isAllCaps = false
+            textSize = 10f
+            minWidth = 0
+            minimumWidth = 0
+            insetTop = 0
+            insetBottom = 0
             setOnClickListener { startActivity(android.content.Intent(this@PiperSetEditActivity, com.piperostool.privileged.ui.PiperAdbActivity::class.java)) }
-        })
+        }, LinearLayout.LayoutParams(-2, dp(36)).apply { marginStart = dp(4) })
         accessCard.addView(accessBody)
-        content.addView(accessCard)
+        root.addView(accessCard)
 
-        val choices = listOf(
-            PiperSetEditPolicy.Table.SYSTEM, PiperSetEditPolicy.Table.SECURE,
-            PiperSetEditPolicy.Table.GLOBAL, PiperSetEditPolicy.Table.ANDROID_PROPERTIES,
-            PiperSetEditPolicy.Table.JAVA_PROPERTIES, PiperSetEditPolicy.Table.LINUX_ENVIRONMENT
-        )
-        tableButtons = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            setPadding(0, dp(14), 0, dp(5))
+        tableSelector = MaterialButton(this).apply {
+            isAllCaps = false
+            textSize = 12f
+            gravity = Gravity.CENTER_VERTICAL or Gravity.START
+            insetTop = 0
+            insetBottom = 0
+            setOnClickListener { showTableMenu() }
         }
-        content.addView(HorizontalScrollView(this).apply {
-            isHorizontalScrollBarEnabled = false
-            addView(tableButtons)
-        })
-        choices.forEach { section ->
-            tableButtons.addView(MaterialButton(this).apply {
-                text = section.displayName
-                isAllCaps = false
-                textSize = 11f
-                insetTop = 0
-                insetBottom = 0
-                setOnClickListener { selectTable(section) }
-            }, LinearLayout.LayoutParams(-2, dp(42)).apply { marginEnd = dp(6) })
-        }
+        root.addView(tableSelector, LinearLayout.LayoutParams(-1, dp(40)).apply { topMargin = dp(6) })
 
         search = EditText(this).apply {
             hint = getString(R.string.setedit_search_hint)
             setSingleLine(true)
-            textSize = 14f
-            setPadding(dp(14), 0, dp(14), 0)
+            textSize = 12f
+            setPadding(dp(12), 0, dp(12), 0)
             background = getDrawable(R.drawable.bg_auth_input)
             addTextChangedListener(object : TextWatcher {
                 override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
@@ -177,48 +160,70 @@ class PiperSetEditActivity : AppCompatActivity() {
                 override fun afterTextChanged(s: Editable?) = Unit
             })
         }
-        content.addView(search, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(6) })
+        root.addView(search, LinearLayout.LayoutParams(-1, dp(40)).apply { topMargin = dp(4) })
 
         val actions = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
-        actions.addView(actionButton(R.string.setedit_refresh) { loadRows() }, LinearLayout.LayoutParams(0, dp(46), 1f).apply { marginEnd = dp(4) })
-        actions.addView(actionButton(R.string.setedit_add_row) { editRow(null, null) }, LinearLayout.LayoutParams(0, dp(46), 1f).apply { marginStart = dp(4); marginEnd = dp(4) })
-        actions.addView(actionButton(R.string.setedit_backup_all) { backupAllTables() }, LinearLayout.LayoutParams(0, dp(46), 1f).apply { marginStart = dp(4) })
-        content.addView(actions, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
-        content.addView(actionButton(R.string.setedit_undo) { restoreLatestBackup() }, LinearLayout.LayoutParams(-1, dp(46)).apply { topMargin = dp(5) })
-        content.addView(actionButton(R.string.setedit_restore_defaults) { restoreSetEditDefaults() }, LinearLayout.LayoutParams(-1, dp(46)).apply { topMargin = dp(5) })
+        actions.addView(actionButton(R.string.setedit_refresh) { loadRows() }, LinearLayout.LayoutParams(0, dp(38), 1f).apply { marginEnd = dp(3) })
+        addRowButton = actionButton(R.string.setedit_add_row) { editRow(null, null) }
+        actions.addView(addRowButton, LinearLayout.LayoutParams(0, dp(38), 1f).apply { marginStart = dp(3); marginEnd = dp(3) })
+        actions.addView(actionButton(R.string.setedit_backup_all) { backupAllTables() }, LinearLayout.LayoutParams(0, dp(38), 1f).apply { marginStart = dp(3); marginEnd = dp(3) })
+        actions.addView(actionButton(R.string.setedit_backups_manage) { showBackups() }, LinearLayout.LayoutParams(0, dp(38), 1f).apply { marginStart = dp(3) })
+        root.addView(actions, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(4) })
+        root.addView(actionButton(R.string.setedit_restore_defaults) { restoreSetEditDefaults() }, LinearLayout.LayoutParams(-1, dp(34)).apply { topMargin = dp(2) })
 
         actionStatus = TextView(this).apply {
             setTextColor(PiperModernUi.secondaryTextColor(this@PiperSetEditActivity))
-            textSize = 12f
-            setPadding(0, dp(8), 0, dp(5))
+            textSize = 10f
+            maxLines = 2
+            ellipsize = android.text.TextUtils.TruncateAt.END
+            setPadding(dp(2), dp(3), dp(2), dp(3))
         }
-        content.addView(actionStatus)
-        content.addView(TextView(this).apply {
+        root.addView(actionStatus, LinearLayout.LayoutParams(-1, -2))
+        root.addView(TextView(this).apply {
             text = getString(R.string.setedit_risk_note)
             setTextColor(Color.parseColor("#FFCC80"))
-            textSize = 12f
-            setPadding(dp(12), dp(10), dp(12), dp(10))
+            textSize = 9f
+            maxLines = 2
+            ellipsize = android.text.TextUtils.TruncateAt.END
+            setPadding(dp(7), dp(4), dp(7), dp(4))
             background = getDrawable(R.drawable.bg_auth_panel)
         })
+        val listHeader = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setPadding(dp(9), dp(5), dp(9), dp(3))
+            addView(TextView(this@PiperSetEditActivity).apply {
+                text = getString(R.string.setedit_key_hint)
+                textSize = 10f
+                setTypeface(typeface, android.graphics.Typeface.BOLD)
+                setTextColor(PiperModernUi.secondaryTextColor(this@PiperSetEditActivity))
+            }, LinearLayout.LayoutParams(0, -2, 0.46f))
+            addView(TextView(this@PiperSetEditActivity).apply {
+                text = getString(R.string.setedit_value_hint)
+                textSize = 10f
+                setTypeface(typeface, android.graphics.Typeface.BOLD)
+                setTextColor(PiperModernUi.secondaryTextColor(this@PiperSetEditActivity))
+            }, LinearLayout.LayoutParams(0, -2, 0.54f))
+        }
+        root.addView(listHeader)
         rowsAdapter = SetEditRowsAdapter()
         rowsList = RecyclerView(this).apply {
             layoutManager = LinearLayoutManager(this@PiperSetEditActivity)
             adapter = rowsAdapter
-            isNestedScrollingEnabled = true
+            isNestedScrollingEnabled = false
             setHasFixedSize(true)
             itemAnimator = null
             contentDescription = getString(R.string.setedit_search_hint)
         }
-        content.addView(rowsList, LinearLayout.LayoutParams(-1, dp(460)).apply { topMargin = dp(10) })
+        root.addView(rowsList, LinearLayout.LayoutParams(-1, 0, 1f))
         root.fitsSystemWindows = true
         return root
     }
 
     private fun selectTable(selected: PiperSetEditPolicy.Table, load: Boolean = true) {
         table = selected
-        tableButtons.children().forEachIndexed { index, view ->
-            (view as? MaterialButton)?.alpha = if (index == selected.ordinal) 1f else 0.72f
-        }
+        tableSelector.text = "${tableTitle(selected)}   ⌄"
+        addRowButton.isEnabled = selected.editable
+        addRowButton.alpha = if (selected.editable) 1f else 0.48f
         actionStatus.text = when {
             selected.editable -> getString(R.string.setedit_settings_editable)
             else -> getString(R.string.setedit_process_read_only)
@@ -226,6 +231,39 @@ class PiperSetEditActivity : AppCompatActivity() {
         search.setText("")
         if (load) loadRows()
     }
+
+    private fun showTableMenu() {
+        val menu = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(0, 0, 0, dp(4)) }
+        var dialog: android.app.Dialog? = null
+        PiperSetEditPolicy.Table.entries.forEach { section ->
+            menu.addView(actionButton(R.string.setedit_table_option) {
+                dialog?.dismiss()
+                selectTable(section)
+            }.apply {
+                text = tableTitle(section)
+                gravity = Gravity.CENTER_VERTICAL or Gravity.START
+                setPadding(dp(12), 0, dp(12), 0)
+                if (section == table) setTextColor(PiperModernUi.accentColor(this@PiperSetEditActivity))
+            }, LinearLayout.LayoutParams(-1, dp(40)).apply { bottomMargin = dp(3) })
+        }
+        dialog = PiperDialog.showCustom(
+            context = this,
+            title = getString(R.string.setedit_choose_table),
+            content = menu,
+            positiveLabel = getString(R.string.cancel),
+            negativeLabel = null,
+            onPositive = { true }
+        )
+    }
+
+    private fun tableTitle(value: PiperSetEditPolicy.Table): String = getString(when (value) {
+        PiperSetEditPolicy.Table.SYSTEM -> R.string.setedit_table_system
+        PiperSetEditPolicy.Table.SECURE -> R.string.setedit_table_secure
+        PiperSetEditPolicy.Table.GLOBAL -> R.string.setedit_table_global
+        PiperSetEditPolicy.Table.ANDROID_PROPERTIES -> R.string.setedit_table_android_properties
+        PiperSetEditPolicy.Table.JAVA_PROPERTIES -> R.string.setedit_table_java_properties
+        PiperSetEditPolicy.Table.LINUX_ENVIRONMENT -> R.string.setedit_table_linux_environment
+    })
 
     private fun loadRows() {
         if (busy) return
@@ -496,20 +534,9 @@ class PiperSetEditActivity : AppCompatActivity() {
             onConfirm = {
                 lifecycleScope.launch {
                     setBusy(true)
-                    val backup = withContext(Dispatchers.IO) {
-                        if (!hasShellAccess()) return@withContext null
-                        val tables = JSONObject()
-                        PiperSetEditPolicy.Table.entries.filter { it.editable }.forEach { section ->
-                            val result = client.newProcess("settings list ${section.commandName}", timeoutMs = 15_000L)
-                            if (result?.exitCode != 0) return@withContext null
-                            val values = JSONObject()
-                            PiperSetEditPolicy.parseSettingsList(result.output).forEach { (k, v) -> values.put(k, v) }
-                            tables.put(section.commandName, values)
-                        }
-                        JSONObject().put("kind", "full").put("tables", tables)
-                    }
+                    val backup = withContext(Dispatchers.IO) { captureSnapshot() }
                     if (backup != null) {
-                        pushBackup(backup)
+                        withContext(Dispatchers.IO) { pushBackup(backup) }
                         actionStatus.text = getString(R.string.setedit_backup_saved)
                     } else actionStatus.text = getString(R.string.setedit_adb_unavailable)
                     setBusy(false)
@@ -518,28 +545,193 @@ class PiperSetEditActivity : AppCompatActivity() {
         )
     }
 
-    private fun restoreLatestBackup() {
-        val latest = readBackups().lastOrNull()
-        if (latest == null) {
-            Toast.makeText(this, R.string.setedit_no_backup, Toast.LENGTH_SHORT).show(); return
+    private suspend fun captureSnapshot(): JSONObject? {
+        if (!hasShellAccess()) return null
+        val tables = JSONObject()
+        PiperSetEditPolicy.Table.entries.filter { it.editable }.forEach { section ->
+            val result = client.newProcess("settings list ${section.commandName}", timeoutMs = 15_000L)
+            if (result?.exitCode != 0) return null
+            val values = JSONObject()
+            PiperSetEditPolicy.parseSettingsList(result.output).forEach { (key, value) -> values.put(key, value) }
+            tables.put(section.commandName, values)
         }
+        return JSONObject().put("kind", "full").put("tables", tables)
+    }
+
+    private fun showBackups() {
+        val backups = readSnapshots().sortedByDescending { it.optLong("created") }
+        val content = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(16), dp(14), dp(16), dp(14))
+        }
+        content.addView(TextView(this).apply {
+            text = getString(R.string.setedit_backups_description)
+            textSize = 13f
+            setTextColor(PiperModernUi.secondaryTextColor(this@PiperSetEditActivity))
+        }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) })
+        var listDialog: android.app.Dialog? = null
+        if (backups.isEmpty()) {
+            content.addView(TextView(this).apply {
+                text = getString(R.string.setedit_no_backup)
+                textSize = 14f
+                setTextColor(PiperModernUi.secondaryTextColor(this@PiperSetEditActivity))
+                setPadding(0, dp(16), 0, dp(16))
+            })
+        } else {
+            backups.forEach { backup ->
+                val summary = backupSummary(backup)
+                val item = card()
+                val body = LinearLayout(this).apply {
+                    orientation = LinearLayout.VERTICAL
+                    setPadding(dp(12), dp(10), dp(12), dp(10))
+                }
+                body.addView(TextView(this).apply {
+                    text = backup.optString("label").ifBlank { getString(R.string.setedit_backup_snapshot) }
+                    textSize = 14f
+                    setTypeface(typeface, android.graphics.Typeface.BOLD)
+                    setTextColor(PiperModernUi.textColor(this@PiperSetEditActivity))
+                })
+                body.addView(TextView(this).apply {
+                    text = "${formatBackupDate(backup.optLong("created"))}  •  $summary"
+                    textSize = 11f
+                    setTextColor(PiperModernUi.secondaryTextColor(this@PiperSetEditActivity))
+                    setPadding(0, dp(3), 0, 0)
+                })
+                item.addView(body)
+                item.isClickable = true
+                item.isFocusable = true
+                item.setOnClickListener {
+                    listDialog?.dismiss()
+                    showBackupDetails(backup)
+                }
+                content.addView(item, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(7) })
+            }
+        }
+        content.addView(actionButton(R.string.cancel) { listDialog?.dismiss() }, LinearLayout.LayoutParams(-1, dp(42)).apply { topMargin = dp(4) })
+        val dialog = PiperDialog.createContent(this, content)
+        listDialog = dialog
+        dialog.show()
+    }
+
+    private fun showBackupDetails(backup: JSONObject) {
+        val content = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(16), dp(14), dp(16), dp(14))
+        }
+        val timestamp = formatBackupDate(backup.optLong("created"))
+        content.addView(TextView(this).apply {
+            text = timestamp
+            textSize = 12f
+            setTextColor(PiperModernUi.secondaryTextColor(this@PiperSetEditActivity))
+        }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) })
+        val details = TextView(this).apply {
+            text = backupDetails(backup)
+            textSize = 11f
+            typeface = android.graphics.Typeface.MONOSPACE
+            setTextColor(PiperModernUi.textColor(this@PiperSetEditActivity))
+            setTextIsSelectable(true)
+            setPadding(dp(10), dp(8), dp(10), dp(8))
+            background = getDrawable(R.drawable.bg_auth_panel)
+        }
+        content.addView(details, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) })
+        val actions = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        val detailDialog = PiperDialog.createContent(this, content)
+        actions.addView(actionButton(R.string.setedit_restore) {
+            detailDialog.dismiss()
+            confirmRestoreBackup(backup)
+        }, LinearLayout.LayoutParams(0, dp(42), 1f).apply { marginEnd = dp(4) })
+        actions.addView(actionButton(R.string.setedit_backup_delete) {
+            detailDialog.dismiss()
+            PiperDialog.showConfirm(
+                context = this,
+                title = getString(R.string.setedit_backup_delete_title),
+                message = getString(R.string.setedit_backup_delete_message),
+                positiveLabel = getString(R.string.setedit_backup_delete),
+                destructive = true
+            ) {
+                removeBackup(backup)
+                showBackups()
+            }
+        }, LinearLayout.LayoutParams(0, dp(42), 1f).apply { marginStart = dp(4) })
+        content.addView(actions, LinearLayout.LayoutParams(-1, -2))
+        content.addView(actionButton(R.string.cancel) { detailDialog.dismiss() }, LinearLayout.LayoutParams(-1, dp(42)).apply { topMargin = dp(5) })
+        detailDialog.show()
+    }
+
+    private fun confirmRestoreBackup(backup: JSONObject) {
         PiperDialog.showConfirm(
             context = this,
             title = getString(R.string.setedit_restore_title),
             message = getString(R.string.setedit_restore_message),
             positiveLabel = getString(R.string.setedit_restore),
-            destructive = true,
-            onConfirm = {
-                lifecycleScope.launch {
-                    setBusy(true)
-                    val restored = withContext(Dispatchers.IO) { restoreBackup(latest) }
-                    setBusy(false)
-                    actionStatus.text = getString(if (restored) R.string.setedit_restore_done else R.string.setedit_restore_failed)
-                    if (restored) loadRows()
+            destructive = true
+        ) {
+            lifecycleScope.launch {
+                setBusy(true)
+                val outcome = withContext(Dispatchers.IO) { restoreBackup(backup) }
+                setBusy(false)
+                val message = when {
+                    outcome == null -> getString(R.string.setedit_adb_unavailable)
+                    outcome.restored == 0 && outcome.failed == 0 -> getString(R.string.setedit_restore_no_differences)
+                    outcome.failed == 0 -> getString(R.string.setedit_restore_diff_done, outcome.restored)
+                    else -> getString(R.string.setedit_restore_diff_partial, outcome.restored, outcome.failed)
                 }
+                actionStatus.text = message
+                PiperDialog.showMessage(this@PiperSetEditActivity, getString(R.string.setedit_restore), message)
+                if ((outcome?.restored ?: 0) > 0) loadRows()
             }
-        )
+        }
     }
+
+    private fun backupSummary(backup: JSONObject): String {
+        if (backup.optString("kind") == "row") return "${backup.optString("table")} / ${backup.optString("key")}"
+        val tables = backup.optJSONObject("tables") ?: return getString(R.string.setedit_backup_empty)
+        val counts = listOf("system", "secure", "global").mapNotNull { name ->
+            tables.optJSONObject(name)?.let { "$name ${it.length()}" }
+        }
+        return getString(R.string.setedit_backup_key_count, counts.sumOf { it.substringAfterLast(' ').toIntOrNull() ?: 0 }) +
+            if (counts.isEmpty()) "" else "  •  ${counts.joinToString(" / ")}"
+    }
+
+    private fun backupDetails(backup: JSONObject): String {
+        if (backup.optString("kind") == "row") {
+            val old = backup.opt("oldValue")
+            return "${backup.optString("table")} / ${backup.optString("key")}\n${old?.takeUnless { it == JSONObject.NULL } ?: getString(R.string.setedit_backup_missing_value)}"
+        }
+        val tables = backup.optJSONObject("tables") ?: return getString(R.string.setedit_backup_empty)
+        return buildString {
+            listOf("system", "secure", "global").forEach { tableName ->
+                val values = tables.optJSONObject(tableName) ?: return@forEach
+                appendLine("[$tableName] (${values.length()})")
+                values.keys().asSequence().sorted().forEach { key -> appendLine("$key = ${values.optString(key)}") }
+                appendLine()
+            }
+        }.ifBlank { getString(R.string.setedit_backup_empty) }
+    }
+
+    private fun formatBackupDate(timestamp: Long): String =
+        if (timestamp <= 0) getString(R.string.setedit_backup_old) else java.text.DateFormat.getDateTimeInstance().format(java.util.Date(timestamp))
+
+    private fun removeBackup(backup: JSONObject) {
+        val id = backup.optString("id")
+        val isSnapshot = backup.optString("kind") == "full"
+        val file = File(filesDir, if (isSnapshot) SNAPSHOT_FILE else BACKUP_FILE)
+        val remaining = readBackupFile(file).filterNot { candidate ->
+            if (id.isNotBlank()) candidate.optString("id") == id
+            else candidate.optLong("created") == backup.optLong("created") && candidate.optString("kind") == backup.optString("kind")
+        }
+        writeBackupFile(file, remaining)
+        if (isSnapshot) {
+            val legacy = File(filesDir, BACKUP_FILE)
+            writeBackupFile(legacy, readBackupFile(legacy).filterNot { candidate ->
+                candidate.optString("kind") == "full" && if (id.isNotBlank()) candidate.optString("id") == id
+                else candidate.optLong("created") == backup.optLong("created")
+            })
+        }
+    }
+
+    private fun readSnapshots(): List<JSONObject> =
+        (readBackupFile(File(filesDir, SNAPSHOT_FILE)) + readBackupFile(File(filesDir, BACKUP_FILE)).filter { it.optString("kind") == "full" })
 
     private fun restoreSetEditDefaults() {
         val changedRows = originalValuesCount(readOriginalValues())
@@ -607,48 +799,69 @@ class PiperSetEditActivity : AppCompatActivity() {
         return RestoreOutcome(restored, failed)
     }
 
-    private suspend fun restoreBackup(backup: JSONObject): Boolean {
-        if (!hasShellAccess()) return false
-        return when (backup.optString("kind")) {
-            "row" -> {
-                val old = backup.opt("oldValue")
-                val key = backup.optString("key")
-                val tableName = backup.optString("table")
-                if (!PiperSetEditPolicy.isValidKey(key) || tableName !in setOf("system", "secure", "global")) return false
-                val command = if (old == JSONObject.NULL || old == null) "settings delete $tableName ${PiperSetEditPolicy.shellQuote(key)}"
-                else "settings put $tableName ${PiperSetEditPolicy.shellQuote(key)} ${PiperSetEditPolicy.shellQuote(old.toString())}"
-                client.newProcess(command, timeoutMs = 15_000L)?.exitCode == 0
+    private suspend fun restoreBackup(backup: JSONObject): RestoreOutcome? {
+        if (!hasShellAccess()) return null
+        if (backup.optString("kind") == "row") {
+            val old = backup.opt("oldValue")
+            val key = backup.optString("key")
+            val tableName = backup.optString("table")
+            if (!PiperSetEditPolicy.isValidKey(key) || tableName !in setOf("system", "secure", "global")) return RestoreOutcome(0, 1)
+            val command = if (old == JSONObject.NULL || old == null) "settings delete $tableName ${PiperSetEditPolicy.shellQuote(key)}"
+            else "settings put $tableName ${PiperSetEditPolicy.shellQuote(key)} ${PiperSetEditPolicy.shellQuote(old.toString())}"
+            return if (client.newProcess(command, timeoutMs = 15_000L)?.exitCode == 0) RestoreOutcome(1, 0) else RestoreOutcome(0, 1)
+        }
+        if (backup.optString("kind") != "full") return RestoreOutcome(0, 1)
+        val tables = backup.optJSONObject("tables") ?: return RestoreOutcome(0, 1)
+
+        // Save the current state before rollback so the user can reverse a mistaken restore.
+        captureSnapshot()?.let { current ->
+            current.put("label", getString(R.string.setedit_backup_before_restore))
+            pushBackup(current)
+        }
+
+        var restored = 0
+        var failed = 0
+        for (tableName in listOf("system", "secure", "global")) {
+            val savedObject = tables.optJSONObject(tableName) ?: continue
+            val currentResult = client.newProcess("settings list $tableName", timeoutMs = 15_000L)
+            if (currentResult?.exitCode != 0) {
+                failed += savedObject.length()
+                continue
             }
-            "full" -> {
-                val tables = backup.optJSONObject("tables") ?: return false
-                var okay = true
-                for (tableName in listOf("system", "secure", "global")) {
-                    val saved = tables.optJSONObject(tableName) ?: continue
-                    val current = client.newProcess("settings list $tableName", timeoutMs = 15_000L)
-                    if (current?.exitCode != 0) { okay = false; continue }
-                    PiperSetEditPolicy.parseSettingsList(current.output).forEach { (key, _) ->
-                        val result = client.newProcess("settings delete $tableName ${PiperSetEditPolicy.shellQuote(key)}", timeoutMs = 15_000L)
-                        if (result?.exitCode != 0) okay = false
-                    }
-                    val keys = saved.keys()
-                    while (keys.hasNext()) {
-                        val key = keys.next()
-                        val result = client.newProcess("settings put $tableName ${PiperSetEditPolicy.shellQuote(key)} ${PiperSetEditPolicy.shellQuote(saved.optString(key))}", timeoutMs = 15_000L)
-                        if (result?.exitCode != 0) okay = false
-                    }
+            val saved = savedObject.keys().asSequence().associateWith { savedObject.optString(it) }
+            val current = PiperSetEditPolicy.parseSettingsList(currentResult.output).toMap()
+            val diff = PiperSetEditPolicy.diffSnapshot(saved, current)
+            diff.valuesToRestore.forEach { (key, value) ->
+                if (!PiperSetEditPolicy.isValidKey(key)) {
+                    failed++
+                } else {
+                    val result = client.newProcess(
+                        "settings put $tableName ${PiperSetEditPolicy.shellQuote(key)} ${PiperSetEditPolicy.shellQuote(value)}",
+                        timeoutMs = 15_000L
+                    )
+                    if (result?.exitCode == 0) restored++ else failed++
                 }
-                okay
             }
-            else -> false
-        }.also { if (it) removeLatestBackup() }
+            diff.keysToDelete.forEach { key ->
+                if (!PiperSetEditPolicy.isValidKey(key)) {
+                    failed++
+                } else {
+                    val result = client.newProcess("settings delete $tableName ${PiperSetEditPolicy.shellQuote(key)}", timeoutMs = 15_000L)
+                    if (result?.exitCode == 0) restored++ else failed++
+                }
+            }
+        }
+        return RestoreOutcome(restored, failed)
     }
 
     private fun pushBackup(value: JSONObject) {
-        val path = File(filesDir, BACKUP_FILE)
-        val backups = readBackups().toMutableList()
-        backups += JSONObject(value.toString()).put("created", System.currentTimeMillis())
-        val json = JSONArray().apply { backups.takeLast(MAX_BACKUPS).forEach { put(it) } }
-        path.writeText(json.toString())
+        val snapshots = value.optString("kind") == "full"
+        val path = File(filesDir, if (snapshots) SNAPSHOT_FILE else BACKUP_FILE)
+        val backups = readBackupFile(path).toMutableList()
+        backups += JSONObject(value.toString())
+            .put("id", java.util.UUID.randomUUID().toString())
+            .put("created", System.currentTimeMillis())
+        writeBackupFile(path, backups.takeLast(if (snapshots) MAX_SNAPSHOTS else MAX_BACKUPS))
     }
 
     private fun readOriginalValues(): JSONObject = runCatching {
@@ -671,16 +884,14 @@ class PiperSetEditActivity : AppCompatActivity() {
     private fun originalValuesCount(values: JSONObject): Int =
         listOf("system", "secure", "global").sumOf { values.optJSONObject(it)?.length() ?: 0 }
 
-    private fun readBackups(): List<JSONObject> = runCatching {
-        val path = File(filesDir, BACKUP_FILE)
-        if (!path.exists()) return emptyList()
+    private fun readBackupFile(path: File): List<JSONObject> = runCatching {
+        if (!path.isFile) return emptyList()
         val array = JSONArray(path.readText())
         (0 until array.length()).mapNotNull { array.optJSONObject(it) }
     }.getOrDefault(emptyList())
 
-    private fun removeLatestBackup() {
-        val remaining = readBackups().dropLast(1)
-        File(filesDir, BACKUP_FILE).writeText(JSONArray().apply { remaining.forEach { put(it) } }.toString())
+    private fun writeBackupFile(path: File, backups: List<JSONObject>) {
+        path.writeText(JSONArray().apply { backups.forEach(::put) }.toString())
     }
 
     private fun parseProperties(output: String): List<Pair<String, String>> = output.lineSequence().mapNotNull { line ->
@@ -707,7 +918,6 @@ class PiperSetEditActivity : AppCompatActivity() {
         permissionSwitch.isEnabled = !value && adbConnected
     }
 
-    private fun LinearLayout.children() = (0 until childCount).map { getChildAt(it) }
     private fun dp(value: Int) = (value * resources.displayMetrics.density).toInt()
 
     private data class RestoreOutcome(val restored: Int, val failed: Int)
@@ -785,7 +995,9 @@ class PiperSetEditActivity : AppCompatActivity() {
 
     companion object {
         private const val BACKUP_FILE = "piperos_setedit_backups.json"
+        private const val SNAPSHOT_FILE = "piperos_setedit_snapshots.json"
         private const val ORIGINAL_VALUES_FILE = "piperos_setedit_original_values.json"
         private const val MAX_BACKUPS = 50
+        private const val MAX_SNAPSHOTS = 20
     }
 }

@@ -3,11 +3,16 @@ package com.piperostool
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.app.AppOpsManager
+import android.app.admin.DevicePolicyManager
 import android.content.pm.PackageManager
+import android.content.pm.PermissionInfo
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Environment
 import android.os.PowerManager
+import android.os.Process
 import android.provider.Settings
 import android.view.LayoutInflater
 import android.widget.Button
@@ -16,6 +21,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
@@ -25,6 +31,11 @@ import androidx.core.widget.NestedScrollView
 class PermissionManagerActivity : AppCompatActivity() {
 
     private lateinit var permissionContainer: LinearLayout
+    private val runtimePermissionRequest = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { loadAndDisplayPermissions() }
+
+    private val deviceAdminPermission = "com.piperostool.permission.DEVICE_ADMIN"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -53,89 +64,49 @@ class PermissionManagerActivity : AppCompatActivity() {
         }
     }
 
-    fun openSettingsForPermission(context: Context, permissionName: String) {
-        val intent = Intent()
-
-        // Cờ này giúp mở activity mới mượt mà hơn từ adapter
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-
-        try {
-            when (permissionName) {
-                // 1. Quyền quản lý bộ nhớ (All Files Access) - Android 11+
-                "android.permission.MANAGE_EXTERNAL_STORAGE" -> {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                        intent.action = Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION
-                        intent.data = Uri.parse("package:${context.packageName}")
-                    } else {
-                        // Fallback cho Android thấp hơn (thường không cần quyền này)
-                        intent.action = Settings.ACTION_APPLICATION_DETAILS_SETTINGS
-                        intent.data = Uri.parse("package:${context.packageName}")
-                    }
-                }
-
-                // 2. Quyền truy cập dữ liệu sử dụng (Usage Stats)
-                "android.permission.PACKAGE_USAGE_STATS" -> {
-                    intent.action = Settings.ACTION_USAGE_ACCESS_SETTINGS
-                    // Lưu ý: Màn hình này thường liệt kê tất cả app, user phải tự tìm app để bật
-                }
-
-                // 3. Quyền truy cập thông báo (Notification Listener)
-                "android.permission.BIND_NOTIFICATION_LISTENER_SERVICE" -> {
-                    intent.action = Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS
-                }
-
-                // 4. Quyền tối ưu hóa Pin (Battery Optimization)
-                "android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" -> {
-                    intent.action = Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
-                    intent.data = Uri.parse("package:${context.packageName}")
-                }
-
-                // 5. Quyền vẽ lên trên ứng dụng khác (Overlay/System Alert Window)
-                "android.permission.SYSTEM_ALERT_WINDOW" -> {
-                    intent.action = Settings.ACTION_MANAGE_OVERLAY_PERMISSION
-                    intent.data = Uri.parse("package:${context.packageName}")
-                }
-
-                // 6. Các quyền thường (Camera, Mic, Storage cơ bản...) & Trường hợp mặc định
-                else -> {
-                    intent.action = Settings.ACTION_APPLICATION_DETAILS_SETTINGS
-                    intent.data = Uri.parse("package:${context.packageName}")
-                }
-            }
-
-            context.startActivity(intent)
-
-        } catch (e: Exception) {
-            // Phòng trường hợp máy không hỗ trợ Intent đó, mở cài đặt chung của App
-            val fallbackIntent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
-            fallbackIntent.data = Uri.parse("package:${context.packageName}")
-            fallbackIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            context.startActivity(fallbackIntent)
-            e.printStackTrace()
-        }
+    override fun onResume() {
+        super.onResume()
+        if (::permissionContainer.isInitialized) loadAndDisplayPermissions()
     }
+
     private fun loadAndDisplayPermissions() {
         permissionContainer.removeAllViews()
         try {
             val packageInfo = packageManager.getPackageInfo(packageName, PackageManager.GET_PERMISSIONS)
-            val requestedPermissions = packageInfo.requestedPermissions
-
-            if (requestedPermissions.isNullOrEmpty()) {
-                // Sửa: Truyền null hoặc string rỗng vì không có quyền để click
-                addPermissionView("Không yêu cầu quyền đặc biệt nào.", true, "")
-                return
-            }
-
-            for (permission in requestedPermissions) {
-                val isGranted = ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
+            packageInfo.requestedPermissions.orEmpty().distinct().forEach { permission ->
+                val granted = isPermissionGranted(permission)
                 val simpleName = permission.substringAfterLast('.')
-
-                // Sửa: Truyền thêm biến 'permission' vào hàm này
-                addPermissionView("$simpleName: ${if (isGranted) "Đã cấp" else "Chưa cấp"}", isGranted, permission)
+                addPermissionView("$simpleName: ${if (granted) "Đã cấp" else "Chưa cấp"}", granted, permission)
             }
+            val adminGranted = isDeviceAdminActive()
+            addPermissionView(
+                "Quản trị viên thiết bị: ${if (adminGranted) "Đã bật" else "Chưa bật"}",
+                adminGranted,
+                deviceAdminPermission
+            )
+            if (permissionContainer.childCount == 0) addPermissionView("Không yêu cầu quyền đặc biệt nào.", true, "")
         } catch (e: Exception) {
             e.printStackTrace()
         }
+    }
+
+    private fun isPermissionGranted(permission: String): Boolean = when (permission) {
+        "android.permission.MANAGE_EXTERNAL_STORAGE" -> Build.VERSION.SDK_INT < Build.VERSION_CODES.R || Environment.isExternalStorageManager()
+        "android.permission.PACKAGE_USAGE_STATS" -> {
+            val appOps = getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
+            appOps.checkOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS, Process.myUid(), packageName) == AppOpsManager.MODE_ALLOWED
+        }
+        "android.permission.BIND_NOTIFICATION_LISTENER_SERVICE" -> Settings.Secure.getString(contentResolver, "enabled_notification_listeners")
+            .orEmpty().split(':').mapNotNull(ComponentName::unflattenFromString).any { it.packageName == packageName }
+        "android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" -> (getSystemService(Context.POWER_SERVICE) as PowerManager).isIgnoringBatteryOptimizations(packageName)
+        "android.permission.SYSTEM_ALERT_WINDOW" -> Build.VERSION.SDK_INT < Build.VERSION_CODES.M || Settings.canDrawOverlays(this)
+        "android.permission.REQUEST_INSTALL_PACKAGES" -> Build.VERSION.SDK_INT < Build.VERSION_CODES.O || packageManager.canRequestPackageInstalls()
+        else -> ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
+    }
+
+    private fun isDeviceAdminActive(): Boolean {
+        val component = ComponentName(this, MyDeviceAdminReceiver::class.java)
+        return (getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager).isAdminActive(component)
     }
 
     private fun addPermissionView(permissionText: String, isGranted: Boolean, permissionName: String) {
@@ -173,13 +144,60 @@ class PermissionManagerActivity : AppCompatActivity() {
                         "Đang mở cài đặt cho quyền: ${permissionName.substringAfterLast('.')}",
                         Toast.LENGTH_SHORT
                     ).show()
-                    openSettingsForPermission(this, permissionName)
+                    openPermissionGrant(permissionName)
                 }
             }
         }
         permissionContainer.addView(permissionView)
         PiperAutoFont.apply(text)
         text.setTextColor(PiperModernUi.secondaryTextColor(this))
+    }
+
+    private fun openPermissionGrant(permissionName: String) {
+        if (permissionName == deviceAdminPermission) {
+            val intent = Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN)
+                .putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, ComponentName(this, MyDeviceAdminReceiver::class.java))
+                .putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, "Quyền này được dùng cho các tính năng quản trị thiết bị của PiperOS.")
+            runCatching { startActivity(intent) }.onFailure { openAppDetails() }
+            return
+        }
+        when (permissionName) {
+            "android.permission.MANAGE_EXTERNAL_STORAGE" -> openSettings(
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION
+                else Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                withPackage = true
+            )
+            "android.permission.PACKAGE_USAGE_STATS" -> openSettings(Settings.ACTION_USAGE_ACCESS_SETTINGS)
+            "android.permission.BIND_NOTIFICATION_LISTENER_SERVICE" -> openSettings(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
+            "android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" -> openSettings(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, withPackage = true)
+            "android.permission.SYSTEM_ALERT_WINDOW" -> openSettings(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, withPackage = true)
+            "android.permission.REQUEST_INSTALL_PACKAGES" -> openSettings(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, withPackage = true)
+            "android.permission.POST_NOTIFICATIONS" -> runtimePermissionRequest.launch(permissionName)
+            "android.permission.WRITE_SECURE_SETTINGS", "android.permission.DUMP" ->
+                startActivity(Intent(this, com.piperostool.privileged.ui.PiperAdbActivity::class.java))
+            else -> {
+                val protection = runCatching {
+                    @Suppress("DEPRECATION")
+                    packageManager.getPermissionInfo(permissionName, 0).protectionLevel and PermissionInfo.PROTECTION_MASK_BASE
+                }.getOrNull()
+                if (protection == PermissionInfo.PROTECTION_DANGEROUS) runtimePermissionRequest.launch(permissionName)
+                else openAppDetails()
+            }
+        }
+    }
+
+    private fun openSettings(action: String, withPackage: Boolean = false) {
+        val intent = Intent(action)
+        if (withPackage) intent.data = Uri.fromParts("package", packageName, null)
+        runCatching { startActivity(intent) }.onFailure { openAppDetails() }
+    }
+
+    private fun openAppDetails() {
+        runCatching {
+            startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).setData(Uri.fromParts("package", packageName, null)))
+        }.onFailure {
+            Toast.makeText(this, "Không tìm thấy màn hình cấp quyền trên thiết bị.", Toast.LENGTH_LONG).show()
+        }
     }
 
     private fun setupOptimizationButtons() {

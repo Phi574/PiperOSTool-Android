@@ -1,5 +1,14 @@
 # Changelog
 
+## 3.8.7.PRE — Bản xem trước
+- Thiết kế lại PiperOS SetEdit thành một danh sách cuộn duy nhất; chọn System, Secure, Global Settings hoặc nhóm thuộc tính từ menu gọn.
+- Tạo và quản lý nhiều mốc sao lưu Settings, xem chi tiết hoặc xóa từng mốc; khôi phục bằng cách so sánh và chỉ hoàn tác các khóa khác biệt, đồng thời tự lưu trạng thái hiện tại trước khi khôi phục.
+- Kiểm tra lại các quyền còn thiếu mỗi lần mở ứng dụng; bổ sung Quản trị viên thiết bị và điều hướng từng quyền đỏ tới đúng màn hình cấp quyền của Android.
+- Gỡ PiperOS Family khỏi trang Beta.
+- Sửa khai báo AccessibilityService để Android bind được dịch vụ điều khiển; giữ đăng ký sự kiện trợ năng tối thiểu thay vì đặt về 0 khi chạy.
+- Tính tọa độ chạm theo kích thước màn hình thật và giới hạn điểm chạm trong vùng hiển thị, giúp cử chỉ từ xa khớp trên các thiết bị và hướng màn hình.
+- Nâng versionCode lên 102.
+
 ## 3.8.6.PRE — Bản xem trước
 - Thêm PiperOS SetEdit để tìm kiếm, thêm, sửa, xóa và sao lưu/hoàn tác System, Secure, Global Settings; danh sách hiển thị gọn theo hai cột tên khóa và giá trị. Android Properties, Java Properties và Linux Environment được hiển thị chỉ đọc.
 - Thêm trạng thái và công tắc cấp quyền `shell_commands` trong PiperOS ADB, kèm cảnh báo rủi ro cho Secure/Global Settings và xác nhận trước khi khôi phục toàn bảng.
