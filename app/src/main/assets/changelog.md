@@ -1,5 +1,8 @@
 # Changelog
 
+## 3.8.9 — Bản chính thức
+- Phát hành ổn định các cải tiến PiperOS Data Transfer, PiperOS Media và PiperOS 2FA đã được kiểm tra ở bản 3.8.9.beta.
+- Nâng versionCode lên 106 để nâng cấp tuần tự từ 3.8.9.beta.
 ## 3.8.9.beta — Bản thử nghiệm (BETA)
 - Làm mới PiperOS Data Transfer theo giao diện hiện đại, tách màn hình tiến trình truyền và màn hình quản lý dữ liệu đã nhận.
 - Dùng Photo Picker để chọn ảnh/video từ album; giữ nguyên lựa chọn trước khi mở bộ chọn khác, đồng thời cho xem trước và bỏ từng mục trước khi gửi.
