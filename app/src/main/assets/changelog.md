@@ -1,6 +1,6 @@
 # Changelog
 
-## 3.8.9.PRE — Bản xem trước
+## 3.8.9.beta — Bản thử nghiệm (BETA)
 - Làm mới PiperOS Data Transfer theo giao diện hiện đại, tách màn hình tiến trình truyền và màn hình quản lý dữ liệu đã nhận.
 - Dùng Photo Picker để chọn ảnh/video từ album; giữ nguyên lựa chọn trước khi mở bộ chọn khác, đồng thời cho xem trước và bỏ từng mục trước khi gửi.
 - Hiển thị icon ứng dụng cùng tên gói và dung lượng APK trong bộ chọn ứng dụng; màn dữ liệu nhận chia nhóm ứng dụng, ảnh, video và tệp khác.
@@ -8,7 +8,7 @@
 - Thiết kế lại PiperOS Media theo giao diện PiperOS hiện đại, hỗ trợ màu sáng/tối đồng nhất, bố cục thẻ mới và thanh điều khiển rõ ràng hơn; màn xem ảnh/video cũng dùng thanh tiêu đề và màu hệ thống đồng bộ.
 - Chuyển PiperOS 2FA sang layout XML riêng, thêm thanh tiêu đề an toàn theo vùng status bar, thẻ giới thiệu, nhóm nút nhập/xuất và nút thêm nổi.
 - Làm mới thẻ mã OTP với bố cục phân cấp, hiển thị thuật toán/số chữ số/chu kỳ, mã dễ đọc và thao tác làm mới/xóa gọn hơn; giữ nguyên đồng bộ Firebase, TOTP/HOTP/Steam, quét QR, nhập/xuất QR và JSON.
-- Nâng versionCode lên 104.
+- Nâng versionCode lên 105.
 
 ## 3.8.8.PRE — Bản xem trước
 - Thêm PiperOS Data Transfer vào trang Beta và mục Công cụ PiperOS trong Info.
