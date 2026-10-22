@@ -48,6 +48,7 @@ internal object PiperDataTransferProtocol {
         private var sentSequence = 0L
         private var receivedSequence = 0L
 
+        @Synchronized
         fun send(type: Int, payload: ByteArray = byteArrayOf()) {
             require(type in 0..255) { "Invalid frame type" }
             require(payload.size <= MAX_FRAME_BYTES - 1) { "Transfer message is too large" }
@@ -75,6 +76,10 @@ internal object PiperDataTransferProtocol {
             if (clear.isEmpty()) throw SecurityException("Empty transfer frame")
             receivedSequence = sequence
             return Frame(clear[0].toInt() and 0xff, clear.copyOfRange(1, clear.size))
+        }
+
+        fun setReadTimeout(timeoutMs: Int) {
+            socket.soTimeout = timeoutMs
         }
 
         fun pairingCode(): String = sasCode

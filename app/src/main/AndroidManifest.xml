@@ -214,6 +214,8 @@
         <activity android:name=".ChangePasswordActivity" android:exported="false" android:theme="@style/Theme.PiperOSTool" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".PiperSetEditActivity" android:exported="false" android:theme="@style/Theme.PiperOSTool" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".PiperDataTransferActivity" android:exported="false" android:theme="@style/Theme.PiperOSTool" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".PiperDataTransferProgressActivity" android:exported="false" android:theme="@style/Theme.PiperOSTool" />
+        <activity android:name=".PiperDataTransferReceivedActivity" android:exported="false" android:theme="@style/Theme.PiperOSTool" />
         <activity android:name=".LinkedAccountsActivity" android:exported="false" android:theme="@style/Theme.PiperOSTool" android:windowSoftInputMode="adjustResize" />
 
         <activity android:name=".HomeActivity" android:exported="false" android:launchMode="singleTask" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />

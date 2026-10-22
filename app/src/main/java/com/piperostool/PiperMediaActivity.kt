@@ -180,8 +180,6 @@ class PiperMediaActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         PiperModernUi.watch(this)
         WindowCompat.setDecorFitsSystemWindows(window, false)
-        window.statusBarColor = Color.BLACK
-        window.navigationBarColor = Color.BLACK
         setContentView(R.layout.activity_piper_media)
 
         bindViews()

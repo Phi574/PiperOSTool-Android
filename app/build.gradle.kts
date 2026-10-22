@@ -9,8 +9,8 @@ plugins {
 
 val googleServicesConfig = file("google-services.json")
 val testPackage = providers.gradleProperty("piperTestPackage").orNull == "true"
-val piperVersionCode = providers.gradleProperty("piperVersionCode").orNull?.toIntOrNull() ?: 103
-val piperVersionName = providers.gradleProperty("piperVersionName").orNull ?: "3.8.8.PRE"
+val piperVersionCode = providers.gradleProperty("piperVersionCode").orNull?.toIntOrNull() ?: 104
+val piperVersionName = providers.gradleProperty("piperVersionName").orNull ?: "3.8.9.PRE"
 val piperSigningPropertiesFile = File(System.getProperty("user.home"), ".android/PiperOS/signing.properties")
 val piperSigningProperties = Properties().apply {
     if (piperSigningPropertiesFile.isFile) {
@@ -106,6 +106,7 @@ dependencies {
     implementation(files("libs/reandroid-smali.jar"))
     implementation(files("libs/reandroid-jcommand.jar"))
     implementation(libs.androidx.core.ktx)
+    implementation("androidx.activity:activity-ktx:1.10.1")
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.androidx.appcompat)
     implementation(platform("com.google.firebase:firebase-bom:35.0.1"))

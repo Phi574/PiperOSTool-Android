@@ -310,11 +310,15 @@ object PiperModernUi {
                 }
             }
             is ImageButton -> {
-                if (name != "btnHomeWindow") {
+                if (name !in setOf("btnHomeWindow", "mediaPlayPause")) {
                     view.setBackgroundColor(Color.TRANSPARENT)
+                }
+                if (name == "mediaPlayPause") {
+                    view.background = rounded(palette.accent, palette.accent, 100f, view)
                 }
                 view.imageTintList = when (name) {
                     "btnExitBrowser" -> null
+                    "mediaPlayPause" -> android.content.res.ColorStateList.valueOf(palette.onAccent)
                     "fileCopySelected", "fileMoveSelected", "fileCompressSelected", "fileBackupSelected" ->
                         android.content.res.ColorStateList.valueOf(palette.accent)
                     "fileDeleteSelected" ->
@@ -401,7 +405,7 @@ object PiperModernUi {
         "homeRoot", "fragmentHomeRoot", "updateRoot", "lockRoot", "loginRoot", "signupRoot", "forgotRoot", "welcomeRoot", "permissionRoot",
         "browserRoot", "mediaRoot", "mediaGalleryRoot", "fileManagerRoot", "filePreviewRoot",
         "fakeMapRoot", "terminalRoot", "apkEditorRoot", "textEditorRoot", "piperQrRoot",
-        "accountProfileRoot", "deviceSessionsRoot"
+        "accountProfileRoot", "deviceSessionsRoot", "twoFactorRoot"
     )
 
     private fun isSettingsRow(name: String): Boolean = name in setOf(
@@ -443,7 +447,8 @@ object PiperModernUi {
     private fun isPrimaryAction(name: String): Boolean =
         name.contains("start", true) || name.contains("login", true) ||
             name.contains("signup", true) || name.contains("send", true) ||
-            name.contains("run", true) || name.contains("install", true)
+            name.contains("run", true) || name.contains("install", true) ||
+            name == "twoFactorAdd"
 
     private fun isNavigationItem(name: String): Boolean = name in setOf(
         "navHome", "navBeta", "navApps", "navSettings", "navDevices",

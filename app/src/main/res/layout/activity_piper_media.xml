@@ -5,7 +5,7 @@
     android:id="@+id/mediaRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#FF080C0F"
+    android:background="@color/remote_page_background"
     android:orientation="vertical">
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/mediaTopBar"
@@ -13,7 +13,7 @@
         android:layout_height="56dp"
         app:cardCornerRadius="20dp"
         app:cardElevation="0dp"
-        app:cardBackgroundColor="@android:color/transparent"
+        app:cardBackgroundColor="@color/remote_surface"
         app:contentPadding="0dp"
         app:cardPreventCornerOverlap="false">
         <LinearLayout
@@ -32,7 +32,7 @@
                 android:contentDescription="@string/close_media_player"
                 android:padding="12dp"
                 android:src="@drawable/ic_browser_close"
-                app:tint="@color/white"
+                app:tint="@color/remote_text_secondary"
                 android:scaleType="centerInside" />
             <ImageView
                 android:layout_width="38dp"
@@ -52,7 +52,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/piperos_media"
-                    android:textColor="@color/white"
+                    android:textColor="@color/remote_text_primary"
                     android:textSize="18sp"
                     android:textStyle="bold" />
                 <TextView
@@ -60,7 +60,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/media_scanning"
-                    android:textColor="#AFFFFFFF"
+                    android:textColor="@color/remote_text_secondary"
                     android:textSize="12sp" />
             </LinearLayout>
             <ImageButton
@@ -71,7 +71,7 @@
                 android:contentDescription="@string/media_search_library"
                 android:padding="11dp"
                 android:src="@drawable/ic_browser_search"
-                app:tint="@color/white"
+                app:tint="@color/remote_text_secondary"
                 android:scaleType="centerInside" />
             <ImageButton
                 android:id="@+id/mediaRefresh"
@@ -81,7 +81,7 @@
                 android:contentDescription="@string/media_refresh_library"
                 android:padding="11dp"
                 android:src="@drawable/ic_browser_reload"
-                app:tint="@color/white"
+                app:tint="@color/remote_text_secondary"
                 android:scaleType="centerInside" />
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
@@ -95,7 +95,7 @@
         android:visibility="gone"
         app:cardCornerRadius="20dp"
         app:cardElevation="0dp"
-        app:cardBackgroundColor="@android:color/transparent"
+        app:cardBackgroundColor="@color/remote_surface"
         app:contentPadding="0dp"
         app:cardPreventCornerOverlap="false">
         <LinearLayout
@@ -111,7 +111,7 @@
                 android:layout_height="20dp"
                 android:contentDescription="@null"
                 android:src="@drawable/ic_browser_search"
-                app:tint="#AFFFFFFF"
+                app:tint="@color/remote_text_secondary"
                 android:scaleType="centerInside" />
             <EditText
                 android:id="@+id/mediaSearchInput"
@@ -125,8 +125,8 @@
                 android:inputType="text"
                 android:maxLines="1"
                 android:padding="0dp"
-                android:textColor="@color/white"
-                android:textColorHint="#73FFFFFF"
+                android:textColor="@color/remote_text_primary"
+                android:textColorHint="@color/remote_text_secondary"
                 android:textSize="14sp" />
             <ImageButton
                 android:id="@+id/mediaSearchClose"
@@ -136,7 +136,7 @@
                 android:contentDescription="@string/close_search"
                 android:padding="12dp"
                 android:src="@drawable/ic_browser_close"
-                app:tint="@color/white"
+                app:tint="@color/remote_text_secondary"
                 android:scaleType="centerInside" />
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
@@ -180,7 +180,7 @@
             android:layout_gravity="center"
             android:layout_marginTop="184dp"
             android:text="@string/media_choose_to_play"
-            android:textColor="#AFFFFFFF"
+            android:textColor="@color/remote_text_secondary"
             android:textSize="12sp" />
         <ImageButton
             android:id="@+id/mediaFullscreen"
@@ -194,7 +194,7 @@
             android:padding="10dp"
             android:src="@drawable/ic_media_fullscreen"
             android:visibility="gone"
-            app:tint="@color/white"
+            app:tint="@color/remote_text_primary"
             android:scaleType="centerInside" />
     </FrameLayout>
     <com.google.android.material.card.MaterialCardView
@@ -203,7 +203,7 @@
         android:layout_height="wrap_content"
         app:cardCornerRadius="20dp"
         app:cardElevation="0dp"
-        app:cardBackgroundColor="@android:color/transparent"
+        app:cardBackgroundColor="@color/remote_surface"
         app:contentPadding="0dp"
         app:cardPreventCornerOverlap="false">
         <LinearLayout
@@ -222,7 +222,7 @@
                 android:ellipsize="end"
                 android:maxLines="1"
                 android:text="@string/media_nothing_playing"
-                android:textColor="@color/white"
+                android:textColor="@color/remote_text_primary"
                 android:textSize="17sp"
                 android:textStyle="bold" />
             <TextView
@@ -232,15 +232,15 @@
                 android:ellipsize="end"
                 android:maxLines="1"
                 android:text="@string/media_local_library"
-                android:textColor="#AFFFFFFF"
+                android:textColor="@color/remote_text_secondary"
                 android:textSize="12sp" />
             <SeekBar
                 android:id="@+id/mediaSeek"
                 android:layout_width="match_parent"
                 android:layout_height="30dp"
                 android:max="1000"
-                android:progressTint="#39E58C"
-                android:thumbTint="#B9FF58" />
+                android:progressTint="@color/remote_accent"
+                android:thumbTint="@color/remote_accent" />
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="48dp"
@@ -291,7 +291,7 @@
                         android:background="@drawable/bg_circle_badge"
                         android:gravity="center"
                         android:text="1"
-                        android:textColor="#07120B"
+                        android:textColor="@color/remote_text_primary"
                         android:textSize="9sp"
                         android:textStyle="bold"
                         android:visibility="gone" />
@@ -373,7 +373,7 @@
             android:contentDescription="@string/media_choose_sources"
             android:padding="10dp"
             android:src="@drawable/ic_browser_more"
-            app:tint="@color/white"
+            app:tint="@color/remote_text_secondary"
             android:scaleType="centerInside" />
     </LinearLayout>
     <TextView
@@ -385,7 +385,7 @@
         android:paddingEnd="20dp"
         android:paddingBottom="8dp"
         android:text="@string/media_queue_hint"
-        android:textColor="#86FFFFFF"
+        android:textColor="@color/remote_text_secondary"
         android:textSize="11sp" />
     <ListView
         android:id="@+id/mediaList"

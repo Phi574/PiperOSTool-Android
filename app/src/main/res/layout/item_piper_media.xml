@@ -41,7 +41,7 @@
                 android:layout_height="wrap_content"
                 android:ellipsize="end"
                 android:maxLines="1"
-                android:textColor="@color/white"
+                android:textColor="@color/remote_text_primary"
                 android:textSize="14sp"
                 android:textStyle="bold" />
             <TextView
@@ -51,7 +51,7 @@
                 android:layout_marginTop="4dp"
                 android:ellipsize="end"
                 android:maxLines="1"
-                android:textColor="#9FFFFFFF"
+                android:textColor="@color/remote_text_secondary"
                 android:textSize="11sp" />
             <TextView
                 android:id="@+id/mediaItemDetails"
@@ -60,7 +60,7 @@
                 android:layout_marginTop="3dp"
                 android:ellipsize="end"
                 android:maxLines="1"
-                android:textColor="#73FFFFFF"
+                android:textColor="@color/remote_text_secondary"
                 android:textSize="11sp" />
         </LinearLayout>
         <ImageView
@@ -71,7 +71,7 @@
             android:padding="4dp"
             android:src="@drawable/ic_media_queue"
             android:visibility="gone"
-            app:tint="#39E58C"
+            app:tint="@color/remote_accent"
             android:scaleType="centerInside" />
         <ImageView
             android:layout_width="28dp"
@@ -79,7 +79,7 @@
             android:contentDescription="@null"
             android:padding="5dp"
             android:src="@drawable/ic_media_play"
-            app:tint="#B9FFFFFF"
+            app:tint="@color/remote_text_secondary"
             android:scaleType="centerInside" />
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

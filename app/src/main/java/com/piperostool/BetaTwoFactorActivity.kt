@@ -23,6 +23,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.graphics.ColorUtils
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -119,96 +120,41 @@ class BetaTwoFactorActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        PiperModernUi.watch(this)
         WindowCompat.setDecorFitsSystemWindows(window, false)
-        title = "PiperOS 2FA"
+        setContentView(R.layout.activity_piper_2fa)
 
-        val frame = FrameLayout(this).apply { setBackgroundColor(Color.rgb(13, 31, 44)) }
-        val scroll = ScrollView(this).apply { clipToPadding = false }
-        val root = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(20), dp(16), dp(20), dp(100))
-        }
-        scroll.addView(root)
-        frame.addView(scroll, FrameLayout.LayoutParams(-1, -1))
-        addBubble = MaterialButton(this).apply {
-            text = "+"
-            textSize = 30f
-            setTextColor(Color.WHITE)
-            isAllCaps = false
-            insetTop = 0
-            insetBottom = 0
-            cornerRadius = dp(32)
-            minimumWidth = dp(62)
-            minimumHeight = dp(62)
-            setPadding(0, 0, 0, dp(3))
-            contentDescription = "Thêm tài khoản 2FA"
-            backgroundTintList = android.content.res.ColorStateList.valueOf(Color.rgb(0, 190, 170))
-            elevation = dp(8).toFloat()
-            setOnClickListener { showAddChoices() }
-        }
-        frame.addView(addBubble, FrameLayout.LayoutParams(dp(62), dp(62), Gravity.BOTTOM or Gravity.END).apply {
-            marginEnd = dp(20)
-            bottomMargin = dp(20)
-        })
-        setContentView(frame)
-        ViewCompat.setOnApplyWindowInsetsListener(scroll) { view, insets ->
+        val toolbar = findViewById<View>(R.id.twoFactorToolbar)
+        val scroll = findViewById<ScrollView>(R.id.twoFactorScroll)
+        addBubble = findViewById(R.id.twoFactorAdd)
+        list = findViewById(R.id.twoFactorList)
+        status = findViewById(R.id.twoFactorStatus)
+        searchInput = findViewById(R.id.twoFactorSearchInput)
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.twoFactorRoot)) { _, insets ->
             val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            view.setPadding(0, bars.top, 0, bars.bottom)
-            insets
-        }
-        ViewCompat.setOnApplyWindowInsetsListener(addBubble) { view, insets ->
-            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            (view.layoutParams as? FrameLayout.LayoutParams)?.let { params ->
-                params.bottomMargin = bars.bottom + dp(20)
-                view.layoutParams = params
+            toolbar.setPadding(toolbar.paddingLeft, bars.top + dp(4), toolbar.paddingRight, toolbar.paddingBottom)
+            scroll.setPadding(scroll.paddingLeft, scroll.paddingTop, scroll.paddingRight, bars.bottom)
+            (addBubble.layoutParams as FrameLayout.LayoutParams).also { params ->
+                params.bottomMargin = bars.bottom + dp(18)
+                addBubble.layoutParams = params
             }
             insets
         }
-        ViewCompat.requestApplyInsets(scroll)
-        ViewCompat.requestApplyInsets(addBubble)
 
-        val header = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
-        header.addView(text("PiperOS 2FA", 24, true), LinearLayout.LayoutParams(0, -2, 1f))
-        val searchButton = MaterialButton(this).apply {
-            setIconResource(android.R.drawable.ic_menu_search)
-            iconSize = dp(24)
-            iconTint = android.content.res.ColorStateList.valueOf(Color.WHITE)
-            contentDescription = "Tìm kiếm tài khoản 2FA"
-            isAllCaps = false
-            minWidth = dp(44)
-            setPadding(dp(4), 0, dp(4), 0)
-            setOnClickListener { toggleSearch() }
-        }
-        header.addView(searchButton)
-        header.addView(MaterialButton(this).apply {
-            text = "Nhập"
-            isAllCaps = false
-            setOnClickListener { showImportChoices() }
+        findViewById<View>(R.id.twoFactorBack).setOnClickListener { finish() }
+        findViewById<View>(R.id.twoFactorSearchButton).setOnClickListener { toggleSearch() }
+        findViewById<View>(R.id.twoFactorImport).setOnClickListener { showImportChoices() }
+        findViewById<View>(R.id.twoFactorExport).setOnClickListener { showExportChoices() }
+        addBubble.setOnClickListener { showAddChoices() }
+        searchInput.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                searchQuery = s?.toString().orEmpty().trim()
+                renderTokens()
+            }
+            override fun afterTextChanged(s: android.text.Editable?) = Unit
         })
-        header.addView(MaterialButton(this).apply {
-            text = "Xuất"
-            isAllCaps = false
-            setOnClickListener { showExportChoices() }
-        })
-        root.addView(header)
-        searchInput = EditText(this).apply {
-            hint = "Tìm theo tên dịch vụ hoặc tài khoản"
-            isSingleLine = true
-            visibility = View.GONE
-            addTextChangedListener(object : android.text.TextWatcher {
-                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
-                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                    searchQuery = s?.toString().orEmpty().trim()
-                    renderTokens()
-                }
-                override fun afterTextChanged(s: android.text.Editable?) = Unit
-            })
-        }
-        root.addView(searchInput)
-        root.addView(text("Mã xác minh cho Facebook và các dịch vụ hỗ trợ ứng dụng xác thực. Khóa 2FA được lưu trên Firebase để đồng bộ theo tài khoản PiperOS; hãy bảo vệ tài khoản đăng nhập như bảo vệ mật khẩu.", 14, false, 12))
-        status = text("Đang tải tài khoản 2FA…", 13, false, 18).also { root.addView(it) }
-        list = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        root.addView(list)
+        ViewCompat.requestApplyInsets(findViewById(R.id.twoFactorRoot))
 
         val uid = auth.currentUser?.uid
         if (uid == null) {
@@ -254,7 +200,11 @@ class BetaTwoFactorActivity : AppCompatActivity() {
             val row = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
                 setPadding(dp(14), dp(12), dp(14), dp(12))
-                background = rounded(Color.rgb(21, 49, 68), Color.rgb(61, 91, 110), 14)
+                background = rounded(
+                    PiperModernUi.surfaceColor(this@BetaTwoFactorActivity),
+                    PiperModernUi.borderColor(this@BetaTwoFactorActivity),
+                    16
+                )
                 isClickable = true
                 isFocusable = true
                 setOnClickListener { dialog?.dismiss(); action() }
@@ -293,7 +243,11 @@ class BetaTwoFactorActivity : AppCompatActivity() {
             val row = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
                 setPadding(dp(14), dp(12), dp(14), dp(12))
-                background = rounded(Color.rgb(21, 49, 68), Color.rgb(61, 91, 110), 14)
+                background = rounded(
+                    PiperModernUi.surfaceColor(this@BetaTwoFactorActivity),
+                    PiperModernUi.borderColor(this@BetaTwoFactorActivity),
+                    16
+                )
                 isClickable = true
                 isFocusable = true
                 setOnClickListener { dialog?.dismiss(); action() }
@@ -316,7 +270,11 @@ class BetaTwoFactorActivity : AppCompatActivity() {
             val row = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
                 setPadding(dp(14), dp(12), dp(14), dp(12))
-                background = rounded(Color.rgb(21, 49, 68), Color.rgb(61, 91, 110), 14)
+                background = rounded(
+                    PiperModernUi.surfaceColor(this@BetaTwoFactorActivity),
+                    PiperModernUi.borderColor(this@BetaTwoFactorActivity),
+                    16
+                )
                 isClickable = true
                 isFocusable = true
                 setOnClickListener { dialog?.dismiss(); action() }
@@ -704,34 +662,92 @@ class BetaTwoFactorActivity : AppCompatActivity() {
         countdownViews.clear()
         val visibleTokens = tokens.filter { it.label.contains(searchQuery, ignoreCase = true) }
         if (visibleTokens.isEmpty() && searchQuery.isNotEmpty()) {
-            list.addView(text("Không tìm thấy tài khoản phù hợp.", 14, false, 16))
+            list.addView(text("Không tìm thấy tài khoản phù hợp.", 14, false, 16).apply {
+                gravity = Gravity.CENTER
+                setPadding(dp(18), dp(26), dp(18), dp(26))
+            })
             return
         }
         visibleTokens.forEach { token ->
-            val card = LinearLayout(this).apply {
-                orientation = LinearLayout.VERTICAL
-                setPadding(dp(18), dp(16), dp(18), dp(16))
-                background = rounded(Color.rgb(21, 49, 68), Color.rgb(48, 81, 101), 20)
-                layoutParams = LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(12) }
+            val card = com.google.android.material.card.MaterialCardView(this).apply {
+                radius = dp(20).toFloat()
+                cardElevation = 0f
+                strokeWidth = dp(1)
+                strokeColor = PiperModernUi.borderColor(this@BetaTwoFactorActivity)
+                setCardBackgroundColor(PiperModernUi.surfaceColor(this@BetaTwoFactorActivity))
+                layoutParams = LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(10) }
             }
-            card.addView(text(token.label, 17, true))
-            card.addView(text(when (token.type) { "HOTP" -> "HOTP · bộ đếm ${token.counter}"; "STEAM" -> "Steam Guard · 5 ký tự"; else -> "TOTP · ${token.period} giây" }, 12, false, 4))
+            val content = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(dp(16), dp(15), dp(16), dp(14))
+            }
+            card.addView(content)
+
+            val heading = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+            }
+            val titles = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+            titles.addView(text(token.label, 16, true))
+            titles.addView(text(
+                when (token.type) {
+                    "HOTP" -> "HOTP · bộ đếm ${token.counter}"
+                    "STEAM" -> "Steam Guard · 5 ký tự"
+                    else -> "${token.algorithm} · ${token.digits} số · ${token.period} giây"
+                }, 12, false, 3
+            ))
+            heading.addView(titles, LinearLayout.LayoutParams(0, -2, 1f))
+            val remove = MaterialButton(this).apply {
+                text = "Xóa"
+                isAllCaps = false
+                minWidth = dp(0)
+                minHeight = dp(38)
+                insetTop = 0
+                insetBottom = 0
+                setPadding(dp(12), 0, dp(12), 0)
+                setOnClickListener { deleteToken(token) }
+            }
+            heading.addView(remove)
+            content.addView(heading)
+
+            val codePanel = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                gravity = Gravity.CENTER
+                setPadding(dp(10), dp(8), dp(10), dp(8))
+                setTag(R.id.piper_preserve_modern_colors, true)
+                background = rounded(
+                    ColorUtils.blendARGB(
+                        PiperModernUi.surfaceColor(this@BetaTwoFactorActivity),
+                        PiperModernUi.borderColor(this@BetaTwoFactorActivity),
+                        0.28f
+                    ),
+                    PiperModernUi.borderColor(this@BetaTwoFactorActivity),
+                    16
+                )
+                layoutParams = LinearLayout.LayoutParams(-1, -2).apply {
+                    topMargin = dp(12)
+                }
+            }
             val code = TextView(this).apply {
-                textSize = 34f
-                setTextColor(Color.rgb(119, 220, 255))
+                textSize = 32f
+                setTextColor(PiperModernUi.accentColor(this@BetaTwoFactorActivity))
                 typeface = Typeface.MONOSPACE
                 gravity = Gravity.CENTER
-                setPadding(0, dp(14), 0, dp(6))
+                setPadding(0, dp(4), 0, dp(2))
+                letterSpacing = 0.08f
+                setTag(R.id.piper_preserve_modern_colors, true)
+                contentDescription = "Mã xác minh, chạm để sao chép"
                 setOnClickListener { copyCode(token.id) }
             }
             codeViews[token.id] = code
-            card.addView(code)
-            val countdown = text("", 12, false)
+            codePanel.addView(code)
+            val countdown = text("", 11, false).apply { gravity = Gravity.CENTER }
             countdownViews[token.id] = countdown
-            card.addView(countdown)
+            codePanel.addView(countdown)
+            content.addView(codePanel)
             if (token.type == "HOTP" || !token.autoRefresh) {
                 val refresh = MaterialButton(this).apply {
-                    text = if (token.type == "HOTP") "Tạo mã HOTP kế tiếp" else "⟳  Làm mới mã"
+                    text = if (token.type == "HOTP") "Tạo mã kế tiếp" else "Làm mới mã"
                     isAllCaps = false
                     setOnClickListener {
                         if (token.type == "HOTP") generateHotpNext(token, this)
@@ -743,10 +759,11 @@ class BetaTwoFactorActivity : AppCompatActivity() {
                         }
                     }
                 }
-                card.addView(refresh)
+                content.addView(refresh, LinearLayout.LayoutParams(-1, dp(44)).apply {
+                    topMargin = dp(10)
+                })
             }
-            val remove = MaterialButton(this).apply { text = "Xóa tài khoản"; isAllCaps = false; setOnClickListener { deleteToken(token) } }
-            card.addView(remove)
+            PiperModernUi.apply(card)
             list.addView(card)
         }
         refreshTokenCodes()
@@ -820,7 +837,10 @@ class BetaTwoFactorActivity : AppCompatActivity() {
     private fun text(value: String, size: Int, bold: Boolean, top: Int = 0) = TextView(this).apply {
         text = value
         textSize = size.toFloat()
-        setTextColor(Color.WHITE)
+        setTextColor(
+            if (bold) PiperModernUi.textColor(this@BetaTwoFactorActivity)
+            else PiperModernUi.secondaryTextColor(this@BetaTwoFactorActivity)
+        )
         if (bold) setTypeface(typeface, Typeface.BOLD)
         if (top > 0) setPadding(0, dp(top), 0, 0)
     }
@@ -830,5 +850,6 @@ class BetaTwoFactorActivity : AppCompatActivity() {
         cornerRadius = dp(radius).toFloat()
         setStroke(dp(1), stroke)
     }
+
     private fun dp(value: Int) = (value * resources.displayMetrics.density).toInt()
 }

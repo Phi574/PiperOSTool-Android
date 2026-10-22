@@ -36,6 +36,7 @@ class PiperMediaGalleryActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        PiperModernUi.watch(this)
         WindowCompat.setDecorFitsSystemWindows(window, false)
         setContentView(R.layout.activity_piper_media_gallery)
         root = findViewById(R.id.mediaGalleryRoot)

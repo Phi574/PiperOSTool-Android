@@ -16,27 +16,28 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.provider.OpenableColumns
-import android.provider.Settings
 import android.view.Gravity
-import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
-import android.widget.ProgressBar
-import android.widget.ScrollView
+import android.widget.BaseAdapter
+import android.widget.EditText
+import android.widget.ListView
 import android.widget.Switch
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-import androidx.documentfile.provider.DocumentFile
+import android.text.Editable
+import android.text.TextWatcher
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.textfield.TextInputEditText
@@ -44,6 +45,10 @@ import com.google.android.material.textfield.TextInputLayout
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.MultiFormatWriter
 import com.google.zxing.common.BitMatrix
+import androidx.media3.common.MediaItem
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.ui.PlayerView
+import com.bumptech.glide.Glide
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
 import org.json.JSONArray
@@ -67,7 +72,9 @@ import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 import java.security.SecureRandom
+import java.text.DateFormat
 import java.util.Collections
+import java.util.Date
 import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.CountDownLatch
@@ -77,10 +84,16 @@ import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.atomic.AtomicBoolean
 
 class PiperDataTransferActivity : AppCompatActivity() {
-    private data class SelectedFile(val uri: Uri, val name: String, val size: Long, val mime: String)
+    private data class SelectedFile(
+        val uri: Uri,
+        val name: String,
+        val size: Long,
+        val mime: String,
+        val sourceAppPackage: String? = null
+    )
     private data class RemoteEndpoint(val host: String, val port: Int, val token: ByteArray?, val label: String)
-    private data class StagedFile(val file: File, val name: String, val mime: String)
     private data class InstalledBaseApk(val label: String, val packageName: String, val sourcePath: String)
+    private class PeerCancelledException(message: String) : java.io.IOException(message)
 
     private companion object {
         const val DISCOVERY_PORT = 37684
@@ -94,6 +107,7 @@ class PiperDataTransferActivity : AppCompatActivity() {
         const val TRANSFER_DONE = 7
         const val TRANSFER_ACK = 8
         const val TRANSFER_ERROR = 9
+        const val TRANSFER_CANCEL = 10
         const val MAX_FILES = 500
         const val MAX_TOTAL_BYTES = 20L * 1024L * 1024L * 1024L
         const val NORMAL_CHUNK_BYTES = 64 * 1024
@@ -102,6 +116,7 @@ class PiperDataTransferActivity : AppCompatActivity() {
     }
 
     private enum class FlowRole { SEND, RECEIVE }
+    private enum class ActionButtonStyle { PRIMARY, CONTINUE, BACK, DESTRUCTIVE }
 
     private val io = Executors.newCachedThreadPool()
     private val mainHandler = Handler(Looper.getMainLooper())
@@ -112,17 +127,11 @@ class PiperDataTransferActivity : AppCompatActivity() {
     private var hotspotReservation: WifiManager.LocalOnlyHotspotReservation? = null
     private var activeChannel: PiperDataTransferProtocol.SecureChannel? = null
     private var chosenFiles: List<SelectedFile> = emptyList()
-    private var receivedRoot: File? = null
-    private var receivedFiles: List<StagedFile> = emptyList()
-    private var awaitingInstall: List<File> = emptyList()
-    private var installIndex = 0
-    private var installingPackage: String? = null
     private var pendingNetworkAction: (() -> Unit)? = null
-    private var originalBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
-    private var ambientRunnable: Runnable? = null
     private var transferInProgress = false
     private var flowRole: FlowRole? = null
-    private var lastProgressUpdateAt = 0L
+    @Volatile private var activeProgressId: String? = null
+    private val cancellationStarted = AtomicBoolean(false)
     private val senderApproval = AtomicReference<CountDownLatch?>(null)
     private val approvedFiles = AtomicReference<List<SelectedFile>?>(null)
     private val turboEnabled = AtomicBoolean(false)
@@ -138,8 +147,6 @@ class PiperDataTransferActivity : AppCompatActivity() {
     private lateinit var receiverControls: LinearLayout
     private lateinit var pairingPanel: LinearLayout
     private lateinit var status: TextView
-    private lateinit var progress: ProgressBar
-    private lateinit var progressLabel: TextView
     private lateinit var qrImage: ImageView
     private lateinit var endpointLabel: TextView
     private lateinit var pairingCode: TextView
@@ -150,11 +157,13 @@ class PiperDataTransferActivity : AppCompatActivity() {
     private lateinit var sessionCodeInput: TextInputEditText
     private lateinit var sessionCodeLayout: TextInputLayout
     private lateinit var selectedFilesLabel: TextView
+    private lateinit var selectedFilesList: ListView
+    private lateinit var selectedFilesCard: MaterialCardView
     private lateinit var startTransferButton: MaterialButton
+    private lateinit var currentProgressButton: MaterialButton
+    private lateinit var deleteProgressButton: MaterialButton
+    private lateinit var historyButton: MaterialButton
     private lateinit var turboSwitch: Switch
-    private lateinit var receivedCard: LinearLayout
-    private lateinit var ambientView: TextView
-
     private val filesPicker = registerForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
         if (uris.isNullOrEmpty()) return@registerForActivityResult
         val prepared = runCatching { uris.map { uri -> selectedFile(uri) } }
@@ -162,15 +171,26 @@ class PiperDataTransferActivity : AppCompatActivity() {
             showStatus("Không đọc được danh sách tệp đã chọn: ${prepared.exceptionOrNull()?.localizedMessage}")
             return@registerForActivityResult
         }
-        chosenFiles = prepared.getOrThrow()
-        val total = knownTotalBytes(chosenFiles.map { it.size })
-        if (::selectedFilesLabel.isInitialized) selectedFilesLabel.text = "Đã chọn ${chosenFiles.size} mục • ${formatBytes(total)}"
-        if (::startTransferButton.isInitialized) startTransferButton.isEnabled = chosenFiles.isNotEmpty()
-        showStatus("Đã chọn ${chosenFiles.size} mục • ${formatBytes(total)}")
+        appendChosenFiles(prepared.getOrThrow())
     }
 
-    private val folderPicker = registerForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
-        if (uri != null) importStagedFiles(uri)
+    private val mediaPicker = registerForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(500)) { uris ->
+        if (uris.isNullOrEmpty()) return@registerForActivityResult
+        val prepared = runCatching { uris.map { uri -> selectedFile(uri) } }
+        if (prepared.isFailure) {
+            showStatus("Không đọc được ảnh/video đã chọn: ${prepared.exceptionOrNull()?.localizedMessage}")
+            return@registerForActivityResult
+        }
+        appendChosenFiles(prepared.getOrThrow())
+    }
+
+    private fun appendChosenFiles(items: List<SelectedFile>) {
+        val merged = (chosenFiles + items).distinctBy { it.uri.toString() }
+        val exceeded = merged.size > MAX_FILES
+        chosenFiles = merged.take(MAX_FILES)
+        refreshChosenSelection()
+        val total = knownTotalBytes(chosenFiles.map { it.size })
+        showStatus(if (exceeded) "Đã đạt giới hạn $MAX_FILES mục. Các mục đầu tiên đã được giữ lại." else "Đã chọn ${chosenFiles.size} mục • ${formatBytes(total)}")
     }
 
     private val qrScanner = registerForActivityResult(ScanContract()) { result ->
@@ -194,57 +214,38 @@ class PiperDataTransferActivity : AppCompatActivity() {
         if (granted) requestLocalNetwork { startHotspot() } else showStatus("Android cần quyền vị trí khi tạo điểm phát trên phiên bản này.")
     }
 
-    private val installSettings = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-        if (packageManager.canRequestPackageInstalls()) installNextApk()
-        else showStatus("Chưa cấp quyền cài APK từ PiperOS Tool.")
-    }
-
-    private val installLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-        val expectedPackage = installingPackage
-        val candidate = awaitingInstall.getOrNull(installIndex)
-        val requiredVersion = candidate?.let { packageManager.getPackageArchiveInfo(it.absolutePath, 0)?.longVersionCode } ?: 0L
-        val installed = expectedPackage?.let { packageName ->
-            runCatching { packageManager.getPackageInfo(packageName, 0).longVersionCode >= requiredVersion }.getOrDefault(false)
-        } == true
-        if (!installed) {
-            showStatus("Chưa xác nhận cài ${candidate?.name ?: "APK"}. Bạn có thể tiếp tục cài thủ công từng tệp.")
-            installIndex++
-            installNextApk()
-            return@registerForActivityResult
-        }
-        installIndex++
-        installNextApk()
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        originalBrightness = window.attributes.screenBrightness
         buildUi()
         PiperModernUi.watch(this)
         loadCompletedSession()
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                if (serverSocket != null || transferInProgress) {
+                if (activeChannel != null || transferInProgress && flowRole == FlowRole.SEND) {
                     PiperDialog.showConfirm(
                         this@PiperDataTransferActivity,
                         "Dừng phiên chuyển dữ liệu?",
-                        "Phiên đang mở sẽ bị ngắt. Các tệp chưa hoàn tất sẽ không được nhập vào máy.",
-                        "Dừng phiên"
-                    ) { stopSession(); finish() }
+                        "Phiên sẽ bị hủy ở cả hai thiết bị. Sau đó bạn có thể quay lại chọn vai trò.",
+                        "Hủy phiên",
+                        destructive = true
+                    ) { cancelCurrentSession("Bạn đã hủy phiên chuyển dữ liệu.") }
+                } else if (flowRole != null || serverSocket != null) {
+                    resetToRoleSelection()
                 } else finish()
             }
         })
-    }
-
-    override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
-        if (ev.actionMasked == MotionEvent.ACTION_DOWN && transferInProgress) restoreBrightScreen()
-        return super.dispatchTouchEvent(ev)
     }
 
     override fun onDestroy() {
         stopSession()
         io.shutdownNow()
         super.onDestroy()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (::currentProgressButton.isInitialized) refreshProgressActions()
     }
 
     private fun buildUi() {
@@ -257,6 +258,7 @@ class PiperDataTransferActivity : AppCompatActivity() {
             strokeColor = android.content.res.ColorStateList.valueOf(PiperModernUi.borderColor(this@PiperDataTransferActivity))
             backgroundTintList = android.content.res.ColorStateList.valueOf(PiperModernUi.surfaceColor(this@PiperDataTransferActivity))
             setTextColor(PiperModernUi.textColor(this@PiperDataTransferActivity))
+            styleActionButton(this, ActionButtonStyle.BACK)
             setOnClickListener { onBackPressedDispatcher.onBackPressed() }
         }
         root.findViewById<TextView>(R.id.pdtTitle).setTextColor(PiperModernUi.textColor(this))
@@ -281,6 +283,26 @@ class PiperDataTransferActivity : AppCompatActivity() {
             setTextColor(PiperModernUi.accentColor(this@PiperDataTransferActivity))
         }
         container.addView(card(status), bottom(12))
+
+        val progressActions = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setPadding(dp(10), dp(8), dp(10), dp(8))
+            currentProgressButton = button("Mở tiến trình hiện tại") { openCurrentProgress() }.apply {
+                visibility = View.GONE
+                styleActionButton(this, ActionButtonStyle.PRIMARY)
+            }
+            historyButton = button("Lịch sử truyền") { showTransferHistory() }.apply {
+                styleActionButton(this, ActionButtonStyle.BACK)
+            }
+            addView(currentProgressButton, LinearLayout.LayoutParams(0, -2, 1f).apply { marginEnd = dp(6) })
+            addView(historyButton, LinearLayout.LayoutParams(0, -2, 1f).apply { marginStart = dp(6) })
+        }
+        container.addView(card(progressActions), bottom(12))
+        deleteProgressButton = button("Xóa tiến trình gần nhất") { confirmDeleteLatestProgress() }.apply {
+            visibility = View.GONE
+            styleActionButton(this, ActionButtonStyle.DESTRUCTIVE)
+        }
+        container.addView(deleteProgressButton, bottom(12))
 
         rolePanel = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(16), dp(16), dp(16), dp(16)) }
         rolePanel.addView(sectionTitle("Bước 1 · Chọn vai trò"), bottom(5))
@@ -318,7 +340,9 @@ class PiperDataTransferActivity : AppCompatActivity() {
         this.inviteCodeCard = card(inviteCodeCard).apply { visibility = View.GONE }
         receivePanel.addView(this.inviteCodeCard, bottom(10))
         receivePanel.addView(text("Thiết bị gửi có thể quét QR, tìm máy cùng mạng hoặc nhập IP và mã phiên.", 12f, false), bottom(10))
-        receivePanel.addView(button("Quay lại chọn vai trò") { resetToRoleSelection() })
+        receivePanel.addView(button("Quay lại chọn vai trò") { resetToRoleSelection() }.apply {
+            styleActionButton(this, ActionButtonStyle.BACK)
+        })
         container.addView(card(receivePanel), bottom(12))
 
         sendPanel = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; visibility = View.GONE; setPadding(dp(16), dp(16), dp(16), dp(16)) }
@@ -356,7 +380,9 @@ class PiperDataTransferActivity : AppCompatActivity() {
             if (endpoint == null) PiperDialog.showMessage(this, "IP chưa hợp lệ", "Nhập IP:port đang hiển thị trên thiết bị nhận.")
             else if (code != null) requestLocalNetwork { connect(endpoint, requireManualCode = true, invitationCode = code) }
         }, bottom(10))
-        sendPanel.addView(button("Quay lại chọn vai trò") { resetToRoleSelection() })
+        sendPanel.addView(button("Quay lại chọn vai trò") { resetToRoleSelection() }.apply {
+            styleActionButton(this, ActionButtonStyle.BACK)
+        })
         container.addView(card(sendPanel), bottom(12))
 
         qrImage = ImageView(this).apply {
@@ -381,7 +407,9 @@ class PiperDataTransferActivity : AppCompatActivity() {
             setPadding(dp(8), dp(9), dp(8), dp(9))
         }
         pairingPanel.addView(pairingCode, bottom(7))
-        confirmButton = button("Mã trùng khớp · Xác nhận thiết bị") { }
+        confirmButton = button("Mã trùng khớp · Xác nhận thiết bị") { }.apply {
+            styleActionButton(this, ActionButtonStyle.CONTINUE)
+        }
         pairingPanel.addView(confirmButton, bottom(6))
         container.addView(card(pairingPanel), bottom(12))
 
@@ -390,11 +418,27 @@ class PiperDataTransferActivity : AppCompatActivity() {
         senderControls.addView(sectionTitle("Bước 3 · Chọn dữ liệu"), bottom(5))
         senderControls.addView(text("Chọn tệp sau khi đã xác minh thiết bị. Android yêu cầu bạn tự chọn nội dung.", 13f, false), bottom(10))
         senderControls.addView(button("Chọn tệp hoặc APK") { filesPicker.launch(arrayOf("*/*")) }, bottom(8))
-        senderControls.addView(button("Chọn ảnh và video") { filesPicker.launch(arrayOf("image/*", "video/*")) }, bottom(8))
+        senderControls.addView(button("Chọn ảnh và video") {
+            mediaPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo))
+        }, bottom(8))
         senderControls.addView(button("Chọn ứng dụng đã cài dưới dạng APK") { chooseInstalledApplication() }, bottom(8))
         selectedFilesLabel = text("Chưa chọn dữ liệu", 12f, false).apply { setPadding(dp(12), dp(11), dp(12), dp(11)) }
         senderControls.addView(card(selectedFilesLabel), bottom(10))
-        startTransferButton = button("Bắt đầu chuyển dữ liệu") { approveOutgoingTransfer() }.apply { isEnabled = false }
+        senderControls.addView(sectionTitle("Danh sách trước khi gửi"), bottom(5))
+        senderControls.addView(text("Chạm Xem trước để kiểm tra nội dung hoặc Xóa để bỏ từng mục.", 12f, false), bottom(7))
+        selectedFilesList = ListView(this).apply {
+            divider = android.graphics.drawable.ColorDrawable(PiperModernUi.borderColor(this@PiperDataTransferActivity))
+            dividerHeight = dp(1)
+            isNestedScrollingEnabled = true
+            adapter = selectedFilesAdapter()
+        }
+        selectedFilesCard = card(selectedFilesList).apply { selectedFilesList.layoutParams = FrameLayout.LayoutParams(-1, dp(220)) }
+        senderControls.addView(selectedFilesCard, bottom(10))
+        selectedFilesCard.visibility = View.GONE
+        startTransferButton = button("Bắt đầu chuyển dữ liệu") { approveOutgoingTransfer() }.apply {
+            isEnabled = false
+            styleActionButton(this, ActionButtonStyle.CONTINUE)
+        }
         senderControls.addView(startTransferButton)
         pairedPanel.addView(senderControls)
 
@@ -415,7 +459,9 @@ class PiperDataTransferActivity : AppCompatActivity() {
             addView(turboSwitch)
             addView(text("Tăng kích thước bộ đệm và tối ưu nhịp truyền ở cả hai đầu. Mã hóa luôn được bật.", 12f, false), top(4))
         }), bottom(10))
-        pairedPanel.addView(button("Hủy phiên kết nối") { stopSession(); resetToRoleSelection() })
+        pairedPanel.addView(button("Hủy phiên kết nối") { confirmCancelSession() }.apply {
+            styleActionButton(this, ActionButtonStyle.DESTRUCTIVE)
+        })
         container.addView(card(pairedPanel), bottom(12))
 
         container.addView(card(LinearLayout(this).apply {
@@ -425,23 +471,9 @@ class PiperDataTransferActivity : AppCompatActivity() {
             addView(text("APK, tệp, ảnh và video do bạn chọn. Danh bạ, tin nhắn, lịch, mạng Wi‑Fi đã lưu và dữ liệu riêng của ứng dụng khác chưa thể nhập tự động do giới hạn Android.", 12f, false), top(5))
         }), bottom(12))
 
-        progress = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply { visibility = View.GONE }
-        progressLabel = text("", 12f, false).apply { visibility = View.GONE; setPadding(dp(4), dp(5), dp(4), dp(5)) }
-        container.addView(progress, bottom(3))
-        container.addView(progressLabel, bottom(10))
-        receivedCard = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; visibility = View.GONE; setPadding(dp(15), dp(14), dp(15), dp(14)) }
-        container.addView(card(receivedCard), bottom(12))
-
-        ambientView = text("", 14f, true).apply {
-            gravity = Gravity.CENTER
-            setBackgroundColor(Color.rgb(5, 8, 13))
-            setTextColor(Color.WHITE)
-            visibility = View.GONE
-        }
-        root.addView(ambientView, FrameLayout.LayoutParams(-1, -1))
-        ambientView.setOnClickListener { restoreBrightScreen() }
     }
     private fun selectRole(role: FlowRole) {
+        cancellationStarted.set(false)
         flowRole = role
         rolePanel.visibility = View.GONE
         receivePanel.visibility = if (role == FlowRole.RECEIVE) View.VISIBLE else View.GONE
@@ -457,7 +489,10 @@ class PiperDataTransferActivity : AppCompatActivity() {
         chosenFiles = emptyList()
         approvedFiles.set(null)
         selectedFilesLabel.text = "Chưa chọn dữ liệu"
+        if (::selectedFilesList.isInitialized) (selectedFilesList.adapter as? BaseAdapter)?.notifyDataSetChanged()
+        if (::selectedFilesCard.isInitialized) selectedFilesCard.visibility = View.GONE
         startTransferButton.isEnabled = false
+        styleActionButton(startTransferButton, ActionButtonStyle.CONTINUE)
         rolePanel.visibility = View.VISIBLE
         receivePanel.visibility = View.GONE
         sendPanel.visibility = View.GONE
@@ -470,7 +505,6 @@ class PiperDataTransferActivity : AppCompatActivity() {
         inviteCodeLabel.visibility = View.GONE
         activeInviteCode = null
         sessionCodeInput.text?.clear()
-        receivedCard.visibility = if (receivedFiles.isEmpty()) View.GONE else View.VISIBLE
         showStatus("Sẵn sàng")
     }
 
@@ -486,6 +520,7 @@ class PiperDataTransferActivity : AppCompatActivity() {
             if (role == FlowRole.SEND) {
                 selectedFilesLabel.text = if (chosenFiles.isEmpty()) "Chưa chọn dữ liệu" else "Đã chọn ${chosenFiles.size} mục • ${formatBytes(knownTotalBytes(chosenFiles.map { it.size }))}"
                 startTransferButton.isEnabled = chosenFiles.isNotEmpty()
+                styleActionButton(startTransferButton, ActionButtonStyle.CONTINUE)
                 showStatus("Đã xác minh thiết bị. Hãy chọn nội dung muốn gửi.")
             } else {
                 showStatus("Đã xác minh thiết bị. Đang chờ bên gửi chọn dữ liệu…")
@@ -508,6 +543,7 @@ class PiperDataTransferActivity : AppCompatActivity() {
         }
         approvedFiles.set(files)
         startTransferButton.isEnabled = false
+        styleActionButton(startTransferButton, ActionButtonStyle.CONTINUE)
         showStatus("Đang bắt đầu chuyển ${files.size} mục…")
         senderApproval.getAndSet(null)?.countDown()
     }
@@ -584,6 +620,7 @@ class PiperDataTransferActivity : AppCompatActivity() {
     }
 
     private fun startReceiver(useQrToken: Boolean, keepHotspot: Boolean = false) {
+        cancellationStarted.set(false)
         flowRole = FlowRole.RECEIVE
         rolePanel.visibility = View.GONE
         sendPanel.visibility = View.GONE
@@ -627,8 +664,6 @@ class PiperDataTransferActivity : AppCompatActivity() {
             showStatus(if (activeInviteCode == null) "Mã QR đã sẵn sàng. Đang chờ thiết bị gửi kết nối…" else "Mã phiên đã sẵn sàng. Nhập mã trên thiết bị gửi để kết nối.")
             startDiscoveryResponder(socket.localPort)
             transferInProgress = true
-            window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-            scheduleAmbientMode()
             io.execute { acceptAndReceive(socket, token) }
         } catch (error: Exception) {
             showStatus("Không mở được phiên nhận: ${error.localizedMessage ?: error.javaClass.simpleName}")
@@ -638,6 +673,7 @@ class PiperDataTransferActivity : AppCompatActivity() {
     private fun acceptAndReceive(server: ServerSocket, token: ByteArray?) {
         try {
             while (!server.isClosed && !isFinishing) {
+                var paired = false
                 try {
                     val socket = server.accept()
                     applySocketProfile(socket)
@@ -649,10 +685,19 @@ class PiperDataTransferActivity : AppCompatActivity() {
                     val channel = PiperDataTransferProtocol.server(socket, token)
                     activeChannel = channel
                     if (!confirmPeer(channel, isSender = false, requireManualCode = false)) throw SecurityException("Thiết bị chưa xác nhận ghép nối")
+                    paired = true
                     showPairedUi(FlowRole.RECEIVE)
                     receiveFiles(channel)
                     return
                 } catch (error: Exception) {
+                    if (paired || error is PeerCancelledException || cancellationStarted.get()) {
+                        runOnUiThread {
+                            pairingPanel.visibility = View.GONE
+                            pairedPanel.visibility = View.GONE
+                            showStatus(if (error is PeerCancelledException) "Thiết bị kia đã hủy phiên chuyển dữ liệu." else "Phiên chuyển dữ liệu đã dừng: ${error.localizedMessage ?: error.javaClass.simpleName}")
+                        }
+                        break
+                    }
                     if (!server.isClosed && !isFinishing) {
                         runOnUiThread {
                             pairingPanel.visibility = View.GONE
@@ -676,7 +721,6 @@ class PiperDataTransferActivity : AppCompatActivity() {
             runOnUiThread {
                 if (::inviteCodeCard.isInitialized) inviteCodeCard.visibility = View.GONE
                 window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-                restoreBrightScreen()
             }
         }
     }
@@ -729,6 +773,7 @@ class PiperDataTransferActivity : AppCompatActivity() {
             PiperDialog.showMessage(this, "Thiếu mã phiên", "Nhập mã 6 số đang hiển thị trên thiết bị nhận rồi thử lại.")
             return
         }
+        cancellationStarted.set(false)
         flowRole = FlowRole.SEND
         rolePanel.visibility = View.GONE
         receivePanel.visibility = View.GONE
@@ -738,8 +783,6 @@ class PiperDataTransferActivity : AppCompatActivity() {
         requestLocalNetwork {
             stopNetworkSessionOnly()
             transferInProgress = true
-            window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-            scheduleAmbientMode()
             showStatus("Đang kết nối với ${endpoint.label}…")
             io.execute {
                 try {
@@ -759,7 +802,7 @@ class PiperDataTransferActivity : AppCompatActivity() {
                         if (serverSocket == null) sendPanel.visibility = View.VISIBLE
                         pairedPanel.visibility = View.GONE
                         pairingPanel.visibility = View.GONE
-                        showStatus("Không thể gửi dữ liệu: ${error.localizedMessage ?: error.javaClass.simpleName}")
+                        showStatus(if (error is PeerCancelledException) "Thiết bị kia đã hủy phiên chuyển dữ liệu." else "Không thể gửi dữ liệu: ${error.localizedMessage ?: error.javaClass.simpleName}")
                     }
                 } finally {
                     activeChannel?.close()
@@ -767,7 +810,7 @@ class PiperDataTransferActivity : AppCompatActivity() {
                     runCatching { activeSocket?.close() }
                     activeSocket = null
                     transferInProgress = false
-                    runOnUiThread { window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON); restoreBrightScreen() }
+                    runOnUiThread { window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) }
                 }
             }
         }
@@ -795,10 +838,11 @@ class PiperDataTransferActivity : AppCompatActivity() {
         }
         val locallyApproved = latch.await(120, TimeUnit.SECONDS)
         approval.compareAndSet(latch, null)
+        if (cancellationStarted.get()) throw PeerCancelledException("Phiên đã bị hủy")
         if (!locallyApproved) return false
         channel.send(PAIR_CONFIRM)
         showStatus("Đã xác nhận phía này; đang chờ xác nhận trên thiết bị còn lại…")
-        val peer = channel.receive()
+        val peer = receivePeerFrame(channel)
         if (peer.type != PAIR_CONFIRM) throw SecurityException("Peer did not confirm pairing")
         runOnUiThread {
             pairingPanel.visibility = View.GONE
@@ -807,46 +851,84 @@ class PiperDataTransferActivity : AppCompatActivity() {
         return true
     }
 
+    private fun receivePeerFrame(channel: PiperDataTransferProtocol.SecureChannel): PiperDataTransferProtocol.Frame {
+        val frame = channel.receive()
+        when (frame.type) {
+            TRANSFER_CANCEL -> throw PeerCancelledException("Thiết bị kia đã hủy phiên chuyển dữ liệu")
+            TRANSFER_ERROR -> throw java.io.IOException(String(frame.payload, StandardCharsets.UTF_8).ifBlank { "Thiết bị nhận từ chối dữ liệu" })
+        }
+        return frame
+    }
+
     private fun sendFiles(channel: PiperDataTransferProtocol.SecureChannel, files: List<SelectedFile>, turbo: Boolean) {
         if (files.size !in 1..MAX_FILES) throw IllegalArgumentException("Số lượng tệp vượt giới hạn phiên")
         val total = knownTotalBytes(files.map { it.size })
         if (total > MAX_TOTAL_BYTES) throw IllegalArgumentException("Tổng dữ liệu vượt giới hạn 20 GB")
+        val progressTotal = if (files.any { it.size < 0L }) -1L else total
         val array = JSONArray()
         files.forEach { file ->
             array.put(JSONObject().put("name", file.name).put("size", file.size).put("mime", file.mime))
         }
         channel.send(MANIFEST, JSONObject().put("files", array).put("turbo", turbo).toString().toByteArray(StandardCharsets.UTF_8))
-        val response = channel.receive()
+        val response = receivePeerFrame(channel)
         if (response.type == TRANSFER_ERROR) throw IllegalStateException(String(response.payload, StandardCharsets.UTF_8))
         if (response.type != READY) throw SecurityException("Receiver rejected transfer manifest")
         val negotiatedTurbo = turbo && runCatching { JSONObject(String(response.payload, StandardCharsets.UTF_8)).optBoolean("turbo") }.getOrDefault(false)
         val chunkSize = if (negotiatedTurbo) TURBO_CHUNK_BYTES else NORMAL_CHUNK_BYTES
-        var sent = 0L
-        files.forEachIndexed { index, item ->
-            channel.send(FILE_START, ByteBuffer.allocate(4).putInt(index).array())
-            contentResolver.openInputStream(item.uri)?.use { raw ->
-                BufferedInputStream(raw, if (negotiatedTurbo) TURBO_CHUNK_BYTES else NORMAL_CHUNK_BYTES).use { input ->
-                    val buffer = ByteArray(chunkSize)
-                    while (true) {
-                        val read = input.read(buffer)
-                        if (read < 0) break
-                        val payload = ByteBuffer.allocate(4 + read).putInt(index).put(buffer, 0, read).array()
-                        channel.send(FILE_CHUNK, payload)
-                        sent += read
-                        updateProgress(sent, total, "Đang gửi ${index + 1}/${files.size}: ${item.name}")
-                    }
-                }
-            } ?: throw IllegalStateException("Không đọc được ${item.name}")
-            channel.send(FILE_END, ByteBuffer.allocate(4).putInt(index).array())
+        val progressId = UUID.randomUUID().toString()
+        val progressItems = files.map { PiperDataTransferProgressState.Item(it.name, it.mime, it.size) }
+        PiperDataTransferProgressState.begin(progressId, PiperDataTransferProgressActivity.ROLE_SEND, progressItems, progressTotal)
+        activeProgressId = progressId
+        getSharedPreferences("piper_data_transfer_progress", MODE_PRIVATE).edit().putString("active_session_id", progressId).apply()
+        PiperDataTransferProgressState.setCancelHandler(progressId) {
+            cancelCurrentSession("Bạn đã hủy phiên chuyển dữ liệu.", progressId)
         }
-        channel.send(TRANSFER_DONE)
-        val completed = channel.receive()
-        if (completed.type != TRANSFER_ACK) throw SecurityException("Receiver did not confirm completed transfer")
-        showStatus("Đã gửi xong ${files.size} mục. Thiết bị nhận mới có thể nhập dữ liệu.")
+        refreshProgressActions()
+        runOnUiThread { startActivity(PiperDataTransferProgressActivity.createIntent(this, progressId, PiperDataTransferProgressActivity.ROLE_SEND, progressItems)) }
+        var sent = 0L
+        try {
+            files.forEachIndexed { index, item ->
+                channel.send(FILE_START, ByteBuffer.allocate(4).putInt(index).array())
+                var sentItem = 0L
+                PiperDataTransferProgressState.update(progressId, index, sentItem, sent, progressTotal)
+                contentResolver.openInputStream(item.uri)?.use { raw ->
+                    BufferedInputStream(raw, if (negotiatedTurbo) TURBO_CHUNK_BYTES else NORMAL_CHUNK_BYTES).use { input ->
+                        val buffer = ByteArray(chunkSize)
+                        while (true) {
+                            val read = input.read(buffer)
+                            if (read < 0) break
+                            val payload = ByteBuffer.allocate(4 + read).putInt(index).put(buffer, 0, read).array()
+                            channel.send(FILE_CHUNK, payload)
+                            sent += read
+                            sentItem += read
+                            if (sent > MAX_TOTAL_BYTES) throw IllegalArgumentException("Tổng dữ liệu vượt giới hạn 20 GB")
+                            PiperDataTransferProgressState.update(progressId, index, sentItem, sent, progressTotal)
+                        }
+                    }
+                } ?: throw IllegalStateException("Không đọc được ${item.name}")
+                channel.send(FILE_END, ByteBuffer.allocate(4).putInt(index).array())
+                PiperDataTransferProgressState.update(progressId, index + 1, 0, sent, progressTotal)
+            }
+            PiperDataTransferProgressState.update(progressId, files.size, 0, sent, progressTotal)
+            PiperDataTransferProgressState.awaitingConfirmation(progressId)
+            channel.send(TRANSFER_DONE)
+            channel.setReadTimeout(30_000)
+            val completed = receivePeerFrame(channel)
+            if (completed.type != TRANSFER_ACK) throw SecurityException("Receiver did not confirm completed transfer")
+            PiperDataTransferProgressState.complete(progressId, sent, progressTotal)
+            recordProgress(progressId)
+            refreshProgressActions()
+            showStatus("Đã gửi xong ${files.size} mục. Thiết bị nhận mới có thể nhập dữ liệu.")
+        } catch (error: Exception) {
+            PiperDataTransferProgressState.fail(progressId, error.localizedMessage ?: "Kết nối bị gián đoạn")
+            recordProgress(progressId)
+            refreshProgressActions()
+            throw error
+        }
     }
 
     private fun receiveFiles(channel: PiperDataTransferProtocol.SecureChannel) {
-        val manifestFrame = channel.receive()
+        val manifestFrame = receivePeerFrame(channel)
         if (manifestFrame.type != MANIFEST) throw SecurityException("Missing file manifest")
         val json = JSONObject(String(manifestFrame.payload, StandardCharsets.UTF_8))
         val negotiatedTurbo = json.optBoolean("turbo", false) && turboEnabled.get()
@@ -864,6 +946,7 @@ class PiperDataTransferActivity : AppCompatActivity() {
             channel.send(TRANSFER_ERROR, "Tổng dữ liệu vượt giới hạn 20 GB".toByteArray())
             throw IllegalArgumentException("Tổng dữ liệu vượt giới hạn 20 GB")
         }
+        val progressTotal = if (manifest.any { it.second < 0L }) -1L else total
         val free = filesDir.usableSpace
         if (total > 0 && total > free) {
             channel.send(TRANSFER_ERROR, "Dung lượng trống không đủ trên thiết bị nhận".toByteArray())
@@ -871,23 +954,35 @@ class PiperDataTransferActivity : AppCompatActivity() {
         }
         val session = File(filesDir, "piper-data-transfer/incoming/${System.currentTimeMillis()}-${UUID.randomUUID().toString().take(8)}")
         if (!session.mkdirs()) throw IllegalStateException("Không tạo được vùng lưu tạm")
+        var progressId: String? = null
         try {
+            val id = UUID.randomUUID().toString()
+            progressId = id
+            val progressItems = manifest.map { (name, size, mime) -> PiperDataTransferProgressState.Item(name, mime, size) }
+            PiperDataTransferProgressState.begin(id, PiperDataTransferProgressActivity.ROLE_RECEIVE, progressItems, progressTotal)
+            activeProgressId = id
+            getSharedPreferences("piper_data_transfer_progress", MODE_PRIVATE).edit().putString("active_session_id", id).apply()
+            PiperDataTransferProgressState.setCancelHandler(id) {
+                cancelCurrentSession("Thiết bị này đã hủy phiên chuyển dữ liệu.", id)
+            }
+            refreshProgressActions()
+            runOnUiThread { startActivity(PiperDataTransferProgressActivity.createIntent(this, id, PiperDataTransferProgressActivity.ROLE_RECEIVE, progressItems)) }
             channel.send(READY, JSONObject().put("turbo", negotiatedTurbo).toString().toByteArray(StandardCharsets.UTF_8))
             var completedBytes = 0L
-            val staged = mutableListOf<StagedFile>()
             manifest.forEachIndexed { index, (name, expectedSize, mime) ->
-                val start = channel.receive()
+                val start = receivePeerFrame(channel)
                 if (start.type != FILE_START || start.payload.size != 4 || ByteBuffer.wrap(start.payload).int != index) {
                     throw SecurityException("Invalid incoming file order")
                 }
                 val file = File(session, "${index.toString().padStart(4, '0')}-$name")
                 var written = 0L
+                PiperDataTransferProgressState.update(id, index, 0, completedBytes, progressTotal)
                 BufferedOutputStream(
                     FileOutputStream(file),
                     if (negotiatedTurbo) TURBO_CHUNK_BYTES else NORMAL_CHUNK_BYTES
                 ).use { output ->
                     while (true) {
-                        val frame = channel.receive()
+                        val frame = receivePeerFrame(channel)
                         if (frame.type == FILE_END) {
                             if (frame.payload.size != 4 || ByteBuffer.wrap(frame.payload).int != index) throw SecurityException("Invalid file end marker")
                             break
@@ -900,140 +995,37 @@ class PiperDataTransferActivity : AppCompatActivity() {
                         completedBytes += bytes.size
                         if (completedBytes > MAX_TOTAL_BYTES || (expectedSize >= 0 && written > expectedSize)) throw SecurityException("File size exceeded manifest")
                         output.write(bytes)
-                        updateProgress(completedBytes, total, "Đang nhận ${index + 1}/${manifest.size}: $name")
+                        PiperDataTransferProgressState.update(id, index, written, completedBytes, progressTotal)
                     }
                 }
                 if (expectedSize >= 0 && written != expectedSize) throw SecurityException("File length does not match manifest")
-                staged += StagedFile(file, name, mime)
+                PiperDataTransferProgressState.update(id, index + 1, 0, completedBytes, progressTotal)
             }
-            val done = channel.receive()
+            val done = receivePeerFrame(channel)
             if (done.type != TRANSFER_DONE) throw SecurityException("Transfer did not finish cleanly")
-            File(session, ".complete").writeText("PiperOS Data Transfer v1\n${staged.size}\n")
+            File(session, ".complete").writeText("PiperOS Data Transfer v1\n${manifest.size}\n")
             channel.send(TRANSFER_ACK)
-            receivedRoot = session
-            receivedFiles = staged
-            showReceivedFiles(staged)
-            showStatus("Đã nhận đủ ${staged.size} mục. Chọn cách nhập sau khi kiểm tra danh sách.")
-            updateProgress(total, total, "Truyền hoàn tất")
+            showStatus("Đã nhận đủ ${manifest.size} mục. Đang mở danh sách dữ liệu đã nhận.")
+            PiperDataTransferProgressState.complete(id, completedBytes, progressTotal, session.absolutePath)
+            recordProgress(id)
+            refreshProgressActions()
         } catch (error: Exception) {
+            progressId?.let {
+                PiperDataTransferProgressState.fail(it, error.localizedMessage ?: "Kết nối bị gián đoạn")
+                recordProgress(it)
+                refreshProgressActions()
+            }
             session.deleteRecursively()
             throw error
-        }
-    }
-
-    private fun showReceivedFiles(files: List<StagedFile>) {
-        runOnUiThread {
-            receivedCard.removeAllViews()
-            receivedCard.visibility = View.VISIBLE
-            receivedCard.addView(sectionTitle("Dữ liệu đã nhận • ${files.size} mục"))
-            files.take(20).forEach { file -> receivedCard.addView(text("• ${file.name} (${formatBytes(file.file.length())})", 12f, false)) }
-            if (files.size > 20) receivedCard.addView(text("Còn ${files.size - 20} mục khác…", 12f, false))
-            receivedCard.addView(button("Nhập vào thư mục đã chọn") { folderPicker.launch(null) }, bottom(6))
-            val apks = files.map { it.file }.filter { it.extension.equals("apk", true) }
-            if (apks.isNotEmpty()) {
-                receivedCard.addView(button("Cài tất cả APK lần lượt") { beginApkInstall(apks) }, bottom(6))
-                apks.forEach { apk ->
-                    receivedCard.addView(button("Cài riêng ${apk.name}") { beginApkInstall(listOf(apk)) }, bottom(5))
-                }
-            }
-            receivedCard.addView(button("Xóa bản đã nhận") { deleteReceived() }, bottom(6))
-        }
-    }
-
-    private fun importStagedFiles(treeUri: Uri) {
-        val root = DocumentFile.fromTreeUri(this, treeUri)
-        if (root == null || !root.canWrite()) {
-            showStatus("Thư mục đã chọn không cho phép ghi tệp.")
-            return
-        }
-        val sessionDirectory = root.createDirectory("PiperOS Transfer ${System.currentTimeMillis()}") ?: root
-        io.execute {
-            try {
-                var copied = 0
-                receivedFiles.forEach { item ->
-                    val target = sessionDirectory.createFile(item.mime.ifBlank { "application/octet-stream" }, item.name)
-                        ?: throw IllegalStateException("Không tạo được tệp ${item.name}")
-                    contentResolver.openOutputStream(target.uri, "w")?.use { output ->
-                        FileInputStream(item.file).use { it.copyTo(output, 128 * 1024) }
-                    } ?: throw IllegalStateException("Không ghi được tệp ${item.name}")
-                    copied++
-                }
-                runOnUiThread { showStatus("Đã nhập $copied tệp vào ${sessionDirectory.name ?: "thư mục đã chọn"}.") }
-            } catch (error: Exception) {
-                runOnUiThread { showStatus("Không nhập được dữ liệu: ${error.localizedMessage}") }
-            }
-        }
-    }
-
-    private fun beginApkInstall(files: List<File>) {
-        if (files.isEmpty()) return
-        awaitingInstall = files
-        installIndex = 0
-        installNextApk()
-    }
-
-    private fun installNextApk() {
-        if (installIndex >= awaitingInstall.size) {
-            showStatus("Đã xử lý xong ${awaitingInstall.size} APK. Kiểm tra trạng thái cài đặt trên thiết bị.")
-            return
-        }
-        val file = awaitingInstall[installIndex]
-        val packageName = packageManager.getPackageArchiveInfo(file.absolutePath, 0)?.packageName
-        if (packageName.isNullOrBlank()) {
-            showStatus("Tệp ${file.name} không phải APK hợp lệ; bỏ qua và thử tệp tiếp theo.")
-            installIndex++
-            installNextApk()
-            return
-        }
-        if (!packageManager.canRequestPackageInstalls()) {
-            PiperDialog.showConfirm(
-                this,
-                "Cho phép cài APK",
-                "Android cần bạn cho phép PiperOS Tool mở trình cài đặt cho APK đã nhận. Mỗi ứng dụng vẫn cần được xác nhận trên màn hình hệ thống.",
-                "Mở cài đặt"
-            ) {
-                installSettings.launch(Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:${applicationContext.packageName}")))
-            }
-            return
-        }
-        installingPackage = packageName
-        val uri = androidx.core.content.FileProvider.getUriForFile(this, "${applicationContext.packageName}.files", file)
-        val intent = Intent(Intent.ACTION_INSTALL_PACKAGE).apply {
-            data = uri
-            clipData = android.content.ClipData.newRawUri("PiperOS APK", uri)
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            putExtra(Intent.EXTRA_RETURN_RESULT, true)
-        }
-        showStatus("Đang mở cài đặt APK ${installIndex + 1}/${awaitingInstall.size}: ${file.name}")
-        installLauncher.launch(intent)
-    }
-
-    private fun deleteReceived() {
-        val root = receivedRoot ?: return
-        PiperDialog.showConfirm(this, "Xóa dữ liệu đã nhận?", "Các tệp trong vùng chờ sẽ bị xóa khỏi PiperOS Tool.", "Xóa", destructive = true) {
-            root.deleteRecursively()
-            receivedRoot = null
-            receivedFiles = emptyList()
-            receivedCard.visibility = View.GONE
-            showStatus("Đã xóa dữ liệu đã nhận.")
         }
     }
 
     private fun loadCompletedSession() {
         val incoming = File(filesDir, "piper-data-transfer/incoming")
         val latest = incoming.listFiles()?.filter { File(it, ".complete").isFile }?.maxByOrNull(File::lastModified) ?: return
-        val files = latest.listFiles()?.filter { it.isFile && it.name != ".complete" }?.map { file ->
-            val name = file.name.substringAfter('-', file.name)
-            val mime = android.webkit.MimeTypeMap.getSingleton()
-                .getMimeTypeFromExtension(name.substringAfterLast('.', "").lowercase(Locale.ROOT))
-                ?: "application/octet-stream"
-            StagedFile(file, name, mime)
-        }.orEmpty()
-        if (files.isNotEmpty()) {
-            receivedRoot = latest
-            receivedFiles = files
-            showReceivedFiles(files)
-            showStatus("Có ${files.size} mục từ phiên trước đang chờ nhập hoặc xóa.")
+        if (latest.listFiles()?.any { it.isFile && it.name != ".complete" } == true) {
+            startActivity(Intent(this, PiperDataTransferReceivedActivity::class.java)
+                .putExtra(PiperDataTransferReceivedActivity.EXTRA_SESSION_DIR, latest.absolutePath))
         }
     }
 
@@ -1101,12 +1093,207 @@ class PiperDataTransferActivity : AppCompatActivity() {
             PiperDialog.showMessage(this, "Không có APK cơ sở phù hợp", "Các ứng dụng cài bằng nhiều split APK cần chuyển cả bộ; phiên bản này chưa đóng gói split APK.")
             return
         }
-        val byPackage = candidates.associateBy { it.packageName }
-        PiperActionSheet.showSearchSelect(
-            this,
-            "Chọn ứng dụng để gửi",
-            candidates.map { PiperSheetChoice(it.packageName, "${it.label} • ${it.packageName}") }
-        ) { key -> byPackage[key]?.let(::stageInstalledApk) }
+        val content = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(4), dp(4), dp(4), dp(4)) }
+        content.addView(sectionTitle("Chọn ứng dụng để gửi"), bottom(5))
+        content.addView(text("Icon, tên gói và dung lượng APK được hiển thị trước khi thêm.", 12f, false), bottom(9))
+        val search = EditText(this).apply {
+            hint = "Tìm ứng dụng"
+            isSingleLine = true
+            setPadding(dp(13), dp(11), dp(13), dp(11))
+            background = android.graphics.drawable.GradientDrawable().apply {
+                setColor(PiperModernUi.surfaceColor(this@PiperDataTransferActivity))
+                cornerRadius = dp(13).toFloat()
+                setStroke(dp(1), PiperModernUi.borderColor(this@PiperDataTransferActivity))
+            }
+            setTextColor(PiperModernUi.textColor(this@PiperDataTransferActivity))
+            setHintTextColor(PiperModernUi.secondaryTextColor(this@PiperDataTransferActivity))
+        }
+        content.addView(search, bottom(9))
+        val list = ListView(this).apply {
+            divider = android.graphics.drawable.ColorDrawable(PiperModernUi.borderColor(this@PiperDataTransferActivity))
+            dividerHeight = dp(1)
+            setBackgroundColor(Color.TRANSPARENT)
+            isNestedScrollingEnabled = true
+        }
+        content.addView(list, LinearLayout.LayoutParams(-1, (resources.displayMetrics.heightPixels * 0.48f).toInt()))
+
+        val adapter = object : BaseAdapter() {
+            private var visibleItems = candidates
+            fun filter(query: String) {
+                val needle = query.trim().lowercase(Locale.ROOT)
+                visibleItems = if (needle.isEmpty()) candidates else candidates.filter {
+                    it.label.lowercase(Locale.ROOT).contains(needle) || it.packageName.lowercase(Locale.ROOT).contains(needle)
+                }
+                notifyDataSetChanged()
+            }
+            override fun getCount(): Int = visibleItems.size
+            override fun getItem(position: Int): InstalledBaseApk = visibleItems[position]
+            override fun getItemId(position: Int): Long = visibleItems[position].packageName.hashCode().toLong()
+            override fun getView(position: Int, convertView: View?, parent: android.view.ViewGroup): View {
+                val item = getItem(position)
+                val row = (convertView as? LinearLayout) ?: LinearLayout(this@PiperDataTransferActivity).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    gravity = Gravity.CENTER_VERTICAL
+                    setPadding(dp(9), dp(9), dp(9), dp(9))
+                    addView(ImageView(this@PiperDataTransferActivity).apply {
+                        tag = "app-icon"
+                        scaleType = ImageView.ScaleType.FIT_CENTER
+                    }, LinearLayout.LayoutParams(dp(48), dp(48)))
+                    addView(LinearLayout(this@PiperDataTransferActivity).apply {
+                        tag = "app-text"
+                        orientation = LinearLayout.VERTICAL
+                        setPadding(dp(12), 0, 0, 0)
+                        addView(TextView(this@PiperDataTransferActivity).apply { tag = "app-name"; textSize = 14f; maxLines = 1; setTypeface(typeface, android.graphics.Typeface.BOLD); setTextColor(PiperModernUi.textColor(this@PiperDataTransferActivity)) })
+                        addView(TextView(this@PiperDataTransferActivity).apply { tag = "app-detail"; textSize = 11f; maxLines = 2; setTextColor(PiperModernUi.secondaryTextColor(this@PiperDataTransferActivity)) }, top(3))
+                    }, LinearLayout.LayoutParams(0, -2, 1f))
+                }
+                val icon = row.getChildAt(0) as ImageView
+                val textColumn = row.getChildAt(1) as LinearLayout
+                val name = textColumn.findViewWithTag<TextView>("app-name")
+                val detail = textColumn.findViewWithTag<TextView>("app-detail")
+                icon.setImageDrawable(runCatching { packageManager.getApplicationIcon(item.packageName) }.getOrNull() ?: packageManager.defaultActivityIcon)
+                name.text = item.label
+                detail.text = "${item.packageName}\n${formatBytes(File(item.sourcePath).length())} APK"
+                return row
+            }
+        }
+        list.adapter = adapter
+        val dialog = PiperDialog.createContent(this, content).apply { show() }
+        search.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) { adapter.filter(s?.toString().orEmpty()) }
+            override fun afterTextChanged(s: Editable?) = Unit
+        })
+        list.setOnItemClickListener { _, _, position, _ ->
+            val selected = adapter.getItem(position)
+            dialog.dismiss()
+            stageInstalledApk(selected)
+        }
+    }
+
+    private fun selectedFilesAdapter(): BaseAdapter = object : BaseAdapter() {
+        override fun getCount(): Int = chosenFiles.size
+        override fun getItem(position: Int): SelectedFile = chosenFiles[position]
+        override fun getItemId(position: Int): Long = getItem(position).uri.toString().hashCode().toLong()
+        override fun getView(position: Int, convertView: View?, parent: android.view.ViewGroup): View {
+            val item = getItem(position)
+            val row = (convertView as? LinearLayout) ?: LinearLayout(this@PiperDataTransferActivity).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                setPadding(dp(8), dp(7), dp(5), dp(7))
+                val details = LinearLayout(this@PiperDataTransferActivity).apply {
+                    tag = "selected-details"
+                    orientation = LinearLayout.VERTICAL
+                    addView(TextView(this@PiperDataTransferActivity).apply {
+                        tag = "selected-name"; textSize = 12f; maxLines = 1; ellipsize = android.text.TextUtils.TruncateAt.END
+                        setTypeface(typeface, android.graphics.Typeface.BOLD); setTextColor(PiperModernUi.textColor(this@PiperDataTransferActivity))
+                    })
+                    addView(TextView(this@PiperDataTransferActivity).apply {
+                        tag = "selected-meta"; textSize = 10f; maxLines = 1; ellipsize = android.text.TextUtils.TruncateAt.END
+                        setTextColor(PiperModernUi.secondaryTextColor(this@PiperDataTransferActivity))
+                    }, top(3))
+                }
+                addView(details, LinearLayout.LayoutParams(0, -2, 1f))
+                addView(MaterialButton(this@PiperDataTransferActivity).apply {
+                    tag = "selected-preview"; text = "Xem"; isAllCaps = false; textSize = 10f
+                    minWidth = dp(48); minHeight = dp(36); insetTop = 0; insetBottom = 0; cornerRadius = dp(10)
+                }, LinearLayout.LayoutParams(dp(55), dp(38)).apply { marginStart = dp(4) })
+                addView(MaterialButton(this@PiperDataTransferActivity).apply {
+                    tag = "selected-remove"; text = "Xóa"; isAllCaps = false; textSize = 10f
+                    minWidth = dp(48); minHeight = dp(36); insetTop = 0; insetBottom = 0; cornerRadius = dp(10)
+                    backgroundTintList = android.content.res.ColorStateList.valueOf(PiperModernUi.surfaceColor(this@PiperDataTransferActivity))
+                    setTextColor(PiperModernUi.secondaryTextColor(this@PiperDataTransferActivity))
+                    strokeWidth = dp(1); strokeColor = android.content.res.ColorStateList.valueOf(PiperModernUi.borderColor(this@PiperDataTransferActivity))
+                }, LinearLayout.LayoutParams(dp(55), dp(38)).apply { marginStart = dp(3) })
+            }
+            val details = row.findViewWithTag<LinearLayout>("selected-details")
+            details.findViewWithTag<TextView>("selected-name").text = item.name
+            details.findViewWithTag<TextView>("selected-meta").text = "${item.mime} • ${formatBytes(item.size)}"
+            row.findViewWithTag<MaterialButton>("selected-preview").setOnClickListener { showSelectedPreview(item) }
+            row.findViewWithTag<MaterialButton>("selected-remove").setOnClickListener {
+                chosenFiles = chosenFiles.filterNot { it.uri == item.uri }
+                refreshChosenSelection("Đã bỏ ${item.name} khỏi danh sách truyền.")
+            }
+            return row
+        }
+    }
+
+    private fun refreshChosenSelection(statusMessage: String? = null) {
+        val total = knownTotalBytes(chosenFiles.map { it.size })
+        selectedFilesLabel.text = if (chosenFiles.isEmpty()) "Chưa chọn dữ liệu" else "Đã chọn ${chosenFiles.size} mục • ${formatBytes(total)}"
+        (selectedFilesList.adapter as? BaseAdapter)?.notifyDataSetChanged()
+        if (::selectedFilesCard.isInitialized) selectedFilesCard.visibility = if (chosenFiles.isEmpty()) View.GONE else View.VISIBLE
+        startTransferButton.isEnabled = chosenFiles.isNotEmpty()
+        styleActionButton(startTransferButton, ActionButtonStyle.CONTINUE)
+        statusMessage?.let(::showStatus)
+    }
+
+    private fun showSelectedPreview(item: SelectedFile) {
+        val content = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(4), dp(4), dp(4), dp(4)) }
+        content.addView(text(item.name, 16f, true), bottom(4))
+        content.addView(text("${item.mime} • ${formatBytes(item.size)}", 12f, false), bottom(10))
+        var previewPlayer: ExoPlayer? = null
+        when {
+            item.mime == "application/vnd.android.package-archive" -> {
+                val application = item.sourceAppPackage?.let { appId ->
+                    runCatching { packageManager.getApplicationInfo(appId, 0) }.getOrNull()
+                }
+                val apkHeader = LinearLayout(this).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    gravity = Gravity.CENTER_VERTICAL
+                    setPadding(dp(12), dp(12), dp(12), dp(12))
+                    addView(ImageView(this@PiperDataTransferActivity).apply {
+                        setImageDrawable(application?.let { runCatching { packageManager.getApplicationIcon(it) }.getOrNull() }
+                            ?: packageManager.defaultActivityIcon)
+                        scaleType = ImageView.ScaleType.FIT_CENTER
+                    }, LinearLayout.LayoutParams(dp(56), dp(56)))
+                    val appLabel = application?.let { runCatching { packageManager.getApplicationLabel(it).toString() }.getOrNull() }
+                    addView(LinearLayout(this@PiperDataTransferActivity).apply {
+                        orientation = LinearLayout.VERTICAL
+                        addView(text(appLabel ?: "Gói cài đặt APK", 15f, true))
+                        addView(text(item.sourceAppPackage ?: "APK sẽ được kiểm tra trên thiết bị nhận", 12f, false), top(4))
+                    }, LinearLayout.LayoutParams(0, -2, 1f).apply { marginStart = dp(12) })
+                }
+                content.addView(card(apkHeader), bottom(10))
+                content.addView(text(
+                    "Tệp APK này sẽ được gửi nguyên vẹn. Trên thiết bị nhận, Android sẽ mở trình cài đặt để bạn xác nhận.",
+                    13f, false
+                ), bottom(10))
+            }
+            item.mime.startsWith("image/") -> {
+                val image = ImageView(this).apply { scaleType = ImageView.ScaleType.FIT_CENTER; adjustViewBounds = true; maxHeight = dp(360) }
+                content.addView(image, LinearLayout.LayoutParams(-1, dp(320)))
+                Glide.with(this).load(item.uri).fitCenter().into(image)
+            }
+            item.mime.startsWith("video/") -> {
+                val playerView = PlayerView(this).apply { useController = true; setBackgroundColor(Color.BLACK) }
+                content.addView(playerView, LinearLayout.LayoutParams(-1, dp(230)))
+                previewPlayer = ExoPlayer.Builder(this).build().also { player ->
+                    playerView.player = player
+                    player.setMediaItem(MediaItem.fromUri(item.uri))
+                    player.prepare()
+                    player.playWhenReady = false
+                }
+            }
+            else -> {
+                content.addView(text(
+                    "Đã chọn đúng tệp. Mở trong ứng dụng phù hợp để xem nội dung trước khi gửi.",
+                    13f, false
+                ), bottom(10))
+                content.addView(button("Mở bằng ứng dụng phù hợp") {
+                    runCatching {
+                        startActivity(Intent(Intent.ACTION_VIEW).apply {
+                            setDataAndType(item.uri, item.mime)
+                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        })
+                    }.onFailure { Toast.makeText(this, "Không tìm thấy ứng dụng xem loại tệp này.", Toast.LENGTH_SHORT).show() }
+                })
+            }
+        }
+        PiperDialog.createContent(this, content).apply {
+            setOnDismissListener { previewPlayer?.release() }
+            show()
+        }
     }
 
     private fun stageInstalledApk(app: InstalledBaseApk) {
@@ -1121,13 +1308,16 @@ class PiperDataTransferActivity : AppCompatActivity() {
                 val copy = File(outgoing, "${app.packageName}-${UUID.randomUUID().toString().take(8)}.apk")
                 FileInputStream(source).use { input -> FileOutputStream(copy).use { input.copyTo(it, 128 * 1024) } }
                 val uri = androidx.core.content.FileProvider.getUriForFile(this, "$packageName.files", copy)
-                val selected = SelectedFile(uri, safeName("${app.label}-${app.packageName.substringAfterLast('.')}.apk"), copy.length(), "application/vnd.android.package-archive")
+                val selected = SelectedFile(
+                    uri,
+                    safeName("${app.label}-${app.packageName.substringAfterLast('.')}.apk"),
+                    copy.length(),
+                    "application/vnd.android.package-archive",
+                    app.packageName
+                )
                 runOnUiThread {
-                    chosenFiles = (chosenFiles + selected).distinctBy { it.uri.toString() }
-                    val total = knownTotalBytes(chosenFiles.map { it.size })
-                    selectedFilesLabel.text = "Đã chọn ${chosenFiles.size} mục • ${formatBytes(total)}"
-                    startTransferButton.isEnabled = chosenFiles.isNotEmpty()
-                    showStatus("Đã thêm ${app.label}. Có ${chosenFiles.size} mục để gửi • ${formatBytes(total)}")
+                    appendChosenFiles(listOf(selected))
+                    showStatus("Đã thêm ${app.label}. Có ${chosenFiles.size} mục để gửi • ${formatBytes(knownTotalBytes(chosenFiles.map { it.size }))}")
                 }
             } catch (error: Exception) {
                 showStatus("Không chuẩn bị được APK ${app.label}: ${error.localizedMessage ?: error.javaClass.simpleName}")
@@ -1233,40 +1423,247 @@ class PiperDataTransferActivity : AppCompatActivity() {
         }
     }
 
-    private fun scheduleAmbientMode() {
-        ambientRunnable?.let(mainHandler::removeCallbacks)
-        ambientRunnable = Runnable {
-            if (!transferInProgress || isFinishing) return@Runnable
-            window.attributes = window.attributes.apply { screenBrightness = 0.03f }
-            ambientView.text = "PiperOS DATA TRANSFER\n\n${progressLabel.text}\n\nChạm để xem chi tiết"
-            ambientView.visibility = View.VISIBLE
-        }.also { mainHandler.postDelayed(it, 10_000L) }
+    private fun showStatus(message: String) = runOnUiThread { status.text = message }
+
+    private fun confirmCancelSession() {
+        PiperDialog.showConfirm(
+            this,
+            "Hủy phiên chuyển dữ liệu?",
+            "Phiên sẽ dừng ở cả hai thiết bị. Tệp chưa nhận đủ sẽ bị loại bỏ.",
+            "Hủy phiên",
+            destructive = true
+        ) { cancelCurrentSession("Bạn đã hủy phiên chuyển dữ liệu.") }
     }
 
-    private fun restoreBrightScreen() {
-        window.attributes = window.attributes.apply { screenBrightness = originalBrightness }
-        ambientView.visibility = View.GONE
-        if (transferInProgress) scheduleAmbientMode()
-    }
-
-    @Synchronized
-    private fun updateProgress(done: Long, total: Long, label: String) {
-        val now = System.currentTimeMillis()
-        val isFinal = label == "Truyền hoàn tất"
-        if (!isFinal && now - lastProgressUpdateAt < 150L) return
-        lastProgressUpdateAt = now
-        runOnUiThread {
-            progress.visibility = View.VISIBLE
-            progressLabel.visibility = View.VISIBLE
-            val percent = if (total > 0) ((done * 100L) / total).toInt().coerceIn(0, 100) else 0
-            progress.isIndeterminate = total <= 0 && label != "Truyền hoàn tất"
-            if (total > 0) progress.progress = percent else if (label == "Truyền hoàn tất") progress.progress = 100
-            progressLabel.text = "$label${if (total > 0) " • $percent%" else ""}"
-            if (ambientView.visibility == View.VISIBLE) ambientView.text = "PiperOS DATA TRANSFER\n\n$label\n\nChạm để xem chi tiết"
+    private fun cancelCurrentSession(message: String, progressId: String? = activeProgressId) {
+        if (!cancellationStarted.compareAndSet(false, true)) return
+        approval.getAndSet(null)?.countDown()
+        senderApproval.getAndSet(null)?.countDown()
+        approvedFiles.set(null)
+        progressId?.let { id ->
+            PiperDataTransferProgressState.fail(id, message)
+            recordProgress(id)
+            refreshProgressActions()
+        }
+        val channel = activeChannel
+        io.execute {
+            runCatching { channel?.send(TRANSFER_CANCEL, message.toByteArray(StandardCharsets.UTF_8)) }
+            stopSession()
+            runOnUiThread {
+                if (!isFinishing) {
+                    resetToRoleSelection()
+                    showStatus(message)
+                }
+            }
         }
     }
 
-    private fun showStatus(message: String) = runOnUiThread { status.text = message }
+    private fun recordProgress(sessionId: String) {
+        PiperDataTransferProgressState.snapshot(sessionId)?.let { PiperDataTransferHistoryStore.record(this, it) }
+    }
+
+    private fun refreshProgressActions() {
+        if (!::currentProgressButton.isInitialized) return
+        runOnUiThread {
+            val preferences = getSharedPreferences("piper_data_transfer_progress", MODE_PRIVATE)
+            val latestEntry = PiperDataTransferHistoryStore.read(this).firstOrNull()
+            val preferenceId = preferences.getString("active_session_id", null)
+            val rememberedId = activeProgressId?.takeIf { PiperDataTransferProgressState.snapshot(it) != null }
+                ?: preferenceId?.takeIf { id ->
+                    PiperDataTransferProgressState.snapshot(id) != null || PiperDataTransferHistoryStore.read(this).any { it.snapshot.sessionId == id }
+                }
+                ?: latestEntry?.snapshot?.sessionId
+            val snapshot = rememberedId?.let(PiperDataTransferProgressState::snapshot)
+            val historyMatch = rememberedId?.let { id ->
+                PiperDataTransferHistoryStore.read(this).firstOrNull { it.snapshot.sessionId == id }
+            }
+            val hasProgress = snapshot != null || historyMatch != null
+            currentProgressButton.visibility = if (hasProgress) View.VISIBLE else View.GONE
+            currentProgressButton.text = when {
+                snapshot != null && !snapshot.complete && snapshot.error == null -> "Mở tiến trình hiện tại"
+                hasProgress -> "Xem tiến trình gần nhất"
+                else -> "Mở tiến trình hiện tại"
+            }
+            val canDelete = snapshot?.let { it.complete || it.error != null } == true || historyMatch != null
+            deleteProgressButton.visibility = if (canDelete) View.VISIBLE else View.GONE
+            historyButton.visibility = View.VISIBLE
+        }
+    }
+
+    private fun confirmDeleteLatestProgress() {
+        val entries = PiperDataTransferHistoryStore.read(this)
+        val preferences = getSharedPreferences("piper_data_transfer_progress", MODE_PRIVATE)
+        val rememberedId = activeProgressId ?: preferences.getString("active_session_id", null)
+        val entry = rememberedId?.let { id -> entries.firstOrNull { it.snapshot.sessionId == id } } ?: entries.firstOrNull()
+        val inMemory = rememberedId?.let(PiperDataTransferProgressState::snapshot)
+        if (inMemory != null && !inMemory.complete && inMemory.error == null) {
+            PiperDialog.showMessage(this, "Tiến trình đang chạy", "Hãy đợi phiên hoàn tất hoặc hủy phiên trước khi xóa tiến trình.")
+            return
+        }
+        val sessionId = entry?.snapshot?.sessionId ?: inMemory?.sessionId
+        if (sessionId == null) {
+            PiperDialog.showMessage(this, "Không có tiến trình để xóa", "Chưa có tiến trình đã hoàn tất hoặc đã dừng.")
+            return
+        }
+        PiperDialog.showConfirm(
+            this,
+            "Xóa tiến trình gần nhất?",
+            "Thông tin tiến trình sẽ bị xóa khỏi lịch sử. Dữ liệu đã nhận sẽ được giữ nguyên.",
+            "Xóa",
+            destructive = true
+        ) {
+            forgetProgress(sessionId)
+            refreshProgressActions()
+            showStatus("Đã xóa tiến trình gần nhất.")
+        }
+    }
+
+    private fun forgetProgress(sessionId: String) {
+        PiperDataTransferHistoryStore.delete(this, sessionId)
+        PiperDataTransferProgressState.remove(sessionId)
+        if (activeProgressId == sessionId) activeProgressId = null
+        val preferences = getSharedPreferences("piper_data_transfer_progress", MODE_PRIVATE)
+        if (preferences.getString("active_session_id", null) == sessionId) {
+            val nextId = PiperDataTransferHistoryStore.read(this).firstOrNull()?.snapshot?.sessionId
+            preferences.edit().putString("active_session_id", nextId).apply()
+        }
+    }
+
+    private fun openCurrentProgress() {
+        val prefs = getSharedPreferences("piper_data_transfer_progress", MODE_PRIVATE)
+        val entries = PiperDataTransferHistoryStore.read(this)
+        val entry = entries.firstOrNull()
+        val preferenceId = prefs.getString("active_session_id", null)
+        val id = activeProgressId?.takeIf { PiperDataTransferProgressState.snapshot(it) != null }
+            ?: preferenceId?.takeIf { id -> PiperDataTransferProgressState.snapshot(id) != null || entries.any { it.snapshot.sessionId == id } }
+            ?: entry?.snapshot?.sessionId
+        val snapshot = id?.let(PiperDataTransferProgressState::snapshot)
+        if (snapshot != null) {
+            startActivity(PiperDataTransferProgressActivity.createIntent(this, snapshot.sessionId, snapshot.role, snapshot.items))
+            return
+        }
+        if (entry != null) showHistoryDetails(entry)
+        else PiperDialog.showMessage(this, "Chưa có tiến trình", "Tiến trình chuyển dữ liệu sẽ xuất hiện ở đây sau khi bắt đầu gửi hoặc nhận.")
+    }
+
+    private fun showTransferHistory() {
+        val entries = PiperDataTransferHistoryStore.read(this)
+        val content = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(8), dp(8), dp(8), dp(8))
+            addView(sectionTitle("Lịch sử truyền dữ liệu"), bottom(5))
+            addView(text("Chạm vào một phiên để xem trạng thái và danh sách tệp.", 12f, false), bottom(10))
+        }
+        val dialog = PiperDialog.createContent(this, content)
+        if (entries.isNotEmpty()) {
+            content.addView(button("Xóa toàn bộ lịch sử") {
+                PiperDialog.showConfirm(
+                    this,
+                    "Xóa toàn bộ lịch sử?",
+                    "Toàn bộ bản ghi tiến trình sẽ bị xóa. Dữ liệu đã nhận vẫn được giữ nguyên.",
+                    "Xóa lịch sử",
+                    destructive = true
+                ) {
+                    entries.forEach { entry -> forgetProgress(entry.snapshot.sessionId) }
+                    PiperDataTransferHistoryStore.clear(this)
+                    activeProgressId?.let { id ->
+                        val active = PiperDataTransferProgressState.snapshot(id)
+                        if (active?.complete == true || active?.error != null) PiperDataTransferProgressState.remove(id)
+                    }
+                    activeProgressId = PiperDataTransferProgressState.snapshot(activeProgressId.orEmpty())?.sessionId
+                    getSharedPreferences("piper_data_transfer_progress", MODE_PRIVATE).edit()
+                        .putString("active_session_id", activeProgressId).apply()
+                    dialog.dismiss()
+                    refreshProgressActions()
+                    showTransferHistory()
+                }
+            }.apply { styleActionButton(this, ActionButtonStyle.DESTRUCTIVE) }, bottom(10))
+        }
+        if (entries.isEmpty()) {
+            content.addView(text("Chưa có phiên truyền nào được lưu.", 13f, false))
+        } else entries.forEach { entry ->
+            val snapshot = entry.snapshot
+            val result = when {
+                snapshot.complete -> "Hoàn tất"
+                snapshot.error != null -> "Đã dừng: ${snapshot.error}"
+                else -> "Đã lưu tiến trình"
+            }
+            val row = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(dp(13), dp(12), dp(13), dp(12))
+                addView(text(if (snapshot.role == PiperDataTransferProgressActivity.ROLE_SEND) "Gửi dữ liệu" else "Nhận dữ liệu", 14f, true))
+                addView(text("${snapshot.items.size} mục • ${formatBytes(snapshot.transferred)} • $result", 12f, false), top(4))
+                addView(text(DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Date(entry.savedAt)), 11f, false), top(4))
+            }
+            val actions = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                val detailCard = card(row).apply {
+                    isClickable = true
+                    isFocusable = true
+                    setOnClickListener { showHistoryDetails(entry) }
+                }
+                addView(detailCard, LinearLayout.LayoutParams(0, -2, 1f).apply { marginEnd = dp(7) })
+                addView(button("Xóa") {
+                    PiperDialog.showConfirm(
+                        this@PiperDataTransferActivity,
+                        "Xóa phiên này?",
+                        "Chỉ bản ghi lịch sử bị xóa; dữ liệu đã nhận vẫn được giữ nguyên.",
+                        "Xóa",
+                        destructive = true
+                    ) {
+                        forgetProgress(snapshot.sessionId)
+                        dialog.dismiss()
+                        refreshProgressActions()
+                        showTransferHistory()
+                    }
+                }.apply { styleActionButton(this, ActionButtonStyle.DESTRUCTIVE) }, LinearLayout.LayoutParams(dp(78), -2))
+            }
+            content.addView(actions, bottom(8))
+        }
+        dialog.show()
+    }
+
+    private fun showHistoryDetails(entry: PiperDataTransferHistoryStore.Entry) {
+        val snapshot = entry.snapshot
+        val result = when {
+            snapshot.complete -> "Hoàn tất"
+            snapshot.error != null -> "Đã dừng: ${snapshot.error}"
+            else -> "Tiến trình đã lưu"
+        }
+        val content = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(8), dp(8), dp(8), dp(8))
+            addView(sectionTitle(if (snapshot.role == PiperDataTransferProgressActivity.ROLE_SEND) "Chi tiết phiên gửi" else "Chi tiết phiên nhận"), bottom(5))
+            addView(text(
+                "$result\n${DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Date(entry.savedAt))}\n${formatBytes(snapshot.transferred)} / ${formatBytes(snapshot.total)}",
+                12f, false
+            ), bottom(10))
+        }
+        snapshot.items.forEach { item ->
+            val detail = when (item.state) {
+                PiperDataTransferProgressState.ItemState.COMPLETE -> "Hoàn tất • ${formatBytes(item.size)}"
+                PiperDataTransferProgressState.ItemState.ACTIVE -> "${formatBytes(item.transferred)} / ${formatBytes(item.size)}"
+                PiperDataTransferProgressState.ItemState.WAITING -> "Chưa truyền • ${formatBytes(item.size)}"
+            }
+            content.addView(card(LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(dp(12), dp(10), dp(12), dp(10))
+                addView(text(item.name, 13f, true))
+                addView(text("${item.mime} • $detail", 11f, false), top(4))
+            }), bottom(6))
+        }
+        snapshot.receivedDirectory?.let { path ->
+            val directory = File(path)
+            if (directory.isDirectory && File(directory, ".complete").isFile) {
+                content.addView(button("Mở dữ liệu đã nhận") {
+                    startActivity(Intent(this, PiperDataTransferReceivedActivity::class.java)
+                        .putExtra(PiperDataTransferReceivedActivity.EXTRA_SESSION_DIR, path))
+                }, top(8))
+            }
+        }
+        PiperDialog.createContent(this, content).show()
+    }
 
     private fun stopNetworkSessionOnly() {
         runCatching { approval.getAndSet(null)?.countDown() }
@@ -1287,9 +1684,6 @@ class PiperDataTransferActivity : AppCompatActivity() {
         runCatching { hotspotReservation?.close() }
         hotspotReservation = null
         transferInProgress = false
-        ambientRunnable?.let(mainHandler::removeCallbacks)
-        window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        restoreBrightScreen()
     }
 
     private fun safeName(input: String): String = input
@@ -1377,6 +1771,26 @@ class PiperDataTransferActivity : AppCompatActivity() {
         cornerRadius = dp(14)
         setOnClickListener { click() }
         layoutParams = LinearLayout.LayoutParams(-1, -2)
+    }
+
+    private fun styleActionButton(button: MaterialButton, style: ActionButtonStyle) {
+        val fill = if (!button.isEnabled && style != ActionButtonStyle.BACK) {
+            Color.rgb(145, 151, 160)
+        } else when (style) {
+            ActionButtonStyle.PRIMARY -> PiperModernUi.accentColor(this)
+            ActionButtonStyle.CONTINUE -> Color.rgb(34, 142, 87)
+            ActionButtonStyle.BACK -> PiperModernUi.surfaceColor(this)
+            ActionButtonStyle.DESTRUCTIVE -> Color.rgb(190, 52, 60)
+        }
+        val textColor = if (style == ActionButtonStyle.BACK) {
+            PiperModernUi.textColor(this)
+        } else Color.WHITE
+        button.backgroundTintList = android.content.res.ColorStateList.valueOf(fill)
+        button.setTextColor(textColor)
+        button.strokeWidth = if (style == ActionButtonStyle.BACK) dp(1) else 0
+        button.strokeColor = android.content.res.ColorStateList.valueOf(
+            if (style == ActionButtonStyle.BACK) PiperModernUi.borderColor(this) else fill
+        )
     }
 
     private fun card(content: View): MaterialCardView = MaterialCardView(this).apply {
