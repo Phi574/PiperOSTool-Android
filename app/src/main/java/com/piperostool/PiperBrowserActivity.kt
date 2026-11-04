@@ -1,6 +1,7 @@
 package com.piperostool
 
 import android.Manifest
+import android.animation.LayoutTransition
 import android.animation.ValueAnimator
 import android.app.DownloadManager
 import android.app.NotificationManager
@@ -58,7 +59,6 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
-import androidx.lifecycle.lifecycleScope
 import androidx.webkit.ProfileStore
 import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
@@ -74,7 +74,6 @@ import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
-import kotlinx.coroutines.launch
 import org.json.JSONObject
 import org.json.JSONTokener
 import kotlin.math.abs
@@ -132,7 +131,6 @@ class PiperBrowserActivity : AppCompatActivity() {
     private lateinit var sessionStore: BrowserSessionStore
     private lateinit var extensionStore: BrowserExtensionStore
     private lateinit var privateBadge: TextView
-    private var browserStartConfig: BrowserStartConfig? = null
 
     private val tabs = mutableListOf<BrowserTab>()
     private var activeTabId = -1L
@@ -232,17 +230,12 @@ class PiperBrowserActivity : AppCompatActivity() {
         clearStaleIncognitoProfiles()
         systemUserAgent = WebSettings.getDefaultUserAgent(applicationContext)
         bindViews()
-        BrowserStartConfigRepository.load(this)?.let(::applyBrowserStartConfig)
         applyBrowserChromeTheme()
         applyWindowInsets()
         applyResponsiveLayout(resources.configuration)
         setupActions()
         setupBackHandling()
         restoreSession()
-        lifecycleScope.launch {
-            BrowserStartConfigRepository.refresh(this@PiperBrowserActivity)
-                ?.let(::applyBrowserStartConfig)
-        }
         NetworkAccess.observe(this, this) { online ->
             if (!online) {
                 tabs.forEach { it.webView.stopLoading() }
@@ -305,16 +298,6 @@ class PiperBrowserActivity : AppCompatActivity() {
         bottomPanel = findViewById(R.id.browserBottomPanel)
         addressRow = findViewById(R.id.browserAddressRow)
         browserToolbar = findViewById(R.id.browserToolbar)
-    }
-
-    private fun applyBrowserStartConfig(config: BrowserStartConfig) {
-        if (isFinishing || isDestroyed) return
-        browserStartConfig = config
-        BrowserStartPageRenderer.apply(this, config, ::navigateTo)
-        applyBrowserChromeTheme()
-        if (activeTab()?.incognito != true) {
-            findViewById<TextView>(R.id.browserStorageNote).text = config.privacyNote
-        }
     }
 
     private fun applyWindowInsets() {
@@ -986,12 +969,13 @@ class PiperBrowserActivity : AppCompatActivity() {
         setBrowserChromeCompact(false, animated = false)
         pageTitle.text = tab.title
         privateBadge.visibility = if (tab.incognito) View.VISIBLE else View.GONE
-        findViewById<TextView>(R.id.browserStorageNote).text = if (tab.incognito) {
-            getString(R.string.browser_incognito_storage_note)
-        } else {
-            browserStartConfig?.privacyNote
-                ?: getString(R.string.browser_private_storage_note)
-        }
+        findViewById<TextView>(R.id.browserStorageNote).setText(
+            if (tab.incognito) {
+                R.string.browser_incognito_storage_note
+            } else {
+                R.string.browser_private_storage_note
+            }
+        )
         updateAddressDisplay(tab)
         updateAddressAction(tab)
         updateSecurityIcon(tab.url)
@@ -1253,7 +1237,6 @@ class PiperBrowserActivity : AppCompatActivity() {
             showKeyboard(addressInput)
             return
         }
-        val options = browserStartConfig?.browserOptions ?: return
         setBrowserChromeCompact(false)
 
         val content = LinearLayout(this).apply {
@@ -1264,7 +1247,7 @@ class PiperBrowserActivity : AppCompatActivity() {
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             background = popupSurfaceDrawable()
-            addView(createSheetHeader(options.title, null))
+            addView(createSheetHeader(getString(R.string.browser_options), null))
             addView(
                 scroll,
                 LinearLayout.LayoutParams(
@@ -1282,34 +1265,135 @@ class PiperBrowserActivity : AppCompatActivity() {
             animationStyle = android.R.style.Animation_Dialog
             setBackgroundDrawable(android.graphics.drawable.ColorDrawable(Color.TRANSPARENT))
         }
-        options.items.filter { it.visible }.forEach { item ->
-            val desktopSwitch = if (item.action == "desktop_mode") {
-                SwitchMaterial(this).apply {
-                    isChecked = sessionStore.isDesktopMode()
-                    buttonTintList = null
-                    isEnabled = item.enabled
-                    setOnCheckedChangeListener { _, enabled -> setDesktopMode(enabled) }
-                }
-            } else {
-                null
-            }
-            content.addView(
-                createMenuRow(
-                    browserOptionIcon(item.icon),
-                    item.title,
-                    browserOptionSubtitle(item, tab),
-                    desktopSwitch,
-                    item.enabled
-                ) {
-                    if (item.action == "desktop_mode") {
-                        desktopSwitch?.let { it.isChecked = !it.isChecked }
-                    } else if (item.enabled) {
-                        popup.dismiss()
-                        dispatchBrowserOption(item.action, tab)
-                    }
-                }
-            )
+        val desktopSwitch = SwitchMaterial(this).apply {
+            isChecked = sessionStore.isDesktopMode()
+            buttonTintList = null
+            setOnCheckedChangeListener { _, enabled -> setDesktopMode(enabled) }
         }
+        content.addView(
+            createMenuRow(
+                R.drawable.ic_browser_privacy,
+                getString(R.string.browser_privacy_report),
+                if (tab.trackerHosts.isEmpty()) {
+                    getString(R.string.browser_privacy_summary_safe)
+                } else {
+                    getString(R.string.browser_privacy_summary_warning, tab.trackerHosts.size)
+                }
+            ) {
+                popup.dismiss()
+                showPrivacyReport(tab)
+            }
+        )
+        content.addView(
+            createMenuRow(
+                R.drawable.ic_browser_code,
+                getString(R.string.browser_developer_tools),
+                getString(R.string.browser_developer_tools_summary)
+            ) {
+                popup.dismiss()
+                openDeveloperTools(tab)
+            }
+        )
+        content.addView(
+            createMenuRow(
+                R.drawable.ic_browser_privacy,
+                getString(R.string.browser_theme),
+                browserThemeLabel(sessionStore.browserThemeMode())
+            ) {
+                popup.dismiss()
+                showBrowserThemeDialog()
+            }
+        )
+        content.addView(
+            createMenuRow(
+                R.drawable.ic_browser_search,
+                getString(R.string.browser_search_engine),
+                sessionStore.selectedSearchEngine().label
+            ) {
+                popup.dismiss()
+                showSearchEngineDialog()
+            }
+        )
+        content.addView(
+            createMenuRow(
+                R.drawable.ic_browser_lock,
+                getString(R.string.browser_site_data),
+                getString(R.string.browser_site_data_summary)
+            ) {
+                popup.dismiss()
+                showSiteDataManager()
+            }
+        )
+        content.addView(
+            createMenuRow(
+                R.drawable.browser,
+                getString(R.string.desktop_site),
+                null,
+                desktopSwitch
+            ) {
+                desktopSwitch.isChecked = !desktopSwitch.isChecked
+            }
+        )
+        content.addView(
+            createMenuRow(
+                R.drawable.ic_browser_reload,
+                getString(R.string.browser_history)
+            ) {
+                popup.dismiss()
+                showHistorySheet()
+            }
+        )
+        content.addView(
+            createMenuRow(
+                R.drawable.ic_browser_download,
+                getString(R.string.browser_downloads)
+            ) {
+                popup.dismiss()
+                openDownloads()
+            }
+        )
+        content.addView(
+            createMenuRow(
+                R.drawable.ic_browser_add,
+                getString(R.string.browser_extensions),
+                resources.getQuantityString(
+                    R.plurals.browser_extension_count,
+                    extensionStore.load().size,
+                    extensionStore.load().size
+                )
+            ) {
+                popup.dismiss()
+                showExtensionsSheet()
+            }
+        )
+        content.addView(
+            createMenuRow(
+                R.drawable.browser,
+                getString(R.string.browser_user_agent),
+                selectedUserAgent().label
+            ) {
+                popup.dismiss()
+                startActivity(Intent(this, BrowserUserAgentActivity::class.java))
+            }
+        )
+        content.addView(
+            createMenuRow(
+                R.drawable.notification,
+                getString(R.string.browser_notifications)
+            ) {
+                popup.dismiss()
+                requestAndOpenNotificationSettings()
+            }
+        )
+        content.addView(
+            createMenuRow(
+                R.drawable.browser,
+                getString(R.string.about_piperos_browser)
+            ) {
+                popup.dismiss()
+                showAboutDialog()
+            }
+        )
         PiperModernUi.apply(root)
         popup.showAtLocation(
             browserRoot,
@@ -1317,56 +1401,6 @@ class PiperBrowserActivity : AppCompatActivity() {
             dp(12),
             bottomPanel.height + dp(10)
         )
-    }
-
-    private fun dispatchBrowserOption(action: String, tab: BrowserTab) {
-        when (action) {
-            "privacy_report" -> showPrivacyReport(tab)
-            "developer_tools" -> openDeveloperTools(tab)
-            "browser_theme" -> showBrowserThemeDialog()
-            "search_engine" -> showSearchEngineDialog()
-            "site_data" -> showSiteDataManager()
-            "history" -> showHistorySheet()
-            "downloads" -> openDownloads()
-            "extensions" -> showExtensionsSheet()
-            "user_agent" -> startActivity(Intent(this, BrowserUserAgentActivity::class.java))
-            "notifications" -> requestAndOpenNotificationSettings()
-            "about" -> showAboutDialog()
-        }
-    }
-
-    private fun browserOptionSubtitle(item: BrowserOptionItem, tab: BrowserTab): String? =
-        when (item.summaryKey) {
-            "privacy_report" -> if (tab.trackerHosts.isEmpty()) {
-                getString(R.string.browser_privacy_summary_safe)
-            } else {
-                getString(R.string.browser_privacy_summary_warning, tab.trackerHosts.size)
-            }
-            "developer_tools" -> item.subtitle.ifBlank {
-                getString(R.string.browser_developer_tools_summary)
-            }
-            "browser_theme" -> browserThemeLabel(sessionStore.browserThemeMode())
-            "search_engine" -> sessionStore.selectedSearchEngine().label
-            "site_data" -> item.subtitle.ifBlank { getString(R.string.browser_site_data_summary) }
-            "extensions" -> resources.getQuantityString(
-                R.plurals.browser_extension_count,
-                extensionStore.load().size,
-                extensionStore.load().size
-            )
-            "user_agent" -> selectedUserAgent().label
-            else -> item.subtitle.takeIf(String::isNotBlank)
-        }
-
-    private fun browserOptionIcon(icon: String): Int = when (icon) {
-        "privacy" -> R.drawable.ic_browser_privacy
-        "code" -> R.drawable.ic_browser_code
-        "search" -> R.drawable.ic_browser_search
-        "lock" -> R.drawable.ic_browser_lock
-        "reload" -> R.drawable.ic_browser_reload
-        "download" -> R.drawable.ic_browser_download
-        "add" -> R.drawable.ic_browser_add
-        "notification" -> R.drawable.notification
-        else -> R.drawable.browser
     }
 
     private fun popupSurfaceDrawable() = GradientDrawable().apply {
@@ -1713,7 +1747,6 @@ class PiperBrowserActivity : AppCompatActivity() {
         title: String,
         subtitle: String? = null,
         trailingView: View? = null,
-        enabled: Boolean = true,
         onClick: () -> Unit
     ): View {
         return LinearLayout(this).apply {
@@ -1723,8 +1756,6 @@ class PiperBrowserActivity : AppCompatActivity() {
             setPadding(dp(12), dp(6), dp(6), dp(6))
             isClickable = true
             isFocusable = true
-            isEnabled = enabled
-            alpha = if (enabled) 1f else 0.48f
             background = getDrawable(android.R.drawable.list_selector_background)
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -1767,7 +1798,6 @@ class PiperBrowserActivity : AppCompatActivity() {
                 LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
             )
             if (trailingView != null) {
-                trailingView.isEnabled = enabled
                 addView(
                     trailingView,
                     LinearLayout.LayoutParams(
@@ -2254,16 +2284,16 @@ class PiperBrowserActivity : AppCompatActivity() {
         }
         root.addView(actions)
 
-        val scroll = ScrollView(this).apply {
-            isFillViewport = true
-            clipToPadding = false
-        }
+        val scroll = ScrollView(this)
         val grid = GridLayout(this).apply {
             columnCount = if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) 3 else 2
             alignmentMode = GridLayout.ALIGN_BOUNDS
             setPadding(dp(12), 0, dp(12), dp(20))
+            layoutTransition = LayoutTransition().apply {
+                enableTransitionType(LayoutTransition.CHANGING)
+            }
         }
-        populateTabsGrid(grid, dialog, scroll)
+        populateTabsGrid(grid, dialog)
         scroll.addView(grid)
         root.addView(
             scroll,
@@ -2278,40 +2308,35 @@ class PiperBrowserActivity : AppCompatActivity() {
         dialog.show()
     }
 
-    private fun populateTabsGrid(
-        grid: GridLayout,
-        dialog: BottomSheetDialog,
-        scroll: ScrollView,
-        restoreScrollY: Int = scroll.scrollY
-    ) {
+    private fun populateTabsGrid(grid: GridLayout, dialog: BottomSheetDialog) {
+        grid.removeAllViews()
         val columns = grid.columnCount
         val available = resources.displayMetrics.widthPixels - dp(24) - dp(12 * (columns - 1))
         val cardWidth = available / columns
-        grid.suppressLayout(true)
-        try {
-            grid.removeAllViews()
-            tabs.toList().forEach { tab ->
-                val card = createTabCard(tab, dialog, grid, scroll)
-                grid.addView(card, GridLayout.LayoutParams().apply {
-                    width = cardWidth
-                    height = dp(if (columns == 2) 255 else 220)
-                    setMargins(dp(4), dp(4), dp(4), dp(8))
-                })
-            }
-        } finally {
-            grid.suppressLayout(false)
-        }
-        scroll.post {
-            val maxScrollY = (grid.height - scroll.height).coerceAtLeast(0)
-            scroll.scrollTo(0, restoreScrollY.coerceIn(0, maxScrollY))
+        tabs.toList().forEachIndexed { index, tab ->
+            val card = createTabCard(tab, dialog, grid)
+            grid.addView(card, GridLayout.LayoutParams().apply {
+                width = cardWidth
+                height = dp(if (columns == 2) 255 else 220)
+                setMargins(dp(4), dp(4), dp(4), dp(8))
+            })
+            card.alpha = 0f
+            card.scaleX = 0.96f
+            card.scaleY = 0.96f
+            card.animate()
+                .alpha(1f)
+                .scaleX(1f)
+                .scaleY(1f)
+                .setStartDelay((index * 35L).coerceAtMost(175L))
+                .setDuration(180L)
+                .start()
         }
     }
 
     private fun createTabCard(
         tab: BrowserTab,
         dialog: BottomSheetDialog,
-        grid: GridLayout,
-        scroll: ScrollView
+        grid: GridLayout
     ): View {
         return LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -2346,9 +2371,8 @@ class PiperBrowserActivity : AppCompatActivity() {
                     layoutParams = LinearLayout.LayoutParams(dp(36), dp(36))
                     setPadding(dp(10), dp(10), dp(10), dp(10))
                     setOnClickListener {
-                        val oldScrollY = scroll.scrollY
                         closeTab(tab.id)
-                        populateTabsGrid(grid, dialog, scroll, oldScrollY)
+                        populateTabsGrid(grid, dialog)
                     }
                 })
             })
