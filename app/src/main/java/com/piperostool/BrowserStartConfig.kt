@@ -17,7 +17,23 @@ internal data class BrowserStartConfig(
     val subtitle: String,
     val searchHint: String,
     val privacyNote: String,
-    val components: List<BrowserStartComponent>
+    val components: List<BrowserStartComponent>,
+    val browserOptions: BrowserOptionsConfig
+)
+
+internal data class BrowserOptionsConfig(
+    val title: String,
+    val items: List<BrowserOptionItem>
+)
+
+internal data class BrowserOptionItem(
+    val action: String,
+    val title: String,
+    val subtitle: String,
+    val summaryKey: String,
+    val icon: String,
+    val visible: Boolean,
+    val enabled: Boolean
 )
 
 internal sealed interface BrowserStartComponent {
@@ -120,7 +136,7 @@ internal object BrowserStartConfigParser {
         if (raw.isBlank() || raw.length > 64 * 1024) return null
         return try {
             val root = JSONObject(raw)
-            if (root.optInt("schemaVersion", -1) != 1) return null
+            if (root.optInt("schemaVersion", -1) != 2) return null
             val version = root.optLong("configVersion", 0L)
             if (version < 1L) return null
             val screen = root.optJSONObject("screen") ?: return null
@@ -140,7 +156,17 @@ internal object BrowserStartConfigParser {
                     "announcementBanner" -> parseBanner(item)?.let(components::add)
                 }
             }
-            BrowserStartConfig(version, title, subtitle, searchHint, privacyNote, components)
+            val browserOptions = parseBrowserOptions(root.optJSONObject("browserOptions"))
+                ?: return null
+            BrowserStartConfig(
+                version,
+                title,
+                subtitle,
+                searchHint,
+                privacyNote,
+                components,
+                browserOptions
+            )
         } catch (_: Exception) {
             null
         }
@@ -188,6 +214,54 @@ internal object BrowserStartConfigParser {
             buttonText = buttonText.takeIf { url != null }.orEmpty(),
             url = url
         )
+    }
+
+    private fun parseBrowserOptions(value: JSONObject?): BrowserOptionsConfig? {
+        value ?: return null
+        val title = clean(value.optString("title"), 64)
+        val source = value.optJSONArray("items") ?: return null
+        if (title.isBlank() || source.length() > 20) return null
+        val actions = setOf(
+            "privacy_report", "developer_tools", "browser_theme", "search_engine",
+            "site_data", "desktop_mode", "history", "downloads", "extensions",
+            "user_agent", "notifications", "about"
+        )
+        val icons = setOf(
+            "privacy", "code", "search", "lock", "browser", "reload", "download",
+            "add", "notification"
+        )
+        val summaryKeys = setOf(
+            "none", "privacy_report", "developer_tools", "browser_theme",
+            "search_engine", "site_data", "extensions", "user_agent"
+        )
+        val seenActions = mutableSetOf<String>()
+        val items = buildList {
+            for (index in 0 until source.length()) {
+                val item = source.optJSONObject(index) ?: continue
+                val action = item.optString("action")
+                val itemTitle = clean(item.optString("title"), 48)
+                val icon = item.optString("icon")
+                if (action !in actions || action in seenActions || itemTitle.isBlank() || icon !in icons) {
+                    continue
+                }
+                seenActions += action
+                val summaryKey = item.optString("summaryKey", "none")
+                    .takeIf { it in summaryKeys } ?: "none"
+                add(
+                    BrowserOptionItem(
+                        action = action,
+                        title = itemTitle,
+                        subtitle = clean(item.optString("subtitle"), 120),
+                        summaryKey = summaryKey,
+                        icon = icon,
+                        visible = item.optBoolean("visible", true),
+                        enabled = item.optBoolean("enabled", true)
+                    )
+                )
+            }
+        }
+        if (items.isEmpty()) return null
+        return BrowserOptionsConfig(title, items)
     }
 
     private fun clean(value: String, maxLength: Int): String =
