@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "configVersion": 1,
+  "updatedAt": "2026-11-04",
+  "screen": {
+    "type": "column",
+    "title": "Tìm kiếm",
+    "subtitle": "Tìm kiếm với Google hoặc nhập địa chỉ web",
+    "searchHint": "Tìm kiếm hoặc nhập địa chỉ",
+    "privacyNote": "Lịch sử và dữ liệu duyệt web được lưu trên thiết bị.",
+    "children": [
+      {
+        "type": "shortcutGrid",
+        "visible": true,
+        "columns": 2,
+        "items": [
+          { "title": "Google", "badge": "G", "url": "https://www.google.com" },
+          { "title": "YouTube", "badge": "▶", "url": "https://www.youtube.com" },
+          { "title": "GitHub", "badge": "<>", "url": "https://github.com" },
+          { "title": "PiperOS", "badge": "P", "url": "https://github.com/Phi574/PiperOSTool-Android" }
+        ]
+      },
+      {
+        "type": "announcementBanner",
+        "visible": false,
+        "title": "Thông báo",
+        "message": "",
+        "buttonText": "",
+        "url": ""
+      }
+    ]
+  }
+}

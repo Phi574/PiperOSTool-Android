@@ -1,5 +1,12 @@
 # Changelog
 
+## 3.9.0.PRE — PiperOS Browser SDUI pilot
+- Bắt đầu chuyển giao diện trang bắt đầu PiperOS Browser sang cấu hình JSON từ GitHub Pages.
+- Cho phép cập nhật tiêu đề, mô tả, gợi ý tìm kiếm, ghi chú riêng tư, banner thông báo và lưới lối tắt mà không cần biên dịch APK.
+- Lưu cấu hình hợp lệ để dùng offline, kèm JSON đóng gói trong ứng dụng làm phương án dự phòng.
+- Giới hạn kích thước/schema, chỉ mở URL HTTPS trong PiperOS Browser; JSON không thể chạy code hoặc gọi activity tùy ý.
+- Nâng versionCode lên 107.
+
 ## 3.8.9 — Bản chính thức
 - Phát hành ổn định các cải tiến PiperOS Data Transfer, PiperOS Media và PiperOS 2FA đã được kiểm tra ở bản 3.8.9.beta.
 - Nâng versionCode lên 106 để nâng cấp tuần tự từ 3.8.9.beta.

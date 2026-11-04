@@ -60,7 +60,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="18dp"
-                android:text="@string/piperos_search"
+                android:text=""
                 android:textColor="@color/white"
                 android:textSize="30sp"
                 android:textStyle="bold" />
@@ -70,7 +70,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
-                android:text="@string/search_with_google"
+                android:text=""
                 android:textColor="#AFFFFFFF"
                 android:textSize="13sp" />
 
@@ -91,7 +91,7 @@
                     android:layout_height="match_parent"
                     android:layout_weight="1"
                     android:background="@android:color/transparent"
-                    android:hint="@string/search_or_enter_address"
+                    android:hint=""
                     android:imeOptions="actionSearch"
                     android:inputType="textUri"
                     android:maxLines="1"
@@ -111,13 +111,20 @@
                     app:tint="@color/green_neon" />
             </LinearLayout>
 
+            <LinearLayout
+                android:id="@+id/browserStartDynamicContent"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:orientation="vertical" />
+
             <TextView
                 android:id="@+id/browserStorageNote"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="18dp"
                 android:gravity="center"
-                android:text="@string/browser_private_storage_note"
+                android:text=""
                 android:textColor="#72FFFFFF"
                 android:textSize="11sp" />
         </LinearLayout>

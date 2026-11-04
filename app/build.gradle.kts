@@ -9,8 +9,8 @@ plugins {
 
 val googleServicesConfig = file("google-services.json")
 val testPackage = providers.gradleProperty("piperTestPackage").orNull == "true"
-val piperVersionCode = providers.gradleProperty("piperVersionCode").orNull?.toIntOrNull() ?: 106
-val piperVersionName = providers.gradleProperty("piperVersionName").orNull ?: "3.8.9"
+val piperVersionCode = providers.gradleProperty("piperVersionCode").orNull?.toIntOrNull() ?: 107
+val piperVersionName = providers.gradleProperty("piperVersionName").orNull ?: "3.9.0.PRE"
 val piperSigningPropertiesFile = File(System.getProperty("user.home"), ".android/PiperOS/signing.properties")
 val piperSigningProperties = Properties().apply {
     if (piperSigningPropertiesFile.isFile) {
@@ -27,6 +27,7 @@ if (googleServicesConfig.isFile) {
 
 android {
     namespace = "com.piperostool"
+    sourceSets.getByName("main").assets.srcDir("../docs/config")
     signingConfigs.configureEach {
         enableV2Signing = true
         enableV3Signing = true

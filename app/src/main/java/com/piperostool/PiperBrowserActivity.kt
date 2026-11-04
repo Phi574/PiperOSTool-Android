@@ -59,6 +59,7 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.lifecycle.lifecycleScope
 import androidx.webkit.ProfileStore
 import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
@@ -74,6 +75,7 @@ import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
+import kotlinx.coroutines.launch
 import org.json.JSONObject
 import org.json.JSONTokener
 import kotlin.math.abs
@@ -131,6 +133,7 @@ class PiperBrowserActivity : AppCompatActivity() {
     private lateinit var sessionStore: BrowserSessionStore
     private lateinit var extensionStore: BrowserExtensionStore
     private lateinit var privateBadge: TextView
+    private var browserStartConfig: BrowserStartConfig? = null
 
     private val tabs = mutableListOf<BrowserTab>()
     private var activeTabId = -1L
@@ -230,12 +233,17 @@ class PiperBrowserActivity : AppCompatActivity() {
         clearStaleIncognitoProfiles()
         systemUserAgent = WebSettings.getDefaultUserAgent(applicationContext)
         bindViews()
+        BrowserStartConfigRepository.load(this)?.let(::applyBrowserStartConfig)
         applyBrowserChromeTheme()
         applyWindowInsets()
         applyResponsiveLayout(resources.configuration)
         setupActions()
         setupBackHandling()
         restoreSession()
+        lifecycleScope.launch {
+            BrowserStartConfigRepository.refresh(this@PiperBrowserActivity)
+                ?.let(::applyBrowserStartConfig)
+        }
         NetworkAccess.observe(this, this) { online ->
             if (!online) {
                 tabs.forEach { it.webView.stopLoading() }
@@ -298,6 +306,16 @@ class PiperBrowserActivity : AppCompatActivity() {
         bottomPanel = findViewById(R.id.browserBottomPanel)
         addressRow = findViewById(R.id.browserAddressRow)
         browserToolbar = findViewById(R.id.browserToolbar)
+    }
+
+    private fun applyBrowserStartConfig(config: BrowserStartConfig) {
+        if (isFinishing || isDestroyed) return
+        browserStartConfig = config
+        BrowserStartPageRenderer.apply(this, config, ::navigateTo)
+        applyBrowserChromeTheme()
+        if (activeTab()?.incognito != true) {
+            findViewById<TextView>(R.id.browserStorageNote).text = config.privacyNote
+        }
     }
 
     private fun applyWindowInsets() {
@@ -969,13 +987,12 @@ class PiperBrowserActivity : AppCompatActivity() {
         setBrowserChromeCompact(false, animated = false)
         pageTitle.text = tab.title
         privateBadge.visibility = if (tab.incognito) View.VISIBLE else View.GONE
-        findViewById<TextView>(R.id.browserStorageNote).setText(
-            if (tab.incognito) {
-                R.string.browser_incognito_storage_note
-            } else {
-                R.string.browser_private_storage_note
-            }
-        )
+        findViewById<TextView>(R.id.browserStorageNote).text = if (tab.incognito) {
+            getString(R.string.browser_incognito_storage_note)
+        } else {
+            browserStartConfig?.privacyNote
+                ?: getString(R.string.browser_private_storage_note)
+        }
         updateAddressDisplay(tab)
         updateAddressAction(tab)
         updateSecurityIcon(tab.url)
