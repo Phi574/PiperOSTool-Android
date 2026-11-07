@@ -45,8 +45,6 @@ class InfoFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         val context = requireContext()
         val sections = createSections(context)
-        view.findViewById<TextView>(R.id.tvInfoHeadline).text =
-            "PiperOS Tool ${AppVersion.name(context)}"
 
         view.findViewById<LinearLayout>(R.id.infoAccountActions).apply {
             visibility = View.GONE
@@ -195,7 +193,7 @@ class InfoFragment : Fragment() {
                 icon = R.drawable.ic_browser_globe,
                 color = color("#86EFAC"),
                 rows = listOf(
-                    InfoRow("PiperOS Android", "github.com/Phi574/PiperOSTool-Android", "https://github.com/Phi574/PiperOSTool-Android"),
+                    InfoRow("PiperOS Android Preview", "github.com/Phi574/PiperOSTool-Android-Preview", "https://github.com/Phi574/PiperOSTool-Android-Preview"),
                     InfoRow("PiperOS Termux Runtime", "github.com/Phi574/Piperos_termux", "https://github.com/Phi574/Piperos_termux"),
                     InfoRow("PiperOS Tool PC", "github.com/Phi574/PiperOSTool-PC", "https://github.com/Phi574/PiperOSTool-PC"),
                     InfoRow("Module PiperOS Tool", "github.com/Phi574/module_piper-os-tool", "https://github.com/Phi574/module_piper-os-tool")

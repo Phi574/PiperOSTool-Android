@@ -980,4 +980,9 @@
     <string name="update_notifications_prompt_later">Để sau</string>
     <string name="update_refresh_description">Kiểm tra bản cập nhật ngay</string>
     <string name="update_delete_download">Xóa APK đã tải xuống</string>
+    <string name="apps_screen_title">Ứng dụng &amp; APK</string>
+    <string name="apps_screen_summary">Quản lý ứng dụng đã cài và tệp APK.</string>
+    <string name="settings_screen_title">Cài đặt</string>
+    <string name="settings_screen_summary">Bảo mật, quyền truy cập và giao diện.</string>
+    <string name="info_shell_summary">PiperOS Tool · phiên bản %1$s</string>
 </resources>

@@ -114,8 +114,6 @@ class SettingFragment : Fragment() {
         initViews(view)
         settingsRoot = view
         clearLegacyRowSurfaces(view)
-        view.findViewById<TextView>(R.id.tvSettingVersion).text =
-            getString(R.string.auth_version, AppVersion.name(requireContext()))
         view.findViewById<View>(R.id.settingsAccountSurface).apply {
             visibility = View.GONE
             (parent as? ViewGroup)?.let { container ->

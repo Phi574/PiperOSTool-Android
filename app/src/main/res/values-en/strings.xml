@@ -974,4 +974,9 @@
     <string name="update_delete_download">Delete downloaded APK</string>
     <string name="data_transfer_title">PiperOS Data Transfer</string>
     <string name="data_transfer_summary">Transfer files and APKs securely over a local network</string>
+    <string name="apps_screen_title">Apps &amp; APKs</string>
+    <string name="apps_screen_summary">Manage installed apps and APK files.</string>
+    <string name="settings_screen_title">Settings</string>
+    <string name="settings_screen_summary">Security, access, and appearance.</string>
+    <string name="info_shell_summary">PiperOS Tool · version %1$s</string>
 </resources>

@@ -22,6 +22,12 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updateLayoutParams
 import androidx.fragment.app.Fragment
 import com.google.firebase.auth.FirebaseAuth
+import android.net.Uri
+import android.view.animation.DecelerateInterpolator
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 
 class HomeActivity : AppCompatActivity() {
 
@@ -45,6 +51,17 @@ class HomeActivity : AppCompatActivity() {
     private var sessionChecksActive = false
     private var sessionCheckGeneration = 0
     private var leavingForAccountState = false
+
+    private var windowConfigJob: Job? = null
+    private var currentWindowConfig: WindowConfig? = null
+    private val windowConfigRefreshHandler = Handler(Looper.getMainLooper())
+
+    private val windowConfigRefresh = object : Runnable {
+        override fun run() {
+            loadWindowConfig(silent = true)
+            windowConfigRefreshHandler.postDelayed(this, 3_000L)
+        }
+    }
     private val sessionCheck = object : Runnable {
         override fun run() {
             verifyAccountSession()
@@ -61,6 +78,7 @@ class HomeActivity : AppCompatActivity() {
         applyCustomBackground()
         initViews()
         setupListeners()
+        setupWindowDrawer()
         setupBackPressHandler()
         setupKeyboardAwareBottomNav()
         setupNavigationBarAwareBottomNav()
@@ -91,12 +109,16 @@ class HomeActivity : AppCompatActivity() {
         leavingForAccountState = false
         sessionHandler.removeCallbacks(sessionCheck)
         sessionHandler.post(sessionCheck)
+        windowConfigRefreshHandler.removeCallbacks(windowConfigRefresh)
+        loadWindowConfig(silent = true)
+        windowConfigRefreshHandler.postDelayed(windowConfigRefresh, 3_000L)
     }
 
     override fun onStop() {
         sessionChecksActive = false
         sessionCheckGeneration++
         sessionHandler.removeCallbacks(sessionCheck)
+        windowConfigRefreshHandler.removeCallbacks(windowConfigRefresh)
         super.onStop()
     }
 
@@ -113,6 +135,36 @@ class HomeActivity : AppCompatActivity() {
         }
     }
 
+    private fun updateScreenHeader(selectedIndex: Int) {
+        val title = findViewById<TextView>(R.id.homeScreenTitle)
+        val summary = findViewById<TextView>(R.id.homeScreenSummary)
+
+        when (selectedIndex) {
+            1 -> {
+                title.setText(R.string.beta_lab_title)
+                summary.setText(R.string.beta_lab_subtitle)
+            }
+            2 -> {
+                title.setText(R.string.apps_screen_title)
+                summary.setText(R.string.apps_screen_summary)
+            }
+            3 -> {
+                title.setText(R.string.settings_screen_title)
+                summary.setText(R.string.settings_screen_summary)
+            }
+            4 -> {
+                title.setText(R.string.info_screen_title)
+                summary.text = getString(
+                    R.string.info_shell_summary,
+                    AppVersion.name(this)
+                )
+            }
+            else -> {
+                title.setText(R.string.home_screen_title)
+                summary.setText(R.string.home_screen_summary)
+            }
+        }
+    }
     private fun handleAccountState(state: AccountSessionState) {
         if (leavingForAccountState) return
         when (state) {
@@ -178,24 +230,351 @@ class HomeActivity : AppCompatActivity() {
     private fun setupNavigationBarAwareBottomNav() {
         val root = findViewById<View>(R.id.homeRoot)
         val bottomBar = findViewById<View>(R.id.bottomNavCard)
+        val header = findViewById<View>(R.id.homeHeader)
+        val drawerPanel = findViewById<View>(R.id.homeWindowPanel)
+
         val baseBottomMargin = dp(16)
+        val baseHeaderTopPadding = header.paddingTop
+        val baseDrawerMargin = dp(12)
+
         ViewCompat.setOnApplyWindowInsetsListener(root) { _, insets ->
-            val navigationInset = insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom
+            val topInset = insets.getInsets(
+                WindowInsetsCompat.Type.statusBars() or
+                        WindowInsetsCompat.Type.displayCutout()
+            ).top
+            val navigationInset =
+                insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom
+
+            header.setPadding(
+                header.paddingLeft,
+                baseHeaderTopPadding + topInset,
+                header.paddingRight,
+                header.paddingBottom
+            )
+
             bottomBar.updateLayoutParams<ConstraintLayout.LayoutParams> {
                 bottomMargin = baseBottomMargin + navigationInset
             }
+
+            (drawerPanel.layoutParams as? android.widget.FrameLayout.LayoutParams)?.let { params ->
+                params.topMargin = baseDrawerMargin + topInset
+                params.bottomMargin = baseDrawerMargin + navigationInset
+                drawerPanel.layoutParams = params
+            }
+
             insets
         }
+
         ViewCompat.requestApplyInsets(root)
     }
 
+    private fun setupWindowDrawer() {
+        findViewById<View>(R.id.btnHomeWindow).setOnClickListener {
+            openWindowDrawer()
+        }
+        findViewById<View>(R.id.btnCloseHomeWindow).setOnClickListener {
+            closeWindowDrawer()
+        }
+        findViewById<View>(R.id.homeWindowScrim).setOnClickListener {
+            closeWindowDrawer()
+        }
+        findViewById<View>(R.id.homeWindowSupport).setOnClickListener {
+            closeWindowDrawer { openSupport() }
+        }
+        findViewById<View>(R.id.btnHomeWindowLogout).setOnClickListener {
+            closeWindowDrawer { confirmLogout() }
+        }
+    }
+
+    private fun openWindowDrawer() {
+        val overlay = findViewById<View>(R.id.homeWindowOverlay)
+        if (overlay.visibility == View.VISIBLE) return
+
+        val panel = findViewById<View>(R.id.homeWindowPanel)
+        val scrim = findViewById<View>(R.id.homeWindowScrim)
+
+        overlay.visibility = View.VISIBLE
+        val distance = panel.width.takeIf { it > 0 } ?: dp(320)
+        panel.translationX = distance.toFloat()
+        scrim.alpha = 0f
+
+        panel.animate().cancel()
+        scrim.animate().cancel()
+        panel.animate()
+            .translationX(0f)
+            .setDuration(260L)
+            .setInterpolator(DecelerateInterpolator())
+            .start()
+        scrim.animate().alpha(1f).setDuration(220L).start()
+
+        hideBottomNav(force = true)
+        loadWindowConfig()
+    }
+    private fun loadWindowConfig(silent: Boolean = false) {
+        if (windowConfigJob?.isActive == true) return
+
+        if (!silent) {
+            hideRemoteWindowRows()
+            showWindowStatus(
+                loading = true,
+                message = "Đang tải cấu hình..."
+            )
+        }
+
+        windowConfigJob = lifecycleScope.launch {
+            try {
+                val config = WindowConfigRepository.load(this@HomeActivity)
+                val changed = config.rawJson != currentWindowConfig?.rawJson
+                currentWindowConfig = config
+
+                if (changed || !silent) {
+                    renderWindowConfig(config)
+                }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                currentWindowConfig = null
+                if (findViewById<View>(R.id.homeWindowOverlay).visibility == View.VISIBLE) {
+                    hideRemoteWindowRows()
+                    showWindowStatus(
+                        loading = false,
+                        message = "Các tính năng hiện tại không khả dụng.\nVui lòng kiểm tra mạng hoặc thử lại sau."
+                    )
+                }
+            }
+        }
+    }
+
+    private fun renderWindowConfig(config: WindowConfig) {
+        val profileItem = config.homeWindow.firstOrNull {
+            it.id == "personal_info" &&
+                    it.action == "personal_info" &&
+                    it.enabled
+        }
+        val securityItem = config.homeWindow.firstOrNull {
+            it.id == "security" &&
+                    it.action == "password_security" &&
+                    it.enabled
+        }
+        val whatsNewItem = config.homeWindow.firstOrNull {
+            it.id == "whats_new" &&
+                    it.action == "whats_new" &&
+                    it.enabled
+        }
+        if (listOf(profileItem, securityItem, whatsNewItem).none { it?.enabled == true }) {
+            hideRemoteWindowRows()
+            showWindowStatus(
+                loading = false,
+                message = "Hiện tại chưa khả dụng tính năng nào."
+            )
+            return
+        }
+
+        val profileVisible = bindHomeWindowRow(
+            item = profileItem,
+            rowId = R.id.homeWindowProfile,
+            titleId = R.id.titleHomeWindowProfile,
+            summaryId = R.id.summaryHomeWindowProfile,
+            iconId = R.id.iconHomeWindowProfile,
+            config = config
+        )
+        val securityVisible = bindHomeWindowRow(
+            item = securityItem,
+            rowId = R.id.homeWindowSecurity,
+            titleId = R.id.titleHomeWindowSecurity,
+            summaryId = R.id.summaryHomeWindowSecurity,
+            iconId = R.id.iconHomeWindowSecurity,
+            config = config
+        )
+        val whatsNewVisible = bindHomeWindowRow(
+            item = whatsNewItem,
+            rowId = R.id.homeWindowWhatsNew,
+            titleId = R.id.titleHomeWindowWhatsNew,
+            summaryId = R.id.summaryHomeWindowWhatsNew,
+            iconId = R.id.iconHomeWindowWhatsNew,
+            config = config
+        )
+
+        findViewById<View>(R.id.dividerHomeProfileSecurity).visibility =
+            if (profileVisible && securityVisible) View.VISIBLE else View.GONE
+
+        findViewById<View>(R.id.dividerHomeSecuritySupport).visibility =
+            if (profileVisible || securityVisible) View.VISIBLE else View.GONE
+
+        findViewById<View>(R.id.dividerHomeWhatsNewLogout).visibility =
+            if (whatsNewVisible) View.VISIBLE else View.GONE
+
+        findViewById<View>(R.id.homeWindowSupportSpacer).visibility =
+            if (whatsNewVisible) View.VISIBLE else View.GONE
+
+        if (profileVisible || securityVisible || whatsNewVisible) {
+            findViewById<View>(R.id.homeWindowRemoteStatus).visibility = View.GONE
+        } else {
+            showWindowStatus(
+                loading = false,
+                message = "Hiện tại chưa khả dụng tính năng nào."
+            )
+        }
+    }
+
+    private fun bindHomeWindowRow(
+        item: WindowConfigItem?,
+        rowId: Int,
+        titleId: Int,
+        summaryId: Int,
+        iconId: Int,
+        config: WindowConfig
+    ): Boolean {
+        val row = findViewById<View>(rowId)
+
+        if (item == null || !item.enabled) {
+            row.visibility = View.GONE
+            return false
+        }
+
+        val iconResource = when (item.icon) {
+            "user" -> R.drawable.user
+            "security" -> R.drawable.security
+            "speaker" -> R.drawable.speaker
+            else -> 0
+        }
+
+        if (iconResource == 0) {
+            row.visibility = View.GONE
+            return false
+        }
+
+        findViewById<TextView>(titleId).text = item.title
+        findViewById<TextView>(summaryId).text = item.summary
+        findViewById<ImageView>(iconId).setImageResource(iconResource)
+        row.alpha = if (item.enabled) 1f else 0.5f
+        row.isClickable = true
+        row.isFocusable = true
+
+        row.setOnClickListener {
+            if (!item.enabled) {
+                PiperDialog.showMessage(
+                    context = this,
+                    title = "Tính năng hiện không khả dụng",
+                    message = "Tính năng này hiện không khả dụng.",
+                    icon = R.drawable.error_bug,
+                    positiveLabel = "Đóng"
+                )
+                return@setOnClickListener
+            }
+            val destination = when (item.action) {
+                "personal_info" ->
+                    Intent(this, AccountProfileActivity::class.java)
+
+                "password_security" ->
+                    Intent(this, PasswordSecurityActivity::class.java)
+                        .putExtra("window_config_json", config.rawJson)
+
+                "whats_new" ->
+                    Intent(this, WhatsNewActivity::class.java)
+
+                else -> null
+            }
+
+            if (destination != null) {
+                closeWindowDrawer { startActivity(destination) }
+            }
+        }
+
+        row.visibility = View.VISIBLE
+        return true
+    }
+
+    private fun hideRemoteWindowRows() {
+        findViewById<View>(R.id.homeWindowProfile).visibility = View.GONE
+        findViewById<View>(R.id.homeWindowSecurity).visibility = View.GONE
+        findViewById<View>(R.id.homeWindowWhatsNew).visibility = View.GONE
+        findViewById<View>(R.id.dividerHomeProfileSecurity).visibility = View.GONE
+        findViewById<View>(R.id.dividerHomeSecuritySupport).visibility = View.GONE
+        findViewById<View>(R.id.dividerHomeWhatsNewLogout).visibility = View.GONE
+        findViewById<View>(R.id.homeWindowSupportSpacer).visibility = View.GONE
+    }
+
+    private fun showWindowStatus(
+        loading: Boolean,
+        message: String
+    ) {
+        findViewById<View>(R.id.homeWindowRemoteStatus).visibility = View.VISIBLE
+        findViewById<View>(R.id.homeWindowLoading).visibility =
+            if (loading) View.VISIBLE else View.GONE
+        findViewById<View>(R.id.homeWindowStatusIcon).visibility =
+            if (loading) View.GONE else View.VISIBLE
+        findViewById<TextView>(R.id.homeWindowStatusMessage).text = message
+    }
+    private fun closeWindowDrawer(afterClosed: (() -> Unit)? = null): Boolean {
+        val overlay = findViewById<View>(R.id.homeWindowOverlay)
+        if (overlay.visibility != View.VISIBLE) {
+            afterClosed?.invoke()
+            return false
+        }
+
+        val panel = findViewById<View>(R.id.homeWindowPanel)
+        val scrim = findViewById<View>(R.id.homeWindowScrim)
+        val distance = panel.width.takeIf { it > 0 } ?: dp(320)
+
+        panel.animate().cancel()
+        scrim.animate().cancel()
+        panel.animate()
+            .translationX(distance.toFloat())
+            .setDuration(220L)
+            .setInterpolator(DecelerateInterpolator())
+            .withEndAction {
+                overlay.visibility = View.GONE
+                panel.translationX = 0f
+                afterClosed?.invoke()
+            }
+            .start()
+        scrim.animate().alpha(0f).setDuration(180L).start()
+
+        showBottomNav(force = true)
+        return true
+    }
+
+    private fun openSupport() {
+        val intent = Intent(
+            Intent.ACTION_SENDTO,
+            Uri.parse("mailto:gayivt@gmail.com")
+        ).apply {
+            putExtra(Intent.EXTRA_SUBJECT, getString(R.string.home_support_email_subject))
+        }
+
+        runCatching { startActivity(intent) }.onFailure {
+            Toast.makeText(
+                this,
+                R.string.home_support_no_email,
+                Toast.LENGTH_LONG
+            ).show()
+        }
+    }
+
+    private fun confirmLogout() {
+        PiperDialog.showConfirm(
+            context = this,
+            title = getString(R.string.auth_logout),
+            message = getString(R.string.logout_confirmation),
+            positiveLabel = getString(R.string.auth_logout),
+            destructive = true
+        ) {
+            DeviceSessionManager.endCurrentSession(applicationContext) {
+                FirebaseAuth.getInstance().signOut()
+                startActivity(Intent(this, LoginActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or
+                            Intent.FLAG_ACTIVITY_CLEAR_TASK
+                })
+                finish()
+            }
+        }
+    }
     private fun setupBackPressHandler() {
         val callback = object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                if (currentTab == 0 &&
-                    (supportFragmentManager.findFragmentById(R.id.fragment_container) as? homeFragment)
-                        ?.closeWindowDrawer() == true
-                ) return
+                if (closeWindowDrawer()) return
+
                 if (currentTab != 0) {
                     replaceFragment(homeFragment())
                     currentTab = 0
@@ -208,7 +587,11 @@ class HomeActivity : AppCompatActivity() {
                     backToast.cancel()
                     finish()
                 } else {
-                    backToast = Toast.makeText(baseContext, R.string.home_press_again_to_exit, Toast.LENGTH_SHORT)
+                    backToast = Toast.makeText(
+                        baseContext,
+                        R.string.home_press_again_to_exit,
+                        Toast.LENGTH_SHORT
+                    )
                     backToast.show()
                 }
                 backPressedTime = System.currentTimeMillis()
@@ -311,6 +694,7 @@ class HomeActivity : AppCompatActivity() {
     }
 
     private fun updateTabUI(selectedIndex: Int) {
+        updateScreenHeader(selectedIndex)
         val dark = resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK ==
             android.content.res.Configuration.UI_MODE_NIGHT_YES
         val activeColorCode = Color.parseColor(if (dark) "#8DD7FF" else "#156A9A")

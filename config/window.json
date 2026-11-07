@@ -1,0 +1,91 @@
+{
+  "schemaVersion": 1,
+  "homeWindow": [
+    {
+      "id": "personal_info",
+      "enabled": true,
+      "title": {
+        "vi": "Thông tin cá nhân",
+        "en": "Personal information"
+      },
+      "summary": {
+        "vi": "Hồ sơ tài khoản PiperOS",
+        "en": "Your PiperOS account profile"
+      },
+      "icon": "user",
+      "action": "personal_info"
+    },
+    {
+      "id": "security",
+      "enabled": true,
+      "title": {
+        "vi": "Mật khẩu bảo mật",
+        "en": "Security and password"
+      },
+      "summary": {
+        "vi": "Thiết bị, mật khẩu và liên kết",
+        "en": "Devices, password, and linked accounts"
+      },
+      "icon": "security",
+      "action": "password_security"
+    },
+    {
+      "id": "whats_new",
+      "enabled": true,
+      "title": {
+        "vi": "Có gì mới",
+        "en": "What's new"
+      },
+      "summary": {
+        "vi": "Xem thay đổi và lịch sử phiên bản",
+        "en": "See updates and version history"
+      },
+      "icon": "speaker",
+      "action": "whats_new"
+    }
+  ],
+  "securityMenu": [
+    {
+      "id": "device_history",
+      "enabled": true,
+      "title": {
+        "vi": "Lịch sử thiết bị đăng nhập",
+        "en": "Signed-in device history"
+      },
+      "summary": {
+        "vi": "Xem và quản lý phiên đăng nhập",
+        "en": "Review and manage signed-in sessions"
+      },
+      "icon": "devices",
+      "action": "device_sessions"
+    },
+    {
+      "id": "change_password",
+      "enabled": true,
+      "title": {
+        "vi": "Đổi mật khẩu",
+        "en": "Change password"
+      },
+      "summary": {
+        "vi": "Cập nhật mật khẩu tài khoản Firebase",
+        "en": "Update your Firebase account password"
+      },
+      "icon": "security",
+      "action": "change_password"
+    },
+    {
+      "id": "manage_links",
+      "enabled": true,
+      "title": {
+        "vi": "Quản lý liên kết",
+        "en": "Manage linked accounts"
+      },
+      "summary": {
+        "vi": "Quản lý phương thức đăng nhập",
+        "en": "Manage linked sign-in methods"
+      },
+      "icon": "user",
+      "action": "linked_accounts"
+    }
+  ]
+}

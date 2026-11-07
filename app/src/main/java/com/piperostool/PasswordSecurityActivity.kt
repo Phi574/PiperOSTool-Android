@@ -6,33 +6,119 @@ import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.ContextCompat
 
 class PasswordSecurityActivity : AppCompatActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_password_security)
         PiperModernUi.watch(this)
         findViewById<View>(R.id.btnSecurityBack).setOnClickListener { finish() }
-        findViewById<View>(R.id.securityDeviceHistory).apply {
-            bindAction(R.string.security_device_history, R.string.security_device_history_summary, R.drawable.devices)
-            setOnClickListener { startActivity(Intent(this@PasswordSecurityActivity, DeviceSessionsActivity::class.java)) }
+
+        val config = intent.getStringExtra(EXTRA_WINDOW_CONFIG_JSON)
+            ?.let { raw -> runCatching { WindowConfigRepository.parse(raw) }.getOrNull() }
+
+        if (config == null) {
+            hideSecurityRows()
+            showUnavailable("Không thể xác minh trạng thái các tính năng. Hãy quay lại trang chủ, kiểm tra mạng rồi thử lại.")
+            return
         }
-        findViewById<View>(R.id.securityChangePassword).apply {
-            bindAction(R.string.security_change_password, R.string.security_change_password_summary, R.drawable.security)
-            setOnClickListener { startActivity(Intent(this@PasswordSecurityActivity, ChangePasswordActivity::class.java)) }
+
+        val deviceHistory = config.securityMenu.firstOrNull {
+            it.id == "device_history" && it.action == "device_sessions" && it.enabled
         }
-        findViewById<View>(R.id.securityManageLinksBeta).apply {
-            findViewById<TextView>(R.id.securityActionTitle)?.setText(R.string.security_manage_links)
-            findViewById<TextView>(R.id.securityActionSummary)?.setText(R.string.security_manage_links_summary)
-            findViewById<ImageView>(R.id.securityActionIcon)?.setImageResource(R.drawable.user)
-            setOnClickListener { startActivity(Intent(this@PasswordSecurityActivity, LinkedAccountsActivity::class.java)) }
+        val changePassword = config.securityMenu.firstOrNull {
+            it.id == "change_password" && it.action == "change_password" && it.enabled
+        }
+        val manageLinks = config.securityMenu.firstOrNull {
+            it.id == "manage_links" && it.action == "linked_accounts" && it.enabled
+        }
+
+        if (deviceHistory == null && changePassword == null && manageLinks == null) {
+            hideSecurityRows()
+            showUnavailable("Hiện tại chưa khả dụng tính năng nào.")
+            return
+        }
+
+        bindAction(
+            rowId = R.id.securityDeviceHistory,
+            item = deviceHistory,
+            defaultTitle = R.string.security_device_history,
+            defaultSummary = R.string.security_device_history_summary,
+            defaultIcon = R.drawable.devices
+        ) {
+            startActivity(Intent(this, DeviceSessionsActivity::class.java))
+        }
+
+        bindAction(
+            rowId = R.id.securityChangePassword,
+            item = changePassword,
+            defaultTitle = R.string.security_change_password,
+            defaultSummary = R.string.security_change_password_summary,
+            defaultIcon = R.drawable.security
+        ) {
+            startActivity(Intent(this, ChangePasswordActivity::class.java))
+        }
+
+        bindAction(
+            rowId = R.id.securityManageLinksBeta,
+            item = manageLinks,
+            defaultTitle = R.string.security_manage_links,
+            defaultSummary = R.string.security_manage_links_summary,
+            defaultIcon = R.drawable.user
+        ) {
+            startActivity(Intent(this, LinkedAccountsActivity::class.java))
         }
     }
 
-    private fun View.bindAction(title: Int, summary: Int, icon: Int) {
-        findViewById<TextView>(R.id.securityActionTitle).setText(title)
-        findViewById<TextView>(R.id.securityActionSummary).setText(summary)
-        findViewById<ImageView>(R.id.securityActionIcon).setImageResource(icon)
+    private fun bindAction(
+        rowId: Int,
+        item: WindowConfigItem?,
+        defaultTitle: Int,
+        defaultSummary: Int,
+        defaultIcon: Int,
+        onOpen: () -> Unit
+    ) {
+        val row = findViewById<View>(rowId)
+        if (item == null || !item.enabled) {
+            row.visibility = View.GONE
+            return
+        }
+
+        val iconResource = when (item.icon) {
+            "devices" -> R.drawable.devices
+            "security" -> R.drawable.security
+            "user" -> R.drawable.user
+            else -> defaultIcon
+        }
+
+        row.findViewById<TextView>(R.id.securityActionTitle)?.text =
+            item.title.ifBlank { getString(defaultTitle) }
+        row.findViewById<TextView>(R.id.securityActionSummary)?.text =
+            item.summary.ifBlank { getString(defaultSummary) }
+        row.findViewById<ImageView>(R.id.securityActionIcon)?.setImageResource(iconResource)
+        row.alpha = 1f
+        row.setOnClickListener { onOpen() }
+        row.visibility = View.VISIBLE
+    }
+
+    private fun hideSecurityRows() {
+        findViewById<View>(R.id.securityDeviceHistory).visibility = View.GONE
+        findViewById<View>(R.id.securityChangePassword).visibility = View.GONE
+        findViewById<View>(R.id.securityManageLinksBeta).visibility = View.GONE
+    }
+
+    private fun showUnavailable(message: String) {
+        PiperDialog.showMessage(
+            context = this,
+            title = "Tính năng hiện không khả dụng",
+            message = message,
+            icon = R.drawable.error_bug,
+            positiveLabel = "Đóng"
+        )
+    }
+
+    companion object {
+        const val EXTRA_WINDOW_CONFIG_JSON = "window_config_json"
     }
 }

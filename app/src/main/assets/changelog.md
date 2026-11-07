@@ -1,5 +1,12 @@
 # Changelog
 
+## 3.9.0.BETA — Bản thử nghiệm
+- Chuyển các thay đổi giao diện và điều hướng từ dự án Preview sang bản chính: tiêu đề theo từng trang nằm ở Activity Home, cửa sổ Window dùng menu cấu hình, và cập nhật các trang Home, Apps, Beta, Settings, Info.
+- Tích hợp đầy đủ xử lý JSON cho Welcome, đăng nhập, đăng ký, khóa bảo mật, quên mật khẩu và xác thực điện thoại; giữ các activity Kotlin và renderer cần thiết.
+- Đưa `auth.json`, JSON màn hình và `window.json` vào nhánh chính; app lấy cấu hình từ repo chính thức `Phi574/PiperOSTool-Android`.
+- Chuyển phần lịch sử thiết bị, đổi mật khẩu và quản lý liên kết vào menu bảo mật theo cấu hình Window.
+- Nâng versionCode lên 108.
+
 ## 3.9.0.PRE — Bản xem trước
 - Chuyển Welcome, đăng nhập, đăng ký, khóa bảo mật, quên mật khẩu và xác thực điện thoại sang giao diện JSON do `config/auth.json` và từng file màn hình quản lý.
 - Tải cấu hình từ GitHub, lưu cache và dùng JSON đóng gói trong app khi offline hoặc GitHub không phản hồi; giữ nguyên xử lý Firebase trong Kotlin.

@@ -19,9 +19,9 @@
 
 ## Tải ứng dụng
 
-Bản phát hành mới nhất: **3.9.0.PRE** (Preview) · versionCode **107** · Android 10 trở lên.
+Bản phát hành mới nhất: **3.9.0.BETA** · versionCode **108** · Android 10 trở lên.
 
-- [Tải APK 3.9.0.PRE](https://github.com/Phi574/PiperOSTool-Android/releases/tag/v3.9.0.PRE)
+- [Tải APK 3.9.0.BETA](https://github.com/Phi574/PiperOSTool-Android/releases/tag/v3.9.0.BETA)
 - [Xem toàn bộ bản phát hành](https://github.com/Phi574/PiperOSTool-Android/releases)
 - [Lịch sử thay đổi](CHANGELOG.md)
 
