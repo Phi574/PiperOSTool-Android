@@ -34,16 +34,14 @@ class SignupActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // 1. Phải vẽ giao diện ra trước
-        setContentView(R.layout.activity_signup)
-
         // Khởi tạo Firebase
         auth = Firebase.auth
         db = Firebase.firestore
-
-        initViews()
-        setupListeners()
-        NetworkAccess.observe(this, this) { updateNetworkUi(it) }
+        AuthJsonHost.install(this, "signup") {
+            initViews()
+            setupListeners()
+            NetworkAccess.observe(this, this) { updateNetworkUi(it) }
+        }
     }
 
     private fun initViews() {
@@ -56,12 +54,6 @@ class SignupActivity : AppCompatActivity() {
         btnPhone = findViewById(R.id.btnPhoneSignIn)
         tvBackToLogin = findViewById(R.id.tvBackToLogin)
         root = findViewById(R.id.signupRoot)
-        AuthScreenUi.apply(
-            this,
-            root,
-            findViewById(R.id.authBackground),
-            findViewById(R.id.modernAuthOverlay)
-        )
         offlineState = findViewById(R.id.signupOfflineState)
         findViewById<TextView>(R.id.signupVersion).text =
             getString(R.string.auth_version, AppVersion.name(this))
@@ -224,7 +216,6 @@ class SignupActivity : AppCompatActivity() {
         btnRegister.visibility = if (online) View.VISIBLE else View.GONE
         btnGoogle.visibility = if (online) View.VISIBLE else View.GONE
         btnPhone.visibility = if (online) View.VISIBLE else View.GONE
-        if (!online) NetworkAccess.showOffline(root)
     }
 
     private fun setAuthButtonsEnabled(enabled: Boolean) {

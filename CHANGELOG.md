@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.9.0.PRE — Bản xem trước
+- Chuyển Welcome, đăng nhập, đăng ký, khóa bảo mật, quên mật khẩu và xác thực điện thoại sang giao diện JSON do `config/auth.json` và từng file màn hình quản lý.
+- Tải cấu hình từ GitHub, lưu cache và dùng JSON đóng gói trong app khi offline hoặc GitHub không phản hồi; giữ nguyên xử lý Firebase trong Kotlin.
+- Tài khoản đã đăng nhập tiếp tục dùng luồng phiên và khóa cục bộ khi offline. Khách chưa đăng nhập gặp màn hình PiperOS có dấu chấm than và thông báo kiểm tra mạng.
+- Nâng versionCode lên 107.
+
 ## 3.8.9 — Bản chính thức
 - Phát hành ổn định các cải tiến PiperOS Data Transfer, PiperOS Media và PiperOS 2FA đã được kiểm tra ở bản 3.8.9.beta.
 - Nâng versionCode lên 106 để nâng cấp tuần tự từ 3.8.9.beta.

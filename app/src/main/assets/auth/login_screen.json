@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "screenId": "login",
+  "layout": {
+    "type": "frame", "id": "loginRoot", "width": "match", "height": "match", "background": "@color/black",
+    "children": [
+      { "type": "image", "id": "authBackground", "width": "match", "height": "match", "src": "@drawable/backgroud", "scaleType": "centerCrop", "contentDescription": "" },
+      { "type": "view", "id": "modernAuthOverlay", "width": "match", "height": "match", "background": "@drawable/bg_auth_overlay" },
+      { "type": "scroll", "width": "match", "height": "match", "fillViewport": true,
+        "children": [
+          { "type": "linear", "width": "match", "height": "wrap", "orientation": "vertical", "gravity": "center_horizontal", "padding": [24, 32, 24, 32],
+            "children": [
+              { "type": "image", "width": 64, "height": 64, "src": "@drawable/a3tn", "contentDescription": "@string/app_name" },
+              { "type": "text", "width": "wrap", "height": "wrap", "margin": [0, 14, 0, 0], "text": "@string/auth_welcome_back", "textColor": "@color/white", "textSize": 28, "bold": true },
+              { "type": "text", "id": "authVersion", "width": "wrap", "height": "wrap", "margin": [0, 4, 0, 0], "text": "@string/auth_version_placeholder", "textColor": "#AFFFFFFF", "textSize": 12 },
+              { "type": "text", "id": "loginOfflineState", "width": "match", "height": "wrap", "margin": [0, 18, 0, 0], "background": "@drawable/bg_offline_notice", "paddingAll": 14, "text": "@string/auth_offline_note", "textColor": "#FFFFD180", "textSize": 13, "visibility": "gone" },
+              { "type": "linear", "width": "match", "height": "wrap", "margin": [0, 20, 0, 0], "background": "@drawable/bg_auth_panel", "orientation": "vertical", "paddingAll": 20,
+                "children": [
+                  { "type": "text", "width": "wrap", "height": "wrap", "text": "@string/auth_account", "textColor": "@color/white", "textSize": 19, "bold": true },
+                  { "type": "text", "width": "wrap", "height": "wrap", "margin": [0, 4, 0, 0], "text": "@string/auth_login_subtitle", "textColor": "#AFFFFFFF", "textSize": 13 },
+                  { "type": "edit", "id": "edtUsername", "width": "match", "height": 54, "margin": [0, 20, 0, 0], "background": "@drawable/bg_auth_input", "padding": [14, 8], "hint": "@string/auth_email_hint", "inputType": "textEmailAddress", "textColor": "@color/white", "textSize": 14 },
+                  { "type": "edit", "id": "edtPassword", "width": "match", "height": 54, "margin": [0, 12, 0, 0], "background": "@drawable/bg_auth_input", "padding": [14, 8], "hint": "@string/auth_password_hint", "inputType": "textPassword", "textColor": "@color/white", "textSize": 14 },
+                  { "type": "text", "id": "tvForgotPassword", "width": "wrap", "height": 44, "gravity": "center", "text": "@string/auth_forgot", "textColor": "#7DFFB0", "textSize": 13 },
+                  { "type": "button", "id": "btnLogin", "width": "match", "height": 54, "margin": [0, 8, 0, 0], "background": "@drawable/bg_auth_primary", "text": "@string/auth_login_action", "textColor": "#DFFFFFFF", "textSize": 14 },
+                  { "type": "text", "width": "match", "height": "wrap", "margin": [0, 14, 0, 0], "gravity": "center", "text": "@string/auth_or_continue", "textColor": "#AFFFFFFF", "textSize": 12 },
+                  { "type": "linear", "width": "match", "height": 56, "margin": [0, 8, 0, 0], "orientation": "horizontal",
+                    "children": [
+                      { "type": "imageButton", "id": "btnGoogleSignIn", "width": 0, "height": "match", "weight": 1, "background": "@drawable/bg_auth_panel", "paddingAll": 14, "src": "@drawable/auth_google", "contentDescription": "@string/auth_google_button_description" },
+                      { "type": "imageButton", "id": "btnPhoneSignIn", "width": 0, "height": "match", "weight": 1, "margin": [10, 0, 0, 0], "background": "@drawable/bg_auth_panel", "paddingAll": 14, "src": "@drawable/auth_phone", "contentDescription": "@string/auth_phone_button_description" }
+                    ]
+                  },
+                  { "type": "button", "id": "btnResendVerification", "width": "match", "height": 48, "margin": [0, 8, 0, 0], "background": "@drawable/bg_auth_panel", "text": "@string/auth_email_verification_resend", "textColor": "@color/white", "textSize": 12, "visibility": "gone" }
+                ]
+              },
+              { "type": "text", "id": "tvSignUp", "width": "match", "height": 52, "margin": [0, 14, 0, 0], "background": "@drawable/bg_auth_panel", "gravity": "center", "text": "@string/auth_create_prompt", "textColor": "#DFFFFFFF", "textSize": 13 }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

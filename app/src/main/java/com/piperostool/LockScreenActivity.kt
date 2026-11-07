@@ -87,13 +87,16 @@ class LockScreenActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_lock_screen)
-
-        // 1. ÁP DỤNG HÌNH NỀN TÙY CHỈNH
-        applyCustomBackground()
-
         isUnlockAppMode = intent.getBooleanExtra("IS_UNLOCK_MODE", false)
         targetType = intent.getStringExtra("LOCK_TYPE_TO_CREATE")
+        AuthJsonHost.install(this, "lock_screen") {
+            initializeLockScreen()
+        }
+    }
+
+    private fun initializeLockScreen() {
+        // 1. ÁP DỤNG HÌNH NỀN TÙY CHỈNH
+        applyCustomBackground()
 
         initViews()
         setupBiometric()
@@ -107,7 +110,6 @@ class LockScreenActivity : AppCompatActivity() {
 
         NetworkAccess.observe(this, this) { online ->
             offlineState.visibility = if (online) View.GONE else View.VISIBLE
-            if (!online) NetworkAccess.showOffline(root)
             if (!checkBanStatus() && currentMode == MODE_LOADING) {
                 if (online) checkFirebaseForExistingPass() else loadCachedSecurity()
             }

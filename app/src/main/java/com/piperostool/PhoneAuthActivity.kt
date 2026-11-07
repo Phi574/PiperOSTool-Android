@@ -75,14 +75,13 @@ class PhoneAuthActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_phone_auth)
+        AuthJsonHost.install(this, "phone_auth") {
+            bindPhoneAuthScreen()
+        }
+    }
+
+    private fun bindPhoneAuthScreen() {
         root = findViewById(R.id.phoneAuthRoot)
-        AuthScreenUi.apply(
-            this,
-            root,
-            findViewById(R.id.authBackground),
-            findViewById(R.id.modernAuthOverlay)
-        )
         countryPicker = findViewById(R.id.phoneCountryPicker)
         phoneInput = findViewById(R.id.edtPhoneNumber)
         nameInput = findViewById(R.id.edtPhoneDisplayName)
@@ -106,7 +105,6 @@ class PhoneAuthActivity : AppCompatActivity() {
         verifyCode.setOnClickListener { verifyEnteredCode() }
         NetworkAccess.observe(this, this) { online ->
             sendCode.visibility = if (online && verificationId == null) View.VISIBLE else View.GONE
-            if (!online) NetworkAccess.showOffline(root)
         }
     }
 

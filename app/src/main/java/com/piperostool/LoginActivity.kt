@@ -35,14 +35,13 @@ class LoginActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        setContentView(R.layout.login_screen)
-
         auth = Firebase.auth
         db = Firebase.firestore
-
-        initViews()
-        setupListeners()
-        NetworkAccess.observe(this, this) { updateNetworkUi(it) }
+        AuthJsonHost.install(this, "login") {
+            initViews()
+            setupListeners()
+            NetworkAccess.observe(this, this) { updateNetworkUi(it) }
+        }
         // Consume legacy session extras without showing a persistent Toast.
         intent.removeExtra(SplashScreenActivity.EXTRA_SESSION_EXPIRED)
     }
@@ -66,12 +65,6 @@ class LoginActivity : AppCompatActivity() {
         tvGoToSignUp = findViewById(R.id.tvSignUp) // Cập nhật đúng ID nút Đăng ký
         tvForgotPassword = findViewById(R.id.tvForgotPassword)
         root = findViewById(R.id.loginRoot)
-        AuthScreenUi.apply(
-            this,
-            root,
-            findViewById(R.id.authBackground),
-            findViewById(R.id.modernAuthOverlay)
-        )
         offlineState = findViewById(R.id.loginOfflineState)
         findViewById<TextView>(R.id.authVersion).text =
             getString(R.string.auth_version, AppVersion.name(this))
@@ -240,7 +233,6 @@ class LoginActivity : AppCompatActivity() {
         // resolved, especially after Splash redirects an expired session.
         tvForgotPassword.visibility = View.VISIBLE
         tvGoToSignUp.visibility = View.VISIBLE
-        if (!online) NetworkAccess.showOffline(root)
     }
 
     private fun setAuthButtonsEnabled(enabled: Boolean) {

@@ -21,9 +21,6 @@ class WelcomeActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // 1. Phải setContentView trước khi setInsets
-        setContentView(R.layout.welcome)
-
         // Khởi tạo Firebase Auth
         auth = Firebase.auth
 
@@ -49,20 +46,18 @@ class WelcomeActivity : AppCompatActivity() {
             return
         }
 
-        // 4. Khai báo nút
+        AuthJsonHost.install(this, "welcome") {
+            bindWelcomeScreen()
+        }
+    }
+
+    private fun bindWelcomeScreen() {
         btnLogin = findViewById(R.id.btnLogin)
         btnSignup = findViewById(R.id.btnSignup)
         root = findViewById(R.id.welcomeRoot)
-        AuthScreenUi.apply(this, root)
         offlineState = findViewById(R.id.welcomeOfflineState)
         findViewById<TextView>(R.id.welcomeVersion).text =
             getString(R.string.auth_version, AppVersion.name(this))
-        NetworkAccess.observe(this, this) { online ->
-            offlineState.visibility = if (online) View.GONE else View.VISIBLE
-            btnLogin.visibility = if (online) View.VISIBLE else View.GONE
-            btnSignup.visibility = if (online) View.VISIBLE else View.GONE
-            if (!online) NetworkAccess.showOffline(root)
-        }
 
         // Chuyển sang màn Login
         btnLogin.setOnClickListener {

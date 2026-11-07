@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "screenId": "lock_screen",
+  "layout": {
+    "type": "frame", "id": "lockRoot", "width": "match", "height": "match", "background": "@drawable/backgroud",
+    "children": [
+      { "type": "view", "id": "modernAuthOverlay", "width": "match", "height": "match", "background": "@drawable/bg_auth_overlay" },
+      { "type": "linear", "id": "btnLogout", "width": "wrap", "height": 48, "layoutGravity": "top|end", "margin": [0, 10, 12, 0], "background": "?attr/selectableItemBackgroundBorderless", "gravity": "center", "orientation": "horizontal", "padding": [8, 4], "children": [
+        { "type": "text", "width": "wrap", "height": "wrap", "text": "@string/auth_logout", "textColor": "#FF8A80", "textSize": 13 },
+        { "type": "image", "width": 20, "height": 20, "margin": [6, 0, 0, 0], "src": "@drawable/exit" }
+      ] },
+      { "type": "scroll", "width": "match", "height": "match", "fillViewport": true,
+        "children": [
+          { "type": "linear", "width": "match", "height": "wrap", "orientation": "vertical", "gravity": "center_horizontal", "padding": [24, 70, 24, 28],
+            "children": [
+              { "type": "frame", "width": 74, "height": 74, "background": "@drawable/bg_media_icon", "children": [
+                { "type": "image", "width": 36, "height": 36, "layoutGravity": "center", "src": "@drawable/lock" }
+              ] },
+              { "type": "text", "id": "tvTitle", "width": "wrap", "height": "wrap", "margin": [0, 16, 0, 0], "gravity": "center", "text": "@string/auth_security", "textColor": "@color/white", "textSize": 26, "bold": true },
+              { "type": "text", "id": "tvSubTitle", "width": "match", "height": "wrap", "margin": [0, 6, 0, 0], "gravity": "center", "text": "@string/auth_checking_security", "textColor": "#B8FFFFFF", "textSize": 14 },
+              { "type": "text", "id": "lockVersion", "width": "wrap", "height": "wrap", "margin": [0, 5, 0, 0], "text": "@string/auth_version_placeholder", "textColor": "#80FFFFFF", "textSize": 11 },
+              { "type": "text", "id": "lockOfflineState", "width": "match", "height": "wrap", "margin": [0, 16, 0, 0], "background": "@drawable/bg_offline_notice", "paddingAll": 12, "text": "@string/lock_offline_note", "textColor": "#FFFFD180", "textSize": 12, "visibility": "gone" },
+              { "type": "linear", "width": "match", "height": "wrap", "margin": [0, 18, 0, 0], "background": "@drawable/bg_auth_panel", "orientation": "vertical", "paddingAll": 20,
+                "children": [
+                  { "type": "relative", "id": "layoutPinInput", "width": "match", "height": 76, "background": "@drawable/bg_auth_input", "visibility": "gone",
+                    "children": [
+                      { "type": "linear", "id": "llDotsContainer", "width": "wrap", "height": "wrap", "layoutGravity": "center", "orientation": "horizontal", "gravity": "center", "paddingAll": 10 },
+                      { "type": "edit", "id": "etPinHidden", "width": 1, "height": 1, "layoutGravity": "bottom|start", "background": "@null", "inputType": "numberPassword", "textColor": "#00000000" }
+                    ]
+                  },
+                  { "type": "inputLayout", "id": "tilPassword", "width": "match", "height": "wrap", "hint": "@string/auth_lock_password_hint", "children": [
+                    { "type": "edit", "id": "etPassword", "material": true, "width": "match", "height": 62, "inputType": "textPassword", "textColor": "@color/white", "textSize": 17 }
+                  ] },
+                  { "type": "button", "id": "btnConfirm", "width": "match", "height": 54, "margin": [0, 16, 0, 0], "background": "@drawable/bg_auth_primary", "text": "@string/auth_confirm", "textColor": "@color/white", "textSize": 14 }
+                ]
+              },
+              { "type": "linear", "id": "layoutFingerprint", "width": "match", "height": 74, "margin": [0, 14, 0, 0], "background": "?attr/selectableItemBackground", "gravity": "center", "orientation": "horizontal", "children": [
+                { "type": "image", "id": "ivFingerprintIcon", "width": 34, "height": 34, "src": "@drawable/fingerprint" },
+                { "type": "text", "width": "wrap", "height": "wrap", "margin": [10, 0, 0, 0], "text": "@string/auth_use_fingerprint", "textColor": "@color/white", "textSize": 13 }
+              ] }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

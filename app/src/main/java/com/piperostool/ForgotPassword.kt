@@ -30,16 +30,14 @@ class ForgotPassword : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // 1. Phải vẽ giao diện ra trước
-        setContentView(R.layout.activity_forgotpassword)
-
         // Khởi tạo Firebase Auth
         auth = Firebase.auth
         requiredPasswordUpgrade = intent.getBooleanExtra(EXTRA_REQUIRED_PASSWORD_UPGRADE, false)
-
-        initViews()
-        setupListeners()
-        NetworkAccess.observe(this, this) { updateNetworkUi(it) }
+        AuthJsonHost.install(this, "forgot_password") {
+            initViews()
+            setupListeners()
+            NetworkAccess.observe(this, this) { updateNetworkUi(it) }
+        }
     }
 
     private fun initViews() {
@@ -55,7 +53,6 @@ class ForgotPassword : AppCompatActivity() {
             edtEmail.setText(intent.getStringExtra(EXTRA_EMAIL).orEmpty())
         }
         root = findViewById(R.id.forgotRoot)
-        AuthScreenUi.apply(this, root)
         offlineState = findViewById(R.id.forgotOfflineState)
         findViewById<TextView>(R.id.forgotVersion).text =
             getString(R.string.auth_version, AppVersion.name(this))
@@ -117,6 +114,5 @@ class ForgotPassword : AppCompatActivity() {
     private fun updateNetworkUi(online: Boolean) {
         offlineState.visibility = if (online) View.GONE else View.VISIBLE
         btnReset.visibility = if (online) View.VISIBLE else View.GONE
-        if (!online) NetworkAccess.showOffline(root)
     }
 }

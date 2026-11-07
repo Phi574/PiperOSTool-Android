@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "screenId": "welcome",
+  "layout": {
+    "type": "frame", "id": "welcomeRoot", "width": "match", "height": "match",
+    "background": "@drawable/bg_liquid_main",
+    "children": [
+      { "type": "linear", "width": "match", "height": "wrap", "layoutGravity": "center", "margin": [24, 24, 24, 24], "orientation": "vertical", "gravity": "center", "background": "@drawable/bg_modern_auth_panel", "paddingAll": 32,
+        "children": [
+          { "type": "image", "width": 72, "height": 72, "src": "@drawable/a2tn", "margin": [0, 0, 0, 24] },
+          { "type": "text", "width": "wrap", "height": "wrap", "text": "@string/app_name", "textColor": "#FFFFFF", "textSize": 19 },
+          { "type": "text", "id": "welcomeVersion", "width": "wrap", "height": "wrap", "margin": [0, 8, 0, 40], "text": "@string/auth_version_placeholder", "textColor": "#B3FFFFFF", "textSize": 14 },
+          { "type": "text", "id": "welcomeOfflineState", "width": "match", "height": "wrap", "margin": [0, 0, 0, 18], "background": "@drawable/bg_offline_notice", "paddingAll": 12, "text": "@string/auth_offline_note", "textColor": "#FFFFD180", "textSize": 13, "visibility": "gone" },
+          { "type": "button", "id": "btnLogin", "width": "match", "height": 60, "margin": [0, 0, 0, 16], "background": "@drawable/bg_auth_primary", "text": "@string/auth_welcome_login", "textColor": "#FFFFFF", "textSize": 16 },
+          { "type": "button", "id": "btnSignup", "width": "match", "height": 60, "background": "@drawable/bg_auth_panel", "text": "@string/auth_welcome_signup", "textColor": "#B3FFFFFF", "textSize": 16 },
+          { "type": "text", "width": "wrap", "height": "wrap", "margin": [0, 22, 0, 0], "text": "@string/auth_secure_status", "textColor": "#8000E5FF", "textSize": 11 }
+        ]
+      }
+    ]
+  }
+}

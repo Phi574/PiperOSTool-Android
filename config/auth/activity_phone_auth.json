@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "screenId": "phone_auth",
+  "layout": {
+    "type": "frame", "id": "phoneAuthRoot", "width": "match", "height": "match", "background": "@color/black",
+    "children": [
+      { "type": "image", "id": "authBackground", "width": "match", "height": "match", "src": "@drawable/backgroud", "scaleType": "centerCrop", "contentDescription": "" },
+      { "type": "view", "id": "modernAuthOverlay", "width": "match", "height": "match", "background": "@drawable/bg_auth_overlay" },
+      { "type": "scroll", "width": "match", "height": "match", "fillViewport": true,
+        "children": [
+          { "type": "linear", "width": "match", "height": "wrap", "orientation": "vertical", "gravity": "center_horizontal", "padding": [24, 28, 24, 28],
+            "children": [
+              { "type": "image", "width": 64, "height": 64, "src": "@drawable/a3tn", "contentDescription": "@string/app_name" },
+              { "type": "text", "id": "phoneAuthTitle", "width": "wrap", "height": "wrap", "margin": [0, 12, 0, 0], "text": "@string/auth_phone_title", "textColor": "@color/white", "textSize": 24, "bold": true },
+              { "type": "text", "id": "phoneAuthVersion", "width": "wrap", "height": "wrap", "margin": [0, 4, 0, 0], "text": "@string/auth_version_placeholder", "textColor": "#AFFFFFFF", "textSize": 12 },
+              { "type": "linear", "width": "match", "height": "wrap", "margin": [0, 20, 0, 0], "background": "@drawable/bg_auth_panel", "orientation": "vertical", "paddingAll": 20,
+                "children": [
+                  { "type": "text", "id": "phoneAuthSummary", "width": "match", "height": "wrap", "text": "@string/auth_phone_summary", "textColor": "#BFFFFFFF", "textSize": 14 },
+                  { "type": "edit", "id": "edtPhoneDisplayName", "width": "match", "height": 52, "margin": [0, 16, 0, 0], "background": "@drawable/bg_auth_input", "padding": [14, 8], "hint": "@string/auth_phone_name_hint", "inputType": "textPersonName", "textColor": "@color/white" },
+                  { "type": "linear", "width": "match", "height": 56, "margin": [0, 12, 0, 0], "orientation": "horizontal", "background": "@drawable/bg_auth_input", "padding": [8, 4],
+                    "children": [
+                      { "type": "countryPicker", "id": "phoneCountryPicker", "width": 104, "height": "match", "defaultCountry": "VN" },
+                      { "type": "edit", "id": "edtPhoneNumber", "width": 0, "height": "match", "weight": 1, "padding": [10, 4], "hint": "@string/auth_phone_number_hint", "inputType": "phone", "textColor": "@color/white" }
+                    ]
+                  },
+                  { "type": "edit", "id": "edtPhoneCode", "width": "match", "height": 52, "margin": [0, 12, 0, 0], "background": "@drawable/bg_auth_input", "padding": [14, 8], "hint": "@string/auth_phone_code_hint", "inputType": "number", "maxLength": 10, "textColor": "@color/white", "visibility": "gone" },
+                  { "type": "text", "width": "match", "height": "wrap", "margin": [0, 12, 0, 0], "text": "@string/auth_phone_sms_notice", "textColor": "#BFFFFFFF", "textSize": 12 },
+                  { "type": "text", "id": "tvPhoneAuthStatus", "width": "match", "height": "wrap", "margin": [0, 8, 0, 0], "textColor": "#DFFFFFFF", "textSize": 13, "visibility": "gone" },
+                  { "type": "button", "id": "btnPhoneSendCode", "width": "match", "height": 52, "margin": [0, 14, 0, 0], "background": "@drawable/bg_auth_primary", "text": "@string/auth_phone_send_code", "textColor": "@color/white", "textSize": 14 },
+                  { "type": "button", "id": "btnPhoneVerify", "width": "match", "height": 52, "margin": [0, 10, 0, 0], "background": "@drawable/bg_auth_primary", "text": "@string/auth_phone_verify", "textColor": "@color/white", "textSize": 14, "visibility": "gone" },
+                  { "type": "button", "id": "btnPhoneResend", "width": "match", "height": 48, "margin": [0, 8, 0, 0], "background": "@drawable/bg_auth_panel", "text": "@string/auth_phone_resend", "textColor": "@color/white", "textSize": 13, "visibility": "gone" }
+                ]
+              },
+              { "type": "button", "id": "btnPhoneBack", "width": "match", "height": 52, "margin": [0, 14, 0, 0], "background": "@drawable/bg_auth_panel", "text": "@string/auth_return_login", "textColor": "#DFFFFFFF", "textSize": 13 }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
