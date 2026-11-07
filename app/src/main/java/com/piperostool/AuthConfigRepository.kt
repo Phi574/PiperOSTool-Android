@@ -33,9 +33,9 @@ data class AuthConfig(
 object AuthConfigRepository {
 
     private const val MANIFEST_URL =
-        "https://raw.githubusercontent.com/Phi574/PiperOSTool-Android/main/config/auth.json"
+        "https://raw.githubusercontent.com/Phi574/PiperOSTool-Android/master/config/auth.json"
     private const val SCREEN_BASE_URL =
-        "https://raw.githubusercontent.com/Phi574/PiperOSTool-Android/main/config/auth/"
+        "https://raw.githubusercontent.com/Phi574/PiperOSTool-Android/master/config/auth/"
     private const val PREFS_NAME = "auth_json_cache_v1"
     private const val MANIFEST_CACHE_KEY = "manifest"
 

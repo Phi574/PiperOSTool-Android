@@ -30,7 +30,7 @@ data class WindowConfig(
 object WindowConfigRepository {
 
     private const val CONFIG_URL =
-        "https://raw.githubusercontent.com/Phi574/PiperOSTool-Android/main/config/window.json"
+        "https://raw.githubusercontent.com/Phi574/PiperOSTool-Android/master/config/window.json"
 
     suspend fun load(context: Context): WindowConfig = withContext(Dispatchers.IO) {
         if (!hasValidatedInternet(context)) {
