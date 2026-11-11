@@ -456,7 +456,7 @@ Bản chính thức tổng hợp các tính năng đã qua thử nghiệm và đ
 ## 2.5.0.beta
 
 - Added PiperOS Browser with persistent tabs, incognito tabs, downloads,
-  history, User-Agent profiles and extension import.
+  history, User-Agent profiles and extension import. 123123
 - Added PiperOS Media with audio/video scanning, folder filters, search,
   sorting, playback queue, background playback and Picture-in-Picture.
 - Added the first PiperOS Terminal activity with local shell sessions and a
