@@ -31,9 +31,9 @@
 
 ## Tải ứng dụng và cập nhật
 
-Bản đang phát hành: **3.9.0.BETA**, versionCode **108**, yêu cầu Android 10 trở lên.
+Bản đang phát hành: **3.9.3.PRE**, versionCode **111**, yêu cầu Android 10 trở lên.
 
-- [Tải PiperOS Tool 3.9.0.BETA](https://github.com/Phi574/PiperOSTool-Android/releases/tag/v3.9.0.BETA)
+- [Tải PiperOS Tool 3.9.3.PRE](https://github.com/Phi574/PiperOSTool-Android/releases/tag/v3.9.3.PRE)
 - [Xem tất cả bản phát hành](https://github.com/Phi574/PiperOSTool-Android/releases)
 - [Đọc lịch sử thay đổi](CHANGELOG.md)
 
@@ -56,11 +56,9 @@ flowchart TB
         TWOFA["PiperOS 2FA"]
         QR["PiperOS QR"]
         GPS["Fake Map GPS"]
-        TRANSFER["PiperOS Data Transfer"]
         APPS["Ứng dụng và APK Editor"]
         FILES["PiperOS File Manager"]
         ADB["PiperOS ADB"]
-        SETEDIT["PiperOS SetEdit"]
         INFO["Info và bảo mật tài khoản"]
         TERMINAL["PiperOS Terminal UI / Service"]
     end
@@ -71,13 +69,10 @@ flowchart TB
     HOME --> TWOFA
     HOME --> QR
     HOME --> GPS
-    HOME --> TRANSFER
     APK --> APPS
     APK --> FILES
     APPS -. thao tác cần quyền .-> ADB
     FILES -. truy cập chuyên sâu .-> ADB
-    SETEDIT -. đọc/ghi Settings .-> ADB
-    APK --> SETEDIT
     APK --> INFO
 
     subgraph JSON["JSON cấu hình trên repo Android chính · nhánh master"]
@@ -119,7 +114,7 @@ flowchart TB
 
 | Trang | Nội dung chính |
 | --- | --- |
-| **Home** | Browser, Media, 2FA, QR, Fake Map GPS và Data Transfer; nút Window mở thông tin cá nhân, bảo mật và Có gì mới. |
+| **Home** | Browser, Media, 2FA, QR và Fake Map GPS; nút Window mở thông tin cá nhân, bảo mật và Có gì mới. |
 | **Beta** | Khu vực các công cụ và tính năng đang thử nghiệm. |
 | **Apps** | Danh sách ứng dụng, thông tin package, quyền, chứng chỉ và thao tác được Android/ADB cho phép. |
 | **Files** | Quản lý tệp, archive, APK và truy cập chuyên sâu qua ADB khi người dùng bật quyền. |
@@ -137,7 +132,6 @@ flowchart TB
 - **PiperOS 2FA:** lưu nhiều tài khoản xác thực; tạo TOTP tự đổi theo chu kỳ hoặc theo yêu cầu, HOTP theo bộ đếm và mã Steam Guard. Có thể thêm bằng khóa thiết lập hoặc QR, nhập/xuất JSON và QR tương thích Google Authenticator. Khi đăng nhập PiperOS, dữ liệu 2FA có thể đồng bộ Firebase theo tài khoản.
 - **PiperOS QR:** tạo và quét mã QR bằng giao diện của app.
 - **PiperOS Fake Map GPS:** mô phỏng vị trí cố định hoặc hành trình có tốc độ, phương tiện, dừng/đỗ và lặp tuyến. Hỗ trợ nhiều waypoint và marker chuyển động; vị trí được phát qua các provider Android và Google Fused Location.
-- **PiperOS Data Transfer:** gửi tệp, ảnh, video, tài liệu và APK qua mạng cục bộ; ghép thiết bị bằng tìm LAN, QR hoặc mã 6 số, có thể tạo điểm phát Wi-Fi. Phiên truyền được mã hóa, có tiến trình theo từng mục, màn xem trước và vùng chờ trước khi nhập dữ liệu nhận. Việc cài APK vẫn cần xác nhận Android. Chưa chuyển dữ liệu riêng của app khác, SMS/lịch sử gọi, danh bạ/lịch tự động, mật khẩu Wi-Fi đã lưu hoặc kết nối trực tiếp USB-C giữa hai điện thoại.
 
 ### Apps và Files: quản lý ứng dụng, APK, tệp
 
@@ -145,7 +139,6 @@ flowchart TB
 - **PiperOS APK Editor:** mở APK đã cài hoặc tệp APK, duyệt archive, trích xuất theo nhóm hoặc toàn bộ, chỉnh tệp văn bản, xem báo cáo manifest và build APK mới. Có thể chọn nhiều tệp hoặc thư mục để backup. Tác vụ backup lớn dùng tối đa bốn luồng và foreground service; viewer hỗ trợ ảnh, video, GIF, âm thanh, PDF và văn bản.
 - **PiperOS File Manager:** thumbnail ảnh/video/APK và app data, gallery vuốt ngang, biểu tượng thư mục theo loại. Hỗ trợ nén/giải nén ZIP, 7Z, TAR, GZIP, BZIP2, XZ, LZ4 và ZSTD; ZIP hỗ trợ mật khẩu AES-256. Tác vụ archive chạy bằng foreground service, WakeLock và notification tiến độ.
 - **PiperOS ADB:** khi người dùng chủ động kết nối Wireless debugging, app khởi chạy tiến trình Java bằng `app_process` với UID shell. Client giao tiếp qua Binder/AIDL và RPC; shell hỗ trợ stdin/stdout, exit code, thư mục làm việc, biến môi trường và timeout. Các nhóm quyền có thể thu hồi; quyền nhạy cảm mặc định tắt và thao tác được ghi log. ADB không tự khởi động lại sau reboot; hỗ trợ còn tùy ROM/OEM.
-- **PiperOS SetEdit:** xem System, Secure và Global Settings cùng Android Properties, Java Properties và Linux Environment. Có tìm kiếm, thêm/sửa/xóa các bảng được phép, lưu thay đổi, tạo nhiều bản sao lưu và hoàn tác theo khác biệt. Properties được hiển thị theo quyền đọc hiện có; sửa đổi bảng hệ thống cần ADB và có thể ảnh hưởng thiết bị.
 
 > APK do APK Editor build được ký bằng khóa **PiperOS Editor test key**, khác khóa phát hành PiperOS Tool. APK đầu ra này không thể cập nhật đè lên ứng dụng gốc nếu chữ ký khác.
 
@@ -196,7 +189,7 @@ PiperOS chỉ nên yêu cầu quyền khi người dùng mở tính năng cần 
 
 Dữ liệu cục bộ nhạy cảm như phiên, cài đặt, lịch sử, terminal, media, mock GPS và workspace APK được tách theo Firebase UID; các vùng hỗ trợ mã hóa dùng AES-256-GCM với khóa Android Keystore riêng. Hành vi và quyền truy cập còn phụ thuộc loại dữ liệu và tính năng cụ thể.
 
-Một số thao tác có thể bị chặn bởi Android hoặc ROM, kể cả khi đã bật ADB. PiperOS ADB không tự chạy lại sau khởi động lại. Data Transfer không thể sao chép dữ liệu riêng của app khác hoặc các dữ liệu cần vai trò hệ thống mà app không được cấp.
+Một số thao tác có thể bị chặn bởi Android hoặc ROM, kể cả khi đã bật ADB. PiperOS ADB không tự chạy lại sau khởi động lại.
 
 ## Build và cấu hình Firebase
 

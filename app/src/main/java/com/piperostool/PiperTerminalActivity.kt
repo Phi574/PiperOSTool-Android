@@ -9,6 +9,7 @@ import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.graphics.Typeface
 import android.os.Bundle
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.text.Spannable
@@ -28,6 +29,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import android.app.job.JobScheduler
 import org.json.JSONArray
 
 class PiperTerminalActivity : AppCompatActivity(), TerminalSessionManager.Listener {
@@ -665,14 +667,25 @@ class PiperTerminalActivity : AppCompatActivity(), TerminalSessionManager.Listen
         mode: TerminalRuntimeInstallService.InstallMode
     ) {
         runCatching {
-            ContextCompat.startForegroundService(
-                this,
-                Intent(this, TerminalRuntimeInstallService::class.java)
-                    .setAction(TerminalRuntimeInstallService.ACTION_INSTALL)
-                    .putExtra(TerminalRuntimeInstallService.EXTRA_RELEASE_TAG, release.tag)
-                    .putExtra(TerminalRuntimeInstallService.EXTRA_RUNTIME_VERSION, release.version)
-                    .putExtra(TerminalRuntimeInstallService.EXTRA_INSTALL_MODE, mode.name)
-            )
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                val result = TerminalRuntimeInstallService.scheduleUserInitiatedInstall(
+                    this,
+                    release,
+                    mode
+                )
+                check(result == JobScheduler.RESULT_SUCCESS) {
+                    "Android did not accept the runtime transfer job (result=$result)"
+                }
+            } else {
+                ContextCompat.startForegroundService(
+                    this,
+                    Intent(this, TerminalRuntimeLegacyInstallService::class.java)
+                        .setAction(TerminalRuntimeInstallService.ACTION_INSTALL)
+                        .putExtra(TerminalRuntimeInstallService.EXTRA_RELEASE_TAG, release.tag)
+                        .putExtra(TerminalRuntimeInstallService.EXTRA_RUNTIME_VERSION, release.version)
+                        .putExtra(TerminalRuntimeInstallService.EXTRA_INSTALL_MODE, mode.name)
+                )
+            }
         }.onSuccess {
             mainHandler.postDelayed({ renderRuntimeStatus() }, 150)
         }.onFailure { error ->

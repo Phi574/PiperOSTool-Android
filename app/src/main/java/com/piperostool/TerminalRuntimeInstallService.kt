@@ -4,11 +4,16 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
-import android.app.Service
+import android.app.job.JobInfo
+import android.app.job.JobParameters
+import android.app.job.JobScheduler
+import android.app.job.JobService
+import android.content.ComponentName
 import android.content.Intent
-import android.content.pm.ServiceInfo
 import android.os.Build
-import android.os.IBinder
+import android.os.Handler
+import android.os.Looper
+import android.os.PersistableBundle
 import android.os.StatFs
 import android.os.SystemClock
 import android.system.Os
@@ -35,9 +40,11 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 import java.util.zip.ZipInputStream
 
-class TerminalRuntimeInstallService : Service() {
+open class TerminalRuntimeInstallService : JobService() {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var installJob: Job? = null
+    @Volatile private var activeJobParameters: JobParameters? = null
+    @Volatile private var uidtJobMode = false
     private var requestedTag = TerminalRuntime.RUNTIME_RELEASE_TAG
     private var requestedVersion = TerminalRuntime.RUNTIME_VERSION
     private var requestedMode = InstallMode.NORMAL
@@ -52,16 +59,78 @@ class TerminalRuntimeInstallService : Service() {
             cancelRequested.set(true)
             activeConnection.getAndSet(null)?.disconnect()
             installJob?.cancel(CancellationException("Cancelled by user"))
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                getSystemService(JobScheduler::class.java).cancel(UIDT_JOB_ID)
+            }
             if (installJob == null && currentState.running) {
                 finishInstall(Phase.CANCELLED, getString(R.string.terminal_runtime_cancelled))
-                stopForeground(STOP_FOREGROUND_REMOVE)
-                stopSelf(startId)
+                activeJobParameters?.let { params ->
+                    activeJobParameters = null
+                    runCatching { jobFinished(params, false) }
+                }
             }
+            stopSelf(startId)
             return START_NOT_STICKY
         }
         if (intent?.action != ACTION_INSTALL) return START_NOT_STICKY
-        if (!installing.compareAndSet(false, true)) return START_NOT_STICKY
+        // UIDT jobs replace dataSync FGS for modern Android. Keep the legacy
+        // service entry point only for Android 10-13 where JobScheduler UIDT
+        // does not exist yet.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            finishInstall(
+                Phase.ERROR,
+                getString(R.string.terminal_runtime_failed, "Use the user-initiated transfer job")
+            )
+            stopSelf(startId)
+            return START_NOT_STICKY
+        }
+        startInstall(intent, jobParameters = null, startId = startId)
+        return START_NOT_STICKY
+    }
 
+    override fun onStartJob(params: JobParameters): Boolean {
+        val extras = params.extras
+        val intent = Intent(ACTION_INSTALL)
+            .putExtra(EXTRA_RELEASE_TAG, extras.getString(EXTRA_RELEASE_TAG))
+            .putExtra(EXTRA_RUNTIME_VERSION, extras.getString(EXTRA_RUNTIME_VERSION))
+            .putExtra(EXTRA_INSTALL_MODE, extras.getString(EXTRA_INSTALL_MODE))
+        return startInstall(intent, jobParameters = params, startId = null)
+    }
+
+    override fun onStopJob(params: JobParameters): Boolean {
+        val shouldReschedule = !cancelRequested.get()
+        if (activeJobParameters === params) activeJobParameters = null
+        cancelRequested.set(true)
+        activeConnection.getAndSet(null)?.disconnect()
+        installJob?.cancel(CancellationException("User-initiated runtime job stopped"))
+        if (installJob == null && currentState.running) {
+            uidtJobMode = false
+            finishInstall(Phase.CANCELLED, getString(R.string.terminal_runtime_cancelled))
+            installing.set(false)
+        }
+        return shouldReschedule
+    }
+
+    private fun startInstall(
+        intent: Intent,
+        jobParameters: JobParameters?,
+        startId: Int?
+    ): Boolean {
+        if (!installing.compareAndSet(false, true)) {
+            if (jobParameters != null) {
+                // A stopped UIDT job can be rescheduled while cancellation
+                // cleanup is finishing. Ask JobScheduler to retry afterward.
+                Handler(Looper.getMainLooper()).postDelayed(
+                    { runCatching { jobFinished(jobParameters, true) } },
+                    1_000L
+                )
+                return true
+            }
+            return false
+        }
+
+        activeJobParameters = jobParameters
+        uidtJobMode = jobParameters != null
         requestedTag = intent.getStringExtra(EXTRA_RELEASE_TAG)
             ?.takeIf { it.matches(Regex("runtime-v[0-9][0-9A-Za-z._-]*")) }
             ?: TerminalRuntime.RUNTIME_RELEASE_TAG
@@ -75,8 +144,14 @@ class TerminalRuntimeInstallService : Service() {
         cancelRequested.set(false)
         publish(State(Phase.PREPARING, 0, getString(R.string.terminal_runtime_preparing)))
         try {
-            startAsForeground(buildNotification(currentState))
+            if (jobParameters != null) {
+                setUidtNotification(jobParameters, currentState)
+            } else {
+                startAsForeground(buildNotification(currentState))
+            }
         } catch (error: Exception) {
+            activeJobParameters = null
+            uidtJobMode = false
             installing.set(false)
             finishInstall(
                 Phase.ERROR,
@@ -85,9 +160,14 @@ class TerminalRuntimeInstallService : Service() {
                     error.message?.take(180) ?: error.javaClass.simpleName
                 )
             )
-            stopSelf(startId)
-            return START_NOT_STICKY
+            if (jobParameters != null) {
+                runCatching { jobFinished(jobParameters, false) }
+            } else {
+                startId?.let { stopSelf(it) }
+            }
+            return false
         }
+
         installJob = serviceScope.launch {
             try {
                 installRuntime()
@@ -109,11 +189,19 @@ class TerminalRuntimeInstallService : Service() {
                 activeConnection.getAndSet(null)?.disconnect()
                 installing.set(false)
                 installJob = null
-                stopForeground(STOP_FOREGROUND_REMOVE)
-                stopSelf()
+                if (jobParameters != null) {
+                    if (activeJobParameters === jobParameters) {
+                        activeJobParameters = null
+                        runCatching { jobFinished(jobParameters, false) }
+                    }
+                    uidtJobMode = false
+                } else {
+                    stopForeground(STOP_FOREGROUND_REMOVE)
+                    startId?.let { stopSelf(it) }
+                }
             }
         }
-        return START_NOT_STICKY
+        return true
     }
 
     override fun onDestroy() {
@@ -127,8 +215,6 @@ class TerminalRuntimeInstallService : Service() {
         serviceScope.cancel()
         super.onDestroy()
     }
-
-    override fun onBind(intent: Intent?): IBinder? = null
 
     private fun installRuntime() {
         val workDirectory = File(cacheDir, "piperos-runtime-install")
@@ -242,11 +328,48 @@ class TerminalRuntimeInstallService : Service() {
     }
 
     private fun downloadArchive(selection: RuntimeSelection, destination: File) {
+        for (attempt in 1..MAX_ARCHIVE_DOWNLOAD_ATTEMPTS) {
+            ensureNotCancelled()
+            destination.delete()
+            try {
+                downloadArchiveAttempt(selection, destination)
+                return
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                val retryable = when (error) {
+                    is HttpResponseException ->
+                        error.statusCode == 408 || error.statusCode == 429 || error.statusCode >= 500
+                    is java.io.IOException -> true
+                    else -> false
+                }
+                if (!retryable || attempt == MAX_ARCHIVE_DOWNLOAD_ATTEMPTS) throw error
+                publish(
+                    State(
+                        Phase.DOWNLOADING,
+                        4,
+                        getString(
+                            R.string.terminal_runtime_download_retry,
+                            attempt,
+                            MAX_ARCHIVE_DOWNLOAD_ATTEMPTS
+                        )
+                    )
+                )
+                Thread.sleep(ARCHIVE_RETRY_DELAY_MS * attempt)
+            }
+        }
+    }
+
+    private fun downloadArchiveAttempt(selection: RuntimeSelection, destination: File) {
         val connection = openConnection(selection.url)
         activeConnection.set(connection)
         try {
-            require(connection.responseCode in 200..299) {
-                "HTTP ${connection.responseCode} while downloading runtime"
+            val responseCode = connection.responseCode
+            if (responseCode !in 200..299) {
+                throw HttpResponseException(
+                    responseCode,
+                    "HTTP $responseCode while downloading runtime"
+                )
             }
             FileOutputStream(destination).use { output ->
                 connection.inputStream.use { input ->
@@ -670,8 +793,13 @@ class TerminalRuntimeInstallService : Service() {
 
     private fun publish(state: State) {
         currentState = state
-        getSystemService(NotificationManager::class.java)
-            .notify(NOTIFICATION_ID, buildNotification(state))
+        val jobParameters = activeJobParameters
+        if (uidtJobMode) {
+            if (jobParameters != null) setUidtNotification(jobParameters, state)
+        } else {
+            getSystemService(NotificationManager::class.java)
+                .notify(NOTIFICATION_ID, buildNotification(state))
+        }
         sendBroadcast(
             Intent(ACTION_STATE_CHANGED)
                 .setPackage(packageName)
@@ -686,6 +814,20 @@ class TerminalRuntimeInstallService : Service() {
         installing.set(false)
     }
 
+    private fun setUidtNotification(params: JobParameters, state: State) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) return
+        setNotification(
+            params,
+            NOTIFICATION_ID,
+            buildNotification(state),
+            if (state.running) {
+                JobService.JOB_END_NOTIFICATION_POLICY_DETACH
+            } else {
+                JobService.JOB_END_NOTIFICATION_POLICY_REMOVE
+            }
+        )
+    }
+
     private fun buildNotification(state: State): Notification {
         val openIntent = PendingIntent.getActivity(
             this,
@@ -694,12 +836,21 @@ class TerminalRuntimeInstallService : Service() {
                 .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-        val cancelIntent = PendingIntent.getService(
-            this,
-            CANCEL_REQUEST_CODE,
-            Intent(this, TerminalRuntimeInstallService::class.java).setAction(ACTION_CANCEL),
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
+        val cancelPendingIntent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            PendingIntent.getBroadcast(
+                this,
+                CANCEL_REQUEST_CODE,
+                Intent(this, TerminalRuntimeInstallCancelReceiver::class.java),
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+        } else {
+            PendingIntent.getService(
+                this,
+                CANCEL_REQUEST_CODE,
+                Intent(this, TerminalRuntimeLegacyInstallService::class.java).setAction(ACTION_CANCEL),
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+        }
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_terminal)
             .setContentTitle(getString(R.string.terminal_runtime_notification_title))
@@ -712,22 +863,14 @@ class TerminalRuntimeInstallService : Service() {
             .setProgress(100, state.progress, state.phase == Phase.PREPARING)
             .apply {
                 if (state.running) {
-                    addAction(R.drawable.ic_browser_close, getString(R.string.cancel), cancelIntent)
+                    addAction(R.drawable.ic_browser_close, getString(R.string.cancel), cancelPendingIntent)
                 }
             }
             .build()
     }
 
     private fun startAsForeground(notification: Notification) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            startForeground(
-                NOTIFICATION_ID,
-                notification,
-                ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
-            )
-        } else {
-            startForeground(NOTIFICATION_ID, notification)
-        }
+        startForeground(NOTIFICATION_ID, notification)
     }
 
     private fun createNotificationChannel() {
@@ -830,6 +973,11 @@ class TerminalRuntimeInstallService : Service() {
         val sha256: String
     )
 
+    private class HttpResponseException(
+        val statusCode: Int,
+        message: String
+    ) : java.io.IOException(message)
+
     companion object {
         const val ACTION_INSTALL = "com.piperostool.terminal.runtime.INSTALL"
         const val ACTION_CANCEL = "com.piperostool.terminal.runtime.CANCEL"
@@ -840,6 +988,7 @@ class TerminalRuntimeInstallService : Service() {
         const val EXTRA_RELEASE_TAG = "release_tag"
         const val EXTRA_RUNTIME_VERSION = "runtime_version"
         const val EXTRA_INSTALL_MODE = "install_mode"
+        const val UIDT_JOB_ID = 4_520
 
         private const val CHANNEL_ID = "piperos_runtime_install"
         private const val NOTIFICATION_ID = 4520
@@ -848,6 +997,9 @@ class TerminalRuntimeInstallService : Service() {
         private const val BUFFER_SIZE = 64 * 1024
         private const val CONNECT_TIMEOUT_MS = 20_000
         private const val READ_TIMEOUT_MS = 45_000
+        private const val MAX_ARCHIVE_DOWNLOAD_ATTEMPTS = 3
+        private const val ARCHIVE_RETRY_DELAY_MS = 1_500L
+        private const val ESTIMATED_RUNTIME_DOWNLOAD_BYTES = 150L * 1024 * 1024
         private const val MAX_MANIFEST_BYTES = 256L * 1024
         private const val MAX_SIGNATURE_BYTES = 4L * 1024
         private const val MIN_ARCHIVE_BYTES = 1L * 1024 * 1024
@@ -881,6 +1033,61 @@ class TerminalRuntimeInstallService : Service() {
         @Volatile
         var currentState = State(Phase.IDLE, 0, "")
             private set
+
+        fun scheduleUserInitiatedInstall(
+            context: android.content.Context,
+            release: TerminalRuntimeCatalog.Release,
+            mode: InstallMode
+        ): Int {
+            val extras = PersistableBundle().apply {
+                putString(EXTRA_RELEASE_TAG, release.tag)
+                putString(EXTRA_RUNTIME_VERSION, release.version)
+                putString(EXTRA_INSTALL_MODE, mode.name)
+            }
+            val jobInfo = JobInfo.Builder(
+                UIDT_JOB_ID,
+                ComponentName(context, TerminalRuntimeInstallService::class.java)
+            )
+                .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
+                .setUserInitiated(true)
+                .setEstimatedNetworkBytes(ESTIMATED_RUNTIME_DOWNLOAD_BYTES, 0L)
+                .setExtras(extras)
+                .build()
+            val result = context.getSystemService(JobScheduler::class.java).schedule(jobInfo)
+            if (result == JobScheduler.RESULT_SUCCESS) {
+                val queuedState = State(
+                    Phase.PREPARING,
+                    0,
+                    context.getString(R.string.terminal_runtime_waiting_network)
+                )
+                currentState = queuedState
+                context.sendBroadcast(
+                    Intent(ACTION_STATE_CHANGED)
+                        .setPackage(context.packageName)
+                        .putExtra(EXTRA_PHASE, queuedState.phase.name)
+                        .putExtra(EXTRA_PROGRESS, queuedState.progress)
+                        .putExtra(EXTRA_MESSAGE, queuedState.message)
+                )
+            }
+            return result
+        }
+
+        fun cancelUserInitiatedInstall(context: android.content.Context) {
+            context.getSystemService(JobScheduler::class.java).cancel(UIDT_JOB_ID)
+            val cancelledState = State(
+                Phase.CANCELLED,
+                currentState.progress,
+                context.getString(R.string.terminal_runtime_cancelled)
+            )
+            currentState = cancelledState
+            context.sendBroadcast(
+                Intent(ACTION_STATE_CHANGED)
+                    .setPackage(context.packageName)
+                    .putExtra(EXTRA_PHASE, cancelledState.phase.name)
+                    .putExtra(EXTRA_PROGRESS, cancelledState.progress)
+                    .putExtra(EXTRA_MESSAGE, cancelledState.message)
+            )
+        }
     }
 
     private val activeConnection = AtomicReference<HttpURLConnection?>(null)

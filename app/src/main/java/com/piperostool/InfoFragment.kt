@@ -178,14 +178,12 @@ class InfoFragment : Fragment() {
                     InfoRow("PiperOS Browser", "Trình duyệt tích hợp"),
                     InfoRow("PiperOS Media", "Phát nhạc và video"),
                     InfoRow("PiperOS 2FA", "Tạo mã xác minh một lần cho các tài khoản"),
-                    InfoRow("PiperOS SetEdit", "Xem và chỉnh các bảng Settings qua PiperOS ADB"),
                     InfoRow("PiperOS Terminal", "Terminal Android và Linux"),
                     InfoRow("PiperOS Fake Map GPS", "Mô phỏng vị trí và hành trình"),
                     InfoRow("Trình quản lý tệp PiperOS", "Duyệt và quản lý tệp"),
                     InfoRow("PiperOS View Remote", "Xem và điều khiển từ xa"),
                     InfoRow("PiperOS ADB", "Thiết lập và quản lý kết nối ADB"),
-                    InfoRow("PiperOS QR", "Tạo và quét mã QR"),
-                    InfoRow("PiperOS Data Transfer", "Chuyển tệp và APK đã mã hóa qua mạng cục bộ")
+                    InfoRow("PiperOS QR", "Tạo và quét mã QR")
                 )
             ),
             InfoSection(

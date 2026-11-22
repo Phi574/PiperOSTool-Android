@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.9.3.PRE — Bản xem trước
+- Gỡ hoàn toàn PiperOS SetEdit và PiperOS Data Transfer khỏi ứng dụng, gồm màn hình, thẻ Beta, khai báo, chuỗi dịch và mã phụ trợ không còn sử dụng.
+- Nâng versionCode lên 111.
+
 ## 3.9.2.PRE — Bản xem trước
 - Mặc định dùng ngôn ngữ thiết bị; vẫn có thể chọn Tiếng Việt hoặc English trong Cài đặt.
 - Tự xóa thông báo ADB đã kết nối khi người dùng tắt PiperOS ADB.

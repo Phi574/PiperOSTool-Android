@@ -32,6 +32,7 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" tools:ignore="ScopedStorage" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.RUN_USER_INITIATED_JOBS" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
@@ -212,10 +213,6 @@
         <activity android:name=".DeviceSessionsActivity" android:exported="false" android:theme="@style/Theme.PiperOSTool" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".PasswordSecurityActivity" android:exported="false" android:theme="@style/Theme.PiperOSTool" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".ChangePasswordActivity" android:exported="false" android:theme="@style/Theme.PiperOSTool" android:windowSoftInputMode="adjustResize" />
-        <activity android:name=".PiperSetEditActivity" android:exported="false" android:theme="@style/Theme.PiperOSTool" android:windowSoftInputMode="adjustResize" />
-        <activity android:name=".PiperDataTransferActivity" android:exported="false" android:theme="@style/Theme.PiperOSTool" android:windowSoftInputMode="adjustResize" />
-        <activity android:name=".PiperDataTransferProgressActivity" android:exported="false" android:theme="@style/Theme.PiperOSTool" />
-        <activity android:name=".PiperDataTransferReceivedActivity" android:exported="false" android:theme="@style/Theme.PiperOSTool" />
         <activity android:name=".LinkedAccountsActivity" android:exported="false" android:theme="@style/Theme.PiperOSTool" android:windowSoftInputMode="adjustResize" />
 
         <activity android:name=".HomeActivity" android:exported="false" android:launchMode="singleTask" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
@@ -343,8 +340,15 @@
             android:stopWithTask="false" />
         <service
             android:name=".TerminalRuntimeInstallService"
+            android:permission="android.permission.BIND_JOB_SERVICE"
+            android:exported="false" />
+        <service
+            android:name=".TerminalRuntimeLegacyInstallService"
             android:exported="false"
             android:foregroundServiceType="dataSync" />
+        <receiver
+            android:name=".TerminalRuntimeInstallCancelReceiver"
+            android:exported="false" />
         <activity android:name=".PermissionManagerActivity" android:exported="false" android:theme="@style/Theme.PiperOSTool.AppCompat.NoActionBar" />
         <activity android:name=".WelcomeActivity" android:exported="false" android:screenOrientation="portrait" android:theme="@style/Theme.PiperOSTool.AppCompat.NoActionBar"/>
         <activity android:name=".LockScreenActivity" android:exported="false" android:screenOrientation="portrait" />

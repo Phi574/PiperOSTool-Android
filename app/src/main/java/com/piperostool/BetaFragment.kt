@@ -1,7 +1,6 @@
 package com.piperostool
 
 import android.content.Intent
-import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -124,14 +123,6 @@ class BetaFragment : Fragment() {
             page.findViewById<View>(R.id.featureFileManager).setOnClickListener {
                 startActivity(Intent(requireContext(), PiperFileManagerActivity::class.java))
             }
-            closeBetaFeature(
-                page.findViewById(R.id.featurePiperSetEdit),
-                page.findViewById(R.id.setEditFeatureStatus)
-            )
-            closeBetaFeature(
-                page.findViewById(R.id.featurePiperDataTransfer),
-                page.findViewById(R.id.dataTransferFeatureStatus)
-            )
         }
 
         inner class PageHolder(view: View) : RecyclerView.ViewHolder(view)
@@ -150,27 +141,4 @@ class BetaFragment : Fragment() {
         root.findViewById<TextView>(R.id.betaGamesMessage)
             .setTextColor(PiperModernUi.secondaryTextColor(context))
     }
-    private fun closeBetaFeature(card: MaterialCardView, badge: ViewGroup) {
-        card.alpha = 0.48f
-        badge.background = GradientDrawable().apply {
-            shape = GradientDrawable.RECTANGLE
-            cornerRadius = dp(30).toFloat()
-            setColor(Color.rgb(116, 126, 138))
-        }
-        (badge.getChildAt(1) as? TextView)?.apply {
-            setText(R.string.feature_close_status)
-            setTextColor(Color.WHITE)
-        }
-        (badge.getChildAt(0) as? android.widget.ImageView)?.setColorFilter(Color.WHITE)
-        card.setOnClickListener {
-            PiperDialog.showMessage(
-                context = requireContext(),
-                title = getString(R.string.feature_unavailable_title),
-                message = getString(R.string.feature_unavailable_message),
-                positiveLabel = getString(android.R.string.ok)
-            )
-        }
-    }
-
-    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 }
