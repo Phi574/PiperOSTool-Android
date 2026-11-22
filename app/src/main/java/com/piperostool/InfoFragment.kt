@@ -210,8 +210,8 @@ class InfoFragment : Fragment() {
                     InfoRow("Phone contact 2", "0339434148", "tel:0339434148"),
                     InfoRow("Phone contact 3", "0979709485", "tel:0979709485"),
                     InfoRow("Facebook Page", "facebook.com/PiperOS.Tool", "https://www.facebook.com/PiperOS.Tool"),
-                    InfoRow("Facebook contact", "facebook.com/username.nothings", "https://www.facebook.com/username.nothings/"),
-                    InfoRow("Facebook contact", "facebook.com/username.nothing.ok", "https://www.facebook.com/username.nothing.ok/")
+                    InfoRow("Facebook contact", "Hoàng Văn Phi ACC Chính", "https://www.facebook.com/username.nothing/"),
+                    InfoRow("Facebook contact", "Hoàng Văn Phi", "https://www.facebook.com/username.nothing.ok/")
                 )
             )
         )

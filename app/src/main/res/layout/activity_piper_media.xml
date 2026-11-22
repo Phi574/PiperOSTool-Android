@@ -250,7 +250,7 @@
                     android:id="@+id/mediaShuffle"
                     style="@style/MediaControlButton"
                     android:contentDescription="@string/media_shuffle"
-                    android:src="@drawable/ic_media_shuffle"
+                    android:src="@drawable/random"
                     android:scaleType="centerInside" />
                 <ImageButton
                     android:id="@+id/mediaPrevious"

@@ -281,6 +281,15 @@ class HomeActivity : AppCompatActivity() {
         findViewById<View>(R.id.homeWindowSupport).setOnClickListener {
             closeWindowDrawer { openSupport() }
         }
+        findViewById<View>(R.id.homeWindowV4Notice).setOnClickListener {
+            PiperDialog.showMessage(
+                context = this,
+                title = getString(R.string.window_v4_notice_title),
+                message = getString(R.string.window_v4_notice_detail),
+                icon = R.drawable.speaker,
+                positiveLabel = getString(R.string.dismiss)
+            )
+        }
         findViewById<View>(R.id.btnHomeWindowLogout).setOnClickListener {
             closeWindowDrawer { confirmLogout() }
         }

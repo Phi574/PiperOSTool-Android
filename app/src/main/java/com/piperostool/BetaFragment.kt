@@ -22,12 +22,6 @@ class BetaFragment : Fragment() {
         view.findViewById<View>(R.id.featureFileManager).setOnClickListener {
             startActivity(Intent(requireContext(), PiperFileManagerActivity::class.java))
         }
-        view.findViewById<View>(R.id.featurePiperRemote).setOnClickListener {
-            startActivity(Intent(requireContext(), PiperRemoteActivity::class.java))
-        }
-        view.findViewById<View>(R.id.featurePiperAdb).setOnClickListener {
-            startActivity(Intent(requireContext(), com.piperostool.privileged.ui.PiperAdbActivity::class.java))
-        }
         view.findViewById<View>(R.id.featurePiperSetEdit).setOnClickListener {
             startActivity(Intent(requireContext(), PiperSetEditActivity::class.java))
         }

@@ -144,6 +144,9 @@
     <string name="home_support_summary">Liên hệ nhóm PiperOS</string>
     <string name="home_whats_new">Có gì mới</string>
     <string name="home_whats_new_summary">Xem thay đổi và lịch sử phiên bản</string>
+    <string name="window_v4_notice_title">V4.0.0.PRE NEW</string>
+    <string name="window_v4_notice_summary">Phiên bản V4.0.0.PRE NEW sẽ thay đổi lớn tới PiperOS Tool, các tính năng sẽ dễ dàng quản lý hơn và tối ưu tốt trên các dòng máy từ Android 11 =&gt; Android 17 mới nhất.</string>
+    <string name="window_v4_notice_detail">Tối ưu giao diện tính năng và bố cục của app. Cải thiện tốc độ kết nối và tinh chỉnh tùy biến sâu với các thiết bị ( NO ROOT). Sắp xếp gọn bố cục dễ quản lý sử dụng. Người dùng không cần đăng nhập vẫn có thể trải nghiệm app nhưng sẽ không thể dùng các tính năng cần Đăng nhập. Thêm các tính năng bổ sung và vá lỗi trong các bản cập nhật tiếp theo. Hãy đón chờ nhé!!\n\nĐại diện PiperOS Tool đã viết. Thanks</string>
     <string name="whats_new_current_version">PHIÊN BẢN HIỆN TẠI · %1$s</string>
     <string name="whats_new_current_fallback">Không tìm thấy ghi chú chi tiết cho phiên bản %1$s.</string>
     <string name="whats_new_show_all">Xem tất cả phiên bản</string>

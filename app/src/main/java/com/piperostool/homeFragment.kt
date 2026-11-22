@@ -33,5 +33,11 @@ class homeFragment : Fragment() {
         view.findViewById<View>(R.id.homePiper2fa).setOnClickListener {
             startActivity(Intent(requireContext(), BetaTwoFactorActivity::class.java))
         }
+        view.findViewById<View>(R.id.homePiperRemote).setOnClickListener {
+            startActivity(Intent(requireContext(), PiperRemoteActivity::class.java))
+        }
+        view.findViewById<View>(R.id.homePiperAdb).setOnClickListener {
+            startActivity(Intent(requireContext(), com.piperostool.privileged.ui.PiperAdbActivity::class.java))
+        }
     }
 }

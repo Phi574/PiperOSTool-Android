@@ -1,5 +1,13 @@
 # Changelog
 
+## 3.9.1.PRE — Bản xem trước
+- Cập nhật thông tin liên hệ Facebook theo nội dung mới từ dự án Preview.
+- Thay biểu tượng phát ngẫu nhiên trong PiperOS Media bằng `random.png` đã chọn ở dự án Preview.
+- Chuyển PiperOS View Remote và PiperOS ADB từ trang Beta sang trang chủ.
+- Thêm thẻ thông báo V4.0.0.PRE NEW trong cửa sổ Window; chạm thẻ để xem nội dung thay đổi dự kiến.
+- Rút gọn lịch sử offline của trang Có gì mới, chỉ giữ từ 3.8.3.PRE — phiên bản cũ nhất còn trên trang Releases — đến hiện tại.
+- Nâng versionCode lên 109.
+
 ## 3.9.0.BETA — Bản thử nghiệm
 - Chuyển các thay đổi giao diện và điều hướng từ dự án Preview sang bản chính: tiêu đề theo từng trang nằm ở Activity Home, cửa sổ Window dùng menu cấu hình, và cập nhật các trang Home, Apps, Beta, Settings, Info.
 - Tích hợp đầy đủ xử lý JSON cho Welcome, đăng nhập, đăng ký, khóa bảo mật, quên mật khẩu và xác thực điện thoại; giữ các activity Kotlin và renderer cần thiết.

@@ -3,6 +3,9 @@
     <string name="piperos_2fa_summary">Generate verification codes for multiple service accounts.</string>
     <string name="home_whats_new">What’s new</string>
     <string name="home_whats_new_summary">See changes and version history</string>
+    <string name="window_v4_notice_title">V4.0.0.PRE NEW</string>
+    <string name="window_v4_notice_summary">Version V4.0.0.PRE NEW will bring major changes to PiperOS Tool, make features easier to manage and improve optimization for devices from Android 11 through the latest Android 17.</string>
+    <string name="window_v4_notice_detail">The feature interfaces and app layout will be optimized. Connection speed and deep device customization (NO ROOT) will be improved. The layout will be easier to organize and use. Users will be able to try the app without signing in, but features that require sign-in will remain unavailable. More features and fixes will arrive in upcoming updates. Stay tuned!\n\nWritten on behalf of PiperOS Tool. Thanks</string>
     <string name="whats_new_current_version">CURRENT VERSION · %1$s</string>
     <string name="whats_new_current_fallback">No detailed release notes were found for version %1$s.</string>
     <string name="whats_new_show_all">View all versions</string>
