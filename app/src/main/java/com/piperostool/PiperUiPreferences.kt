@@ -39,9 +39,7 @@ object PiperUiPreferences {
         // Remove the obsolete style selection from existing installations.
         prefs(context).edit().remove("ui_style").apply()
         applyColorMode(context)
-        AppCompatDelegate.setApplicationLocales(
-            LocaleListCompat.forLanguageTags(language(context))
-        )
+        applyLanguage(context)
     }
 
     fun colorMode(context: Context): PiperColorMode =
@@ -51,8 +49,17 @@ object PiperUiPreferences {
             else -> PiperColorMode.SYSTEM
         }
 
-    fun language(context: Context): String =
-        prefs(context).getString(KEY_LANGUAGE, "vi")?.takeIf { it == "vi" || it == "en" } ?: "vi"
+    fun selectedLanguage(context: Context): String =
+        prefs(context).getString(KEY_LANGUAGE, "system")
+            ?.takeIf { it == "vi" || it == "en" || it == "system" } ?: "system"
+
+    /** Language used by app strings and the legacy text translator. */
+    fun language(context: Context): String {
+        val selected = selectedLanguage(context)
+        if (selected == "vi" || selected == "en") return selected
+        val deviceLanguage = context.resources.configuration.locales.get(0)?.language.orEmpty()
+        return if (deviceLanguage.equals("en", ignoreCase = true)) "en" else "vi"
+    }
 
     fun setColorMode(context: Context, value: PiperColorMode) {
         prefs(context).edit().putString(KEY_COLOR_MODE, value.key).apply()
@@ -60,9 +67,20 @@ object PiperUiPreferences {
     }
 
     fun setLanguage(context: Context, language: String) {
-        val safeLanguage = if (language == "en") "en" else "vi"
+        val safeLanguage = when (language) {
+            "vi", "en" -> language
+            else -> "system"
+        }
         prefs(context).edit().putString(KEY_LANGUAGE, safeLanguage).apply()
-        AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(safeLanguage))
+        applyLanguage(context)
+    }
+
+    private fun applyLanguage(context: Context) {
+        val selected = selectedLanguage(context)
+        AppCompatDelegate.setApplicationLocales(
+            if (selected == "system") LocaleListCompat.getEmptyLocaleList()
+            else LocaleListCompat.forLanguageTags(selected)
+        )
     }
 
     private fun applyColorMode(context: Context) {
@@ -78,7 +96,6 @@ object PiperUiPreferences {
     private fun prefs(context: Context) =
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 }
-
 object PiperModernUi {
     private data class Palette(
         val background: Int,
@@ -451,7 +468,7 @@ object PiperModernUi {
             name == "twoFactorAdd"
 
     private fun isNavigationItem(name: String): Boolean = name in setOf(
-        "navHome", "navBeta", "navApps", "navSettings", "navDevices",
+        "navHome", "navBeta", "navApps", "navSettings", "navDevices", "betaTabBar", "betaTabApps", "betaTabGames",
         "iconHome", "iconNews", "iconApps", "iconSettings", "iconDevices",
         "txtHome", "txtNews", "txtApps", "txtSettings", "txtDevices"
     )

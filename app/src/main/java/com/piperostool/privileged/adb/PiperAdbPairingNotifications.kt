@@ -19,6 +19,10 @@ object PiperAdbPairingNotifications {
     private const val NOTIFICATION_ID = 3111
     private const val SUCCESS_NOTIFICATION_ID = 3115
 
+    fun cancelSuccess(context: Context) {
+        context.getSystemService(NotificationManager::class.java).cancel(SUCCESS_NOTIFICATION_ID)
+    }
+
     fun showWaiting(context: Context) {
         ensureChannel(context)
         context.getSystemService(NotificationManager::class.java).cancel(SUCCESS_NOTIFICATION_ID)

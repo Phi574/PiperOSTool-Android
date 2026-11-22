@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.9.2.PRE — Bản xem trước
+- Mặc định dùng ngôn ngữ thiết bị; vẫn có thể chọn Tiếng Việt hoặc English trong Cài đặt.
+- Tự xóa thông báo ADB đã kết nối khi người dùng tắt PiperOS ADB.
+- Thêm kiểm tra trạng thái Dịch vụ Google Play trong trang Info.
+- Tạm đóng PiperOS SetEdit và PiperOS Data Transfer trong Beta; thêm hai tab App/Game có thể vuốt chuyển.
+- Đồng bộ màu tab Beta và thông báo Game theo giao diện sáng/tối; cập nhật biểu tượng và màu PiperOS View Remote.
 ## 3.9.1.PRE — Bản xem trước
 - Cập nhật thông tin liên hệ Facebook theo nội dung mới từ dự án Preview.
 - Thay biểu tượng phát ngẫu nhiên trong PiperOS Media bằng `random.png` đã chọn ở dự án Preview.

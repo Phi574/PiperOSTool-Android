@@ -66,7 +66,7 @@
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="@string/remote_stream_settings"
                 android:padding="12dp"
-                android:src="@drawable/ic_remote_settings"
+                android:src="@drawable/screensettings"
                 android:scaleType="centerInside" />
             <ImageButton
                 android:id="@+id/btnRemoteStopToolbar"
@@ -155,7 +155,7 @@
                         android:layout_height="44dp"
                         android:background="@drawable/bg_browser_icon"
                         android:padding="10dp"
-                        android:src="@drawable/ic_apple_mirror"
+                        android:src="@drawable/ic_apple"
                         android:scaleType="centerInside" />
                     <LinearLayout
                         android:layout_width="0dp"
@@ -335,8 +335,9 @@
                         <ImageView
                             android:layout_width="40dp"
                             android:layout_height="40dp"
-                            android:src="@drawable/ic_remote_view"
-                            android:scaleType="fitCenter"/>
+                            android:src="@drawable/usbcable"
+                            android:scaleType="fitCenter"
+                            app:tint="@color/remote_accent"/>
 
                         <TextView
                             android:layout_width="wrap_content"

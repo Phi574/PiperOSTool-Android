@@ -295,10 +295,10 @@ class SettingFragment : Fragment() {
             }
         )
         tvLanguageValue.setText(
-            if (PiperUiPreferences.language(requireContext()) == "en") {
-                R.string.settings_language_en
-            } else {
-                R.string.settings_language_vi
+            when (PiperUiPreferences.selectedLanguage(requireContext())) {
+                "en" -> R.string.settings_language_en
+                "vi" -> R.string.settings_language_vi
+                else -> R.string.settings_language_system
             }
         )
         tvFontValue.text = PiperFontPreferences.selectedName(requireContext())
@@ -329,11 +329,12 @@ class SettingFragment : Fragment() {
     }
 
     private fun showLanguageDialog() {
-        val current = PiperUiPreferences.language(requireContext())
+        val current = PiperUiPreferences.selectedLanguage(requireContext())
         PiperActionSheet.showSingleSelect(
             context = requireContext(),
             title = getString(R.string.settings_language),
             choices = listOf(
+                PiperSheetChoice("system", getString(R.string.settings_language_system), current == "system"),
                 PiperSheetChoice("vi", getString(R.string.settings_language_vi), current == "vi"),
                 PiperSheetChoice("en", getString(R.string.settings_language_en), current == "en")
             ),

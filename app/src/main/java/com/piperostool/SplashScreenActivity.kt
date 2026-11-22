@@ -133,13 +133,13 @@ class SplashScreenActivity : AppCompatActivity() {
                 setStartupStep("Đang kiểm tra GitHub…")
                 showStartupResult(
                     R.id.startupGithubStatus,
-                    InfoConnectivityChecker.checkGitHubNow()
+                    InfoConnectivityChecker.checkGitHubNow(this@SplashScreenActivity)
                 )
 
                 setStartupStep("Đang kiểm tra Firebase Auth…")
                 showStartupResult(
                     R.id.startupFirebaseStatus,
-                    InfoConnectivityChecker.checkFirebaseAuthNow()
+                    InfoConnectivityChecker.checkFirebaseAuthNow(this@SplashScreenActivity)
                 )
 
                 setStartupStep("Đang kiểm tra phiên bản cập nhật…")

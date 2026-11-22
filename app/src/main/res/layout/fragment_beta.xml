@@ -1,402 +1,53 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.core.widget.NestedScrollView
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/betaRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:clipToPadding="false"
-    android:fillViewport="true"
-    android:overScrollMode="never"
-    android:paddingStart="20dp"
-    android:paddingTop="12dp"
-    android:paddingEnd="20dp"
-    android:paddingBottom="118dp">
+    android:orientation="vertical">
 
     <LinearLayout
+        android:id="@+id/betaTabBar"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:layout_height="52dp"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="10dp"
+        android:layout_marginEnd="20dp"
+        android:background="#111820"
+        android:orientation="horizontal"
+        android:padding="4dp">
 
-
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/featurePiperTerminal"
-            android:layout_width="match_parent"
-            android:layout_height="100dp"
-            android:layout_marginTop="14dp"
+        <TextView
+            android:id="@+id/betaTabApps"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@drawable/bg_feature_beta_pill"
             android:clickable="true"
             android:focusable="true"
-            android:foreground="?attr/selectableItemBackground"
-            app:cardBackgroundColor="#E612171C"
-            app:cardCornerRadius="20dp"
-            app:cardElevation="0dp"
-            app:strokeColor="#5AFFFFFF"
-            app:strokeWidth="1dp">
+            android:gravity="center"
+            android:text="@string/beta_tab_apps"
+            android:textColor="@color/white"
+            android:textSize="14sp"
+            android:textStyle="bold" />
 
-            <androidx.constraintlayout.widget.ConstraintLayout
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:padding="15dp">
-
-                <FrameLayout
-                    android:id="@+id/terminalFeatureIcon"
-                    android:layout_width="52dp"
-                    android:layout_height="52dp"
-                    android:background="@drawable/bg_terminal_send"
-                    app:layout_constraintBottom_toBottomOf="parent"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent">
-
-                    <ImageView
-                        android:layout_width="28dp"
-                        android:layout_height="28dp"
-                        android:layout_gravity="center"
-                        android:contentDescription="@null"
-                        android:src="@drawable/ic_terminal"
-                        app:tint="#08110B" />
-                </FrameLayout>
-
-                <TextView
-                    android:id="@+id/terminalFeatureTitle"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="16dp"
-                    android:ellipsize="end"
-                    android:maxLines="1"
-                    android:text="@string/piperos_terminal"
-                    android:textColor="@color/white"
-                    android:textSize="16sp"
-                    android:textStyle="bold"
-                    app:autoSizeMaxTextSize="18sp"
-                    app:autoSizeMinTextSize="13sp"
-                    app:autoSizeStepGranularity="1sp"
-                    app:autoSizeTextType="uniform"
-                    app:layout_constraintEnd_toStartOf="@id/terminalFeatureStatus"
-                    app:layout_constraintStart_toEndOf="@id/terminalFeatureIcon"
-                    app:layout_constraintTop_toTopOf="@id/terminalFeatureIcon" />
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="16dp"
-                    android:layout_marginTop="6dp"
-                    android:ellipsize="end"
-                    android:maxLines="2"
-                    android:text="@string/piperos_terminal_summary"
-                    android:textColor="#AFFFFFFF"
-                    android:textSize="12sp"
-                    app:layout_constraintEnd_toStartOf="@id/terminalFeatureStatus"
-                    app:layout_constraintStart_toEndOf="@id/terminalFeatureIcon"
-                    app:layout_constraintTop_toBottomOf="@id/terminalFeatureTitle" />
-
-                <LinearLayout
-                    android:id="@+id/terminalFeatureStatus"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center"
-                    android:background="@drawable/bg_feature_beta_pill"
-                    android:paddingHorizontal="9dp"
-                    android:paddingVertical="5dp"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintTop_toTopOf="parent">
-                    <ImageView
-                        android:layout_width="10dp"
-                        android:layout_height="10dp"
-                        android:contentDescription="@null"
-                        android:src="@drawable/icon_beta" />
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="4dp"
-                        android:text="@string/beta_status"
-                        android:textColor="#147C60"
-                        android:textSize="10sp"
-                        android:textStyle="bold" />
-                </LinearLayout>
-            </androidx.constraintlayout.widget.ConstraintLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/featureFileManager"
-            android:layout_width="match_parent"
-            android:layout_height="100dp"
-            android:layout_marginTop="14dp"
+        <TextView
+            android:id="@+id/betaTabGames"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
             android:clickable="true"
             android:focusable="true"
-            android:foreground="?attr/selectableItemBackground"
-            app:cardBackgroundColor="#E612171C"
-            app:cardCornerRadius="20dp"
-            app:cardElevation="0dp"
-            app:strokeColor="#5AFFFFFF"
-            app:strokeWidth="1dp">
-
-            <androidx.constraintlayout.widget.ConstraintLayout
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:padding="15dp">
-
-                <FrameLayout
-                    android:id="@+id/fileManagerFeatureIcon"
-                    android:layout_width="52dp"
-                    android:layout_height="52dp"
-                    android:background="@drawable/bg_browser_icon"
-                    app:layout_constraintBottom_toBottomOf="parent"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent">
-                    <ImageView
-                        android:layout_width="28dp"
-                        android:layout_height="28dp"
-                        android:layout_gravity="center"
-                        android:contentDescription="@null"
-                        android:src="@drawable/module"
-                        app:tint="#07120B" />
-                </FrameLayout>
-
-                <TextView
-                    android:id="@+id/fileManagerFeatureTitle"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="16dp"
-                    android:ellipsize="end"
-                    android:maxLines="1"
-                    android:text="@string/piperos_file_manager"
-                    android:textColor="@color/white"
-                    android:textSize="16sp"
-                    android:textStyle="bold"
-                    app:autoSizeMaxTextSize="18sp"
-                    app:autoSizeMinTextSize="12sp"
-                    app:autoSizeStepGranularity="1sp"
-                    app:autoSizeTextType="uniform"
-                    app:layout_constraintEnd_toStartOf="@id/fileManagerFeatureStatus"
-                    app:layout_constraintStart_toEndOf="@id/fileManagerFeatureIcon"
-                    app:layout_constraintTop_toTopOf="@id/fileManagerFeatureIcon" />
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="16dp"
-                    android:layout_marginTop="6dp"
-                    android:ellipsize="end"
-                    android:maxLines="2"
-                    android:text="@string/piperos_file_manager_summary"
-                    android:textColor="#AFFFFFFF"
-                    android:textSize="12sp"
-                    app:layout_constraintEnd_toStartOf="@id/fileManagerFeatureStatus"
-                    app:layout_constraintStart_toEndOf="@id/fileManagerFeatureIcon"
-                    app:layout_constraintTop_toBottomOf="@id/fileManagerFeatureTitle" />
-
-                <LinearLayout
-                    android:id="@+id/fileManagerFeatureStatus"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center"
-                    android:background="@drawable/bg_feature_beta_pill"
-                    android:paddingHorizontal="9dp"
-                    android:paddingVertical="5dp"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintTop_toTopOf="parent">
-                    <ImageView
-                        android:layout_width="10dp"
-                        android:layout_height="10dp"
-                        android:contentDescription="@null"
-                        android:src="@drawable/icon_beta" />
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="4dp"
-                        android:text="@string/beta_status"
-                        android:textColor="#147C60"
-                        android:textSize="10sp"
-                        android:textStyle="bold" />
-                </LinearLayout>
-            </androidx.constraintlayout.widget.ConstraintLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/featurePiperSetEdit"
-            android:layout_width="match_parent"
-            android:layout_height="100dp"
-            android:layout_marginTop="14dp"
-            android:clickable="true"
-            android:focusable="true"
-            android:foreground="?attr/selectableItemBackground"
-            app:cardBackgroundColor="#E612171C"
-            app:cardCornerRadius="20dp"
-            app:cardElevation="0dp"
-            app:strokeColor="#5AFFFFFF"
-            app:strokeWidth="1dp">
-
-            <androidx.constraintlayout.widget.ConstraintLayout
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:padding="15dp">
-
-                <FrameLayout
-                    android:id="@+id/setEditFeatureIcon"
-                    android:layout_width="52dp"
-                    android:layout_height="52dp"
-                    android:background="@drawable/bg_browser_icon"
-                    app:layout_constraintBottom_toBottomOf="parent"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent">
-                    <ImageView
-                        android:layout_width="28dp"
-                        android:layout_height="28dp"
-                        android:layout_gravity="center"
-                        android:contentDescription="@null"
-                        android:src="@drawable/module" />
-                </FrameLayout>
-
-                <TextView
-                    android:id="@+id/setEditFeatureTitle"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="16dp"
-                    android:ellipsize="end"
-                    android:maxLines="1"
-                    android:text="@string/setedit_title"
-                    android:textColor="@color/white"
-                    android:textSize="16sp"
-                    android:textStyle="bold"
-                    app:layout_constraintEnd_toStartOf="@id/setEditFeatureStatus"
-                    app:layout_constraintStart_toEndOf="@id/setEditFeatureIcon"
-                    app:layout_constraintTop_toTopOf="@id/setEditFeatureIcon" />
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="16dp"
-                    android:layout_marginTop="6dp"
-                    android:ellipsize="end"
-                    android:maxLines="2"
-                    android:text="@string/setedit_summary"
-                    android:textColor="#AFFFFFFF"
-                    android:textSize="12sp"
-                    app:layout_constraintEnd_toStartOf="@id/setEditFeatureStatus"
-                    app:layout_constraintStart_toEndOf="@id/setEditFeatureIcon"
-                    app:layout_constraintTop_toBottomOf="@id/setEditFeatureTitle" />
-
-                <LinearLayout
-                    android:id="@+id/setEditFeatureStatus"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center"
-                    android:background="@drawable/bg_feature_beta_pill"
-                    android:paddingHorizontal="9dp"
-                    android:paddingVertical="5dp"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintTop_toTopOf="parent">
-                    <ImageView
-                        android:layout_width="10dp"
-                        android:layout_height="10dp"
-                        android:contentDescription="@null"
-                        android:src="@drawable/icon_beta" />
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="4dp"
-                        android:text="@string/beta_status"
-                        android:textColor="#147C60"
-                        android:textSize="10sp"
-                        android:textStyle="bold" />
-                </LinearLayout>
-            </androidx.constraintlayout.widget.ConstraintLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/featurePiperDataTransfer"
-            android:layout_width="match_parent"
-            android:layout_height="100dp"
-            android:layout_marginTop="14dp"
-            android:clickable="true"
-            android:focusable="true"
-            android:foreground="?attr/selectableItemBackground"
-            app:cardBackgroundColor="#E612171C"
-            app:cardCornerRadius="20dp"
-            app:cardElevation="0dp"
-            app:strokeColor="#5AFFFFFF"
-            app:strokeWidth="1dp">
-
-            <androidx.constraintlayout.widget.ConstraintLayout
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:padding="15dp">
-
-                <FrameLayout
-                    android:id="@+id/dataTransferFeatureIcon"
-                    android:layout_width="52dp"
-                    android:layout_height="52dp"
-                    android:background="@drawable/bg_browser_icon"
-                    app:layout_constraintBottom_toBottomOf="parent"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent">
-                    <ImageView
-                        android:layout_width="28dp"
-                        android:layout_height="28dp"
-                        android:layout_gravity="center"
-                        android:contentDescription="@null"
-                        android:src="@drawable/ic_data_transfer"
-                        app:tint="#07120B" />
-                </FrameLayout>
-
-                <TextView
-                    android:id="@+id/dataTransferFeatureTitle"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="16dp"
-                    android:ellipsize="end"
-                    android:maxLines="1"
-                    android:text="@string/data_transfer_title"
-                    android:textColor="@color/white"
-                    android:textSize="16sp"
-                    android:textStyle="bold"
-                    app:layout_constraintEnd_toStartOf="@id/dataTransferFeatureStatus"
-                    app:layout_constraintStart_toEndOf="@id/dataTransferFeatureIcon"
-                    app:layout_constraintTop_toTopOf="@id/dataTransferFeatureIcon" />
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="16dp"
-                    android:layout_marginTop="6dp"
-                    android:ellipsize="end"
-                    android:maxLines="2"
-                    android:text="@string/data_transfer_summary"
-                    android:textColor="#AFFFFFFF"
-                    android:textSize="12sp"
-                    app:layout_constraintEnd_toStartOf="@id/dataTransferFeatureStatus"
-                    app:layout_constraintStart_toEndOf="@id/dataTransferFeatureIcon"
-                    app:layout_constraintTop_toBottomOf="@id/dataTransferFeatureTitle" />
-
-                <LinearLayout
-                    android:id="@+id/dataTransferFeatureStatus"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center"
-                    android:background="@drawable/bg_feature_beta_pill"
-                    android:paddingHorizontal="9dp"
-                    android:paddingVertical="5dp"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintTop_toTopOf="parent">
-                    <ImageView
-                        android:layout_width="10dp"
-                        android:layout_height="10dp"
-                        android:contentDescription="@null"
-                        android:src="@drawable/icon_beta" />
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="4dp"
-                        android:text="@string/beta_status"
-                        android:textColor="#147C60"
-                        android:textSize="10sp"
-                        android:textStyle="bold" />
-                </LinearLayout>
-            </androidx.constraintlayout.widget.ConstraintLayout>
-        </com.google.android.material.card.MaterialCardView>
-
+            android:gravity="center"
+            android:text="@string/beta_tab_games"
+            android:textColor="#AAB4BF"
+            android:textSize="14sp"
+            android:textStyle="bold" />
     </LinearLayout>
-</androidx.core.widget.NestedScrollView>
+
+    <androidx.viewpager2.widget.ViewPager2
+        android:id="@+id/betaPager"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:overScrollMode="never" />
+</LinearLayout>

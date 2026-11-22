@@ -1,5 +1,13 @@
 # Changelog
 
+## 3.9.2.PRE — Bản xem trước
+- Chuyển thay đổi biểu tượng PiperOS View Remote từ dự án Preview sang dự án chính.
+- Mặc định dùng ngôn ngữ thiết bị để tránh giao diện mới cài bị ghim tiếng Việt; vẫn cho phép chọn Tiếng Việt hoặc English trong Cài đặt.
+- Tự xóa thông báo ADB đã kết nối khi người dùng tắt PiperOS ADB.
+- Bổ sung kiểm tra trạng thái Google Play services trong trang Info.
+- Tạm đóng PiperOS SetEdit và PiperOS Data Transfer trong Beta; thêm tab App/Game.
+- Nâng versionCode lên 110.
+- Tinh chỉnh màu tab Beta và thông báo Game; cập nhật biểu tượng và màu PiperOS View Remote.
 ## 3.9.1.PRE — Bản xem trước
 - Cập nhật thông tin liên hệ Facebook theo nội dung mới từ dự án Preview.
 - Thay biểu tượng phát ngẫu nhiên trong PiperOS Media bằng `random.png` đã chọn ở dự án Preview.

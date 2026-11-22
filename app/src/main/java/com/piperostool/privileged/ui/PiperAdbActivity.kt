@@ -184,6 +184,7 @@ class PiperAdbActivity : AppCompatActivity() {
             appendLocalLog("Bắt đầu kiểm tra kết nối PiperOS ADB", Color.LTGRAY)
             try {
                 val enabled = client.adbEnabled()
+                if (!enabled) PiperAdbPairingNotifications.cancelSuccess(this@PiperAdbActivity)
                 setSwitchChecked(enabled)
                 adbEnabled = enabled
                 val current = client.status()

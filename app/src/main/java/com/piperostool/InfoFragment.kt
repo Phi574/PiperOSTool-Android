@@ -65,9 +65,10 @@ class InfoFragment : Fragment() {
 
         PiperModernUi.apply(view)
         showHealthItems(view, listOf(
-            InfoHealthItem("internet", "Internet", "Chạm Kiểm tra để bắt đầu", InfoHealthState.CHECKING),
-            InfoHealthItem("github", "GitHub", "Chưa kiểm tra", InfoHealthState.CHECKING),
-            InfoHealthItem("firebase", "Firebase Authentication", "Chưa kiểm tra", InfoHealthState.CHECKING)
+            InfoHealthItem("internet", getString(R.string.info_health_internet_title), getString(R.string.info_health_check_prompt), InfoHealthState.CHECKING),
+            InfoHealthItem("github", getString(R.string.info_health_github_title), getString(R.string.info_health_not_checked), InfoHealthState.CHECKING),
+            InfoHealthItem("firebase", getString(R.string.info_health_firebase_title), getString(R.string.info_health_not_checked), InfoHealthState.CHECKING),
+            InfoHealthItem("google_play", getString(R.string.info_health_google_play_title), getString(R.string.info_health_not_checked), InfoHealthState.CHECKING)
         ))
         refreshHealth(view)
     }
@@ -233,15 +234,14 @@ class InfoFragment : Fragment() {
         healthCheckRunning = true
         val button = root.findViewById<MaterialButton>(R.id.btnRefreshInfoHealth)
         button.isEnabled = false
-        button.text = "Đang kiểm tra…"
+        button.setText(R.string.info_health_button_checking)
         InfoConnectivityChecker.check(requireContext()) { items ->
             if (!isAdded || view !== root) return@check
             healthCheckRunning = false
             button.isEnabled = true
-            button.text = "Kiểm tra lại"
+            button.setText(R.string.info_health_button_refresh)
             latestHealthItems = items
-            root.findViewById<TextView>(R.id.tvInfoHealthCheckedAt).text =
-                "Cập nhật lúc ${SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())}"
+            root.findViewById<TextView>(R.id.tvInfoHealthCheckedAt).text = getString(R.string.info_health_checked_at, SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date()))
             showHealthItems(root, items)
         }
     }
@@ -281,13 +281,13 @@ class InfoFragment : Fragment() {
             labels.addView(title)
             labels.addView(detail)
             val stateLabel = TextView(requireContext()).apply {
-                text = when (item.state) {
-                    InfoHealthState.CHECKING -> "ĐANG KIỂM TRA"
-                    InfoHealthState.HEALTHY -> "BÌNH THƯỜNG"
-                    InfoHealthState.SLOW -> "CHẬM"
-                    InfoHealthState.WARNING -> "CÓ CẢNH BÁO"
-                    InfoHealthState.UNAVAILABLE -> "MẤT KẾT NỐI"
-                }
+                text = getString(when (item.state) {
+                    InfoHealthState.CHECKING -> R.string.info_health_state_checking
+                    InfoHealthState.HEALTHY -> R.string.info_health_state_healthy
+                    InfoHealthState.SLOW -> R.string.info_health_state_slow
+                    InfoHealthState.WARNING -> R.string.info_health_state_warning
+                    InfoHealthState.UNAVAILABLE -> R.string.info_health_state_unavailable
+                })
                 textSize = 9f
                 setTypeface(typeface, android.graphics.Typeface.BOLD)
                 setTextColor(stateColor(item.state))

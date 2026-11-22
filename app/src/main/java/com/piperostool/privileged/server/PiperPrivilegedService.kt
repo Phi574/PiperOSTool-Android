@@ -22,6 +22,7 @@ import com.piperostool.privileged.file.PrivilegedFileBackend
 import com.piperostool.privileged.file.RootFileBackend
 import com.piperostool.privileged.file.AdbFileBackend
 import com.piperostool.privileged.adb.AdbShellSession
+import com.piperostool.privileged.adb.PiperAdbPairingNotifications
 import org.json.JSONObject
 import java.io.File
 import java.io.FileOutputStream
@@ -323,6 +324,7 @@ class PiperPrivilegedService : Service() {
                 }.onFailure { log("adb-enable-start-failed", it) }.isSuccess
                 if (!started) requestInitialization(force = true)
             } else {
+                PiperAdbPairingNotifications.cancelSuccess(this@PiperPrivilegedService)
                 log("adb-stop-start", "User disabled PiperOS ADB; waiting for active file/app operation before closing the session")
                 generation.incrementAndGet()
                 initializationRerun.set(false)
@@ -477,6 +479,7 @@ class PiperPrivilegedService : Service() {
     }
 
     override fun onDestroy() {
+        if (!PiperPrivilegedPreferences.adbEnabled(this)) PiperAdbPairingNotifications.cancelSuccess(this)
         runCatching { backend.close() }
         worker.shutdownNow()
         super.onDestroy()
