@@ -72,14 +72,14 @@ class ApkBackupService : Service() {
                         notifySafely(NOTIFICATION_ID, buildProgressNotification(progress))
                     }
                 }
-                showTerminal("Backup APK hoàn tất", "${result.fileCount} tệp • ${Formatter.formatShortFileSize(this@ApkBackupService, result.byteCount)}", false)
+                showResultNotification("Backup APK hoàn tất", "${result.fileCount} tệp • ${Formatter.formatShortFileSize(this@ApkBackupService, result.byteCount)}", false)
             } catch (_: CancellationException) {
-                showTerminal("Đã hủy backup APK", "Các tệp đã chép vẫn được giữ lại", false)
+                showResultNotification("Đã hủy backup APK", "Các tệp đã chép vẫn được giữ lại", false)
             } catch (error: Throwable) {
                 if (cancelled.get()) {
-                    showTerminal("Đã hủy backup APK", "Các tệp đã chép vẫn được giữ lại", false)
+                    showResultNotification("Đã hủy backup APK", "Các tệp đã chép vẫn được giữ lại", false)
                 } else {
-                    showTerminal("Backup APK thất bại", error.cause?.message ?: error.message ?: "Lỗi không xác định", true)
+                    showResultNotification("Backup APK thất bại", error.cause?.message ?: error.message ?: "Lỗi không xác định", true)
                 }
             } finally {
                 releaseWakeLock()
@@ -133,7 +133,7 @@ class ApkBackupService : Service() {
         return builder.build()
     }
 
-    private fun showTerminal(title: String, content: String, isError: Boolean) {
+    private fun showResultNotification(title: String, content: String, isError: Boolean) {
         notifySafely(
             RESULT_NOTIFICATION_ID,
             NotificationCompat.Builder(this, CHANNEL_ID)

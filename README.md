@@ -6,7 +6,7 @@
 
 <p align="center">
   Bộ công cụ Android kết hợp quản lý ứng dụng và tệp, trình duyệt, media,
-  xác thực, tiện ích hệ thống, điều khiển từ xa và terminal Linux.
+  xác thực, tiện ích hệ thống và điều khiển từ xa.
 </p>
 
 <p align="center">
@@ -43,7 +43,7 @@ Trình cập nhật kiểm tra package, phiên bản và chữ ký của APK tr�
 
 ## Bản đồ ứng dụng và các thành phần
 
-PiperOS Tool Android là ứng dụng trung tâm. Các trang Home, Beta, Apps, Files, Settings và Info dẫn tới các nhóm công cụ bên dưới. Một số thành phần có repository riêng; sơ đồ phân biệt rõ mã Android, JSON điều khiển giao diện, ứng dụng PC và Linux runtime.
+PiperOS Tool Android là ứng dụng trung tâm. Các trang Home, Beta, Apps, Files, Settings và Info dẫn tới các nhóm công cụ bên dưới. Một số thành phần có repository riêng; sơ đồ phân biệt mã Android, JSON điều khiển giao diện và ứng dụng PC.
 
 ```mermaid
 flowchart TB
@@ -60,7 +60,6 @@ flowchart TB
         FILES["PiperOS File Manager"]
         ADB["PiperOS ADB"]
         INFO["Info và bảo mật tài khoản"]
-        TERMINAL["PiperOS Terminal UI / Service"]
     end
 
     APK --> HOME
@@ -100,14 +99,6 @@ flowchart TB
     AIRPLAY --> PC
     USB <--> PC
 
-    subgraph LINUX["Terminal Linux runtime · repository Piperos_termux"]
-        RUNTIME["PiperOS Termux Runtime"]
-        ABIS["aarch64 · arm · x86_64"]
-        APT["Kho package APT PiperOS"]
-    end
-    TERMINAL --> RUNTIME
-    RUNTIME --> ABIS
-    RUNTIME --> APT
 ```
 
 ### Các trang trong ứng dụng
@@ -156,12 +147,6 @@ flowchart TB
 - Firebase Cloud Messaging nhận thông báo đẩy khi app chạy nền; Firebase In-App Messaging hiển thị chiến dịch bên trong app. Firebase Performance Monitoring ghi nhận các chỉ số hiệu năng được SDK hỗ trợ.
 - Android 16 trở lên có thể hiển thị Live Update cho tiến trình khi hệ thống cho phép; máy cũ dùng notification tiêu chuẩn.
 
-### PiperOS Terminal và runtime Linux
-
-PiperOS Terminal cung cấp shell Android và nhiều phiên Linux, lịch sử lệnh, foreground service và bàn phím terminal riêng. App tải catalog runtime từ GitHub để cài/nâng cấp/hạ cấp theo chế độ giữ dữ liệu hoặc cài sạch.
-
-Runtime Linux được build và quản lý riêng trong [Piperos_termux](https://github.com/Phi574/Piperos_termux). Repo này tạo bootstrap và package cho `aarch64`, `arm`, `x86_64`, đồng thời phát hành kho APT PiperOS đã ký. Runtime đầy đủ không được đóng sẵn trong APK Android; app xác minh manifest và khóa ký repo trước khi bật kho. Package Termux chính thức không được trộn vào `$PREFIX` của PiperOS.
-
 ## Cấu hình giao diện bằng JSON
 
 Một số bề mặt của app lấy nội dung từ JSON trên nhánh `master` của repository Android chính. JSON không chứa Kotlin tùy ý và không thay thế toàn bộ Activity/XML; Android vẫn chịu trách nhiệm xử lý xác thực, quyền và hành động được phép.
@@ -178,16 +163,15 @@ Xem toàn bộ [thư mục config trên repo chính](https://github.com/Phi574/P
 
 | Nhóm trong sơ đồ | Repository / đường dẫn | Vai trò |
 | --- | --- | --- |
-| **Ứng dụng Android** | [PiperOSTool-Android](https://github.com/Phi574/PiperOSTool-Android) | APK, giao diện, Browser, Media, ADB, quản lý ứng dụng/tệp, View Remote và Terminal UI/service. |
+| **Ứng dụng Android** | [PiperOSTool-Android](https://github.com/Phi574/PiperOSTool-Android) | APK, giao diện, Browser, Media, ADB, quản lý ứng dụng/tệp và View Remote. |
 | **JSON giao diện** | [config trên nhánh `master`](https://github.com/Phi574/PiperOSTool-Android/tree/master/config) | Cấu hình auth và Window của chính app Android; không phải repository riêng. |
 | **Windows companion** | [PiperOSTool-PC](https://github.com/Phi574/PiperOSTool-PC) | Receiver PiperOS View Remote, AirPlay/RAOP và kết nối ADB/USB trên Windows. |
-| **Linux runtime** | [Piperos_termux](https://github.com/Phi574/Piperos_termux) | Bootstrap Linux, build package, runtime manifest và kho APT PiperOS cho ba ABI. |
 
 ## Quyền, bảo mật và giới hạn
 
 PiperOS chỉ nên yêu cầu quyền khi người dùng mở tính năng cần quyền đó. Tùy công cụ, Android có thể hỏi quyền media, thông báo, vị trí, usage access, quản lý tệp hoặc quyền Trợ năng. Tính năng chuyên sâu cần ADB; app không tự nhận quyền ROOT. Đọc thêm [PRIVACY.md](PRIVACY.md) về dữ liệu và [SECURITY.md](SECURITY.md) để báo cáo lỗ hổng.
 
-Dữ liệu cục bộ nhạy cảm như phiên, cài đặt, lịch sử, terminal, media, mock GPS và workspace APK được tách theo Firebase UID; các vùng hỗ trợ mã hóa dùng AES-256-GCM với khóa Android Keystore riêng. Hành vi và quyền truy cập còn phụ thuộc loại dữ liệu và tính năng cụ thể.
+Dữ liệu cục bộ nhạy cảm như phiên, cài đặt, lịch sử, media, mock GPS và workspace APK được tách theo Firebase UID; các vùng hỗ trợ mã hóa dùng AES-256-GCM với khóa Android Keystore riêng. Hành vi và quyền truy cập còn phụ thuộc loại dữ liệu và tính năng cụ thể.
 
 Một số thao tác có thể bị chặn bởi Android hoặc ROM, kể cả khi đã bật ADB. PiperOS ADB không tự chạy lại sau khởi động lại.
 

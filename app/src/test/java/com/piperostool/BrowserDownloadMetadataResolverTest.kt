@@ -90,11 +90,11 @@ class BrowserDownloadMetadataResolverTest {
             BrowserDownloadMetadataResolver.Input(
                 url = "https://example.test/download",
                 responseContentDisposition =
-                    "attachment; filename*=UTF-8'en'PiperOS%20Terminal.deb",
+                    "attachment; filename*=UTF-8'en'sample-package.deb",
                 responseMimeType = "application/x-debian-package"
             )
         )
 
-        assertEquals("PiperOS Terminal.deb", result.fileName)
+        assertEquals("sample-package.deb", result.fileName)
     }
 }

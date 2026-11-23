@@ -319,7 +319,7 @@ object PiperModernUi {
                     modernizeText(view, palette)
                 }
                 if (
-                    (view.isClickable || name == "tvTerminalPromptMode") &&
+                    view.isClickable &&
                     view.background != null && !isNavigationItem(name)
                 ) {
                     view.backgroundTintList = null
@@ -361,7 +361,6 @@ object PiperModernUi {
                         view.imageTintList = android.content.res.ColorStateList.valueOf(palette.secondaryText)
                     parentName in setOf(
                         "fakeMapFeatureIcon",
-                        "terminalFeatureIcon",
                         "fileManagerFeatureIcon"
                     ) ->
                         view.imageTintList = android.content.res.ColorStateList.valueOf(palette.accent)
@@ -393,7 +392,6 @@ object PiperModernUi {
             view.setTextColor(palette.onAccent)
             return
         }
-        if (preserveTextSurface(resourceName(view))) return
         val current = view.currentTextColor
         val alpha = Color.alpha(current)
         if (alpha < 90) return
@@ -407,21 +405,18 @@ object PiperModernUi {
         val name = resourceName(view)
         val className = view.javaClass.name
         return className.contains("WebView") || className.contains("PlayerView") ||
-            className.contains("osmdroid.views.MapView") || name == "terminalScroll"
+            className.contains("osmdroid.views.MapView")
     }
-
-    private fun preserveTextSurface(name: String): Boolean =
-        name.contains("terminalOutput", true) || name.contains("terminalScreen", true)
 
     private fun isSpecialSurface(name: String): Boolean =
         name.contains("disc", true) || name.contains("video", true) ||
             name.contains("player", true) ||
-            name.contains("progress", true) || name == "terminalScroll"
+            name.contains("progress", true)
 
     private fun isPageRoot(name: String): Boolean = name in setOf(
         "homeRoot", "fragmentHomeRoot", "updateRoot", "lockRoot", "loginRoot", "signupRoot", "forgotRoot", "welcomeRoot", "permissionRoot",
         "browserRoot", "mediaRoot", "mediaGalleryRoot", "fileManagerRoot", "filePreviewRoot",
-        "fakeMapRoot", "terminalRoot", "apkEditorRoot", "textEditorRoot", "piperQrRoot",
+        "fakeMapRoot", "apkEditorRoot", "textEditorRoot", "piperQrRoot",
         "accountProfileRoot", "deviceSessionsRoot", "twoFactorRoot"
     )
 

@@ -22,5 +22,3 @@ GitHub profile associated with this project and include:
 - Treat Firebase rules and backend authorization as security boundaries.
 - A Firebase API key in `google-services.json` is an identifier, not a
   substitute for proper Firebase Security Rules.
-- PiperOS Termux runtime manifests must be signed and archive hashes verified
-  before installation.

@@ -38,9 +38,7 @@ object AccountDataScope {
         "PiperBrowserExtensions",
         "PiperMockLocation",
         "PiperMockLocationRuntime",
-        "piperos_media",
-        "PiperTerminalPrefs",
-        "piperos_terminal_keyboard"
+        "piperos_media"
     )
 
     fun currentUid(): String = FirebaseAuth.getInstance().currentUser?.uid ?: SIGNED_OUT_UID
@@ -97,8 +95,6 @@ object AccountDataScope {
             state.edit().putString(KEY_LEGACY_WEB_OWNER, activeAccount).commit()
         }
         if (previousAccount != activeAccount) {
-            TerminalSessionManager.closeAll()
-            app.stopService(Intent(app, PiperTerminalService::class.java))
             app.stopService(Intent(app, PiperPlaybackService::class.java))
             app.stopService(Intent(app, MockLocationService::class.java))
             app.stopService(Intent(app, BrowserDownloadService::class.java))
@@ -113,54 +109,6 @@ object AccountDataScope {
         if (uid != null) {
             migratedPreferenceNames.forEach { preferences(app, it) }
             migrateLegacyFile(app, "custom_bg.jpg", file(app, "appearance", "custom_bg.jpg"))
-            migrateLegacyDirectory(
-                app,
-                "terminal_home",
-                File(app.filesDir, "home"),
-                directory(app, "terminal/home")
-            )
-        }
-    }
-
-    private fun migrateLegacyDirectory(
-        context: Context,
-        markerName: String,
-        legacy: File,
-        target: File
-    ) {
-        val migration = context.getSharedPreferences(MIGRATION_PREFS, Context.MODE_PRIVATE)
-        val marker = "migrated_directory_$markerName"
-        if (migration.getBoolean(marker, false)) return
-        synchronized(this) {
-            if (migration.getBoolean(marker, false)) return
-            if (legacy.isDirectory && legacy.canonicalPath != target.canonicalPath) {
-                target.mkdirs()
-                legacy.listFiles()?.forEach { source ->
-                    moveLegacyTree(source, File(target, source.name))
-                }
-                legacy.delete()
-            }
-            migration.edit().putBoolean(marker, true).commit()
-        }
-    }
-
-    private fun moveLegacyTree(source: File, target: File) {
-        if (!source.exists()) return
-        if (!target.exists() && source.renameTo(target)) return
-        // java.nio.file.Files requires API 26. Canonical/absolute comparison
-        // detects links while keeping account migration compatible with API 24.
-        val symbolicLink = runCatching {
-            source.canonicalFile != source.absoluteFile
-        }.getOrDefault(true)
-        if (source.isDirectory && !symbolicLink) {
-            target.mkdirs()
-            source.listFiles()?.forEach { child ->
-                moveLegacyTree(child, File(target, child.name))
-            }
-            source.delete()
-        } else if (!target.exists() && !symbolicLink) {
-            source.copyTo(target, overwrite = false)
-            source.delete()
         }
     }
 

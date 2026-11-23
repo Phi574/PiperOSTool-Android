@@ -117,9 +117,6 @@ class BetaFragment : Fragment() {
                 styleGamesNotice(page)
                 return
             }
-            page.findViewById<View>(R.id.featurePiperTerminal).setOnClickListener {
-                startActivity(Intent(requireContext(), PiperTerminalActivity::class.java))
-            }
             page.findViewById<View>(R.id.featureFileManager).setOnClickListener {
                 startActivity(Intent(requireContext(), PiperFileManagerActivity::class.java))
             }

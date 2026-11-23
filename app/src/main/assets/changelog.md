@@ -1,5 +1,8 @@
 # Changelog
 
+## 3.9.4.PRE — Bản xem trước
+- Nâng versionCode lên 112.
+
 ## 3.9.3.PRE — Bản xem trước
 - Gỡ hoàn toàn PiperOS SetEdit và PiperOS Data Transfer khỏi ứng dụng, gồm màn hình, thẻ Beta, khai báo, chuỗi dịch và mã phụ trợ không còn sử dụng.
 - Nâng versionCode lên 111.

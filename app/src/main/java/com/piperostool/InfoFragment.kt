@@ -178,7 +178,6 @@ class InfoFragment : Fragment() {
                     InfoRow("PiperOS Browser", "Trình duyệt tích hợp"),
                     InfoRow("PiperOS Media", "Phát nhạc và video"),
                     InfoRow("PiperOS 2FA", "Tạo mã xác minh một lần cho các tài khoản"),
-                    InfoRow("PiperOS Terminal", "Terminal Android và Linux"),
                     InfoRow("PiperOS Fake Map GPS", "Mô phỏng vị trí và hành trình"),
                     InfoRow("Trình quản lý tệp PiperOS", "Duyệt và quản lý tệp"),
                     InfoRow("PiperOS View Remote", "Xem và điều khiển từ xa"),
@@ -193,7 +192,6 @@ class InfoFragment : Fragment() {
                 color = color("#86EFAC"),
                 rows = listOf(
                     InfoRow("PiperOS Android Preview", "github.com/Phi574/PiperOSTool-Android-Preview", "https://github.com/Phi574/PiperOSTool-Android-Preview"),
-                    InfoRow("PiperOS Termux Runtime", "github.com/Phi574/Piperos_termux", "https://github.com/Phi574/Piperos_termux"),
                     InfoRow("PiperOS Tool PC", "github.com/Phi574/PiperOSTool-PC", "https://github.com/Phi574/PiperOSTool-PC"),
                     InfoRow("Module PiperOS Tool", "github.com/Phi574/module_piper-os-tool", "https://github.com/Phi574/module_piper-os-tool")
                 )

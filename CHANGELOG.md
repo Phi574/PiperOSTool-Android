@@ -1,8 +1,10 @@
 # Changelog
 
+## 3.9.4.PRE — Bản xem trước
+- Nâng versionCode lên 112.
+
 ## 3.9.3.PRE — Bản xem trước
 - Gỡ hoàn toàn PiperOS SetEdit và PiperOS Data Transfer khỏi ứng dụng, gồm màn hình, thẻ Beta, khai báo, chuỗi dịch và mã phụ trợ không còn sử dụng.
-- Sửa cài runtime PiperOS Terminal trên Android 14 trở lên bằng tác vụ truyền dữ liệu do người dùng khởi chạy; Android 10–13 tiếp tục dùng foreground service tương thích.
 - Dùng nguồn Releases Atom khi GitHub API bị giới hạn, và thử lại tải archive tối đa 3 lần khi gặp lỗi mạng tạm thời.
 - Nâng versionCode lên 111.
 

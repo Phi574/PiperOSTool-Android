@@ -15,7 +15,6 @@ Firebase project configuration and Google's applicable terms.
 
 - Browser tabs, history, preferences, cookies and normal browsing sessions.
 - Media queue, selected folders and playback preferences.
-- Terminal command history and active local shell session metadata.
 - PiperOS settings, lock preferences and selected background.
 
 Incognito browser data is intended to be deleted when its tab or application
@@ -30,8 +29,7 @@ Depending on the feature the user opens, PiperOS may request:
 - installed-app visibility for application management;
 - notification access for notification-related tools;
 - usage access for device activity information;
-- foreground service and notification permissions for downloads, playback
-  and user-started terminal sessions;
+- foreground service and notification permissions for downloads and playback;
 - precise location and the Developer Options mock-location role when the user
   starts PiperOS Fake Map GPS;
 - elevated settings permissions for advanced device tools.
