@@ -827,8 +827,14 @@
     <string name="settings_language_system">Theo ngôn ngữ thiết bị</string>
     <string name="beta_tab_apps">App</string>
     <string name="beta_tab_games">Game</string>
+    <string name="beta_tab_utility">Tiện ích</string>
     <string name="beta_games_title">Khu vực Game</string>
     <string name="beta_games_message">Tính năng đang được thử nghiệm sẽ có các cập nhật trong thời gian tới. Cùng đón chờ nhé!</string>
+    <string name="beta_utility_title">Khu vực Tiện ích</string>
+    <string name="beta_utility_message">Các tiện ích đang được thử nghiệm sẽ xuất hiện tại đây khi sẵn sàng.</string>
+    <string name="home_utilities_heading">TIỆN ÍCH PIPEROS</string>
+    <string name="startup_video_description">Video giới thiệu PiperOS Tool. Chạm để bỏ qua.</string>
+    <string name="startup_skip_video">Bỏ qua video giới thiệu</string>
     <string name="info_health_check_prompt">Chạm Kiểm tra để bắt đầu</string>
     <string name="info_health_not_checked">Chưa kiểm tra</string>
     <string name="info_health_no_internet">Không có kết nối Internet</string>

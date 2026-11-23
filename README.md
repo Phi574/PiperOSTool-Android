@@ -31,9 +31,9 @@
 
 ## Tải ứng dụng và cập nhật
 
-Bản đang phát hành: **3.9.3.PRE**, versionCode **111**, yêu cầu Android 10 trở lên.
+Bản đang phát hành: **3.9.4.PRE**, versionCode **112**, yêu cầu Android 10 trở lên.
 
-- [Tải PiperOS Tool 3.9.3.PRE](https://github.com/Phi574/PiperOSTool-Android/releases/tag/v3.9.3.PRE)
+- [Tải PiperOS Tool 3.9.4.PRE](https://github.com/Phi574/PiperOSTool-Android/releases/tag/v3.9.4.PRE)
 - [Xem tất cả bản phát hành](https://github.com/Phi574/PiperOSTool-Android/releases)
 - [Đọc lịch sử thay đổi](CHANGELOG.md)
 
@@ -105,8 +105,8 @@ flowchart TB
 
 | Trang | Nội dung chính |
 | --- | --- |
-| **Home** | Browser, Media, 2FA, QR và Fake Map GPS; nút Window mở thông tin cá nhân, bảo mật và Có gì mới. |
-| **Beta** | Khu vực các công cụ và tính năng đang thử nghiệm. |
+| **Home** | Chia công cụ thành App, Game và Tiện ích; Browser, Media, 2FA, QR, Fake Map GPS, PiperOS View Remote và PiperOS ADB nằm theo nhóm. Nút Window mở thông tin cá nhân, bảo mật và Có gì mới. |
+| **Beta** | Chia nội dung thử nghiệm thành App, Game và Tiện ích. |
 | **Apps** | Danh sách ứng dụng, thông tin package, quyền, chứng chỉ và thao tác được Android/ADB cho phép. |
 | **Files** | Quản lý tệp, archive, APK và truy cập chuyên sâu qua ADB khi người dùng bật quyền. |
 | **Settings** | Giao diện, ngôn ngữ, cập nhật và các tùy chọn của app. |

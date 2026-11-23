@@ -1,8 +1,39 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/backgroud">
+
+    <androidx.media3.ui.PlayerView
+        android:id="@+id/startupIntroVideo"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:contentDescription="@string/startup_video_description"
+        android:keepScreenOn="true"
+        android:visibility="visible"
+        app:resize_mode="zoom"
+        app:show_buffering="never"
+        app:surface_type="texture_view"
+        app:use_controller="false" />
+
+    <View
+        android:id="@+id/startupTransitionFlash"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:alpha="0"
+        android:background="@drawable/bg_startup_flash"
+        android:importantForAccessibility="no"
+        android:visibility="visible" />
+
+    <View
+        android:id="@+id/startupSkipTapArea"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@android:color/transparent"
+        android:clickable="true"
+        android:contentDescription="@string/startup_skip_video"
+        android:focusable="true" />
 
     <!-- Đã xóa codeRainTextView -->
 

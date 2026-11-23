@@ -1,6 +1,9 @@
 # Changelog
 
 ## 3.9.4.PRE — Bản xem trước
+- Chia Home thành các nhóm App, Game và Tiện ích; chuyển PiperOS View Remote và PiperOS ADB vào nhóm Tiện ích.
+- Thêm các tab App, Game và Tiện ích trong Beta; nhóm Game và Tiện ích có trạng thái riêng.
+- Thêm video giới thiệu khi mở ứng dụng, có thể chạm để bỏ qua; video tự phủ kín màn hình theo tỉ lệ thiết bị.
 - Nâng versionCode lên 112.
 
 ## 3.9.3.PRE — Bản xem trước

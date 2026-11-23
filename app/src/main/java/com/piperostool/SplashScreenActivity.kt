@@ -5,9 +5,13 @@ import android.animation.ObjectAnimator
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
+import android.graphics.RenderEffect
+import android.graphics.Shader
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.view.View
 import android.view.ViewGroup
 import android.view.animation.DecelerateInterpolator
 import android.widget.TextView
@@ -17,7 +21,14 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import androidx.core.content.ContextCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
+import androidx.media3.common.MediaItem
+import androidx.media3.common.PlaybackException
+import androidx.media3.common.Player
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.ui.PlayerView
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
@@ -42,6 +53,8 @@ class SplashScreenActivity : AppCompatActivity() {
     private var biometricRequired = false
     private var biometricPromptActive = false
     private var activityResumed = false
+    private var introFinished = false
+    private var introPlayer: ExoPlayer? = null
 
     private val updateActivityLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -56,6 +69,8 @@ class SplashScreenActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Let the intro video extend behind the hidden status/navigation bars.
+        WindowCompat.setDecorFitsSystemWindows(window, false)
         setContentView(R.layout.activity_start_screen)
 
         // 1. ÁP DỤNG HÌNH NỀN TÙY CHỈNH NGAY LẬP TỨC
@@ -67,8 +82,7 @@ class SplashScreenActivity : AppCompatActivity() {
         // Khởi tạo Biometric
         setupBiometric()
 
-        // Bắt đầu hiệu ứng hiện tên App ngay lập tức
-        showAppNameAndDeveloper()
+        startStartupIntro()
     }
 
     // ==========================================================
@@ -199,6 +213,99 @@ class SplashScreenActivity : AppCompatActivity() {
                 delay(750L)
                 continueToApp()
             }
+        }
+    }
+
+    private fun startStartupIntro() {
+        val playerView = findViewById<PlayerView>(R.id.startupIntroVideo)
+        findViewById<View>(R.id.startupSkipTapArea).setOnClickListener {
+            finishStartupIntro(skipped = true)
+        }
+        hideSystemBarsForIntro()
+
+        val player = ExoPlayer.Builder(this).build()
+        introPlayer = player
+        playerView.player = player
+        player.addListener(object : Player.Listener {
+            override fun onPlaybackStateChanged(playbackState: Int) {
+                if (playbackState == Player.STATE_ENDED) finishStartupIntro(skipped = false)
+            }
+
+            override fun onPlayerError(error: PlaybackException) {
+                finishStartupIntro(skipped = true)
+            }
+        })
+        player.setMediaItem(MediaItem.fromUri("android.resource://$packageName/${R.raw.videobootapp}"))
+        player.prepare()
+        player.playWhenReady = true
+    }
+
+    private fun hideSystemBarsForIntro() {
+        WindowCompat.getInsetsController(window, window.decorView).apply {
+            systemBarsBehavior =
+                androidx.core.view.WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            hide(WindowInsetsCompat.Type.systemBars())
+        }
+    }
+
+    private fun showSystemBarsAfterIntro() {
+        WindowCompat.getInsetsController(window, window.decorView)
+            .show(WindowInsetsCompat.Type.systemBars())
+    }
+
+    private fun finishStartupIntro(skipped: Boolean) {
+        if (introFinished || isFinishing || isDestroyed) return
+        introFinished = true
+
+        val playerView = findViewById<PlayerView>(R.id.startupIntroVideo)
+        val flash = findViewById<View>(R.id.startupTransitionFlash)
+        findViewById<View>(R.id.startupSkipTapArea).apply {
+            isEnabled = false
+            visibility = View.GONE
+        }
+        flash.visibility = View.VISIBLE
+        flash.alpha = 0f
+
+        if (!skipped && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            playerView.setRenderEffect(
+                RenderEffect.createBlurEffect(20f, 20f, Shader.TileMode.CLAMP)
+            )
+        }
+
+        val duration = if (skipped) 180L else 620L
+        val videoFade = ObjectAnimator.ofFloat(playerView, View.ALPHA, playerView.alpha, 0f)
+        val videoZoomX = ObjectAnimator.ofFloat(playerView, View.SCALE_X, 1f, 1.035f)
+        val videoZoomY = ObjectAnimator.ofFloat(playerView, View.SCALE_Y, 1f, 1.035f)
+        val lightBloom = ObjectAnimator.ofFloat(
+            flash,
+            View.ALPHA,
+            0f,
+            if (skipped) 0.48f else 0.92f,
+            0f
+        )
+        AnimatorSet().apply {
+            playTogether(videoFade, videoZoomX, videoZoomY, lightBloom)
+            this.duration = duration
+            interpolator = DecelerateInterpolator()
+            addListener(object : android.animation.Animator.AnimatorListener {
+                override fun onAnimationStart(animation: android.animation.Animator) = Unit
+
+                override fun onAnimationEnd(animation: android.animation.Animator) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                        playerView.setRenderEffect(null)
+                    }
+                    playerView.visibility = View.GONE
+                    flash.visibility = View.GONE
+                    introPlayer?.pause()
+                    WindowCompat.setDecorFitsSystemWindows(window, true)
+                    showSystemBarsAfterIntro()
+                    startStartupChecks()
+                }
+
+                override fun onAnimationCancel(animation: android.animation.Animator) = Unit
+                override fun onAnimationRepeat(animation: android.animation.Animator) = Unit
+            })
+            start()
         }
     }
 
@@ -464,6 +571,7 @@ class SplashScreenActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         activityResumed = true
+        if (!introFinished) introPlayer?.play()
         if (biometricRequired && !biometricPromptActive && !navigating) {
             handler.postDelayed({ showBiometricPromptIfReady() }, BIOMETRIC_RESUME_DELAY_MS)
         }
@@ -471,7 +579,14 @@ class SplashScreenActivity : AppCompatActivity() {
 
     override fun onPause() {
         activityResumed = false
+        if (!introFinished) introPlayer?.pause()
         super.onPause()
+    }
+
+    override fun onDestroy() {
+        introPlayer?.release()
+        introPlayer = null
+        super.onDestroy()
     }
 
     private fun navigateTo(activityClass: Class<*>) {
@@ -491,33 +606,4 @@ class SplashScreenActivity : AppCompatActivity() {
         finish()
     }
 
-    private fun showAppNameAndDeveloper() {
-        // Hiệu ứng hiện tên App (Fade In)
-        val fadeInAppName = ObjectAnimator.ofFloat(appNameTextView, "alpha", 0.0f, 0.5f)
-        fadeInAppName.duration = 650
-
-        // Hiệu ứng hiện tên Dev (Trượt lên + Fade In)
-        val slideInDeveloper = ObjectAnimator.ofFloat(developerTextView, "translationY", 100f, 0f)
-        slideInDeveloper.duration = 650
-        slideInDeveloper.interpolator = DecelerateInterpolator()
-
-        val fadeInDeveloper = ObjectAnimator.ofFloat(developerTextView, "alpha", 0.0f, 0.5f)
-        fadeInDeveloper.duration = 650
-
-        val animatorSet = AnimatorSet()
-        animatorSet.playTogether(fadeInAppName, slideInDeveloper, fadeInDeveloper)
-        animatorSet.startDelay = 100
-
-        animatorSet.addListener(object : android.animation.Animator.AnimatorListener {
-            override fun onAnimationStart(animation: android.animation.Animator) {}
-            override fun onAnimationEnd(animation: android.animation.Animator) {
-                handler.postDelayed({
-                    startStartupChecks()
-                }, 250)
-            }
-            override fun onAnimationCancel(animation: android.animation.Animator) {}
-            override fun onAnimationRepeat(animation: android.animation.Animator) {}
-        })
-        animatorSet.start()
-    }
 }

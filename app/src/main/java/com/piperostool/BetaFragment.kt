@@ -16,6 +16,7 @@ class BetaFragment : Fragment() {
     private var pager: ViewPager2? = null
     private var appsTab: TextView? = null
     private var gamesTab: TextView? = null
+    private var utilityTab: TextView? = null
     private var pageCallback: ViewPager2.OnPageChangeCallback? = null
 
     override fun onCreateView(
@@ -29,9 +30,11 @@ class BetaFragment : Fragment() {
         val viewPager = view.findViewById<ViewPager2>(R.id.betaPager)
         val apps = view.findViewById<TextView>(R.id.betaTabApps)
         val games = view.findViewById<TextView>(R.id.betaTabGames)
+        val utility = view.findViewById<TextView>(R.id.betaTabUtility)
         pager = viewPager
         appsTab = apps
         gamesTab = games
+        utilityTab = utility
         pageCallback = object : ViewPager2.OnPageChangeCallback() {
             override fun onPageSelected(position: Int) {
                 updateTabStyles(position)
@@ -41,6 +44,7 @@ class BetaFragment : Fragment() {
         viewPager.setCurrentItem(0, false)
         apps.setOnClickListener { viewPager.setCurrentItem(0, true) }
         games.setOnClickListener { viewPager.setCurrentItem(1, true) }
+        utility.setOnClickListener { viewPager.setCurrentItem(2, true) }
         updateTabStyles(0)
         viewPager.post { updateTabStyles(viewPager.currentItem) }
     }
@@ -57,6 +61,7 @@ class BetaFragment : Fragment() {
         pageCallback = null
         appsTab = null
         gamesTab = null
+        utilityTab = null
         super.onDestroyView()
     }
 
@@ -75,7 +80,7 @@ class BetaFragment : Fragment() {
             setColor(surface)
             setStroke(density.toInt().coerceAtLeast(1), border)
         }
-        listOf(appsTab, gamesTab).forEachIndexed { index, tab ->
+        listOf(appsTab, gamesTab, utilityTab).forEachIndexed { index, tab ->
             tab ?: return@forEachIndexed
             val selected = index == position
             tab.background = GradientDrawable().apply {
@@ -95,17 +100,21 @@ class BetaFragment : Fragment() {
         RecyclerView.Adapter<BetaContentAdapter.PageHolder>() {
         private val appsPage = 0
         private val gamesPage = 1
+        private val utilityPage = 2
 
-        override fun getItemCount(): Int = 2
+        override fun getItemCount(): Int = 3
 
-        override fun getItemViewType(position: Int): Int =
-            if (position == gamesPage) gamesPage else appsPage
+        override fun getItemViewType(position: Int): Int = when (position) {
+            gamesPage -> gamesPage
+            utilityPage -> utilityPage
+            else -> appsPage
+        }
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PageHolder {
-            val layout = if (viewType == gamesPage) {
-                R.layout.fragment_beta_games
-            } else {
-                R.layout.fragment_beta_apps
+            val layout = when (viewType) {
+                gamesPage -> R.layout.fragment_beta_games
+                utilityPage -> R.layout.fragment_beta_utility
+                else -> R.layout.fragment_beta_apps
             }
             val page = LayoutInflater.from(parent.context).inflate(layout, parent, false)
             return PageHolder(page)
@@ -115,6 +124,10 @@ class BetaFragment : Fragment() {
             val page = holder.itemView
             if (position == gamesPage) {
                 styleGamesNotice(page)
+                return
+            }
+            if (position == utilityPage) {
+                styleUtilityNotice(page)
                 return
             }
             page.findViewById<View>(R.id.featureFileManager).setOnClickListener {
@@ -136,6 +149,20 @@ class BetaFragment : Fragment() {
         root.findViewById<TextView>(R.id.betaGamesTitle)
             .setTextColor(PiperModernUi.textColor(context))
         root.findViewById<TextView>(R.id.betaGamesMessage)
+            .setTextColor(PiperModernUi.secondaryTextColor(context))
+    }
+
+    private fun styleUtilityNotice(root: View) {
+        val context = root.context
+        val card = root.findViewById<MaterialCardView>(R.id.betaUtilityNoticeCard)
+        card.setCardBackgroundColor(PiperModernUi.surfaceColor(context))
+        card.strokeColor = PiperModernUi.borderColor(context)
+        card.strokeWidth = (resources.displayMetrics.density).toInt().coerceAtLeast(1)
+        card.radius = 20f * resources.displayMetrics.density
+        card.cardElevation = 0f
+        root.findViewById<TextView>(R.id.betaUtilityTitle)
+            .setTextColor(PiperModernUi.textColor(context))
+        root.findViewById<TextView>(R.id.betaUtilityMessage)
             .setTextColor(PiperModernUi.secondaryTextColor(context))
     }
 }

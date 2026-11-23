@@ -821,8 +821,14 @@
     <string name="settings_language_system">Device language</string>
     <string name="beta_tab_apps">Apps</string>
     <string name="beta_tab_games">Games</string>
+    <string name="beta_tab_utility">Utility</string>
     <string name="beta_games_title">Games area</string>
     <string name="beta_games_message">Features are being tested and will receive updates in the future. Stay tuned!</string>
+    <string name="beta_utility_title">Utilities area</string>
+    <string name="beta_utility_message">Utilities under testing will appear here when they are ready.</string>
+    <string name="home_utilities_heading">PIPEROS UTILITIES</string>
+    <string name="startup_video_description">PiperOS Tool intro video. Tap to skip.</string>
+    <string name="startup_skip_video">Skip intro video</string>
     <string name="info_health_check_prompt">Tap Check to start</string>
     <string name="info_health_not_checked">Not checked</string>
     <string name="info_health_no_internet">No Internet connection</string>
